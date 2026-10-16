@@ -26,5 +26,5 @@ FMOD|Versions
 ---|---
 
 
-## Donate
+## Donate to the original Author (Deltaxur)
 BTC: `bc1qkkckr4d8f9l4me5efnd3e5sf4q6akfhe26lpjy`
