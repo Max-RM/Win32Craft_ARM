@@ -2,6 +2,8 @@
 
 ## Supported Versions (UWP x86)
 - 1.2.8 (Experimental)
+- ![Uploading image.png…]()
+
 
 ## Build
 Platform|Script
