@@ -1,0 +1,240 @@
+#ifdef WIN32CRAFT_ARM32
+/* ARM32 initialize_game_d3d (facts gfx_device.* / fl91.*): game owner via the game's operator new(0xd0) + owner ctor,
+ * game InitDevice (which calls D3D11CreateDevice itself through the hooked IAT), host-created HWND swap chain
+ * (B8G8R8A8, 2 buffers, DISCARD, flags 0), game InitTargets, swap chain stored at renderer+0x104, Present hooks. */
+static BOOL initialize_game_d3d(HWND window)
+{
+    BYTE *image = arm32_gfx_image();
+    Arm32GfxOperatorNewFn game_new =
+        (Arm32GfxOperatorNewFn)ARM_CODE(image, ARM_GFX_DEVICE_OPERATOR_NEW);
+    Arm32GfxOwnerCtorFn owner_ctor =
+        (Arm32GfxOwnerCtorFn)ARM_CODE(image, ARM_GFX_DEVICE_OWNER_CTOR);
+    Arm32GfxInitDeviceFn init_device =
+        (Arm32GfxInitDeviceFn)ARM_CODE(image, ARM_GFX_DEVICE_INIT_DEVICE);
+    void **owner_cell = (void **)ARM_DATA(image, ARM_GFX_DEVICE_OWNER_GLOBAL);
+    BYTE *owner;
+    BYTE *renderer;
+    ID3D11Device *device;
+    IDXGIDevice *dxgi_device = NULL;
+    IDXGIAdapter *adapter = NULL;
+    IDXGIFactory *factory = NULL;
+    DXGI_SWAP_CHAIN_DESC description;
+    RECT client;
+    HRESULT result;
+    UINT width;
+    UINT height;
+    UINT owner_feature_level;
+    char line[256];
+    BOOL code_ok;
+
+    /* The facts hold for the patched 1.2.8 ARM32 image only: verify every function we are about to call. */
+    code_ok = arm32_check_bytes(image + ARM_GFX_DEVICE_OPERATOR_NEW, ARM_GFX_DEVICE_OPERATOR_NEW_EXPECTED,
+                                sizeof(ARM_GFX_DEVICE_OPERATOR_NEW_EXPECTED), "gfx operator new");
+    code_ok &= arm32_check_bytes(image + ARM_GFX_DEVICE_OWNER_CTOR, ARM_GFX_DEVICE_OWNER_CTOR_EXPECTED,
+                                 sizeof(ARM_GFX_DEVICE_OWNER_CTOR_EXPECTED), "gfx owner ctor");
+    code_ok &= arm32_check_bytes(image + ARM_GFX_DEVICE_INIT_DEVICE, ARM_GFX_DEVICE_INIT_DEVICE_EXPECTED,
+                                 sizeof(ARM_GFX_DEVICE_INIT_DEVICE_EXPECTED), "gfx InitDevice");
+    code_ok &= arm32_check_bytes(image + ARM_GFX_DEVICE_INIT_TARGETS, ARM_GFX_DEVICE_INIT_TARGETS_EXPECTED,
+                                 sizeof(ARM_GFX_DEVICE_INIT_TARGETS_EXPECTED), "gfx InitTargets");
+    code_ok &= arm32_check_bytes(image + ARM_GFX_DEVICE_RELEASE_TARGETS, ARM_GFX_DEVICE_RELEASE_TARGETS_EXPECTED,
+                                 sizeof(ARM_GFX_DEVICE_RELEASE_TARGETS_EXPECTED), "gfx ReleaseTargets");
+    if (!code_ok) {
+        log_line("initialize_game_d3d: game image does not match the 1.2.8 ARM32 facts; aborting");
+        return FALSE;
+    }
+
+    log_line("calling game resource constructor");
+    log_pointer("game operator new", (const void *)game_new);
+    log_pointer("game owner global cell (before)", *owner_cell);
+    /* Mirrors the game's own make_owner (0x13f2a0): new(0xd0), memset 0, ctor, owner+0xb8 = 0x9100 (D3D_FEATURE_LEVEL_9_1),
+     * +0xbc/+0xc0/+0xc4 stay 0.  Publishing the pointer in the global cell makes the game skip its own make_owner +
+     * InitDevice + queryAdapterInfo + AppPlatform vf143. */
+    owner = (BYTE *)game_new(ARM_GFX_DEVICE_OWNER_SIZE);
+    log_pointer("game owner allocation", owner);
+    if (!owner) {
+        log_line("game resource owner creation returned null");
+        return FALSE;
+    }
+    ZeroMemory(owner, ARM_GFX_DEVICE_OWNER_SIZE);
+    owner = (BYTE *)owner_ctor(owner);
+    if (!owner) {
+        log_line("game owner constructor returned null");
+        return FALSE;
+    }
+    *(UINT *)(owner + 0xb8) = 0x9100u;
+    *owner_cell = owner;
+    log_line("game resource constructor returned");
+    log_pointer("game resource owner", owner);
+    renderer = *(BYTE **)(owner + ARM_GFX_DEVICE_OWNER_RENDERER_OFFSET);
+    game_resource_owner = owner;
+    game_renderer = renderer;
+    log_pointer("game renderer", renderer);
+    if (!renderer) {
+        log_line("game renderer creation returned null");
+        return FALSE;
+    }
+    if (*(void **)(renderer + 0x108) != owner) {
+        log_pointer("game renderer owner back-pointer (+0x108) differs from the owner", *(void **)(renderer + 0x108));
+    }
+
+    log_line("calling game D3D11 device initializer");
+    init_device(owner, renderer);
+    log_line("game D3D11 device initializer returned");
+    /* InitDevice does not check its WARP retry: a second failure would already have crashed inside the game
+     * (0x5BC406).  If it returned, verify that it really produced a device and an immediate context. */
+    device = *(ID3D11Device **)(owner + ARM_GFX_DEVICE_OWNER_DEVICE_OFFSET);
+    game_context = *(ID3D11DeviceContext **)(renderer + ARM_GFX_DEVICE_RENDERER_CONTEXT);
+    owner_feature_level = *(UINT *)(owner + 0xb8);
+    log_pointer("game D3D11 device (owner+0xc0)", device);
+    log_pointer("game D3D11 base context (renderer+0x110)", game_context);
+    log_pointer("game D3D11 Context2 (renderer+0x114)", *(void **)(renderer + ARM_GFX_DEVICE_RENDERER_CONTEXT2));
+    log_pointer("game D3D annotation (renderer+0x140)", *(void **)(renderer + 0x140));
+    wsprintfA(line, "game owner feature level (owner+0xb8) = 0x%04X", owner_feature_level);
+    log_line(line);
+
+    /* D3D11CreateDevice keeps its own references only through the game; release anything an IAT hook retained */
+    if (captured_base_device) {
+        ID3D11Device_Release(captured_base_device);
+        captured_base_device = NULL;
+    }
+    if (captured_base_context) {
+        ID3D11DeviceContext_Release(captured_base_context);
+        captured_base_context = NULL;
+    }
+    if (!device || !game_context || IsBadReadPtr(device, sizeof(void *)) || IsBadReadPtr(game_context, sizeof(void *)) ||
+        !device->lpVtbl || !game_context->lpVtbl) {
+        log_line("game InitDevice produced no usable ID3D11Device / ID3D11DeviceContext "
+                 "(D3D11CreateDevice failed for hardware and WARP at the selected feature level); aborting");
+        game_context = NULL;
+        return FALSE;
+    }
+    if (!IsBadReadPtr(device->lpVtbl, 40 * sizeof(void *))) {
+        UINT actual_level = COMCALL(device, 37, UINT, STDMETHODCALLTYPE)(device); /* ID3D11Device::GetFeatureLevel */
+        wsprintfA(line, "ID3D11Device::GetFeatureLevel = 0x%04X", actual_level);
+        log_line(line);
+        if (actual_level && actual_level != owner_feature_level) {
+            log_line("warning: owner+0xb8 and the device feature level differ");
+        }
+        if (actual_level) owner_feature_level = actual_level;
+    }
+    arm32_gfx_texture_limit = arm32_gfx_texture_limit_for_level(owner_feature_level);
+    wsprintfA(line, "texture/backbuffer size limit for this feature level: %u", arm32_gfx_texture_limit);
+    log_line(line);
+
+    /* Only the first call may hook the context vtable: a second hook would capture our own hook as the original */
+    if (!arm32_gfx_scissor_installed) {
+        arm32_gfx_scissor_installed = install_scissor_fix(game_context);
+    }
+
+    result = ID3D11Device_QueryInterface(device, &IID_IDXGIDevice, (void **)&dxgi_device);
+    if (FAILED(result)) {
+        log_hresult("ID3D11Device::QueryInterface(IDXGIDevice)", result);
+        return FALSE;
+    }
+    result = IDXGIDevice_GetAdapter(dxgi_device, &adapter);
+    if (FAILED(result)) {
+        log_hresult("IDXGIDevice::GetAdapter", result);
+        goto fail;
+    }
+    result = IDXGIAdapter_GetParent(adapter, &IID_IDXGIFactory, (void **)&factory);
+    if (FAILED(result)) {
+        log_hresult("IDXGIAdapter::GetParent(IDXGIFactory)", result);
+        goto fail;
+    }
+
+    ZeroMemory(&client, sizeof(client));
+    GetClientRect(window, &client);
+    width = (UINT)(client.right - client.left);
+    height = (UINT)(client.bottom - client.top);
+    wsprintfA(line, "HWND client size %ux%u", width, height);
+    log_line(line);
+    if (!width || !height || (client.right - client.left) < 0 || (client.bottom - client.top) < 0) {
+        width = ARM32_GFX_FALLBACK_WIDTH;
+        height = ARM32_GFX_FALLBACK_HEIGHT;
+        log_line("HWND client area is empty; using 1280x720 for the first swap chain");
+    }
+    arm32_gfx_clamp_size(&width, &height, "initial swap chain");
+
+    ZeroMemory(&description, sizeof(description));
+    description.BufferDesc.Width = width;
+    description.BufferDesc.Height = height;
+    description.BufferDesc.RefreshRate.Numerator = 0;
+    description.BufferDesc.RefreshRate.Denominator = 0;
+    description.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    description.SampleDesc.Count = 1; /* no MSAA (fl91.msaa_gate) */
+    description.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    description.BufferCount = 2;
+    description.OutputWindow = window;
+    description.Windowed = TRUE;
+    description.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+    description.Flags = 0; /* no ALLOW_TEARING: owner+0x90 stays 0 so the game never asks for tearing presents */
+    log_line("creating HWND swap chain for game device");
+    game_swap_chain = NULL;
+    result = IDXGIFactory_CreateSwapChain(
+        factory, (IUnknown *)device, &description, &game_swap_chain);
+    log_hresult("IDXGIFactory::CreateSwapChain(HWND BGRA)", result);
+    if (FAILED(result) || !game_swap_chain) {
+        game_swap_chain = NULL;
+        goto fail;
+    }
+    /* The host has its own fullscreen toggle; keep DXGI from switching to exclusive fullscreen on Alt+Enter
+     * (IDXGIFactory::MakeWindowAssociation, vtable slot 8, DXGI_MWA_NO_ALT_ENTER = 2). */
+    result = COMCALL(factory, 8, HRESULT, STDMETHODCALLTYPE, HWND, UINT)(factory, window, 2u);
+    log_hresult("IDXGIFactory::MakeWindowAssociation(NO_ALT_ENTER)", result);
+
+    /* The game's Present1 path (used when [g_displaySettings+0x30] != 1) calls vtable slot 22 of the pointer stored at
+     * renderer+0x104, so prefer the IDXGISwapChain1 interface pointer when the runtime offers it. */
+    {
+        IDXGISwapChain *swap_chain1 = NULL;
+        result = ID3D11Device_QueryInterface(game_swap_chain, &arm32_gfx_iid_swap_chain1, &swap_chain1);
+        if (SUCCEEDED(result) && swap_chain1) {
+            if (swap_chain1 != game_swap_chain) {
+                IDXGISwapChain_Release(game_swap_chain);
+                game_swap_chain = swap_chain1;
+            } else {
+                IDXGISwapChain_Release(swap_chain1);
+            }
+            log_pointer("HWND swap chain (IDXGISwapChain1)", game_swap_chain);
+        } else {
+            log_hresult("QueryInterface(IDXGISwapChain1) failed; the game's Present1 path will be unavailable", result);
+        }
+    }
+
+    if (!arm32_gfx_recreate_targets(width, height, "startup")) {
+        goto fail;
+    }
+    /* InitTargets does not store the swap chain (facts gfx_device.renderer_swapchain): Release the old value, AddRef ours */
+    if (*(IDXGISwapChain **)(renderer + ARM_GFX_DEVICE_RENDERER_SWAPCHAIN) != game_swap_chain) {
+        IDXGISwapChain *old = *(IDXGISwapChain **)(renderer + ARM_GFX_DEVICE_RENDERER_SWAPCHAIN);
+        if (old) IDXGISwapChain_Release(old);
+        IDXGISwapChain_AddRef(game_swap_chain);
+        *(IDXGISwapChain **)(renderer + ARM_GFX_DEVICE_RENDERER_SWAPCHAIN) = game_swap_chain;
+        log_line("HWND swap chain stored at renderer+0x104");
+    }
+    ID3D11DeviceContext_AddRef(game_context);
+    install_swap_chain_present_hook(game_swap_chain);
+    {
+        HRESULT startup_present;
+        startup_present = IDXGISwapChain_Present(game_swap_chain, 0, 0);
+        log_hresult("initial HWND backbuffer present", startup_present);
+    }
+    log_line("game D3D11 device and HWND swap chain initialized");
+
+    if (factory) IDXGIFactory_Release(factory);
+    if (adapter) IDXGIAdapter_Release(adapter);
+    if (dxgi_device) IDXGIDevice_Release(dxgi_device);
+    return TRUE;
+
+fail:
+    if (game_swap_chain) {
+        IDXGISwapChain_Release(game_swap_chain);
+        game_swap_chain = NULL;
+    }
+    if (factory) IDXGIFactory_Release(factory);
+    if (adapter) IDXGIAdapter_Release(adapter);
+    if (dxgi_device) IDXGIDevice_Release(dxgi_device);
+    return FALSE;
+}
+#else /* !WIN32CRAFT_ARM32 */
+static BOOL initialize_game_d3d(HWND window)
+{

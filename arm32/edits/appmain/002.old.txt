@@ -1,0 +1,2 @@
+    return *(void **)((BYTE *)game_app_main + (host_is_128 ? 0x1c : 4));
+}

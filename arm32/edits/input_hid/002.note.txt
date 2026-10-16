@@ -1,0 +1,1 @@
+First half of the input_hid block: ARM32 object graph (get_hid_controller, mouse offsets), the three mouse-mode std::function hook bodies, install_arm32_input_hooks (vtable-cell swap, trampoline fallback) and game_requests_relative_mouse; x86 originals stay under #else.

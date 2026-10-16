@@ -1,0 +1,4 @@
+HRESULT WINAPI RoReportUnhandledError(void *error) {
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "RoReportUnhandledError", (void *), (error));
+#endif

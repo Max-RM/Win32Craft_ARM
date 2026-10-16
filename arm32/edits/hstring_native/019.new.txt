@@ -1,0 +1,6 @@
+HRESULT WINAPI RoGetParameterizedTypeInstanceIID(
+    UINT32 count, const WCHAR **names, const void *locator, GUID *iid, void **extra)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "RoGetParameterizedTypeInstanceIID", (UINT32, const WCHAR **, const void *, GUID *, void **), (count, names, locator, iid, extra));
+#endif

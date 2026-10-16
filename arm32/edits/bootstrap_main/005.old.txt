@@ -1,0 +1,3 @@
+int WINAPI Win32Bootstrap(void)
+{
+    WNDCLASSEXW klass;

@@ -1,0 +1,133 @@
+#ifdef WIN32CRAFT_ARM32
+/* facts input.map_virtual_key / make_key_event / hid_key_held_table.  The stock WinRT KeyDown/KeyUp handlers
+ * (0x625b10 / 0x625d64) do: mapped = mapVirtualKey(vk - 8) for vk 8..0xde, make KeyCodeItem(mapped, state), enqueue,
+ * then controller[0xc9 + mapped] = state.  The host does the same.  Stock extras that are deliberately not repeated:
+ *  - key-down is skipped when the held byte is already set (0x627188) and key-up is only emitted when it is set
+ *    (0x625db2): the host's win32_key_down[] auto-repeat filter makes the two equivalent for single keys, and an
+ *    unmatched extra key event is harmless to the game's keyboard state;
+ *  - Backspace (key-down) and Enter (key-up) additionally queue a TextItem "\b" / "\n" while HIDController+0x24 == 0;
+ *    the host gets those from WM_CHAR through queue_character_event. */
+static BOOL queue_keyboard_event(BYTE virtual_key, DWORD state)
+{
+    static unsigned logged_events;
+    Arm32MapVirtualKeyFn map_virtual_key;
+    BYTE *controller;
+    void *input_handler;
+    BYTE mapped_key;
+    DWORD state_value = state ? 1u : 0u;
+    void *event = NULL;
+    char line[112];
+
+    if (!input_events_enabled || !virtual_key) return FALSE;
+    controller = arm32_input_target(&input_handler);
+    if (!controller) return FALSE;
+
+    /* The mapper is a `tbh` table indexed by (VirtualKey - 8) with 0xd7 entries: anything else would jump out of it. */
+    if (virtual_key < ARM_INPUT_VK_RANGE_GUARD || virtual_key > 0xde) return FALSE;
+    map_virtual_key = (Arm32MapVirtualKeyFn)ARM_CODE(game_image, ARM_INPUT_MAP_VIRTUAL_KEY);
+    mapped_key = (BYTE)map_virtual_key((unsigned)virtual_key - ARM_INPUT_VK_RANGE_GUARD);
+    if (!mapped_key) return FALSE;
+    call_game_make_key_event_115(game_image + ARM_INPUT_MAKE_KEY_EVENT, &event, &mapped_key,
+                                 &state_value);
+    if (!event || IsBadReadPtr(event, ARM_INPUT_KEY_EVENT_LAYOUT) ||
+        ((BYTE *)event)[4] != 2) {
+        log_line("Minecraft 1.2.8 key event factory returned an invalid event");
+        return FALSE;
+    }
+    arm32_enqueue_input(input_handler, event);
+    controller[ARM_INPUT_HID_KEY_HELD_TABLE + mapped_key] = state_value ? 1 : 0;
+
+    if (logged_events < 24) {
+        wsprintfA(line, "keyboard event: key=%u mapped=%u state=%u",
+                  (unsigned)virtual_key, (unsigned)mapped_key, (unsigned)state_value);
+        log_line(line);
+        ++logged_events;
+    }
+    return TRUE;
+}
+
+/* facts input.make_text_event / hid_text_sequence_byte: TextItem(std::string text, primary 0, sequence).  The
+ * 16-byte-SSO std::string layout is unchanged on ARM (size +0x10, capacity +0x14).  Every UTF-8 sequence of one code
+ * point fits the inline buffer; the factory copies it, so a stack temporary is fine. */
+static BOOL queue_character_event(DWORD codepoint)
+{
+    typedef struct MsvcSmallString115 {
+        char storage[16];
+        DWORD length;
+        DWORD capacity;
+    } MsvcSmallString115;
+
+    static unsigned logged_text_events;
+    MsvcSmallString115 text_115;
+    char utf8[5];
+    unsigned length;
+    BYTE primary_flag = 0;
+    BYTE sequence_flag;
+    void *event = NULL;
+    BYTE *controller;
+    void *input_handler;
+    char line[160];
+
+    if ((codepoint < 0x20 && codepoint != 0x08 && codepoint != 0x0d) ||
+        codepoint > 0x10ffff ||
+        (codepoint >= 0xd800 && codepoint <= 0xdfff) ||
+        !game_image || !game_app_main) {
+        return FALSE;
+    }
+    /* The stock client never produces a CR text item: its Enter key queues the string "\n" (static std::string at
+     * 0x1581a10, initialised to one 0x0a byte by 0x52128) and Backspace the string "\b" (0xd8b030), see
+     * HIDController::onKeyDown 0x625b10 / onKeyUp 0x625d64.  WM_CHAR delivers 0x0d for Enter, so send what the game
+     * itself would have queued. */
+    if (codepoint == 0x0d) codepoint = 0x0a;
+    controller = arm32_input_target(&input_handler);
+    if (!controller) return FALSE;
+
+    if (codepoint <= 0x7f) {
+        utf8[0] = (char)codepoint;
+        length = 1;
+    } else if (codepoint <= 0x7ff) {
+        utf8[0] = (char)(0xc0 | (codepoint >> 6));
+        utf8[1] = (char)(0x80 | (codepoint & 0x3f));
+        length = 2;
+    } else if (codepoint <= 0xffff) {
+        utf8[0] = (char)(0xe0 | (codepoint >> 12));
+        utf8[1] = (char)(0x80 | ((codepoint >> 6) & 0x3f));
+        utf8[2] = (char)(0x80 | (codepoint & 0x3f));
+        length = 3;
+    } else {
+        utf8[0] = (char)(0xf0 | (codepoint >> 18));
+        utf8[1] = (char)(0x80 | ((codepoint >> 12) & 0x3f));
+        utf8[2] = (char)(0x80 | ((codepoint >> 6) & 0x3f));
+        utf8[3] = (char)(0x80 | (codepoint & 0x3f));
+        length = 4;
+    }
+    utf8[length] = 0;
+
+    ZeroMemory(&text_115, sizeof(text_115));
+    memcpy(text_115.storage, utf8, length);
+    text_115.length = length;
+    text_115.capacity = 15;
+    /* Match HIDController::queueTextItem (0x627108): byte +0x1f0 is copied into TextItem+0x21 and incremented. */
+    sequence_flag = controller[ARM_INPUT_HID_TEXT_SEQUENCE_BYTE];
+    controller[ARM_INPUT_HID_TEXT_SEQUENCE_BYTE] = (BYTE)(sequence_flag + 1);
+    call_game_make_text_event_115(game_image + ARM_INPUT_MAKE_TEXT_EVENT, &event, &text_115,
+                                  &primary_flag, &sequence_flag);
+    if (!event || IsBadReadPtr(event, ARM_INPUT_TEXT_EVENT_LAYOUT) || ((BYTE *)event)[4] != 3) {
+        log_line("text event factory returned an invalid event");
+        return FALSE;
+    }
+    arm32_enqueue_input(input_handler, event);
+    if (logged_text_events < 32) {
+        wsprintfA(line,
+            "Minecraft 1.2.8 text event queued: codepoint=U+%04lX bytes=%u sequence=%u",
+            (unsigned long)codepoint, length, (unsigned)sequence_flag);
+        log_line(line);
+        ++logged_text_events;
+    }
+    return TRUE;
+}
+#else /* WIN32CRAFT_ARM32 */
+/* Reuse the 0.15.10 HIDController key handlers. They perform the exact
+ * VirtualKey mapping, construct KeyItem, enqueue it, and update held state. */
+static BOOL queue_keyboard_event(BYTE virtual_key, DWORD state)
+{

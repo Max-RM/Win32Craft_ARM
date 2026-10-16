@@ -1,0 +1,41 @@
+#ifdef WIN32CRAFT_ARM32
+/* One-shot HSTRING sanity check run the first time any native export is needed: the log tells the user (and us)
+ * whether real HSTRINGs round-trip through this DLL on the device. */
+static void native_hstring_self_test(void)
+{
+    HSTRING text = NULL, copy = NULL, reference = NULL, joined = NULL;
+    UINT32 header[8];   /* HSTRING_HEADER is 20 bytes on 32-bit; 32 is plenty */
+    UINT32 length = 0, joined_length = 0;
+    INT compare = 99;
+    LPCWSTR raw, joined_raw;
+    HRESULT status[5];
+    BOOL ok;
+    char line[400];
+
+    ZeroMemory(header, sizeof(header));
+    status[0] = WindowsCreateString(L"Win32Craft", 10, &text);
+    raw = text ? WindowsGetStringRawBuffer(text, &length) : NULL;
+    status[1] = WindowsDuplicateString(text, &copy);
+    status[2] = WindowsCompareStringOrdinal(text, copy, &compare);
+    status[3] = WindowsCreateStringReference(L"Craft", 5, header, &reference);
+    status[4] = WindowsConcatString(text, reference, &joined);
+    joined_raw = joined ? WindowsGetStringRawBuffer(joined, &joined_length) : NULL;
+    ok = status[0] == S_OK && status[1] == S_OK && status[2] == S_OK && status[3] == S_OK && status[4] == S_OK &&
+         text && raw && length == 10 && raw[0] == L'W' && raw[9] == L't' && raw[10] == 0 &&
+         WindowsGetStringLen(text) == 10 && !WindowsIsStringEmpty(text) && WindowsIsStringEmpty(NULL) &&
+         compare == 0 && joined_raw && joined_length == 15 && joined_raw[10] == L'C' && joined_raw[15] == 0;
+    wsprintfA(line, "HSTRING self-test %s (native=%s): create=0x%08lx dup=0x%08lx cmp=0x%08lx/%d ref=0x%08lx concat=0x%08lx text=%p len=%u joined=%p len=%u",
+              ok ? "PASSED" : "FAILED", native_hstring_proc("WindowsCreateString") ? "combase" : "SHIM",
+              (unsigned long)status[0], (unsigned long)status[1], (unsigned long)status[2], compare,
+              (unsigned long)status[3], (unsigned long)status[4], text, (unsigned)length, joined,
+              (unsigned)joined_length);
+    compat_log(line);
+    WindowsDeleteString(joined);
+    WindowsDeleteString(reference);
+    WindowsDeleteString(copy);
+    WindowsDeleteString(text);
+}
+
+#endif
+HRESULT WINAPI RoInitialize(UINT type)
+{

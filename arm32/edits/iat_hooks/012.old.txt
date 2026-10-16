@@ -1,0 +1,3 @@
+static BOOL install_xbox_tcui_noops(
+    BYTE *image, SIZE_T process_pending_rva, SIZE_T show_profile_rva)
+{

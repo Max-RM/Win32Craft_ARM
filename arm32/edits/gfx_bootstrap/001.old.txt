@@ -1,0 +1,2 @@
+static HRESULT STDMETHODCALLTYPE win32_present(
+    IDXGISwapChain *swap_chain, UINT sync_interval, UINT flags)

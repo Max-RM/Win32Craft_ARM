@@ -1,0 +1,1 @@
+patch_chat_textbox_compat is a no-op on ARM (no XAML TextBox in the ARM exe).

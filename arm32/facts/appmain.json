@@ -1,0 +1,586 @@
+{
+ "area": "appmain",
+ "facts": [
+  {
+   "id": "appmain.create_app_main",
+   "x86_symbol": "RVA_128_CREATE_APP_MAIN",
+   "x86_value": "0x007f5f80",
+   "kind": "function",
+   "arm_rva": "0x00597b4c",
+   "summary": "MCPE_Host AppMain factory: new(0x28) + memset 0 + AppMain ctor(0x57ceec); stores AppMain* into *result and returns result. It is the body called by AppView::OnActivated (0x595460) at 0x595508.",
+   "arm_signature": "AppMain** appmain_factory(AppMain** result /*r0*/, StartupCtx* startup_ctx /*r1*/, CoreWindow** activation_holder /*r2*/) -> r0 (== result); NO stack arguments; plain AAPCS, callee saves r4-r11; may throw C++/WinRT exceptions",
+   "x86_to_arm_notes": "x86 naked thunk (ECX=result, EDX=ctx, one pushed stack arg, caller-cleaned) becomes an ordinary 3-register C call: r0=&game_app_main, r1=startup_context, r2=&activation_argument where activation_argument=(void*)&win32_core_window. Inside: r2 is dereferenced once ('ldr r2,[r4]') and the CoreWindow* (not the holder) is forwarded as 3rd ctor argument, so the holder must be non-NULL and *holder must be a live ICoreWindow-compatible object. Returned pointer == result (x86 'holder result' log value). Host should call it through a plain function pointer: typedef void** (*AppMainFactoryFn)(void** result, void* ctx, void** holder); game_app_main = NULL; AppMainFactoryFn f = (AppMainFactoryFn)(image + 0x00597b4c + 1) -- the +1 sets the Thumb bit; image is the runtime module base (RVAs in this file are even, Thumb bit stripped).",
+   "expected_bytes": "2de9ff480df1200b6f460646",
+   "evidence": [
+    "arm32re.py func 597b4c -> push {r0-r3,r4-r7,fp,lr}; r6=r0(result), r5=r1, r4=r2; operator new(0x28) via 0xb4929c; strd #0 x5 zero-fills 0x28 bytes; 'ldr r2,[r4]'; mov r1,r5; bl 0x57ceec; str r0,[r6]; mov r0,r6 (returns result)",
+    "arm32re.py callers 597b4c -> only 0x595508 in sub_595460 (AppView::OnActivated): r0=&local, r1=AppView+0x18 (startup ctx), r2=&[r7+0x10] where [r7+0x10]=CoreWindow* from CoreApplicationView::get_CoreWindow via 0x10471c",
+    "arm32re.py func 57ceec -> stores vtable .?AVAppMain@MCPE_Host@@ (0x13694a8) at this+0, r1 at this+8, forwards r2 to Agile ctor 0x57baf8 (this+0xc)",
+    "Matches x86 comment 'ECX=result, EDX=startup context, one stack arg = pointer to pointer to CoreWindow' register-for-register"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.create_app_main_abi_thunk",
+   "x86_symbol": "call_game_create_app_main_128 (naked asm)",
+   "x86_value": "pushl 16(%esp); mov 8/12/16(%esp) -> eax/ecx/edx; call *eax; addl $4,%esp",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "x86 thunk is obsolete on ARM.",
+   "arm_signature": "no thunk; direct C call: AppMain** r = factory(&game_app_main, startup_context, &activation_argument)",
+   "x86_to_arm_notes": "Delete call_game_create_app_main_128. Result lands in r0; return value is not needed (game_app_main is written through r0 by the factory). x86 'caller-cleaned stack arg' does not exist: argument 3 is in r2.",
+   "expected_bytes": null,
+   "evidence": [
+    "ARM factory consumes exactly r0,r1,r2 (see appmain.create_app_main evidence); AAPCS has no callee-cleanup quirks"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.startup_ctx",
+   "x86_symbol": "static BYTE startup_context[0x40] (zeroed)",
+   "x86_value": "0x40 bytes",
+   "kind": "data",
+   "arm_rva": "0x00000020",
+   "summary": "Startup context object (real owner: MCPE_Host::AppView+0x18..+0x37). Layout on ARM (size 0x20): +0x00 int launch_mode (-> MinecraftGame helper 0x12f390 / platform vf118), +0x04 byte flag (-> MinecraftGame+0x264), +0x08 std::string (MSVC 14.10 32-bit, 24 bytes: 16B SSO buffer +0x08, size +0x18, capacity +0x1c) copied to MinecraftGame+0x1f8. AppMain keeps the POINTER (AppMain+8) and re-reads it on restart (AppMain::vf1), so the buffer must stay alive.",
+   "arm_signature": "StartupCtx { int32 mode; uint8 flag; uint8 pad[3]; char sso[16]; uint32 size; uint32 capacity; } sizeof==0x20",
+   "x86_to_arm_notes": "Keep it static (0x40 bytes is enough). Real AppView ctor initialises mode=0, flag=0, string size=0, capacity=0xF (empty SSO). The x86 host zero-fills (capacity 0); this worked on x86 because assign(size 0) never touches the buffer, but on ARM prefer to also set *(DWORD*)(ctx+0x1c)=0xF to be safe. No pointer-size dependent field exists in the first dwords, so zero-init is otherwise identical to the real defaults.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 594c60 (AppView ctor): strd 0,0 -> +0x14(AppMain ptr),+0x18(mode); strb +0x1c=0; strb +0x20=0; strd [+0x30]=0,[+0x34]=0xF (std::string size/cap with buffer at +0x20 => string base AppView+0x20 = ctx+8)",
+    "arm32re.py func 57d0b8 -> 'ldr r1,[r4]; bl 0x12f390(game, ctx[0])'; 'ldrb r3,[r4,#4]; strb [game+0x264]'; 'add r1,r4,#8; add r0,game+0x1f8; bl 0x841b8 (string::assign(str,0,-1))'",
+    "arm32re.py func 12f390 -> game helper takes int mode, calls platform vtable[0x1d8/4]; mode==1 clears fields in global 0x19b86b0 object",
+    "AppMain ctor stores ctx pointer at this+8 and AppMain::vf1 (0x57d224) re-passes [this+8] to init => pointer must outlive the AppMain"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.activation_argument",
+   "x86_symbol": "void *activation_argument = &win32_core_window (passed as &activation_argument)",
+   "x86_value": "FakeInspectable* inside a one-element holder",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Third factory argument is a pointer to a CoreWindow* (ICoreWindow IInspectable). AppMain turns it into Platform::Agile<CoreWindow> at AppMain+0xc and hands the raw CoreWindow* to AppPlatform_Winrt::ctor.",
+   "arm_signature": "r2 = &holder; holder = (CoreWindow*) = &win32_core_window (FakeInspectable with vtable win32_core_window_vtable); the game AddRefs/Releases it through slots 1/2",
+   "x86_to_arm_notes": "Unchanged on ARM. The object must satisfy: (1) QueryInterface(IAgileObject) must SUCCEED (the existing generic fake_query_interface default branch returns S_OK with *result=object+AddRef for any unknown IID: keep it); (2) AddRef/Release via vtable slots 1/2 balanced; (3) vtable slots listed in appmain.corewindow_slots_used. FakeInspectable layout (vtable at +0) is pointer-size agnostic.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 57baf8 (Agile<T>::ctor, called from 57ceec with this+0xc, CoreWindow*): AddRef via slot1, QI(IID d8d948 = IAgileObject 94EA2B94-E9CC-49E0-C0FF-EE64CA8F5B90) via slot0; QI success (r0==0) -> flag [agile+0xc]=1 (no marshaling ever); QI failure -> stores CoGetContextToken and later Get() would use Platform::Details::GetProxyImpl (marshal) -> unusable for a fake",
+    "arm32re.py func 57fc30 -> make_AppPlatform_Winrt(out, CoreWindow** in): new(0x428); ctor 0x581610(this, *in)",
+    "arm32re.py func 581610 -> r5=CoreWindow: AddRef (slot1), sub_585158(platform, window) -> global Agile at 0x1576fcc, sub_58530c -> InputAdapter::ctor(window) -> get_Dispatcher (slot 9)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.layout",
+   "x86_symbol": "AppMain fields: +0x1c AppPlatform*, +0x20 MinecraftGame*",
+   "x86_value": "0x1c / 0x20",
+   "kind": "offset",
+   "arm_rva": "0x0000001c",
+   "summary": "MCPE_Host::AppMain (size 0x28, operator new(0x28)+memset): +0x00 vtable 0x13694a8; +0x04 byte 'restart_pending' (cleared by AppMain::update_frame after calling vf1); +0x08 StartupCtx*; +0x0c..+0x1b Platform::Agile<CoreWindow> {+0xc ptr,+0x10 ctx obj,+0x14 ctx token,+0x18 flag(2=empty,1=agile)}; +0x1c unique_ptr<AppPlatform> (AppPlatform_Winrt, size 0x428); +0x20 unique_ptr<MinecraftGame> (size 0x3c0); +0x24 unique_ptr<1-byte empty object> (copied into MinecraftGame+0xc).",
+   "arm_signature": "struct AppMain { void** vtbl; uint8 restart_pending; uint8 pad[3]; StartupCtx* ctx; Agile<CoreWindow> window; /*0x0c..0x1b*/ AppPlatform* platform /*0x1c*/; MinecraftGame* game /*0x20*/; void* empty_obj /*0x24*/; } sizeof==0x28",
+   "x86_to_arm_notes": "UNCHANGED: +0x1c platform and +0x20 game have the same offsets as x86 (current_app_platform() 'host_is_128 ? 0x1c : 4' stays). Always re-read +0x20 from AppMain (AppMain::vf1 restart destroys and recreates MinecraftGame, so never cache the game pointer across frames). There is NO frame-enabled byte on 1.2.8: do not write AppMain+0x10 (that was the 0.15.10 byte; on ARM +0x10 is part of the Agile<CoreWindow> and writing it corrupts it). AppMain+4 is a restart request flag, not an enable flag; leave it alone.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 57ceec -> 'str r3,[r4]' vtable; 'str r1,[r4,#8]'; Agile ctor on r4+0xc; 'str r3,[r4,#0x18]'=2; 'add r6,r4,#0x1c' ... 'str r8,[r6]; str r8,[r4,#0x20]; str r8,[r4,#0x24]'; sub_57fc30(&tmp,&window) result swapped into [r6]=+0x1c",
+    "arm32re.py func 57cff8 (dtor) -> 'ldr r0,[r4,#0x1c]' platform shutdown; 'ldr r3,[r4,#0x20]' game deleted via vtable[0] (deleting dtor); 'ldr r3,[r4,#0x1c]' platform deleted; 'ldr r0,[r4,#0x24]' operator delete",
+    "arm32re.py func 57d3a8 (frame): 'ldr r0,[r4,#0x1c]' platform; 'ldr r3,[r4,#0x20]' game; 'ldrb r3,[r4,#4]' restart flag; clears with strb",
+    "arm32re.py func 597b4c -> new(0x28) zero-filled with 5 x strd => sizeof(AppMain)=0x28",
+    "ARM name 'AppMain(MCPE_Host)::ctor (AppPlatform_Winrt* at +0x1c)' already recorded by input area"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.size_check_0x24",
+   "x86_symbol": "IsBadReadPtr(game_app_main, 0x24)",
+   "x86_value": "0x24",
+   "kind": "offset",
+   "arm_rva": "0x00000028",
+   "summary": "x86 probe requires >=0x24 readable bytes at AppMain. On ARM sizeof(AppMain)=0x28 (factory new(0x28)).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Keep the probe or use 0x28; both succeed because the object is a 0x28-byte heap block. The probe only guards +0x1c/+0x20 reads (needs >=0x24 bytes), which is still correct on ARM.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 597b4c: mov r0,#0x28 -> operator_new; zero fill of 0x28 bytes"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.appmain_vtable",
+   "x86_symbol": "(implicit) AppMain vtable",
+   "x86_value": "n/a",
+   "kind": "vtable",
+   "arm_rva": "0x013694a8",
+   "summary": "MCPE_Host::AppMain vtable (RTTI .?AVAppMain@MCPE_Host@@): [0]=0x57cfd0 scalar-deleting dtor, [1]=0x57d224 restart_game (not a frame/visibility function).",
+   "arm_signature": "void AppMain::vf1(AppMain* this /*r0*/)  // restart: destroy+recreate MinecraftGame/AppPlatform resources",
+   "x86_to_arm_notes": "Not called by the host. Listed so the porter does not confuse AppMain::vf1 with the x86 frame/visibility RVAs.",
+   "expected_bytes": "d1cf970025d29700",
+   "evidence": [
+    "arm32re.py rtti AppMain -> vtable rva 013694a8",
+    "arm32re.py vtable 13694a8 -> [0]=VA 0x97cfd1 (RVA 0x57cfd0) [1]=VA 0x97d225 (RVA 0x57d224); bytes show VA values with Thumb bit (file preferred base 0x400000)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.appmain_ctor_init",
+   "x86_symbol": "(inside RVA_128_CREATE_APP_MAIN)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x0057ceec",
+   "summary": "AppMain::ctor(this=r0, StartupCtx* r1, CoreWindow* r2) at 0x57ceec; then Agile copy and AppMain::init(this, ctx, Agile*) at 0x57d0b8. init: AppPlatform_Winrt::initialize (0x6203c0) with a bare spin wait on platform+0x270->+8->+4==1 for a game-owned worker thread, creates MinecraftGame (new 0x3c0, ctor 0x1279c8), MinecraftGame helper 0x12f390(game, ctx[0]), copies ctx string, game->vf27(), HID controller init (platform+0x3b4 -> +4), game+0xc=AppMain+0x24, platform->vf3(0), then AppMain::onWindowSizeChanged(CoreWindow) (0x57df28) which already sizes the game from CoreWindow bounds*DPI scale.",
+   "arm_signature": "AppMain* AppMain_ctor(AppMain* this /*r0*/, StartupCtx* ctx /*r1*/, CoreWindow* window /*r2*/) -> r0=this; void AppMain_init(AppMain* this, StartupCtx* ctx, Agile<CoreWindow>* w)",
+   "x86_to_arm_notes": "All of this happens inside the factory call, before activate_game_app_128; the host needs nothing beyond providing the environment (fake CoreWindow, DisplayInformation, ApplicationView, a D3D owner created by initialize_game_d3d, real threads). Because init already ran onWindowSizeChanged with fake CoreWindow.Bounds (= client rect) and DPI scale from DisplayInformation, the game is sized before activation; the host's later explicit resize simply overrides with the raw client size (as on x86). game_window must be set before the factory call (CoreWindow.Bounds/GetClientRect), as it already is (game_window assigned right after CreateWindowExW).",
+   "expected_bytes": "2de9f0490df1140b8bb06f46",
+   "evidence": [
+    "arm32re.py func 57d0b8 / 57ceec (see appmain.layout)",
+    "sub_57d0b8: 'bl 57df28' at 0x57d1e4 (after game->vf27 at 0x57d1a0.. and game+0x0c store)",
+    "spin wait: 0x57d10c ldr r3,[r3,#0x270]; 0x57d114 ldr r2,[r3,#8]; cmp r2,0; beq 0x57d114; ldr r3,[r2,#4]; cmp r3,#1; bne 0x57d114"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.app_main_frame",
+   "x86_symbol": "RVA_128_APP_MAIN_FRAME (thiscall void(AppMain*))",
+   "x86_value": "0x007cf360",
+   "kind": "function",
+   "arm_rva": "0x0057d3a8",
+   "summary": "AppMain::update_frame: platform tick (0x582cec), HID controller update (0x626570 on platform+0x3b4->+4), main-thread task queue drain, game->vf22 (update, vtable[0x58]), if AppMain+4 set: AppMain::vf1 + clear, then returns game->vf26() (vtable[0x68] = byte MinecraftGame+9 'quit requested'). AppView::Run calls it once per loop iteration and exits the loop when it returns non-zero.",
+   "arm_signature": "uint32 AppMain_update_frame(AppMain* this /*r0*/) -> r0 = quit-requested flag (0/1); no other args; callee-saved r4-r11",
+   "x86_to_arm_notes": "x86 Game128FrameFn is 'void(thiscall)(void*)'; ARM is plain 'unsigned (*)(void* app_main)' with this in r0. The x86 host ignores the result; on ARM the result is the quit flag (optional: if(frame(app)) PostMessageW(game_window,WM_CLOSE,0,0)). The host must still bind D3D RTV/DSV/viewport before the call exactly as render_game_target_128 does. It touches HID via CoreWindow.GetAsyncKeyState polling (see corewindow_slots_used) so the fake CoreWindow must be alive for the whole run.",
+   "expected_bytes": "2de9b0480df10c0b83f624f7",
+   "evidence": [
+    "arm32re.py callers 57d3a8 -> only 0x59539c in sub_5952d0 = AppView::Run: 'ldr r0,[r6,#0x14] (AppMain); bl 57d3a8; cmp r0,#0; bne exit'",
+    "arm32re.py func 57d3a8: sub_582cec(platform); sub_626570(platform[0x3b4]->+4); game vtable[0x58]; [r4+4] flag -> vtable[1]; game vtable[0x68] result returned",
+    "vtable slot 26 = 0x1270e0 'ldrb r0,[r0,#9]'; vtable slot 25 = 0x1270c0 'strb 1,[r0,#9]'; MinecraftGame ctor 0x1279c8 zeroes +9 -> quit flag; matches x86 0.15.10 comment 'MinecraftClient byte +9 is the quit request'",
+    "RVA ordering: ARM AppMain methods 0x57d224 (vf1) / 0x57d3a8 (frame) / 0x57d478 (onActivated) follow the ctor 0x57ceec like x86 frame 0x7cf360"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.frame_enabled_byte",
+   "x86_symbol": "APPMAIN_FRAME_ENABLED_OFFSET (0.15.10 only, not used on 1.2.8 path)",
+   "x86_value": "0x10 (0.15.10)",
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "1.2.8 has no 'frame enabled' byte on AppMain. The render gate on ARM is in AppView::Run (this+0x38 closed, this+0x39 visible), which the host loop replaces.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Nothing to write. render_game_target_128 already calls frame unconditionally on x86; keep that.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 5952d0 (AppView::Run): reads AppView+0x38 / +0x39 only; AppMain+0x10 is Agile<CoreWindow> storage",
+    "No store to AppMain+0x10 outside the Agile helpers"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.render_dsv_offset",
+   "x86_symbol": "game_renderer + 0x120 (ID3D11DepthStencilView*) in render_game_target_128",
+   "x86_value": "0x120",
+   "kind": "offset",
+   "arm_rva": "0x00000120",
+   "summary": "Renderer object field holding the depth-stencil view (RTV at +0x118, a second view at +0x11c, DSV at +0x120, back-buffer texture +0x124, base context +0x110). Same offsets as x86 1.2.8.",
+   "arm_signature": "ID3D11DepthStencilView* dsv = *(ID3D11DepthStencilView**)((BYTE*)game_renderer + 0x120);",
+   "x86_to_arm_notes": "UNCHANGED (cross-checked; ownership of renderer facts is the gfx area - defer to its file if it disagrees).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 5bbb30 (gfx:Renderer::ReleaseTargets): OMSetRenderTargets via context [r0+0x110] (device-context vtable 0x84), then releases views at +0x118, +0x11c, +0x120 in that order",
+    "arm32re.py func 5bc0cc (gfx:GameOwner::InitTargets): stores at +0x118 after device vtable[0x24] (CreateRenderTargetView), +0x11c, +0x120 after device vtable[0x28] (CreateDepthStencilView); +0x124 GetBuffer texture"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.app_visibility",
+   "x86_symbol": "RVA_128_APP_VISIBILITY (thiscall void(AppMain*, BYTE visible))",
+   "x86_value": "0x007d07a0",
+   "kind": "function",
+   "arm_rva": null,
+   "summary": "NO stand-alone function on ARM: the equivalent is inlined into AppView::OnVisibilityChanged (0x5956cc). With visible=TRUE it does: this+0x39=1; platform=AppMain+0x1c; platform->vf27() (AppPlatform_Winrt::onActivated, vtable[0x6c], 0x583cf8); platform->vf21(1) (vtable[0x54], 0x621620, sets platform+9 byte). With visible=FALSE it only calls platform->vf26() (vtable[0x68], 0x583cc4). A near twin, AppMain::onWindowActivationChanged (0x57e160), does vf27 for CodeActivated(0) and vf26 for Deactivated(1) but also formats a log string.",
+   "arm_signature": "void AppVisible(AppMain* app) { void* p=app->platform; ((void(*)(void*))(*(void***)p)[27])(p); ((void(*)(void*,uint8_t))(*(void***)p)[21])(p, 1); }  // slots from AppPlatform_Winrt vtable 0x13695a4",
+   "x86_to_arm_notes": "Replace 'visibility(game_app_main, TRUE)' by those two virtual calls on the AppPlatform (platform = *(void**)(game_app_main+0x1c)). No RVA constant is needed (call through the vtable of the live object: slot 27 then slot 21). Optional: also call game_app_main->platform vf27 only once; repeated calls are harmless (state machine at platform+0x3b0: 2 -> 1). Do NOT call AppView functions (no AppView object exists in the host).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 5956cc: get_Visible via args vtable[0x18] -> byte r4; 'strb [this,#0x39]'; r5=[this,#0x14] (AppMain); r3=[r5,#0x1c]; visible: ldr [vt,#0x6c] blx; then movs r1,#1; ldr [vt,#0x54] blx; else ldr [vt,#0x68] blx",
+    "arm32re.py vtable 13695a4: [27]=VA 0x983cf9 (RVA 0x583cf8), [26]=VA 0x983cc5 (RVA 0x583cc4), [21]=VA 0xa21621 (RVA 0x621620)",
+    "arm32re.py func 583cf8/583cc4: state machine on platform+0x3b0 (initial 2 set by ctor 0x581610 at 0x5816b6), clears +0xfc; vf21 = 'strb r1,[r0,#9]'",
+    "sub_57e160 (AppMain::onWindowActivationChanged) uses the same two slots (0x6c for state 0, 0x68 for state 1)",
+    "x86 0.15.10 comment (host line 12468): initial VisibilityChanged/Activated callbacks 'resume the platform before frames' - same purpose"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "appmain.game_class",
+   "x86_symbol": "MinecraftGame (AppMain+0x20)",
+   "x86_value": "n/a",
+   "kind": "vtable",
+   "arm_rva": "0x0133bacc",
+   "summary": "MinecraftGame primary vtable (RTTI .?AVMinecraftGame@@, COL offset 0), 29 slots (0x74 bytes: 0x133bacc..0x133bb3f); secondary vtables at object +0x10/+0x14/+0x18 = 0x133bb44/0x133bb64/0x133bbd8. Object size 0x3c0 (new+memset in 0x57fc70, ctor 0x1279c8). +8 byte flag set to 1 by init, +9 byte quit flag.",
+   "arm_signature": "void** vtbl = *(void***)game; vtbl[23]=setSize, vtbl[24]=windowSizeChanged",
+   "x86_to_arm_notes": "Slot numbering equals x86: byte offsets 0x5c/0x60 (slots 23/24) are the same constants on ARM because pointers are 4 bytes. Read the vtable from the live object ((*(void***)game)[N]); no RVA needed.",
+   "expected_bytes": "e180520099e25200",
+   "evidence": [
+    "arm32re.py rtti MinecraftGame -> vtable 133bacc (offset 0) + 133bb44/133bb64/133bbd8",
+    "arm32re.py func 1279c8 (ctor): '[r4]=0x173bacc' (VA of 0x133bacc), [r4+0x10]=0x173bb44, [r4+0x14]=0x173bb64, [r4+0x18]=0x173bbd8; +8=0, +9=0",
+    "arm32re.py func 57fc70 -> new(0x3c0) memset 0x3c0 then ctor 0x1279c8"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.game_vf23_setSize",
+   "x86_symbol": "GameResizeFn = (*(void***)game)[0x5c/sizeof(void*)] (thiscall void(void*,int,int,int))",
+   "x86_value": "slot 23 / byte 0x5c",
+   "kind": "vtable_slot",
+   "arm_rva": "0x0012f860",
+   "summary": "MinecraftGame::setSize(width, height, scale): vtable slot 23 (0x5c). Replaces 0 width with 240 and 0 height with 140, clamps height 0x230..0x26c to 0x244 when sub_130f60()!=0, then applies to every ClientInstance (lambda via 0x12c9fc / map at game+0xd0), calls 0x12f940.",
+   "arm_signature": "void MinecraftGame_setSize(MinecraftGame* this /*r0*/, int width /*r1*/, int height /*r2*/, float scale /*s0*/)  // hard-float: 3rd value in s0, not r3",
+   "x86_to_arm_notes": "x86 passes 'int mode = 0' as 3rd stack arg (thiscall, callee pops 12). On ARM the third parameter is a FLOAT in s0; x86's 0 has bit pattern 0.0f, so pass 0.0f. This equals what AppMain::onWindowSizeChanged passes in its normal path (literal 0.0f at 0x57e15c; the alternate path passes a value computed from a ClientInstance getter vtable[0x104/4]). call_game_resize naked asm is deleted: ((void(*)(void*,int,int,float))vtbl[23])(game, w, h, 0.0f). Host must be compiled hard-float (Windows ARM32 always is).",
+   "expected_bytes": "2de9f0480df1100b2ded028b",
+   "evidence": [
+    "arm32re.py func 57df28 at 0x57e02e/0x57e072: 'ldr r3,[r3,#0x5c]; r1=w,r2=h,s0=scale; blx' (two call sites, second path uses 'vldr s0,[pc]' = 0.0f at 0x57e15c bytes 00000000)",
+    "arm32re.py func 12f860 -> 'vmov s16,s0' preserves s0 as scale, r1/r2 = w/h; 'cmp r5,#0; moveq r5,#0xf0; cmp r4,#0; moveq r4,#0x8c'",
+    "vtable slot 23 value VA 0x52f861 -> RVA 0x12f860",
+    "x86 host line 11928: call_game_resize(resize, game, w, h, 0) with comment 'ECX = MinecraftClient, followed by width, height, and scale/mode'"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.game_vf24_windowSizeChanged",
+   "x86_symbol": "GameWindowSizeChangedFn = (*(void***)game)[0x60/sizeof(void*)] (thiscall void(void*,int,int))",
+   "x86_value": "slot 24 / byte 0x60",
+   "kind": "vtable_slot",
+   "arm_rva": "0x0012f8f0",
+   "summary": "MinecraftGame::windowSizeChanged(width, height): vtable slot 24 (0x60). Same 0->240/0->140 defaults; writes (float)w/(float)h into the global screen-size object ([0x19b86b0]+0x14/+0x18) and calls 0x474030(game+0x30, 0).",
+   "arm_signature": "void MinecraftGame_windowSizeChanged(MinecraftGame* this /*r0*/, int width /*r1*/, int height /*r2*/)",
+   "x86_to_arm_notes": "x86 thiscall (ECX=this, stack w,h, callee pop 8) -> ordinary (r0,r1,r2). Typedef GameWindowSizeChangedFn becomes 'void (*)(void*,int,int)' with no calling-convention attribute.",
+   "expected_bytes": "2de978480df1100b14460d46",
+   "evidence": [
+    "arm32re.py func 57df28 at 0x57e082: 'ldr r3,[r3,#0x60]; r1,r2=w,h; blx'",
+    "arm32re.py func 12f8f0 -> vcvt.f32.s32 of r1,r2; vstr to [global,#0x14],[#0x18] (global 0x19b86b0 named by another agent 'screen size obj')"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.game_vtable_probe_0x64",
+   "x86_symbol": "IsBadReadPtr(*(void***)game, 0x64)",
+   "x86_value": "0x64",
+   "kind": "offset",
+   "arm_rva": "0x00000074",
+   "summary": "x86 probe: the vtable must be readable up to byte 0x63 so slots 23 and 24 can be fetched. ARM primary vtable has 29 slots = 0x74 bytes, so the same probe is satisfied.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Keep as is (0x64 still covers slots 0..24) or drop; real vtable size 0x74 bytes.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py vtable 133bacc 32: slots 0..28 then 0x133bb40 = COL pointer of the next vtable (.rdata+0x56c318) => 29 slots"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.game_quit_flag",
+   "x86_symbol": "(not used by host) MinecraftClient byte +9",
+   "x86_value": "+9",
+   "kind": "offset",
+   "arm_rva": "0x00000009",
+   "summary": "MinecraftGame+9 = quit-requested byte (set by vf25 0x1270c0, read by vf26 0x1270e0 which AppMain::update_frame returns).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Optional hook for host: after frame(), a non-zero return means the game wants to exit.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1270c0 / 1270e0; MinecraftGame ctor zeroes +8/+9"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.platform_screen_width",
+   "x86_symbol": "*(int*)(platform + 0x330)",
+   "x86_value": "0x330",
+   "kind": "offset",
+   "arm_rva": "0x00000330",
+   "summary": "AppPlatform_Winrt screen width in pixels (int). Read by AppPlatform_Winrt::vf82 (0x582660), written by AppMain::onWindowSizeChanged and by vf143 (0x583b94).",
+   "arm_signature": "int* width = (int*)((BYTE*)platform + 0x330);",
+   "x86_to_arm_notes": "UNCHANGED offset. Host keeps writing the raw client width here before/after calling setSize.",
+   "expected_bytes": "2de90048eb46d0f83003bde8",
+   "evidence": [
+    "arm32re.py func 582660 (vf82) -> 'ldr.w r0,[r0,#0x330]; return'",
+    "arm32re.py func 57df28 -> 'str.w r3,[r5,#0x330]' (r5=platform)",
+    "arm32re.py func 583b94 -> 'str.w r3,[r0,#0x330]' from owner global [0x19b86ac]+0x94"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.platform_screen_height",
+   "x86_symbol": "*(int*)(platform + 0x334)",
+   "x86_value": "0x334",
+   "kind": "offset",
+   "arm_rva": "0x00000334",
+   "summary": "AppPlatform_Winrt screen height in pixels (int). Read by vf83 (0x582680), written by onWindowSizeChanged and vf143.",
+   "arm_signature": "int* height = (int*)((BYTE*)platform + 0x334);",
+   "x86_to_arm_notes": "UNCHANGED offset.",
+   "expected_bytes": "2de90048eb46d0f83403bde8",
+   "evidence": [
+    "arm32re.py func 582680 (vf83) -> 'ldr.w r0,[r0,#0x334]'",
+    "arm32re.py func 57df28 -> 'str.w r3,[r5,#0x334]'",
+    "arm32re.py func 583b94 -> 'str.w r3,[r0,#0x334]'"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.platform_dpi_scale",
+   "x86_symbol": "(not in x86 host) platform+0x338/+0x33c/+0x340",
+   "x86_value": "n/a",
+   "kind": "offset",
+   "arm_rva": "0x0000033c",
+   "summary": "Floats computed by AppPlatform_Winrt::updateDpiScale (0x5822d8) from DisplayInformation: +0x338 = (RawDpiX+RawDpiY)*0.5*(1/25.4)=pixels/mm (consts 0.5 and 0.0393700786); +0x33c and +0x340 = LogicalDpi*(1/96). AppMain::onWindowSizeChanged multiplies CoreWindow bounds by +0x33c/+0x340 (lroundf) to get pixels.",
+   "arm_signature": "float scale_x=*(float*)(platform+0x33c), scale_y=*(float*)(platform+0x340)",
+   "x86_to_arm_notes": "Host does not touch these. Cross-area requirement for the fake DisplayInformation: slots 11/12/13 (LogicalDpi, RawDpiX, RawDpiY) must return sane values (96.0 gives scale 1.0 so the initial size equals the client rect). A zero LogicalDpi would size the game 0x0 during init (host's later explicit resize repairs width/height).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 5822d8: DisplayInformation (0x57f7a0) vtable[0x2c]/[0x30]/[0x34] floats; vmul by literals 0.010416667 (1/96) at 0x5823c8, 0.0393700786 at 0x5823cc, 0.5 at 0x5823d0; vstr to [r6,#0x338],[#0x33c],[#0x340]",
+    "arm32re.py func 57df28: 'vldr s1,[r5,#0x33c]' x bounds.w; '[r5,#0x340]' x bounds.h; lroundf"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.platform_hid_adapter_0x3b4",
+   "x86_symbol": "get_hid_controller(): adapter = *(platform + 0x3b4); controller = *(adapter + 4)",
+   "x86_value": "0x3b4 / +4",
+   "kind": "offset",
+   "arm_rva": "0x000003b4",
+   "summary": "AppPlatform_Winrt+0x3b4 = InputAdapter* (new 0x170, ctor 0x586b00); InputAdapter+0 = CoreDispatcher*, InputAdapter+4 = HIDController* (ctor 0x623c74). Platform lifecycle state word at +0x3b0, visible byte at +9.",
+   "arm_signature": "BYTE* adapter=*(BYTE**)(platform+0x3b4); BYTE* controller=*(BYTE**)(adapter+4);",
+   "x86_to_arm_notes": "UNCHANGED offsets (0x3b4 and +4). Owned by the input area; recorded here because activate_game_app_128 uses it.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 57d3a8 -> 'ldr r3,[r3,#0x3b4]; ldr r0,[r3,#4]; bl 626570' (HID update)",
+    "arm32re.py func 581610 -> 'add.w r6,r4,#0x3b4' receives sub_58530c (InputAdapter::make) result",
+    "arm32re.py func 586b00 -> '[r5]=dispatcher (get_Dispatcher of CoreWindow); str r4,[r5,#4]=controller from sub_623c74'"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.hid_input_handler_probe_0x1d0",
+   "x86_symbol": "input_handler = *(void**)(controller + 0x10); !IsBadReadPtr(input_handler, 0x1d0)",
+   "x86_value": "0x10 / 0x1d0",
+   "kind": "offset",
+   "arm_rva": "0x00000170",
+   "summary": "HIDController+0x10 = InputAdapter* (the object the host passes to enqueue_input). The x86 0x1d0 is the x86 sizeof of that adapter object; on ARM its size is 0x170 (operator new(0x170)+memset in 0x58530c).",
+   "arm_signature": "BYTE* input_handler = *(BYTE**)(controller + 0x10); if (!IsBadReadPtr(input_handler, 0x170)) ...",
+   "x86_to_arm_notes": "Offset +0x10 is UNCHANGED. Replace the probe size 0x1d0 with 0x170 (ARM allocation size), otherwise the probe may read past the heap block and could fail/crash on a page edge. Equivalence of x86 'input_handler' with the ARM InputAdapter is inferred from the shared role (enqueue_input target; input area names 0x587294 InputAdapter::enqueueInput).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 623c74 (HIDController ctor): 'strd r5,r8,[r4,#0x10]' with r5 = 2nd arg = InputAdapter*",
+    "arm32re.py func 58530c: new(0x170)+memset(0x170) -> sub_586b00",
+    "arm32re.py func 586b00 passes r5(adapter) as 2nd arg to 623c74",
+    "input area facts: 0x587294 'InputAdapter::enqueueInput(this,unique_ptr<HIDItem>*)' (see input.json for the authoritative offsets)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "appmain.corewindow_slots_used",
+   "x86_symbol": "win32_core_window_vtable[58] (ICoreWindow full layout)",
+   "x86_value": "58 slots",
+   "kind": "vtable_slot",
+   "arm_rva": null,
+   "summary": "ICoreWindow vtable slot numbers the ARM game uses on the fake CoreWindow (same numbering as x86 table): 0 QueryInterface (IAgileObject IID), 1 AddRef, 2 Release; 7 get_Bounds(Rect* r1) -> floats {x,y,w,h}, only w (+8) and h (+0xc) used by AppMain::onWindowSizeChanged; 9 get_Dispatcher(ICoreDispatcher** r1) from InputAdapter ctor, global-Agile helper 0x5841d8 and HID; 15 put_PointerCursor(0) and 22/23 ReleasePointerCapture/SetPointerCapture (HID mouse-mode lambdas 0x627c14/0x627d28); 16 get_PointerPosition(Point* r1) (HID ctor, twice); 20 GetAsyncKeyState(key r1 = 0x12/0x20/1/2, CoreVirtualKeyStates* r2) polled EVERY FRAME by HIDController::update 0x626570; 28 add_CharacterReceived, 34 add_KeyDown, 36 add_KeyUp, 44 add_PointerMoved, 46 add_PointerPressed, 48 add_PointerReleased, 52 add_PointerWheelChanged (HID ctor 0x623fe0/0x62420c: add_X(this, handler r1, EventRegistrationToken* r2)). NOT called by the host path: 18 Activate (only AppView::OnActivated), 24/25 Activated, 54/56 SizeChanged/VisibilityChanged (AppView registers them; no AppView exists in the host).",
+   "arm_signature": "HRESULT WINAPI f(void* this /*r0*/, args /*r1,r2*/) -> r0 HRESULT (ARM: no stdcall decoration issue; MS ARM ABI); out params are pointers",
+   "x86_to_arm_notes": "The existing win32_core_window_vtable layout (58 slots, ICoreWindow order) is already correct; slot numbers do not change on ARM. Required behaviours: QI default S_OK; get_Bounds fills {0,0,client_w,client_h} (already does); get_Dispatcher returns win32_core_dispatcher with AddRef (already does); GetAsyncKeyState returns 0 (fake_core_window_key_state) -> no synthetic Alt/Space/mouse-button events (input area owns real events via enqueue); event adders return S_OK + token. Since x86 stdcall callee-pops args, in x86 each fake had a fixed stack-arg count; on ARM only the register arguments matter (r1,r2 as above, r3 is unused). AddRef/Release on handlers (slot1/2 of the delegate) must be balanced exactly as on x86.",
+   "expected_bytes": null,
+   "evidence": [
+    "slot 7: arm32re.py func 57df28 -> 'ldr r3,[r4]; ldr r3,[r3,#0x1c]; r1=&buf; blx; vldr s0,[r7,#8]; vldr s0,[r7,#0xc]'",
+    "slot 9: arm32re.py func 575cc8 -> 'ldr r3,[r3,#0x24]; blx' (get_Dispatcher), used by 0x586b00, 0x5841d8, 0x627b74/0x627c88 (RunAsync wrappers)",
+    "slot 20: arm32re.py func 626570 -> 'movs r1,#0x12; ldr r3,[r3,#0x50]' then r1=0x20, 1, 2 (four Agile<CoreWindow>::Get + slot 0x50 calls)",
+    "slots 28/34/36: func 623fe0 'ldr r3,[r3,#0x70]' / '#0x88' / '#0x90'; slots 44/46/48/52: func 62420c '#0xb0' '#0xb8' '#0xc0' '#0xd0'; slots 15,22,23,16: funcs 627c14/627d28 ('#0x3c','#0x5c','#0x58') and 623fe0 '#0x40'",
+    "host table: win32_host.c lines 5083-5115 (ICoreWindow ordering with comments 24..56) consistent with MS UI.Core.ICoreWindow vtable order"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "appmain.iid_agile_object",
+   "x86_symbol": "IAgileObject {94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90}",
+   "x86_value": "GUID",
+   "kind": "iid",
+   "arm_rva": "0x00d8d948",
+   "summary": "IID the ARM Agile<T> ctor QIs on the CoreWindow. Located at RVA 0xd8d948 (VA 0x118d948). Success => agile (no COM context marshaling).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "The fake QI default branch already returns S_OK for it. Do not special-case it to E_NOINTERFACE.",
+   "expected_bytes": "942bea94cce9e049c0ffee64ca8f5b90",
+   "evidence": [
+    "arm32re.py bytes d8d948 -> 94 2b ea 94 cc e9 e0 49 c0 ff ee 64 ca 8f 5b 90",
+    "referenced by 0x57bb20 (Agile ctor) and 0x57f958 (Agile::Get slow path)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.iid_icorewindow_proxy",
+   "x86_symbol": "ICoreWindow {79b9d5f2-879e-4b89-b798-79e47598030c}",
+   "x86_value": "GUID",
+   "kind": "iid",
+   "arm_rva": "0x00db726c",
+   "summary": "IID used by Agile::Get's slow marshaling path (Platform::Details::GetProxyImpl) when the object was not agile. Never exercised if QI(IAgileObject) succeeds.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Informational. Keeping the agile QI success avoids the marshaling path entirely.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py bytes db726c -> f2 d5 b9 79 9e 87 89 4b b7 98 79 e4 75 98 03 0c (little-endian GUID 79B9D5F2-879E-4B89-B798-79E47598030C = ICoreWindow)",
+    "used at 0x57f926 as arg to GetProxyImpl"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.corewindow_global_agile",
+   "x86_symbol": "(none; AppPlatform_Winrt keeps its own CoreWindow reference)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": "0x01576fcc",
+   "summary": "Global Platform::Agile<CoreWindow> (16 bytes in .data) set by AppPlatform_Winrt ctor via 0x585158; consumers get the dispatcher through 0x5841d8 (Agile::Get + get_Dispatcher) for UI-thread RunAsync.",
+   "arm_signature": "struct Agile { CoreWindow* ptr; void* ctx; uintptr_t token; int flag; } at image+0x1576fcc",
+   "x86_to_arm_notes": "Not touched by the host. Informational: another reference to win32_core_window outlives AppMain; keep the object static (it is).",
+   "expected_bytes": "00000000",
+   "evidence": [
+    "arm32re.py xref 1576fcc -> 0x4a5b6 (static init), 0x5841e4 (getter), 0x585174 (setter), 0xc1c070 (atexit dtor)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.global_app_platform",
+   "x86_symbol": "RVA_APP_PLATFORM_GLOBAL (0.15.10 path only)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": "0x015b7ea8",
+   "summary": "Global AppPlatform* singleton written by the AppMain ctor (0x57cf84-0x57cf92) from AppMain+0x1c; read by MinecraftGame helpers and AppMain::init.",
+   "arm_signature": "AppPlatform* g_platform at image+0x1597ea8",
+   "x86_to_arm_notes": "Not used by the 1.2.8 host path; do not pre-write it (the ctor sets it).",
+   "expected_bytes": "00000000",
+   "evidence": [
+    "arm32re.py func 57ceec -> 'movw r2,#0x7ea8; movt r2,#0x19b; ldr r3,[r6]; str r3,[r2]' where r6=this+0x1c",
+    "arm32re.py func 12f390 reads it as fallback after 0x112590"
+   ],
+   "confidence": "high",
+   "verifier_correction": "arm_rva corrected by independent verifier (VA-0x400000, not 0x420000); see appmain.verdicts.json"
+  },
+  {
+   "id": "appmain.global_dx_device_resources",
+   "x86_symbol": "(not used by host)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": "0x015badbc",
+   "summary": "Global DX::DeviceResources* helper object (new 0x10, vtable .?AVDeviceResources@DX@@ 0x136924c) created by the AppMain ctor via 0x57fbe0; +8 = display orientation updated by AppMain handlers.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Not related to the gfx 'owner' (0x15b86ac). Created by the game; cleared in AppMain dtor/vf1.",
+   "expected_bytes": "00000000",
+   "evidence": [
+    "arm32re.py func 580bb4 -> new(0x10), vtable DeviceResources@DX; 57fbe0 stores into 0x19badbc",
+    "arm32re.py func 57e284 -> '[global+8]=orientation'"
+   ],
+   "confidence": "high",
+   "verifier_correction": "arm_rva corrected by independent verifier (VA-0x400000, not 0x420000); see appmain.verdicts.json"
+  },
+  {
+   "id": "appmain.call_game_resize_thunk",
+   "x86_symbol": "call_game_resize (naked asm: ECX=game, 3 stack args, callee RET 12)",
+   "x86_value": "asm",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "x86 thunk obsolete.",
+   "arm_signature": "((void (*)(void* game, int w, int h, float scale))vtbl[23])(game, w, h, 0.0f);",
+   "x86_to_arm_notes": "Delete the naked asm; direct call with the float in s0. The GameResizeFn typedef must become void(*)(void*,int,int,float).",
+   "expected_bytes": null,
+   "evidence": [
+    "see appmain.game_vf23_setSize"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.thiscall_typedefs",
+   "x86_symbol": "Game128VisibilityFn, Game128FrameFn, GameResizeFn, GameWindowSizeChangedFn (__attribute__((thiscall)))",
+   "x86_value": "typedefs",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "x86 thiscall attributes disappear: this = r0.",
+   "arm_signature": "typedef unsigned (*Game128FrameFn)(void*); typedef void (*GameResizeFn)(void*,int,int,float); typedef void (*GameWindowSizeChangedFn)(void*,int,int);",
+   "x86_to_arm_notes": "Remove __attribute__((thiscall)) on ARM (clang rejects it on arm targets). Game128VisibilityFn is removed entirely (see app_visibility).",
+   "expected_bytes": null,
+   "evidence": [
+    "ARM frame/vf23/vf24 entries consume r0 (this), r1, r2 (+ s0) exactly in those positions"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.current_app_platform",
+   "x86_symbol": "current_app_platform(): game_app_main + (host_is_128 ? 0x1c : 4)",
+   "x86_value": "0x1c",
+   "kind": "offset",
+   "arm_rva": "0x0000001c",
+   "summary": "AppPlatform* accessor. Offset unchanged on ARM.",
+   "arm_signature": "void* current_app_platform(void){ return game_app_main ? *(void**)((BYTE*)game_app_main+0x1c) : NULL; }",
+   "x86_to_arm_notes": "No change for the 1.2.8 branch.",
+   "expected_bytes": null,
+   "evidence": [
+    "see appmain.layout (dtor/frame/ctor all use [AppMain+0x1c] as AppPlatform_Winrt*)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.no_byte_patches",
+   "x86_symbol": "x86 machine-code byte patterns in initialize/activate/render_game_target_128, call_game_*, resize game_app_main branch",
+   "x86_value": "none",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "These regions contain no memcpy-style code patches or hook installs; they only call game RVAs / vtable slots and use two naked-asm ABI bridges.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Nothing to port at byte level for this area. The PATCH tags in func_index.txt refer to direct game-memory field writes (platform+0x330/0x334, activation of AppMain), handled above.",
+   "expected_bytes": null,
+   "evidence": [
+    "manual read of win32_host.c 237-241, 516-531, 630-647, 11882-11978, 14135-14190"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.appview_not_used",
+   "x86_symbol": "(host replaces MCPE_Host::AppView)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005952d0",
+   "summary": "AppView functions (OnActivated 0x595460, Run 0x5952d0, OnVisibilityChanged 0x5956cc, OnSizeChanged thunk 0x595790 -> AppMain::onWindowSizeChanged 0x57df28, OnClosed 0x595780) are the UWP lifecycle the host replaces. OnActivated also calls CoreWindow::Activate (slot 18, 0x48) after the factory and AppMain::onActivated (0x57d478, protocol/file activation args) - the host does neither (same as x86).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Do not call them. The host equivalents: factory call == OnActivated body, frame call == Run loop body, WM_SIZE == OnSizeChanged.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 595460 (calls factory 0x597b4c, Activate vtable[0x48], 0x57d478)",
+    "arm32re.py func 5952d0 (frame loop)",
+    "arm32re.py func 595790 -> 'b.w 0x57df28'"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "appmain.onWindowSizeChanged",
+   "x86_symbol": "(x86: manual resize in resize_game_window/activate: platform+0x330/0x334, vf23, vf24)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x0057df28",
+   "summary": "AppMain::onWindowSizeChanged(CoreWindow* sender) = the game's own implementation of what the host does by hand: updateDpiScale, get_Bounds, width=lroundf(bounds.w*scaleX), height=lroundf(bounds.h*scaleY), game->vf23(w,h,0.0f or computed), game->vf24(w,h), platform+0x330/0x334, pointer-scale update on the InputAdapter (+0xa0/+0xa4 under mutex adapter+0x70), IApplicationView3::get_IsFullScreenMode query.",
+   "arm_signature": "void AppMain_onWindowSizeChanged(AppMain* this /*r0*/, CoreWindow* sender /*r1*/)",
+   "x86_to_arm_notes": "Two valid porting strategies: (A, recommended, keeps x86 behaviour/semantics): manually write platform+0x330/0x334 and call vtbl[23](game,w,h,0.0f) then vtbl[24](game,w,h) with the raw client size. (B): call this function with &win32_core_window after the swap chain was resized (it needs DisplayInformation LogicalDpi=96 and ApplicationView fakes, and recomputes size from fake get_Bounds). Choose A to avoid DPI-dependent rounding and extra WinRT calls.",
+   "expected_bytes": "2de9f04b0df1180b83f664f1",
+   "evidence": [
+    "arm32re.py callers 57df28 -> 0x57d1e4 (AppMain::init) and tail-jump 0x59579e from AppView::OnSizeChanged (0x595790)",
+    "arm32re.py func 57df28 full body (see summary)"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "1. initialize_game_app_128: keep static BYTE startup_context[0x40] (zeroed; additionally set *(DWORD*)(startup_context+0x1c)=0xF). Keep 'void* activation_argument = &win32_core_window'. Call the factory as a normal AAPCS function: game_app_main=NULL; fn = (void**(*)(void**,void*,void**))(image + 0x00597b4c + 1 /*Thumb*/); fn((void**)&game_app_main, startup_context, &activation_argument). Delete call_game_create_app_main_128. Precondition: initialize_game_d3d already created the owner (global 0x15b86ac per gfx area) and game_window is set (CoreWindow.Bounds). The call is long (it constructs AppPlatform_Winrt and MinecraftGame, starts a worker and spin-waits on it): never run it under a lock.",
+  "2. After the factory: IsBadReadPtr(game_app_main, 0x28) (0x24 also fine); platform=*(void**)(app+0x1c); game=*(void**)(app+0x20). Offsets unchanged.",
+  "3. activate_game_app_128 call plan (replaces visibility + resize): (a) platform=*(void**)(game_app_main+0x1c); void** pvt=*(void***)platform; ((void(*)(void*))pvt[27])(platform); ((void(*)(void*,uint8_t))pvt[21])(platform,1);  /* == AppView::OnVisibilityChanged(visible=true), RVAs 0x583cf8 / 0x621620 */ (b) *(int*)(platform+0x330)=client_w; *(int*)(platform+0x334)=client_h;  /* offsets unchanged */ (c) if(!IsBadReadPtr(*(void***)game,0x64)){ void** vt=*(void***)game; ((void(*)(void*,int,int,float))vt[23])(game,client_w,client_h,0.0f); ((void(*)(void*,int,int))vt[24])(game,client_w,client_h); } (d) controller=get_hid_controller(platform) (adapter=*(platform+0x3b4); controller=*(adapter+4)); input_handler=*(void**)(controller+0x10); input_events_enabled = controller && input_handler && !IsBadReadPtr(input_handler,0x170).",
+  "4. resize_game_window game_app_main branch (1.2.8): identical to step 3(b)+(c) with the new width/height; re-read game=*(void**)(app+0x20) each time (restart can recreate it). Then mouse_clip_dirty=TRUE. No other change.",
+  "5. render_game_target_128: unchanged except typedef: unsigned (*frame)(void*)=(image+0x0057d3a8+1); keep RSSetViewports/OMSetRenderTargets(DSV from game_renderer+0x120)/frame(game_app_main)/fallback Present. Optional: if frame() returns non-zero PostMessageW(game_window,WM_CLOSE,0,0).",
+  "6. call_game_resize -> delete; GameResizeFn typedef becomes void(*)(void*,int,int,float) (no thiscall attribute); GameWindowSizeChangedFn -> void(*)(void*,int,int); Game128FrameFn -> unsigned(*)(void*); Game128VisibilityFn -> delete. All 'IsBadReadPtr' probes stay valid except 0x1d0 -> 0x170.",
+  "7. Fake CoreWindow (win32_core_window): no vtable renumbering needed. Make sure: QI returns S_OK for IAgileObject (default branch), get_Bounds writes {0,0,w,h} floats, get_Dispatcher AddRefs win32_core_dispatcher, GetAsyncKeyState (slot 20) writes 0 to the CoreVirtualKeyStates out pointer (r2), add_* slots (28,34,36,44,46,48,52) return S_OK with a token, fake HRESULT functions must be real C functions with the MS ARM ABI (r0=this). Slot 18 Activate is not invoked on this path.",
+  "8. Host-side data that must remain valid for the process lifetime: startup_context (AppMain keeps its pointer and re-reads it on restart), win32_core_window and win32_core_dispatcher (global Agile<CoreWindow> at 0x1576fcc and InputAdapter keep references).",
+  "9. Display fakes feeding AppMain::onWindowSizeChanged during init (not host code in this area): IDisplayInformation vtable slots 11/12/13 (LogicalDpi/RawDpiX/RawDpiY floats; 96 recommended); ApplicationView.GetForCurrentView -> IApplicationView3 {903c9ce5-793a-4fdf-a2b2-af1ac21e3108} slot 9 get_IsFullScreenMode(BYTE*) (existing application_view3 fake covers it)."
+ ],
+ "open_questions": [
+  "x86 RVA_128_APP_VISIBILITY(AppMain*,BYTE) has no stand-alone ARM twin; the ARM equivalent was derived from AppView::OnVisibilityChanged inlined code (platform vf27 + vf21(1)). Equivalence to the x86 function body cannot be proven without the x86 binary (medium).",
+  "AppMain+4 restart flag: only AppMain::update_frame clears it; the setter is not identified (probably a std::function lambda captured by AppPlatform). If it ever fires, update_frame runs AppMain::vf1 which destroys and recreates MinecraftGame (cached game pointers become stale).",
+  "MinecraftGame::update (vf22) may call sub_12dee0 -> sub_134d40 (device re-init) which calls AppPlatform_Winrt::vf143 (0x583b94) copying owner+0x94/+0x98 into platform+0x330/+0x334; the gfx area should keep owner+0x94/+0x98 equal to the client size or the platform size would revert after such an event.",
+  "HIDController::update polls CoreWindow::GetAsyncKeyState for VK 1,2,0x12,0x20 each frame (slot 20); the fake returns 0. Whether returning 0 for the mouse buttons has side effects vs. host-injected MouseItems is for the input area to confirm.",
+  "Exact x86 sizeof of the input adapter is assumed to be 0x1d0 (from the x86 probe); ARM size 0x170 is certain, the correspondence is inferred."
+ ]
+}

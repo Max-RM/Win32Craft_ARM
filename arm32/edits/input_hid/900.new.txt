@@ -1,0 +1,21 @@
+    if (installed) return TRUE;
+    if (!image) return FALSE;
+    /* Review addition: sanity-check the game functions the queue_* builders call (log only: input injection is gated
+     * elsewhere, but a mismatch here is the first thing to look for in a device log). */
+    {
+        static const struct { const char *name; DWORD rva; const BYTE *bytes; } game_functions[] = {
+            { "EnqueueInput", ARM_INPUT_ENQUEUE_INPUT, ARM_INPUT_ENQUEUE_INPUT_EXPECTED },
+            { "MouseItem factory", ARM_INPUT_MAKE_MOUSE_EVENT, ARM_INPUT_MAKE_MOUSE_EVENT_EXPECTED },
+            { "KeyCodeItem factory", ARM_INPUT_MAKE_KEY_EVENT, ARM_INPUT_MAKE_KEY_EVENT_EXPECTED },
+            { "TextItem factory", ARM_INPUT_MAKE_TEXT_EVENT, ARM_INPUT_MAKE_TEXT_EVENT_EXPECTED },
+            { "HID virtual-key mapper", ARM_INPUT_MAP_VIRTUAL_KEY, ARM_INPUT_MAP_VIRTUAL_KEY_EXPECTED }
+        };
+        unsigned function_index;
+        for (function_index = 0; function_index < sizeof(game_functions) / sizeof(game_functions[0]); ++function_index) {
+            if (!arm32_check_bytes(image + game_functions[function_index].rva, game_functions[function_index].bytes, 12,
+                                   game_functions[function_index].name)) {
+                log_line("ARM32 input: game function bytes differ from the facts, input injection may misbehave");
+            }
+        }
+    }
+    sites[0].name = "relative mouse hook";

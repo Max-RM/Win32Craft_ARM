@@ -1,0 +1,3 @@
+HRESULT WINAPI WindowsReplaceString(
+    HSTRING string, HSTRING search, HSTRING replacement, HSTRING *result)
+{

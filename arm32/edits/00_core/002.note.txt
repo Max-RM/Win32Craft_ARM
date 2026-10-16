@@ -1,0 +1,1 @@
+early-2016 host (win32_host_early2016.c) is not part of the ARM build.

@@ -1,0 +1,67 @@
+#ifdef WIN32CRAFT_ARM32
+/* ARM32 AAPCS: CoreTextRange is {int StartCaretPosition, int EndCaretPosition} (alignment 4, not an HFA), so it is passed
+ * in consecutive core registers WITHOUT the even-register alignment a 64-bit integer gets:
+ *   NotifyTextChanged(this r0, modifiedRange r1:r2, newLength r3, newSelection [sp+0]:[sp+4])
+ *   NotifySelectionChanged(this r0, selection r1:r2)
+ * (verified at 0x626c94/0x626cc6 in the ARM exe).  The x86 LONGLONG declaration would read r2:r3 / sp+8. */
+static HRESULT WINAPI fake_core_text_notify_text_changed(
+    FakeInspectable *object, Win32CoreTextRange modified_range, INT new_length,
+    Win32CoreTextRange new_selection)
+{
+    char line[160];
+    (void)object;
+    core_text_document_length = new_length;
+    core_text_selection_start = new_selection.start;
+    core_text_selection_end = new_selection.end;
+    wsprintfA(line,
+        "CoreText NotifyTextChanged: range=%ld..%ld length=%d selection=%ld..%ld",
+        (LONG)modified_range.start, (LONG)modified_range.end, new_length,
+        (LONG)core_text_selection_start, (LONG)core_text_selection_end);
+    log_line(line);
+    return S_OK;
+}
+
+static HRESULT WINAPI fake_core_text_notify_selection_changed(
+    FakeInspectable *object, Win32CoreTextRange selection)
+{
+    char line[112];
+    (void)object;
+    core_text_selection_start = selection.start;
+    core_text_selection_end = selection.end;
+    wsprintfA(line, "CoreText NotifySelectionChanged: %ld..%ld",
+        (LONG)core_text_selection_start, (LONG)core_text_selection_end);
+    log_line(line);
+    return S_OK;
+}
+#else
+static HRESULT WINAPI fake_core_text_notify_text_changed(
+    FakeInspectable *object, LONGLONG modified_range, INT new_length,
+    LONGLONG new_selection)
+{
+    char line[160];
+    (void)object;
+    core_text_document_length = new_length;
+    core_text_selection_start = (INT)(DWORD)new_selection;
+    core_text_selection_end = (INT)(DWORD)((ULONGLONG)new_selection >> 32);
+    wsprintfA(line,
+        "CoreText NotifyTextChanged: range=%ld..%ld length=%d selection=%ld..%ld",
+        (LONG)(DWORD)modified_range,
+        (LONG)(DWORD)((ULONGLONG)modified_range >> 32), new_length,
+        (LONG)core_text_selection_start, (LONG)core_text_selection_end);
+    log_line(line);
+    return S_OK;
+}
+
+static HRESULT WINAPI fake_core_text_notify_selection_changed(
+    FakeInspectable *object, LONGLONG selection)
+{
+    char line[112];
+    (void)object;
+    core_text_selection_start = (INT)(DWORD)selection;
+    core_text_selection_end = (INT)(DWORD)((ULONGLONG)selection >> 32);
+    wsprintfA(line, "CoreText NotifySelectionChanged: %ld..%ld",
+        (LONG)core_text_selection_start, (LONG)core_text_selection_end);
+    log_line(line);
+    return S_OK;
+}
+#endif

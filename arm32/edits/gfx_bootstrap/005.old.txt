@@ -1,0 +1,2 @@
+static BOOL resize_game_window(HWND window, UINT width, UINT height)
+{

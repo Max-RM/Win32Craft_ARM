@@ -1,0 +1,62 @@
+fmod WinRT hook design (option B' of facts/fmod.json; the pending fmod unit decides D vs B')
+===========================================================================================
+
+What hstring_native already provides (api_compat.c, ARM only):
+  * every HSTRING export is native combase (no 0x02db1000 gate) -> HSTRINGs made by fake_folder_path (WindowsCreateString) are REAL
+    and are read by fmod_ARM.dll through the real combase WindowsGetStringRawBuffer.
+  * `Win32CraftActivationFn Win32CraftActivationDispatcher;`  (defined; iat_hooks edit 012 assigns win32_get_activation_factory).
+  * `HRESULT WINAPI RoGetActivationFactory(HSTRING, const GUID *, void **)` = dispatcher first (class name via native
+    WindowsGetStringRawBuffer, S_OK + non-NULL result claims it), otherwise real combase RoGetActivationFactory (resolved
+    with GetProcAddress on combase.dll). Logs every call ("RoGetActivationFactory(<class>) ... served by the host dispatcher /
+    combase HRESULT ...").
+  * `HRESULT WINAPI Win32CraftNativeRoGetActivationFactory(HSTRING, const GUID *, void **)` = combase only (never the dispatcher).
+  * RoInitialize / RoUninitialize forward to real combase (FMOD threads need real MTA behaviour).
+
+Hook (to be added by whoever owns the fmod decision; ARM only; call after install_arm32_iat_hooks succeeded and BEFORE the game
+constructs SoundEngine/FMOD::System::init).  fmod_ARM.dll IAT cell for RoGetActivationFactory = module + 0xB118C
+(facts fmod.dll_iat_cells; cell is .rdata, loader-filled, 9 call sites, all `movw/movt+ldr+blx`, no thunks):
+
+    #ifdef WIN32CRAFT_ARM32
+    extern HRESULT WINAPI Win32CraftNativeRoGetActivationFactory(HSTRING, const GUID *, void **);   /* api_compat.c */
+
+    /* Serve only the two packaged-app classes from the host fakes; everything else (MediaDevice, DeviceInformation, ...) is the
+     * genuine WinRT.  fmod.winrt_hook_option. */
+    static HRESULT WINAPI fmod_ro_get_activation_factory(HSTRING class_id, const GUID *iid, void **factory)
+    {
+        UINT32 length = 0;
+        LPCWSTR name = class_id ? WindowsGetStringRawBuffer(class_id, &length) : NULL;   /* native combase */
+        if (name && length &&
+            (lstrcmpW(name, L"Windows.ApplicationModel.Package") == 0 ||
+             lstrcmpW(name, L"Windows.Storage.ApplicationData") == 0))
+            return win32_get_activation_factory(name, iid, factory);
+        return Win32CraftNativeRoGetActivationFactory(class_id, iid, factory);
+    }
+
+    static BOOL install_arm32_fmod_winrt_hook(void)
+    {
+        HMODULE module = GetModuleHandleW(L"fmod_ARM.dll");
+        void **cell;
+        HMODULE combase = GetModuleHandleW(L"combase.dll");
+        void *real = combase ? GetProcAddress(combase, "RoGetActivationFactory") : NULL;
+        if (!module) { log_line("ARM32 fmod hook: fmod_ARM.dll is not loaded"); return FALSE; }
+        cell = (void **)((BYTE *)module + 0xB118C);
+        log_pointer("ARM32 fmod hook: fmod_ARM.dll base", module);
+        log_pointer("ARM32 fmod hook: RoGetActivationFactory cell holds", *cell);
+        log_pointer("ARM32 fmod hook: combase!RoGetActivationFactory", real);
+        /* expected = NULL: the cell holds combase!RoGetActivationFactory on Win10, but only log a mismatch (api-set forwarding may differ) */
+        return arm32_patch_cell(cell, NULL, (void *)fmod_ro_get_activation_factory, NULL, "fmod_ARM RoGetActivationFactory");
+    }
+    #endif
+
+  Simpler alternative (no wrapper): store `(void *)RoGetActivationFactory` (the api_compat.c export; the dispatcher then also sees
+  MediaDevice/DeviceInformation, which win32_get_activation_factory passes to original_activation = real WinRT; harmless but noisier).
+
+Contract / ABI of the cell: HRESULT RoGetActivationFactory(HSTRING r0, REFIID r1, void **r2); the stored pointer must have the Thumb bit set
+(a C function pointer to a Thumb function already has it).  FMOD never calls WindowsDeleteString (its factories/path strings leak; harmless).
+
+Which fake objects FMOD touches (facts fmod.winrt_hook_option): Package: factory slot 6 get_Current -> package_object, package slot 7
+get_InstalledLocation -> package_folder, QI IStorageItem returns the same object, folder slot 12 get_Path -> fake_folder_path (HSTRING);
+ApplicationData: factory slot 6 get_Current, appdata slots 12/13/14 (Local/Roaming/Temporary folder).
+
+Hang hazard to keep in mind (fmod.winstore_init): the MediaDevice/DeviceInformation DeviceWatcher EnumerationCompleted waits are INFINITE and
+happen BEFORE the Package/ApplicationData step; they go to the real WinRT through Win32CraftNativeRoGetActivationFactory.

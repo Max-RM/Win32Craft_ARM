@@ -1,0 +1,3 @@
+#endif /* WIN32CRAFT_ARM32: Win32Bootstrap */
+
+BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, void *reserved)

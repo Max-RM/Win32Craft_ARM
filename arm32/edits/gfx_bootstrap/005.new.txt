@@ -1,0 +1,122 @@
+#ifdef WIN32CRAFT_ARM32
+/* DXGI part of the ARM32 resize: facts gfx_device.resize_sequence.  OMSetRenderTargets(0) + Flush, drop the host's RTV
+ * reference, game ReleaseTargets (does NOT release the back buffer at renderer+0x124), release + NULL renderer+0x124 (DXGI
+ * rejects ResizeBuffers while it is alive), ResizeBuffers(0, w, h, UNKNOWN, 0) (flags must be 0 on the host chain),
+ * game InitTargets.  On a failed ResizeBuffers the old-size targets are rebuilt so the renderer is never left without views. */
+static BOOL arm32_gfx_resize_targets(UINT width, UINT height)
+{
+    Arm32GfxReleaseTargetsFn release_targets =
+        (Arm32GfxReleaseTargetsFn)ARM_CODE(arm32_gfx_image(), ARM_GFX_DEVICE_RELEASE_TARGETS);
+    BYTE *renderer = (BYTE *)game_renderer;
+    ID3D11Texture2D *backbuffer;
+    HRESULT result;
+    UINT old_width = arm32_gfx_width;
+    UINT old_height = arm32_gfx_height;
+
+    ID3D11DeviceContext_OMSetRenderTargets(game_context, 0, NULL, NULL);
+    ID3D11DeviceContext_Flush(game_context);
+    if (game_target) {
+        ID3D11RenderTargetView_Release(game_target);
+        game_target = NULL;
+    }
+    release_targets(game_renderer);
+    backbuffer = *(ID3D11Texture2D **)(renderer + ARM_GFX_DEVICE_RENDERER_BACKBUFFER);
+    if (backbuffer) {
+        *(ID3D11Texture2D **)(renderer + ARM_GFX_DEVICE_RENDERER_BACKBUFFER) = NULL;
+        ID3D11Texture2D_Release(backbuffer);
+    }
+
+    result = IDXGISwapChain_ResizeBuffers(game_swap_chain, 0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+    log_hresult("IDXGISwapChain::ResizeBuffers(HWND)", result);
+    if (FAILED(result)) {
+        if (result == ARM32_GFX_HR_DEVICE_REMOVED || result == ARM32_GFX_HR_DEVICE_RESET) {
+            arm32_gfx_note_device_lost(result, "IDXGISwapChain::ResizeBuffers");
+            return FALSE;
+        }
+        if (old_width && old_height) {
+            log_line("gfx: ResizeBuffers failed; rebuilding the render targets at the previous size");
+            arm32_gfx_recreate_targets(old_width, old_height, "resize recovery");
+        }
+        return FALSE;
+    }
+    if (!arm32_gfx_recreate_targets(width, height, "resize")) {
+        log_line("HWND resize: target recreation failed");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/* ARM32 resize_game_window (facts gfx_device.resize_sequence / appmain port_instructions 4): FL9_x size clamp, DXGI resize,
+ * platform+0x330/+0x334 + owner+0x94/+0x98 mirroring, MinecraftGame vf23 resize(w, h, float scale in s0) and vf24
+ * windowSizeChanged(w, h). */
+static BOOL resize_game_window(HWND window, UINT width, UINT height)
+{
+    BYTE *image = arm32_gfx_image();
+    char line[192];
+    BOOL resized;
+
+    (void)window;
+    if (!width || !height || !game_swap_chain || !game_renderer || !game_context || !game_resource_owner) {
+        return FALSE;
+    }
+    if (arm32_gfx_device_lost) return FALSE;
+    if (arm32_gfx_resizing) {
+        log_line("resize ignored: a resize is already in progress");
+        return FALSE;
+    }
+    wsprintfA(line, "resize requested: %ux%u", width, height);
+    log_line(line);
+    arm32_gfx_clamp_size(&width, &height, "resize");
+    if (width == arm32_gfx_width && height == arm32_gfx_height && game_target) {
+        log_line("resize: swap-chain size unchanged");
+        return TRUE;
+    }
+
+    arm32_gfx_resizing = TRUE;
+    resized = arm32_gfx_resize_targets(width, height);
+    arm32_gfx_resizing = FALSE;
+    if (!resized) {
+        SetWindowTextW(game_window, L"Win32Craft 1.2.8");
+        return FALSE;
+    }
+    {
+        HRESULT result = IDXGISwapChain_Present(game_swap_chain, 0, 0);
+        log_hresult("HWND resize validation Present", result);
+        if (FAILED(result)) return FALSE;
+    }
+    log_line("HWND swap chain targets resized and rebound");
+
+    if (game_app_main) {
+        BYTE *app = (BYTE *)game_app_main;
+        void *platform = *(void **)(app + ARM_APPMAIN_LAYOUT); /* AppMain+0x1c */
+        void *game = *(void **)(app + 0x20);                   /* AppMain+0x20 */
+
+        if (platform) {
+            *(int *)((BYTE *)platform + ARM_APPMAIN_PLATFORM_SCREEN_WIDTH) = (int)width;
+            *(int *)((BYTE *)platform + ARM_APPMAIN_PLATFORM_SCREEN_HEIGHT) = (int)height;
+        }
+        arm32_gfx_mirror_client_size((int)width, (int)height);
+        if (game && !IsBadReadPtr(game, sizeof(void *)) && *(void ***)game &&
+            !IsBadReadPtr(*(void ***)game, 0x64)) {
+            void **vtable = *(void ***)game;
+            void *resize = vtable[0x5c / sizeof(void *)];
+            void *changed = vtable[0x60 / sizeof(void *)];
+
+            if (resize == ARM_CODE(image, ARM_APPMAIN_GAME_VF23_SETSIZE) &&
+                changed == ARM_CODE(image, ARM_APPMAIN_GAME_VF24_WINDOWSIZECHANGED)) {
+                /* facts gfx_device.game_resize_vslots: the 4th argument is a float in s0 (hard-float), not an int in r3 */
+                ((void (*)(void *, int, int, float))resize)(game, (int)width, (int)height, 0.0f);
+                ((void (*)(void *, int, int))changed)(game, (int)width, (int)height);
+            } else {
+                log_pointer("resize: MinecraftGame vtable slot 23 is not MinecraftGame::resize, skipped", resize);
+                log_pointer("resize: MinecraftGame vtable slot 24", changed);
+            }
+        }
+    }
+    mouse_clip_dirty = TRUE;
+    log_line("Minecraft 1.2.8 HWND target and UI size synchronized");
+    return TRUE;
+}
+#else /* !WIN32CRAFT_ARM32 */
+static BOOL resize_game_window(HWND window, UINT width, UINT height)
+{

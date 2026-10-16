@@ -1,0 +1,2 @@
+static BOOL initialize_game_d3d(HWND window)
+{

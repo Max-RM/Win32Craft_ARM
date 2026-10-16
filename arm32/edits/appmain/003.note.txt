@@ -1,0 +1,1 @@
+ARM32 AppMain bring-up: initialize/activate/render for 1.2.8 (facts appmain.*); x86 originals follow under #else.

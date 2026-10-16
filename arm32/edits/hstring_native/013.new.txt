@@ -1,0 +1,7 @@
+HRESULT WINAPI WindowsDeleteStringBuffer(void *handle)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "WindowsDeleteStringBuffer", (void *), (handle));
+    /* the fallback below builds shim-layout handles: never mix them with native ones */
+    if (native_hstring_proc("WindowsCreateString")) return E_NOTIMPL;
+#endif

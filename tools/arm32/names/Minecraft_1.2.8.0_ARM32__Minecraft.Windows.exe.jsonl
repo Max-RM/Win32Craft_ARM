@@ -1,0 +1,316 @@
+{"rva": 1155712, "label": "ClientInstance::vf3_render_update"}
+{"rva": 1162788, "label": "ClientInstance::getTopScene"}
+{"rva": 1145324, "label": "ClientInstance::ctor"}
+{"rva": 1146296, "label": "ClientInstance::dtor"}
+{"rva": 4748268, "label": "LevelRenderer::ctor"}
+{"rva": 5779704, "label": "AppPlatform_Winrt::pickFile"}
+{"rva": 5826056, "label": "platform_fixes:pickFile_cancel_lambda_invoke"}
+{"rva": 5797292, "label": "platform_fixes:FileOpenPicker_png_lambda"}
+{"rva": 5805456, "label": "platform_fixes:run_on_ui_dispatcher"}
+{"rva": 5805456, "label": "platform_fixes:dispatcher_RunAsync_wrapper_probable"}
+{"rva": 1161588, "label": "ClientInstance::initLevelRenderer_move_into_0x28"}
+{"rva": 5826204, "label": "platform_fixes:pickFile_success_lambda_invoke"}
+{"rva": 14402244, "label": "data:IID_IDXGIDevice3"}
+{"rva": 14402212, "label": "data:IID_IDXGIAdapter3"}
+{"rva": 14402524, "label": "data:IID_ID3DUserDefinedAnnotation"}
+{"rva": 14402556, "label": "data:IID_ID3D11DeviceContext2"}
+{"rva": 6013528, "label": "gfx:DeviceResources::createDevice_D3D11CreateDevice_QIs"}
+{"rva": 3757316, "label": "MinecraftKeyboardManager::show"}
+{"rva": 3757600, "label": "MinecraftKeyboardManager::hide"}
+{"rva": 3758164, "label": "MinecraftKeyboardManager::isFocused_bit1"}
+{"rva": 20303820, "label": "MinecraftKeyboardManager::vtable"}
+{"rva": 6020812, "label": "gfx:HLSL_compile_shader_D3DPreprocess_D3DCompile"}
+{"rva": 6009216, "label": "gfx:HeaderInclude::Open_ID3DInclude"}
+{"rva": 571776, "label": "gfx:stub_return0_HeaderInclude_Close"}
+{"rva": 6010208, "label": "gfx:Renderer::setScissorRect_RSSetScissorRects"}
+{"rva": 6011096, "label": "gfx:Renderer::getContext_addref_copy"}
+{"rva": 6011052, "label": "gfx:Renderer::getDevice_addref_copy"}
+{"rva": 6004556, "label": "gfx:DeviceResources::queryAdapterInfo_IDXGIDevice3_Adapter3"}
+{"rva": 540744, "label": "std::string::assign_ptr_len"}
+{"rva": 572464, "label": "std::string::c_str_probable"}
+{"rva": 6612664, "label": "ZipPackAccessStrategy::getAsset_slot11"}
+{"rva": 5996156, "label": "gfx:GameOwner::ctor(owner)->owner"}
+{"rva": 6013528, "label": "gfx:GameOwner::InitDevice(owner,renderer)"}
+{"rva": 6013132, "label": "gfx:GameOwner::InitTargets(owner,display*,renderer)"}
+{"rva": 6011696, "label": "gfx:Renderer::ReleaseTargets(renderer)"}
+{"rva": 5777776, "label": "AppPlatform_Winrt::DiscardWindowViews(vf33)"}
+{"rva": 11834012, "label": "crt:operator_new(size_t)"}
+{"rva": 11835492, "label": "crt:operator_delete_sized(void*,size_t)"}
+{"rva": 11834800, "label": "crt:operator_delete(void*)"}
+{"rva": 6010740, "label": "gfx:Renderer::createWindowSizeDependentResources(renderer)"}
+{"rva": 6010508, "label": "gfx:Renderer::dtor"}
+{"rva": 6010412, "label": "gfx:Renderer::ctor"}
+{"rva": 5997344, "label": "gfx:make_renderer(holder)->holder"}
+{"rva": 1307296, "label": "gfx:make_owner(holder)->holder (new 0xd0+memset+ctor+init)"}
+{"rva": 1301340, "label": "gfx:ensure_owner_global_reset"}
+{"rva": 6027080, "label": "gfx:GameOwner::dtor"}
+{"rva": 6027180, "label": "gfx:GameOwner::releaseDevice(owner)"}
+{"rva": 5995852, "label": "gfx:Renderer::releaseSwapChain"}
+{"rva": 6024276, "label": "gfx:computeDisplayDescriptor(display*,owner,w,h)"}
+{"rva": 3455060, "label": "SceneStack::dtor"}
+{"rva": 14261800, "label": "platform_fixes:str button.signin (event key; patch 'b'->'!')"}
+{"rva": 14300252, "label": "platform_fixes:str button.xbl_signin (event key; patch 'b'->'!')"}
+{"rva": 6463784, "label": "input:make_MouseItem(out,int*action,int*pressed,int*payload,short*x,short*y)"}
+{"rva": 6463932, "label": "input:make_MouseItem_variant_charAction_intPressed"}
+{"rva": 6464008, "label": "input:make_MouseItem_variant_intAction_charPressed_intXY"}
+{"rva": 6463860, "label": "input:make_MultitouchItem"}
+{"rva": 6464084, "label": "input:make_KeyCodeItem(out,key*,state*)"}
+{"rva": 6464180, "label": "input:make_TextItem(out,string*,primaryFlag*,seqFlag*)"}
+{"rva": 5796500, "label": "input:InputAdapter::enqueueInput(this,unique_ptr<HIDItem>*slot)"}
+{"rva": 6450448, "label": "input:HIDController::mapVirtualKey(vk-8)->mapped key"}
+{"rva": 6451592, "label": "input:HIDController::keyDown(mapped)"}
+{"rva": 6445840, "label": "input:HIDController::onKeyDown(sender,KeyEventArgs)"}
+{"rva": 6446436, "label": "input:HIDController::onKeyUp(sender,KeyEventArgs)"}
+{"rva": 6446672, "label": "input:HIDController::onCharacterReceived(sender,args)"}
+{"rva": 6451464, "label": "input:HIDController::queueTextItem(string)"}
+{"rva": 6448496, "label": "input:HIDController::onPointerPressedReleased"}
+{"rva": 6441372, "label": "input:HIDController::onPointerRelativeMove"}
+{"rva": 6438004, "label": "input:HIDController::ctor(adapter,x)"}
+{"rva": 5794560, "label": "input:InputAdapter::ctor(this,coreWindow) (creates HIDController at +4)"}
+{"rva": 5788428, "label": "input:InputAdapter::make(0x170 bytes)"}
+{"rva": 5772816, "label": "AppPlatform_Winrt::ctor (adapter ptr at +0x3b4)"}
+{"rva": 5754604, "label": "AppMain(MCPE_Host)::ctor (AppPlatform_Winrt* at +0x1c)"}
+{"rva": 5826700, "label": "input:mouse_toggle_lambda::_Do_call (hook site, vtable cell 0x1369c68)"}
+{"rva": 5826800, "label": "input:mouse_absolute_lambda::_Do_call (hook site, vtable cell 0x1369c14)"}
+{"rva": 5826876, "label": "input:mouse_relative_lambda::_Do_call (hook site, vtable cell 0x1369c30)"}
+{"rva": 5778176, "label": "AppPlatform_Winrt::requestRelativeMouse(vf18, dispatches relative lambda)"}
+{"rva": 5778252, "label": "AppPlatform_Winrt::requestAbsoluteMouse(vf19)"}
+{"rva": 5778328, "label": "AppPlatform_Winrt::toggleMouseMode(vf22)"}
+{"rva": 6493372, "label": "DirectoryPackAccessStrategy::getAsset_slot11"}
+{"rva": 20374936, "label": "platform_fixes:vtcell ZipPackAccessStrategy[11]"}
+{"rva": 20375016, "label": "platform_fixes:vtcell ZipPackAccessStrategyOwning[11]"}
+{"rva": 20373292, "label": "platform_fixes:vtcell DirectoryPackAccessStrategy[11]"}
+{"rva": 20354608, "label": "platform_fixes:vtcell AppPlatform_Winrt[35] pickFile"}
+{"rva": 6464008, "label": "input:make_MouseItem_wheel_variant(int action,char pressed,int payload,int x,int y)"}
+{"rva": 3557264, "label": "UIScene::ctor"}
+{"rva": 3440400, "label": "UIScene:make_shared_UIScene"}
+{"rva": 1149784, "label": "ClientInstance:teardown_world_reset_0x28_levelrenderer"}
+{"rva": 6204208, "label": "platform_fixes:lang_loader calls PackAccessStrategy[11] getAsset(texts/<lang>.lang)"}
+{"rva": 4150156, "label": "options:game_skintypefull option ctor"}
+{"rva": 4150388, "label": "options:game_lastcustomskinnew option ctor"}
+{"rva": 10739732, "label": "xbox:ShowProfileCard wrapper (TCUI calls)"}
+{"rva": 5772816, "label": "AppPlatform_Winrt::ctor (sets +0x3b4 adapter)"}
+{"rva": 9788284, "label": "AppPlatformWindows::ctor"}
+{"rva": 6505284, "label": "platform_fixes:PackAccessStrategy factory (dir vs zip)"}
+{"rva": 2771524, "label": "xbox:button.signin controller event registration"}
+{"rva": 3464108, "label": "ui:ScreenController::registerEventHandler(id,fn) probable"}
+{"rva": 1813388, "label": "ui:string_to_event_id probable"}
+{"rva": 3559516, "label": "UIScene::is_showing_menu"}
+{"rva": 3559668, "label": "UIScene::should_steal_mouse"}
+{"rva": 3559592, "label": "UIScene::is_modal"}
+{"rva": 1566316, "label": "UIScene:parse_screen_flags_json"}
+{"rva": 1155712, "label": "ClientInstance::tick_vf3_hooked"}
+{"rva": 20297176, "label": "UIScene::vtable"}
+{"rva": 20330184, "label": "LevelRenderer::vtable_primary"}
+{"rva": 20162392, "label": "ClientInstance::vtable_primary"}
+{"rva": 20162424, "label": "ClientInstance::vtable_secondary"}
+{"rva": 1163056, "label": "ClientInstance::forEachScene"}
+{"rva": 1180084, "label": "ClientInstance:make_keyboard_manager_0x44"}
+{"rva": 1182696, "label": "LevelRenderer:make_unique_wrapper"}
+{"rva": 1296024, "label": "ClientInstance:make_shared"}
+{"rva": 1212792, "label": "MinecraftGame::dtor"}
+{"rva": 6020812, "label": "mce::ShaderProgramDX11::compileShaderProgram(shader stage; D3DPreprocess+D3DCompile)"}
+{"rva": 6011176, "label": "gfx:Renderer::trim_IDXGIDevice3_Trim"}
+{"rva": 6023852, "label": "gfx:buildSwapChainDesc1_QI_IDXGIDevice3_Factory2"}
+{"rva": 6000348, "label": "gfx:ShaderProgramDX11::reflect_D3DReflect"}
+{"rva": 12808372, "label": "iat:D3DCOMPILER_47!D3DCompile"}
+{"rva": 12808368, "label": "iat:D3DCOMPILER_47!D3DPreprocess"}
+{"rva": 12808376, "label": "iat:D3DCOMPILER_47!D3DReflect"}
+{"rva": 12810832, "label": "iat:d3d11!D3D11CreateDevice"}
+{"rva": 20361572, "label": "HeaderInclude::vtable(ID3DInclude: Open=0x5bb180 Close=0x8b980)"}
+{"rva": 6038800, "label": "gfx:Renderer::applyScissorState(calls setScissorRect)"}
+{"rva": 22775468, "label": "global:owner(DeviceResources) unique_ptr (owner+0xac=renderer)"}
+{"rva": 22775472, "label": "global:screen size obj (+0x14 W float, +0x18 H float)"}
+{"rva": 14402988, "label": "data:IID_IDXGIFactory2"}
+{"rva": 6020364, "label": "gfx:featureLevel_to_target_suffix(_level_9_x)"}
+{"rva": 6020512, "label": "gfx:shaderType_to_target_prefix(vs/ps/gs)"}
+{"rva": 3757208, "label": "MinecraftKeyboardManager::dtor"}
+{"rva": 2079968, "label": "HudScreenController::ctor"}
+{"rva": 3452676, "label": "HudScreenController:make_shared"}
+{"rva": 5864268, "label": "appmain:AppMain_factory(AppMain** result r0, StartupCtx* r1, CoreWindow** holder r2)->r0=result"}
+{"rva": 5754872, "label": "appmain:AppMain::dtor"}
+{"rva": 5754832, "label": "appmain:AppMain::scalar_deleting_dtor(vf0)"}
+{"rva": 5755064, "label": "appmain:AppMain::init(this,StartupCtx*,Agile<CoreWindow>*) creates AppPlatform_Winrt? game+0x20, sizes game"}
+{"rva": 5755428, "label": "appmain:AppMain::restart_game(vf1; destroys+recreates MinecraftGame, runs when AppMain+4 set)"}
+{"rva": 5755816, "label": "appmain:AppMain::update_frame(this)->bool quit (= MinecraftGame::vf26)"}
+{"rva": 5756024, "label": "appmain:AppMain::onActivated(IActivatedEventArgs*) protocol/file activation only"}
+{"rva": 5758760, "label": "appmain:AppMain::onWindowSizeChanged(CoreWindow*) (bounds*dpi -> platform+0x330/0x334, game vf23 vf24)"}
+{"rva": 5759328, "label": "appmain:AppMain::onWindowActivationChanged(state) 0->platform vf27, 1->platform vf26"}
+{"rva": 5854304, "label": "appmain:AppView::OnActivated(sender,args) creates AppMain via factory then CoreWindow::Activate"}
+{"rva": 5853904, "label": "appmain:AppView::Run (frame loop: ProcessEvents + AppMain::update_frame)"}
+{"rva": 5854924, "label": "appmain:AppView::OnVisibilityChanged(sender,args) INLINES x86 RVA_128_APP_VISIBILITY (platform vf27 + vf21(1) / vf26)"}
+{"rva": 5855120, "label": "appmain:AppView::OnSizeChanged thunk -> AppMain::onWindowSizeChanged"}
+{"rva": 5855104, "label": "appmain:AppView::OnClosed (sets this+0x38)"}
+{"rva": 5749496, "label": "winrt:Platform::Agile<T>::ctor(this,T*) QI IAgileObject"}
+{"rva": 5765328, "label": "winrt:Platform::Agile<T>::Get(this)->T*"}
+{"rva": 5725384, "label": "appmain:CoreWindow::get_Dispatcher helper (vtable slot 9)"}
+{"rva": 5784024, "label": "appmain:AppPlatform_Winrt::getMainDispatcher (global Agile<CoreWindow> -> get_Dispatcher)"}
+{"rva": 5787992, "label": "appmain:AppPlatform_Winrt::setGlobalCoreWindow(CoreWindow*) -> Agile at 0x1576fcc"}
+{"rva": 5776088, "label": "appmain:AppPlatform_Winrt::updateDpiScale (DisplayInformation -> +0x338/+0x33c/+0x340)"}
+{"rva": 1243232, "label": "MinecraftGame::setSize(this,int w,int h,float scale s0) vf23"}
+{"rva": 1243376, "label": "MinecraftGame::windowSizeChanged(this,int w,int h) vf24"}
+{"rva": 1232520, "label": "MinecraftGame::update(vf22) called from AppMain::update_frame"}
+{"rva": 1208512, "label": "MinecraftGame::requestQuit(vf25) sets game+9"}
+{"rva": 1208544, "label": "MinecraftGame::isQuitRequested(vf26) returns game+9 (ICF-shared with AppPlatform_Winrt slot20 getter of +9)"}
+{"rva": 5782776, "label": "appmain:AppPlatform_Winrt::onActivated(vf27)"}
+{"rva": 5782724, "label": "appmain:AppPlatform_Winrt::onDeactivated(vf26)"}
+{"rva": 6428192, "label": "appmain:AppPlatform_Winrt::setVisibleFlag(this,bool)(vf21 sets +9)"}
+{"rva": 5776992, "label": "appmain:AppPlatform_Winrt::getScreenWidth(vf82) returns +0x330"}
+{"rva": 5777024, "label": "appmain:AppPlatform_Winrt::getScreenHeight(vf83) returns +0x334"}
+{"rva": 5782420, "label": "appmain:AppPlatform_Winrt::copyScreenSizeFromGlobal(vf143) writes +0x330/+0x334"}
+{"rva": 6423488, "label": "appmain:AppPlatform_Winrt::initialize (worker thread + state)"}
+{"rva": 1210824, "label": "appmain:MinecraftGame::ctor(this) size 0x3c0"}
+{"rva": 5766256, "label": "appmain:make_MinecraftGame(unique_ptr*) new 0x3c0 + ctor"}
+{"rva": 5766192, "label": "appmain:make_AppPlatform_Winrt(unique_ptr*,CoreWindow**) new 0x428 + ctor"}
+{"rva": 20354216, "label": "appmain:vtable MCPE_Host::AppMain (slot0 deleting dtor, slot1 restart_game)"}
+{"rva": 20167372, "label": "appmain:vtable MinecraftGame primary (29 slots, +0x74 bytes)"}
+{"rva": 22507468, "label": "appmain:global Agile<CoreWindow> (16 bytes) set by AppPlatform_Winrt ctor"}
+{"rva": 22642344, "label": "appmain:global AppPlatform* singleton (set by AppMain ctor from +0x1c)"}
+{"rva": 22654396, "label": "appmain:global DX::DeviceResources* (created by AppMain ctor sub_57fbe0)"}
+{"rva": 5766112, "label": "appmain:create_DeviceResources_global (new 0x10, vtable DX::DeviceResources)"}
+{"rva": 6024508, "label": "gfx:Display::present(display*) Present(1,0) if vsync else Present1(0,flags,&params)"}
+{"rva": 5777672, "label": "AppPlatform_Winrt::swapBuffers(vf32) -> Display::present(renderer+0xe8)"}
+{"rva": 5758760, "label": "AppMain::onWindowSizeChanged(this,sizeArgs) -> platform+0x330/0x334, game vf23/vf24"}
+{"rva": 6024276, "label": "gfx:Display::resizeSwapChain(display*,owner,w,h) ResizeBuffers+GetBuffer(renderer+0x124)"}
+{"rva": 10293336, "label": "gfx:logHResult(hr) FormatMessage no-throw"}
+{"rva": 14402540, "label": "data:IID_ID3D11Texture2D"}
+{"rva": 22775468, "label": "gfx:g_owner (GameOwner* cell)"}
+{"rva": 22775472, "label": "gfx:g_displaySettings (0x38 struct: +0x14/+0x18 float win w/h, +0x30 vsync byte)"}
+{"rva": 1306388, "label": "gfx:make_displaySettings(holder) new 0x38"}
+{"rva": 1243232, "label": "MinecraftGame::resize(w,h,float scale s0)(vf23)"}
+{"rva": 5782420, "label": "AppPlatform_Winrt::vf143_copyOwnerCaps(owner+0x90/0x94/0x98 -> platform+0x298/0x9c,0x330/0xa0,0x334)"}
+{"rva": 6014244, "label": "gfx:GameOwner::hasFeature(owner,id)"}
+{"rva": 6004556, "label": "gfx:DeviceResources::queryAdapterInfo_IDXGIDevice3_Adapter3(owner) sets owner+0x40/44/90/91"}
+{"rva": 11836200, "label": "winmain:crt_entry(__security_init_cookie; b __scrt_common_main_seh)"}
+{"rva": 11836664, "label": "winmain:__security_init_cookie"}
+{"rva": 11835940, "label": "winmain:__scrt_common_main_seh(invokes WinMain at 0xb49aca)"}
+{"rva": 11838500, "label": "winmain:WinMain_forwarder(hInst,0,cmdline,show -> b.w b4a574)"}
+{"rva": 11838836, "label": "winmain:CX_main_wrapper(ignores r0-r3; GetCmdArguments -> user main ff6a0)"}
+{"rva": 1046176, "label": "winmain:user_main(Array<String^>) builds IFrameworkViewSource, calls CoreApplication::Run"}
+{"rva": 5858088, "label": "winmain:CoreApplication::Run(IFrameworkViewSource* r0) via RoGetActivationFactory vf13"}
+{"rva": 571776, "label": "crt:return0_stub(ICF: __scrt_is_managed_app/show_window_mode)"}
+{"rva": 539168, "label": "crt:empty_fn(ICF: target of __guard_check_icall_fptr cell c37bf8)"}
+{"rva": 12811256, "label": "crt:__guard_check_icall_fptr cell (-> empty fn 0x83a20)"}
+{"rva": 12807840, "label": "winmain:PATCH trampoline slot (.text slack c36e9c..c37000 zero)"}
+{"rva": 11832328, "label": "winmain:vccorlib InitializeData(MTA) - last _initterm_e entry (runs before WinMain)"}
+{"rva": 3758164, "label": "x"}
+{"rva": 3758164, "label": "MinecraftKeyboardManager::isFocused_bit1"}
+{"rva": 11833224, "label": "pe:GetActivationFactoryByPCWSTR_wrapper(PCWSTR cls r0, GUID* iid r1, void** out r2) tail-calls vccorlib IAT 0xc37bf0 (102 callers)"}
+{"rva": 11835940, "label": "crt:__scrt_common_main_seh (WinMain call at 0xb49aca = Win32Bootstrap patch site)"}
+{"rva": 11838500, "label": "crt:WinMain_stub -> main (single caller 0xb49aca)"}
+{"rva": 11838836, "label": "app:main(Platform::Array<String^>^) CX entry (GetCmdArguments)"}
+{"rva": 11838448, "label": "delay:__delayLoadHelper2 (-> ResolveDelayLoadedAPI, hook=DelayLoadFailureHook)"}
+{"rva": 11838116, "label": "delay:lazy_helper_tcui_l1_1_0 (loads r0=desc 0x171f20c)"}
+{"rva": 11838212, "label": "delay:lazy_helper_tcui_l1_1_2 (desc 0x171f22c)"}
+{"rva": 11838156, "label": "delay:lazy_stub ShowProfileCardUI (initial delay-IAT value 0x15121fc)"}
+{"rva": 11838184, "label": "delay:lazy_stub ProcessPendingGameUI (initial delay-IAT value 0x1512200)"}
+{"rva": 11838252, "label": "delay:lazy_stub ShowProfileCardUIForUser (initial delay-IAT value 0x1512208)"}
+{"rva": 11836624, "label": "crt:__scrt_initialize_winrt (RoInitialize(MTA) via IAT 0xc3776c)"}
+{"rva": 11832328, "label": "winmain:vccorlib InitializeData(mode [0x1514df8]) - last _initterm_e entry (runs before WinMain)"}
+{"rva": 2114796, "label": "chat_xbox:ItemDetailScreenController event registration (registers button.signin, len 13)"}
+{"rva": 2771524, "label": "chat_xbox:StoreBaseScreenController event registration (registers button.signin, len 13)"}
+{"rva": 2727432, "label": "chat_xbox:StartMenuScreenController event registration (registers button.xbl_signin, len 17)"}
+{"rva": 2961228, "label": "chat_xbox:XblFirstLaunchScreenController event registration (registers button.xbl_signin)"}
+{"rva": 2974676, "label": "chat_xbox:XblOptionalSigninScreenController event registration (registers button.xbl_signin)"}
+{"rva": 2772296, "label": "chat_xbox:StoreBase button.signin lambda body (calls ScreenController::xblSignIn)"}
+{"rva": 2116140, "label": "chat_xbox:ItemDetail button.signin lambda body (calls ScreenController::xblSignIn)"}
+{"rva": 2209864, "label": "chat_xbox:ScreenController::xblSignIn(std::function<void(SignInResult)>) (probable; 16 callers)"}
+{"rva": 3189292, "label": "chat_xbox:Social user manager signIn(cb) (probable, controller+0x240 target)"}
+{"rva": 10739732, "label": "chat_xbox:ShowProfileCardWrapper(xuidStruct r0, sret r1) calls TCUI ShowProfileCardUI/ForUser/ProcessPendingGameUI"}
+{"rva": 10732928, "label": "chat_xbox:ShowProfileCard thunk (only caller of wrapper a3e014; no inbound refs)"}
+{"rva": 10734640, "label": "chat_xbox:ShowProfileCard thunk2 (calls a3c580; no inbound refs in image)"}
+{"rva": 1813388, "label": "ui:string_to_event_id(controller r0, std::string* r1) interns name in map at controller+0x80"}
+{"rva": 5765156, "label": "chat_xbox:InputPane::GetForCurrentView (factory IID 95F4AF3A-EF47-424A-9741-FD2815EBA2BD)"}
+{"rva": 5795724, "label": "chat_xbox:AppPlatform_Winrt hideKeyboard lambda body (InputPane::TryHide)"}
+{"rva": 6455880, "label": "chat_xbox:CoreTextServicesManager::GetForCurrentView (used by HIDController ctor)"}
+{"rva": 2732992, "label": "chat_xbox:StartMenu button.xbl_signin std::function _Do_call thunk -> 29a410"}
+{"rva": 2728976, "label": "chat_xbox:StartMenu button.xbl_signin lambda body (calls ScreenController::xblSignIn)"}
+{"rva": 1892416, "label": "chat_xbox:button.save_to_xbl _Do_call thunk -> 1cd518"}
+{"rva": 1889560, "label": "chat_xbox:button.save_to_xbl lambda body (xblSignIn if not signed in) - NOT patched on x86 1.2.8"}
+{"rva": 1889356, "label": "chat_xbox:registration of button.save_to_xbl (unpatched on x86)"}
+{"rva": 2735468, "label": "chat_xbox:StartMenu binding getter 'menu_xbox_signin_button' / 'menu_how_to_play_button' (name only, not an action)"}
+{"rva": 6037276, "label": "gfx:ShaderDefines_build(TEXEL_AA_FEATURE if caps+0x31)"}
+{"rva": 6016912, "label": "fl91:vertexAttrType_to_DXGI(FL>=9_3 half4 pos; FL<10 SNORM fallback)"}
+{"rva": 6073480, "label": "fl91:positionAttrSize(8 if FL>=9_3&&flag else 0x10)"}
+{"rva": 6014392, "label": "fl91:createSamplerState(TexelAA filter 3->2 if FL<10)"}
+{"rva": 6004368, "label": "fl91:featureLevel_to_name('DirectX 9.1'...)"}
+{"rva": 6002056, "label": "fl91:Buffer::create(CreateBuffer; IB fmt 0x2a/0x39/0x3e)"}
+{"rva": 6001916, "label": "fl91:bindVertexOrIndexBuffer(IASetVB/IB)"}
+{"rva": 6002304, "label": "fl91:Buffer::map(Map; types READ/WRITE/DISCARD/NOOVERWRITE)"}
+{"rva": 6002692, "label": "fl91:ConstantBuffer::create(CreateBuffer BIND_CB DEFAULT)"}
+{"rva": 6002576, "label": "fl91:ConstantBuffer::update(UpdateSubresource)"}
+{"rva": 6029612, "label": "fl91:Renderer::draw(DrawIndexed/Draw; Instanced only if instanceCount>1)"}
+{"rva": 4864692, "label": "fl91:floatColor_to_bytes(FL<10 rounding variant A)"}
+{"rva": 4865520, "label": "fl91:floatColor_to_bytes(FL<10 rounding variant B)"}
+{"rva": 6003744, "label": "fl91:queryTearingSupport(IDXGIFactory5::CheckFeatureSupport)->owner+0x90"}
+{"rva": 6003932, "label": "fl91:queryOptions3_VPAndRTArrayIndex(CheckFeatureSupport 0xf)->owner+0x91"}
+{"rva": 6015740, "label": "fl91:createMSAATarget(CheckFormatSupport MSAA_RT 0x40000)"}
+{"rva": 6013528, "label": "gfx:GameOwner::InitDevice(owner,renderer) [FL list B100..9100 -> CreateDevice]"}
+{"rva": 6013528, "label": "gfx:GameOwner::InitDevice(owner,renderer)"}
+{"rva": 6014192, "label": "x"}
+{"rva": 6014192, "label": "fl91:InitDevice mid (after QI IDXGIAdapter3 block)"}
+{"rva": 6037276, "label": "x"}
+{"rva": 6037276, "label": "gfx:ShaderDefines_build(TEXEL_AA_FEATURE if caps+0x31)"}
+{"rva": 5912704, "label": "fmod:System_Create_wrapper"}
+{"rva": 5912972, "label": "SoundSystemFMOD::init"}
+{"rva": 5779704, "label": "platform_fixes:AppPlatform_Winrt::pickFile"}
+{"rva": 5912704, "label": "fmod:System_Create_stub"}
+{"rva": 5912892, "label": "SoundSystemFMOD::createSystem"}
+{"rva": 5912720, "label": "SoundSystemFMOD::selectDriver"}
+{"rva": 5913232, "label": "SoundSystemFMOD::shutdown"}
+{"rva": 5913552, "label": "SoundSystemFMOD::loadSound"}
+{"rva": 5910972, "label": "fmod:errcheck_noop_log"}
+{"rva": 5911056, "label": "fmod:soundFormatAccepted"}
+{"rva": 5492132, "label": "SoundEngine::ctor"}
+{"rva": 5870264, "label": "audiograph:createSettings"}
+{"rva": 5867292, "label": "audiograph:init_tts_graph"}
+{"rva": 5867724, "label": "audiograph:createResultContinuation"}
+{"rva": 5917468, "label": "SoundSystemFMOD::update"}
+{"rva": 5916720, "label": "SoundSystemFMOD::playByName"}
+{"rva": 0, "label": "x"}
+{"rva": 5945164, "label": "input:InputMode_toString(1=Mouse,2=Touch,3=GamePad,4=MotionController,else Undefined)"}
+{"rva": 5779448, "label": "input:AppPlatform_Winrt::processHIDItem (pops 1 item from adapter queue sub_587314, dispatch on type byte: 0 Mouse::feed 5af968, 1 Multitouch::feed 5b00ec, 2 Keyboard::feed 95614, 3 text 5811a0, 4 caret c7b4c; returns bool processed)"}
+{"rva": 5964012, "label": "input:Multitouch::feed(buttonId r0,data r1,x r2,y r3,pointerId [sp])"}
+{"rva": 6441572, "label": "input:HIDController::onPointerPressed(sender,PointerEventArgs) mouse+touch (touch -> make_MultitouchItem(1,1))"}
+{"rva": 6443140, "label": "input:HIDController::onPointerMoved(sender,PointerEventArgs) mouse+touch (touch -> make_MultitouchItem(0,0))"}
+{"rva": 6443928, "label": "input:HIDController::onPointerReleased(sender,PointerEventArgs) mouse+touch (touch -> make_MultitouchItem(1,0))"}
+{"rva": 6439436, "label": "input:HIDController::registerPointerHandlers (CoreWindow add_PointerPressed +0xb8, add_PointerMoved +0xb0, add_PointerReleased +0xc0)"}
+{"rva": 5964012, "label": "input:Multitouch::feed(buttonId,data,x,y,pointerId 0..11)"}
+{"rva": 2076032, "label": "ui:ScreenController::setInputMode(mode) stores this+0x24c (2 = Touch -> #touch_being_used)"}
+{"rva": 2077792, "label": "ui:#touch_being_used binding lambda (this+0x24c == 2)"}
+{"rva": 5946180, "label": "input:InputHandler::tick(this,r1,ClientInstance&,r3) mappers loop -> input mode switch"}
+{"rva": 5945244, "label": "input:InputHandler::ctor(this,a,b,defaultInputMode r3,[sp]byte->+0xf8 lock,[sp+4]->+0xf9)"}
+{"rva": 5951568, "label": "input:InputHandler::getInputMode(this,clientId)->InputMode* (map this+0x11c; null if unknown/-1)"}
+{"rva": 5355616, "label": "input:ClientInstance-ish: gui/controller id lookup (returns clientId or -1)"}
+{"rva": 5945164, "label": "input:InputMode_toString(1=Mouse,2=Touch,3=GamePad,4=MotionController,else Undefined)"}
+{"rva": 6431020, "label": "AppPlatform_Winrt::getDefaultInputMode(vf154): deviceType(vf116): 1->Touch(2), 2/3->GamePad(3), else Mouse(1)"}
+{"rva": 5782176, "label": "AppPlatform_Winrt::getDeviceType(vf116) returns +0x3a8 (0 desktop,1 Windows.Mobile,2 Windows.Xbox)"}
+{"rva": 6427536, "label": "AppPlatform_Winrt::supportsTouch(vf41): deviceType==3 ? .. else (deviceType==...) -> feeds $touch_supported"}
+{"rva": 5951568, "label": "input:InputHandler::getInputMode(this,clientId)->InputMode* (map this+0x11c; null if unknown/-1)"}
+{"rva": 3638188, "label": "input:renderInputMapperControls(ctx): for mappers with getInputMode()==current mode -> mapper->vf6(render) (TouchMapper draws touch HUD)"}
+{"rva": 1631688, "label": "GuiData::ctor"}
+{"rva": 20354632, "label": "AppPlatform_Winrt vtable cell [41] supportsTouch -> 0x621390"}
+{"rva": 20355084, "label": "AppPlatform_Winrt vtable cell [154] getDefaultInputMode -> 0x62212c"}
+{"rva": 20354932, "label": "AppPlatform_Winrt vtable cell [116] getDeviceType -> 0x583aa0"}
+{"rva": 5971996, "label": "TouchMapper::vf1 buildControls(layout)"}
+{"rva": 5972396, "label": "TouchMapper::vf3 tick (returns bool: any pointer down/just released)"}
+{"rva": 5973036, "label": "TouchMapper::vf6 render(ctx): calls control->vf1(ctx) for every touch control"}
+{"rva": 5973076, "label": "TouchMapper::vf7 setScreenSize(w,h)"}
+{"rva": 5962796, "label": "MouseMapper::vf3 tick (returns bool: consumed mouse events from global Mouse queue 0x1978880)"}
+{"rva": 5938456, "label": "GameControllerMapper::vf3 tick (gamepad)"}
+{"rva": 1138892, "label": "ClientInstance::onInputModeChanged(mode): reapplies per-mode options 0x8c..0x91, releases mouse grab when Touch"}
+{"rva": 3717700, "label": "MinecraftInputHandler::setupMappers: creates InputHandler (default mode from AppPlatform vf154) + pushes mappers Gaze,Keyboard,Mouse,GamePad,[Touch if !isHolographic],Motion,DeviceButton,Behavior"}
+{"rva": 3719340, "label": "MinecraftInputHandler::tick -> InputHandler::tick"}
+{"rva": 5951672, "label": "input:InputHandler::registerClient(this,clientId,initialMode)"}
+{"rva": 3314536, "label": "ui:set global UI variables ($mouse/$touch/$game_pad from InputMode, $pocket_screen, $desktop_screen, $is_holographic ...)"}
+{"rva": 2114784, "label": "TouchMapper::vf4 getInputMode -> 2 (ICF-shared with nothing else needed)"}
+{"rva": 709120, "label": "return 1 stub (MouseMapper::vf4 getInputMode=1; also AppPlatform vf42/43 supports kbm/gamepad = true)"}
+{"rva": 2952352, "label": "return 3 stub (GamePad/GameController getInputMode)"}
+{"rva": 3902880, "label": "return 4 stub (MotionControllerMapper getInputMode)"}
+{"rva": 571776, "label": "return 0 stub (Keyboard/Gaze/DeviceButton getInputMode = Undefined)"}
+{"rva": 1631688, "label": "GuiData::ctor"}
+{"rva": 2076032, "label": "ui:ScreenController::setInputMode(mode) stores this+0x24c (2 = Touch -> #touch_being_used)"}
+{"rva": 6454000, "label": "input:HIDController::allocPointerSlot(pointerId)->lowest free 0..n slot (std::map this+0x3c)"}
+{"rva": 6455080, "label": "input:HIDController::dipToPixel(out short[2]*,x,y) multiplies by adapter+0xa0/+0xa4 (default 1.0)"}
+{"rva": 5962088, "label": "input:Pointer::feed(ptr,buttonId,data,x,y,...) shared by Mouse::feed (global 0x1978880) and Multitouch slots (0x19788a8 + i*0x28)"}
+{"rva": 2114784, "label": "TouchMapper::vf4 getInputMode -> 2 (Touch)"}

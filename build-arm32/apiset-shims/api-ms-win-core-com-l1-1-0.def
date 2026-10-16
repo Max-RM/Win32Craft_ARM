@@ -1,0 +1,16 @@
+LIBRARY api-ms-win-core-com-l1-1-0.dll
+EXPORTS
+CoAddRefServerProcess=OLE32.CoAddRefServerProcess
+CoCreateFreeThreadedMarshaler=OLE32.CoCreateFreeThreadedMarshaler
+CoCreateGuid=OLE32.CoCreateGuid
+CoCreateInstanceFromApp=OLE32.CoCreateInstanceFromApp
+CoGetApartmentType=OLE32.CoGetApartmentType
+CoGetContextToken=OLE32.CoGetContextToken
+CoGetInterfaceAndReleaseStream=OLE32.CoGetInterfaceAndReleaseStream
+CoGetObjectContext=OLE32.CoGetObjectContext
+CoMarshalInterThreadInterfaceInStream=OLE32.CoMarshalInterThreadInterfaceInStream
+CoReleaseServerProcess=OLE32.CoReleaseServerProcess
+CoTaskMemAlloc=OLE32.CoTaskMemAlloc
+CoTaskMemFree=OLE32.CoTaskMemFree
+IIDFromString=OLE32.IIDFromString
+StringFromGUID2=OLE32.StringFromGUID2

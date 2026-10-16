@@ -1,0 +1,3 @@
+static void *current_app_platform(void)
+{
+    if (!game_app_main) return NULL;

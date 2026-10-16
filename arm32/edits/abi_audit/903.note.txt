@@ -1,0 +1,1 @@
+ARM32 reviewer fix: route the InputPane class to the fake (1/1 of the activation hook).

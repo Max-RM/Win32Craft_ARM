@@ -1,0 +1,2 @@
+    return activation_ok && device_ok;
+}

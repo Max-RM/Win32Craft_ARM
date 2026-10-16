@@ -1,0 +1,8 @@
+    if (original == arm32_iat_thumb_pointer(hook)) {
+        /* second installation: remembering our own hook as "original" would make the hook call itself forever */
+        wsprintfA(line, "ARM32 hook %s: the cell already holds this hook - the saved original is kept", what);
+        log_line(line);
+        return !original_out || *original_out != NULL;
+    }
+    if (original_out) *original_out = original;
+    if (!arm32_patch_cell(cell, original, arm32_iat_thumb_pointer(hook), NULL, what)) {

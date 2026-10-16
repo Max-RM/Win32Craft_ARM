@@ -1,0 +1,3 @@
+static BOOL arm32_activation_override(
+    LPCWSTR class_name, const GUID *iid, void **result)
+{

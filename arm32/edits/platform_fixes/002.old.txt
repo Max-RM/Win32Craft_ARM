@@ -1,0 +1,23 @@
+static BOOL apply_runtime_patches(BYTE *image,
+                                  const RuntimeBytePatch *patches,
+                                  SIZE_T count)
+{
+    SIZE_T index;
+
+    for (index = 0; index < count; ++index) {
+        BYTE *site = image + patches[index].rva;
+        DWORD old_protection;
+        DWORD ignored;
+
+        if (memcmp(site, patches[index].expected, patches[index].size) != 0 ||
+            !VirtualProtect(site, patches[index].size,
+                            PAGE_EXECUTE_READWRITE, &old_protection)) {
+            log_line(patches[index].failure);
+            return FALSE;
+        }
+        CopyMemory(site, patches[index].replacement, patches[index].size);
+        VirtualProtect(site, patches[index].size, old_protection, &ignored);
+        FlushInstructionCache(GetCurrentProcess(), site, patches[index].size);
+    }
+    return TRUE;
+}

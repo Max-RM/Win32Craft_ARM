@@ -1,0 +1,2 @@
+    ZeroMemory(startup_context, sizeof(startup_context));
+    startup_context[0x1c / sizeof(DWORD)] = 0xf;    /* empty SSO std::string: size 0 (+0x18), capacity 0xF (+0x1c) */

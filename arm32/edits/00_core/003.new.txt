@@ -1,0 +1,276 @@
+static void start_115_constructor_watchdog(void);
+
+#ifdef WIN32CRAFT_ARM32
+/* ======================================================================================================
+ * ARM32 shared helpers (unit 00_core).  Signatures are fixed by arm32/PORT_RULES.md.
+ * ====================================================================================================== */
+static BYTE *game_image;
+
+/* lower-case hex dump "de ad be ef " (at most (out_size-1)/3 bytes) */
+static void arm32_hex_dump(char *out, SIZE_T out_size, const BYTE *bytes, SIZE_T count)
+{
+    static const char digits[] = "0123456789abcdef";
+    SIZE_T index;
+    SIZE_T used = 0;
+    if (!out || !out_size) return;
+    for (index = 0; index < count && used + 3 < out_size; ++index) {
+        out[used++] = digits[bytes[index] >> 4];
+        out[used++] = digits[bytes[index] & 15u];
+        out[used++] = ' ';
+    }
+    out[used] = 0;
+}
+
+/* Patch a pointer-sized data cell (vtable / IAT / std::function cell).  When `expected` is not NULL the cell must still
+ * hold it (so a wrong RVA or an already patched cell is reported instead of corrupted).  `original_out` receives the
+ * previous value on success.  Protection is flipped to PAGE_READWRITE (never executable) and restored. */
+static BOOL arm32_patch_cell(void **cell, const void *expected, void *replacement,
+                             void **original_out, const char *what)
+{
+    DWORD old_protection = 0;
+    DWORD ignored;
+    void *original;
+    char line[224];
+
+    if (!what) what = "(unnamed)";
+    if (!cell || ((ULONG_PTR)cell & 3u) || IsBadReadPtr(cell, sizeof(*cell))) {
+        wsprintfA(line, "ARM32 patch %s: cell %p is null, misaligned or unreadable", what, (void *)cell);
+        log_line(line);
+        return FALSE;
+    }
+    original = *cell;
+    if (expected && original != expected) {
+        wsprintfA(line, "ARM32 patch %s: cell %p holds %p but expected %p - not patched",
+                  what, (void *)cell, original, expected);
+        log_line(line);
+        return FALSE;
+    }
+    if (!VirtualProtect(cell, sizeof(*cell), PAGE_READWRITE, &old_protection)) {
+        wsprintfA(line, "ARM32 patch %s: VirtualProtect(%p, RW) failed, error=%lu",
+                  what, (void *)cell, (unsigned long)GetLastError());
+        log_line(line);
+        return FALSE;
+    }
+    *cell = replacement;
+    VirtualProtect(cell, sizeof(*cell), old_protection, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), cell, sizeof(*cell));
+    if (original_out) *original_out = original;
+    wsprintfA(line, "ARM32 patch %s: cell %p %p -> %p", what, (void *)cell, original, replacement);
+    log_line(line);
+    return TRUE;
+}
+
+/* Patch one byte of read-only data (e.g. a character of a string literal) after verifying its current value. */
+static BOOL arm32_patch_byte(BYTE *address, BYTE expected, BYTE replacement, const char *what)
+{
+    DWORD old_protection = 0;
+    DWORD ignored;
+    BYTE original;
+    char line[224];
+
+    if (!what) what = "(unnamed)";
+    if (!address || IsBadReadPtr(address, 1)) {
+        wsprintfA(line, "ARM32 patch byte %s: address %p is null or unreadable", what, (void *)address);
+        log_line(line);
+        return FALSE;
+    }
+    original = *address;
+    if (original != expected) {
+        wsprintfA(line, "ARM32 patch byte %s: %p holds %02x but expected %02x - not patched",
+                  what, (void *)address, (unsigned)original, (unsigned)expected);
+        log_line(line);
+        return FALSE;
+    }
+    if (!VirtualProtect(address, 1, PAGE_READWRITE, &old_protection)) {
+        wsprintfA(line, "ARM32 patch byte %s: VirtualProtect(%p, RW) failed, error=%lu",
+                  what, (void *)address, (unsigned long)GetLastError());
+        log_line(line);
+        return FALSE;
+    }
+    *address = replacement;
+    VirtualProtect(address, 1, old_protection, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), address, 1);
+    wsprintfA(line, "ARM32 patch byte %s: %p %02x -> %02x", what, (void *)address,
+              (unsigned)original, (unsigned)replacement);
+    log_line(line);
+    return TRUE;
+}
+
+/* Compare image bytes with a table before hooking; on mismatch log the first bytes of both. */
+static BOOL arm32_check_bytes(const BYTE *address, const BYTE *expected, SIZE_T size, const char *what)
+{
+    char got_text[80];
+    char want_text[80];
+    char line[320];
+    SIZE_T shown;
+    SIZE_T first_diff;
+
+    if (!what) what = "(unnamed)";
+    if (!address || !expected || IsBadReadPtr(address, size)) {
+        wsprintfA(line, "ARM32 check %s: %p (%lu bytes) is null or unreadable", what, (const void *)address,
+                  (unsigned long)size);
+        log_line(line);
+        return FALSE;
+    }
+    if (memcmp(address, expected, size) == 0) return TRUE;
+    for (first_diff = 0; first_diff < size && address[first_diff] == expected[first_diff]; ++first_diff) {
+    }
+    shown = size < 24 ? size : 24;
+    arm32_hex_dump(got_text, sizeof(got_text), address, shown);
+    arm32_hex_dump(want_text, sizeof(want_text), expected, shown);
+    wsprintfA(line, "ARM32 check %s: bytes at %p differ at +%lu: got [%s] expected [%s]", what, (const void *)address,
+              (unsigned long)first_diff, got_text, want_text);
+    log_line(line);
+    return FALSE;
+}
+
+/* Fallback code hook: absolute jump written over a function entry.
+ *   site % 4 == 0 : DF F8 00 F0 | literal                      (ldr.w pc,[pc,#0]; 8 bytes, literal at site+4)
+ *   site % 4 == 2 : DF F8 04 F0 | 00 BF | literal              (ldr.w pc,[pc,#4]; 10 bytes, literal at site+6)
+ * Thumb LDR(literal) computes Align(PC,4)+imm with PC = site+4, and a load into PC from a non-word-aligned address is
+ * UNPREDICTABLE (ARM ARM A8.8.64).  For site%4==2 Align(site+4,4) = site+2, so the "#2" form from the brief would read
+ * the literal at the unaligned address site+4; #4 reads site+6, which is word aligned.  The literal has bit 0 set so
+ * the jump stays in Thumb state.  The two bytes at site+4 (nop) are never executed. */
+static BOOL arm32_write_thumb_jump(BYTE *site, const void *target, const char *what)
+{
+    BYTE stub[10];
+    BYTE before[10];
+    char before_text[40];
+    char line[256];
+    DWORD literal;
+    DWORD old_protection = 0;
+    DWORD ignored;
+    SIZE_T size;
+
+    if (!what) what = "(unnamed)";
+    if (!site || !target || ((ULONG_PTR)site & 1u) || IsBadReadPtr(site, sizeof(stub))) {
+        wsprintfA(line, "ARM32 thumb jump %s: bad site %p (null, odd or unreadable) or target %p",
+                  what, (void *)site, target);
+        log_line(line);
+        return FALSE;
+    }
+    literal = (DWORD)(ULONG_PTR)target | 1u;
+    stub[0] = 0xdf; stub[1] = 0xf8; stub[3] = 0xf0;
+    if (((ULONG_PTR)site & 3u) == 0) {
+        stub[2] = 0x00;
+        memcpy(stub + 4, &literal, 4);
+        size = 8;
+    } else {
+        stub[2] = 0x04;
+        stub[4] = 0x00; stub[5] = 0xbf;
+        memcpy(stub + 6, &literal, 4);
+        size = 10;
+    }
+    memcpy(before, site, sizeof(before));
+    if (!VirtualProtect(site, size, PAGE_EXECUTE_READWRITE, &old_protection)) {
+        wsprintfA(line, "ARM32 thumb jump %s: VirtualProtect(%p, RWX) failed, error=%lu",
+                  what, (void *)site, (unsigned long)GetLastError());
+        log_line(line);
+        return FALSE;
+    }
+    memcpy(site, stub, size);
+    VirtualProtect(site, size, old_protection, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), site, size);
+    arm32_hex_dump(before_text, sizeof(before_text), before, size);
+    wsprintfA(line, "ARM32 thumb jump %s: %p -> %08lx (%lu bytes, was [%s])", what, (void *)site,
+              (unsigned long)literal, (unsigned long)size, before_text);
+    log_line(line);
+    return TRUE;
+}
+
+/* ---- ARM32 crash / stack diagnostics (shared by the exception handlers below) ---- */
+
+/* game image range: the real module base (game_image, set by Win32Bootstrap) or the preferred 0x400000, size from the PE
+ * header (SizeOfImage), falling back to IMAGE_SIZE_128_ARM_PATCHED when the header cannot be read */
+static void arm32_game_image_range(ULONG_PTR *base_out, ULONG_PTR *size_out)
+{
+    ULONG_PTR base = game_image ? (ULONG_PTR)game_image : 0x00400000u;
+    ULONG_PTR size = 0x01731000u;
+    DWORD pe_offset;
+
+    if (!IsBadReadPtr((const void *)base, 0x40)) {
+        pe_offset = *(const DWORD *)(base + 0x3c);
+        if (pe_offset >= 0x40 && pe_offset < 0x1000 &&
+            !IsBadReadPtr((const void *)(base + pe_offset), 0x54) &&
+            *(const DWORD *)(base + pe_offset) == 0x00004550u) {
+            size = *(const DWORD *)(base + pe_offset + 0x50);
+        }
+    }
+    *base_out = base;
+    *size_out = size;
+}
+
+/* TRUE when `value` (Thumb bit tolerated) points into the game image; *rva_out = (value & ~1) - base */
+static BOOL arm32_in_image(ULONG_PTR value, ULONG_PTR base, ULONG_PTR size, DWORD *rva_out)
+{
+    value &= ~(ULONG_PTR)1;
+    if (value < base || value >= base + size) return FALSE;
+    if (rva_out) *rva_out = (DWORD)(value - base);
+    return TRUE;
+}
+
+/* " (game rva 00123456)" or "" */
+static void arm32_rva_text(char *out, SIZE_T out_size, ULONG_PTR value, ULONG_PTR base, ULONG_PTR size)
+{
+    DWORD rva;
+    out[0] = 0;
+    if (out_size >= 24 && arm32_in_image(value, base, size, &rva))
+        wsprintfA(out, " (game rva %08lx)", (unsigned long)rva);
+}
+
+static void arm32_log_context(const char *tag, const CONTEXT *context)
+{
+    ULONG_PTR base;
+    ULONG_PTR size;
+    char pc_text[32];
+    char lr_text[32];
+    char line[256];
+
+    arm32_game_image_range(&base, &size);
+    arm32_rva_text(pc_text, sizeof(pc_text), context->Pc, base, size);
+    arm32_rva_text(lr_text, sizeof(lr_text), context->Lr, base, size);
+    wsprintfA(line, "%s: pc=%08lx%s lr=%08lx%s sp=%08lx cpsr=%08lx", tag,
+              (unsigned long)context->Pc, pc_text, (unsigned long)context->Lr, lr_text,
+              (unsigned long)context->Sp, (unsigned long)context->Cpsr);
+    log_line(line);
+    wsprintfA(line, "  r0=%08lx r1=%08lx r2=%08lx r3=%08lx r4=%08lx r5=%08lx",
+              (unsigned long)context->R0, (unsigned long)context->R1, (unsigned long)context->R2,
+              (unsigned long)context->R3, (unsigned long)context->R4, (unsigned long)context->R5);
+    log_line(line);
+    wsprintfA(line, "  r6=%08lx r7=%08lx r8=%08lx r9=%08lx r10=%08lx r11=%08lx r12=%08lx",
+              (unsigned long)context->R6, (unsigned long)context->R7, (unsigned long)context->R8,
+              (unsigned long)context->R9, (unsigned long)context->R10, (unsigned long)context->R11,
+              (unsigned long)context->R12);
+    log_line(line);
+}
+
+/* There is no EBP chain on ARM: scan up to `max_words` stack words from `sp` and print every value that points into the
+ * game image (Thumb bit tolerated) as a candidate return address, at most `max_hits` lines. */
+static void arm32_log_stack_scan(const char *tag, ULONG_PTR sp, UINT max_words, UINT max_hits)
+{
+    const DWORD *stack = (const DWORD *)sp;
+    ULONG_PTR base;
+    ULONG_PTR size;
+    UINT index;
+    UINT hits = 0;
+    DWORD rva;
+    char line[160];
+
+    if (!sp || (sp & 3u)) {
+        wsprintfA(line, "  %s stack scan skipped: sp=%08lx", tag, (unsigned long)sp);
+        log_line(line);
+        return;
+    }
+    arm32_game_image_range(&base, &size);
+    for (index = 0; index < max_words; ++index) {
+        DWORD value;
+        if (IsBadReadPtr(stack + index, sizeof(*stack))) break;
+        value = stack[index];
+        if (!arm32_in_image(value, base, size, &rva)) continue;
+        wsprintfA(line, "  %s stack sp+%03x: %08lx -> game rva %08lx", tag,
+                  (unsigned)(index * 4), (unsigned long)value, (unsigned long)rva);
+        log_line(line);
+        if (++hits >= max_hits) break;
+    }
+}
+#endif

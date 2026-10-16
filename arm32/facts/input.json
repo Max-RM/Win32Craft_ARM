@@ -1,0 +1,539 @@
+{
+ "area": "input",
+ "facts": [
+  {
+   "id": "input.app_platform_from_app_main",
+   "x86_symbol": "current_app_platform(): *(void**)(game_app_main + 0x1c)  [host_is_128]",
+   "x86_value": "0x1c",
+   "kind": "offset",
+   "arm_rva": "0x1c",
+   "summary": "AppMain (MCPE_Host) + 0x1c holds the AppPlatform_Winrt* (every queue_* function starts with this).",
+   "arm_signature": "AppPlatform_Winrt* platform = *(AppPlatform_Winrt**)((BYTE*)game_app_main + 0x1c)",
+   "x86_to_arm_notes": "UNCHANGED: same offset 0x1c on ARM. game_app_main is the AppMain object returned by the (other-area) AppMain factory; vtable .?AVAppMain@MCPE_Host@@ RVA 0x013694a8. The ctor also publishes the same pointer into a global at RVA 0x019b7ea8 (.data); that global is NOT needed on the 1.2.8 path (only the 0.15.10 path used RVA_APP_PLATFORM_GLOBAL).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 57ceec -> AppMain::ctor stores vtable 0x13694a8 (movw/movt) then `add.w r6,r4,#0x1c; str.w r8,[r6]` (zero), later `bl 57fc30` (AppPlatform_Winrt factory) and `str r3,[r6]` stores the result into AppMain+0x1c",
+    "arm32re.py func 57fc30 -> new(0x428)+memset+`bl 581610` (AppPlatform_Winrt ctor) returns the object that is stored at +0x1c; 581610 writes vtable .?AVAppPlatform_Winrt@@ (0x13695a4)",
+    "same offset as x86 current_app_platform() (4-byte pointer fields keep identical layout in the early part of AppMain)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.platform_adapter_offset",
+   "x86_symbol": "get_hid_controller(): adapter = *(BYTE**)(platform + 0x3b4)  [host_is_128]",
+   "x86_value": "0x3b4",
+   "kind": "offset",
+   "arm_rva": "0x3b4",
+   "summary": "AppPlatform_Winrt + 0x3b4 is a unique_ptr to the 0x170-byte \"input adapter\" object (owns mutex+event vector, +4 = HIDController*).",
+   "arm_signature": "InputAdapter* adapter = *(InputAdapter**)((BYTE*)platform + 0x3b4)",
+   "x86_to_arm_notes": "UNCHANGED: 0x3b4 on ARM as well. AppPlatform_Winrt object size is 0x428 (so IsBadReadPtr(platform+0x3b4, 4) is fine). The adapter is created by the AppPlatform_Winrt ctor, so it exists as soon as AppMain exists.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 581610 (AppPlatform_Winrt::ctor): `add.w r6,r4,#0x3b4 ; str.w r8,[r6]` (zero-init) ... later `bl 58530c` result moved into [r6] (unique_ptr assign, old value destroyed via sub_5851f0 + operator delete(p,0x170))",
+    "AppPlatform_Winrt::vf18 (0x582b00) does `ldr.w r0,[r0,#0x3b4]` and captures it in the mouse lambda (lambda+4 == adapter), exactly like x86 get_mouse_mode_controller (object+4 = adapter)",
+    "sub_57fc30 allocates 0x428 bytes for the whole AppPlatform_Winrt object"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.adapter_to_controller",
+   "x86_symbol": "get_hid_controller(): controller = *(BYTE**)(adapter + 4)",
+   "x86_value": "0x4",
+   "kind": "offset",
+   "arm_rva": "0x4",
+   "summary": "InputAdapter+4 = HIDController* (the C++/CX ref object that owns the key/mouse state bytes).",
+   "arm_signature": "HIDController* controller = *(HIDController**)((BYTE*)adapter + 4)",
+   "x86_to_arm_notes": "UNCHANGED: adapter+4. NOTE adapter+0 is a ref pointer (CoreWindow) and the object has no vtable, so `*(void**)adapter` is not a vtable on ARM.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 586b00 (InputAdapter::ctor): `str r4,[r5,#4]` stores the HIDController returned by `bl 623c74` (HIDController ctor) into adapter+4",
+    "mouse-mode lambda bodies 0x58e88c/0x58e8f0/0x58e93c: `ldr r3,[r0,#4]; ldr r2,[r3,#4]` = this->adapter->controller then access +0xa0/+0x28 on it"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.controller_input_handler",
+   "x86_symbol": "queue_*: input_handler = *(void**)(controller + 0x10)",
+   "x86_value": "0x10",
+   "kind": "offset",
+   "arm_rva": "0x10",
+   "summary": "HIDController+0x10 is the object passed as `this` to EnqueueInput; on ARM this is the InputAdapter itself (same pointer as *(platform+0x3b4)).",
+   "arm_signature": "void* input_handler = *(void**)((BYTE*)controller + 0x10)  /* == adapter */",
+   "x86_to_arm_notes": "UNCHANGED offset 0x10. Semantics: the \"input handler\" is the 0x170-byte adapter (mutex at +8, std::vector<unique_ptr<HIDItem>> at +0x38). Host may keep reading controller+0x10 (as x86) or use the adapter pointer directly; both equal.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 623c74 (HIDController::ctor(this=r0, adapter=r1, r2)): `strd r5,r8,[r4,#0x10]` with r5 = ctor arg r1 = adapter (sub_586b00 passes `mov r1,r5` with r5 = adapter this)",
+    "every real event producer (sub_62499c 0x624a42, sub_625d64 0x625dd0, sub_627188 0x6271c2, sub_627108 0x627164, sub_626570 0x62679e) does `ldr r0,[controller,#0x10]` and passes it as r0 of 0x587294 (EnqueueInput)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.input_handler_readable_size",
+   "x86_symbol": "input_events_enabled = controller && input_handler && !IsBadReadPtr(input_handler, 0x1d0)",
+   "x86_value": "0x1d0",
+   "kind": "offset",
+   "arm_rva": "0x170",
+   "summary": "Size of the input handler object: ARM allocation is exactly 0x170 bytes (x86 probe used 0x1d0).",
+   "arm_signature": "IsBadReadPtr(input_handler, 0x170)",
+   "x86_to_arm_notes": "CHANGED: do NOT probe 0x1d0 bytes on ARM (it is larger than the 0x170-byte allocation and could fault/false-negative). Only offsets +8 (mutex) .. +0x44 (vector) are touched by EnqueueInput, so probing 0x48 or 0x170 is enough. Appears at the activation sites (win32_host.c 11939 for 1.2.8, 12023 for 1.1.5); use 0x170 on the 1.2.8 path.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 58530c -> `mov.w r0,#0x170; bl new; memset(...,0x170); bl 586b00` (object constructed in place)",
+    "arm32re.py func 581610 -> destroy path `movs r1,#0x170; bl operator_delete_sized` confirms size 0x170"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.enqueue_input",
+   "x86_symbol": "RVA_128_ENQUEUE_INPUT / GameEnqueueInputFn (thiscall(void* handler, void* unique_ptr event))",
+   "x86_value": "0x007dd0c0",
+   "kind": "function",
+   "arm_rva": "0x00587294",
+   "summary": "InputAdapter::enqueueInput(unique_ptr<HIDItem>&&): locks adapter mutex (this+8), push_back (move) onto vector at this+0x38, unlocks; deletes the item itself if the slot is still non-null afterwards.",
+   "arm_signature": "void enqueue_input(void* adapter /*r0 = *(controller+0x10)*/, void** item_slot /*r1 = POINTER TO A SLOT that holds the raw HIDItem*; callee moves it out and zeroes the slot*/)  -> void; AAPCS, callee-saved r4-r11, no stack args",
+   "x86_to_arm_notes": "CHANGED ABI: x86 passed the unique_ptr by value (raw event pointer on the stack). MSVC-ARM passes a non-trivially-destructible unique_ptr by reference: r1 is the ADDRESS of a pointer variable. Host: `void* slot = event; enqueue(input_handler, &slot);`. After the call slot==NULL (ownership moved into the queue). Never read/free `event` afterwards. Plain C call: delete GameEnqueueInputFn thiscall typedef -> `typedef void (*GameEnqueueInputFn)(void*, void**)`. Thread-safe (internal std mutex).",
+   "expected_bytes": "2d e9 f0 48 0d f1 10 0b 79 f6 ae f7",
+   "evidence": [
+    "arm32re.py func 587294: push {r4-r7,fp,lr}; r4=r1(slot ptr) saved; `add r5,r0,#8; _Mtx_lock(r5)`; `add.w r0,r6,#0x38; mov r1,r4; bl 2f7c18` (vector push_back); `_Mtx_unlock`; `ldr r3,[r4]; cbz; ... [[r3]] vtable slot0 (r1=1)` = delete item if still owned",
+    "arm32re.py func 2f7c18: `ldr r3,[r4]; str 0,[r4]; str r3,[r2]` = move-from slot into vector storage (also realloc path), confirming r1 is a pointer to the slot",
+    "every real caller (sub_62499c 0x624a48, sub_625d64 0x625dd6, sub_627188 0x6271c8, sub_627108 0x62716a, sub_626570, sub_625a50 0x625ade) builds `[sp+..]=item; r1=&that; r0=[controller+0x10]; bl 587294`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.make_mouse_event",
+   "x86_symbol": "RVA_128_MOUSE_EVENT_FACTORY / call_game_make_mouse_event (ecx=out, edx=&action, stack: &pressed,&payload,&x,&y)",
+   "x86_value": "0x008d6500",
+   "kind": "function",
+   "arm_rva": "0x0062a128",
+   "summary": "make_unique<MouseItem>(action, pressed, payload, x, y): operator new(0x14), vtable .?AVMouseItem@@ (0x136dde0), type byte +4 = 0.",
+   "arm_signature": "void** make_mouse_event(void** out /*r0: sret slot for unique_ptr<MouseItem>*/, const int* action /*r1: low byte -> item+0x10*/, const int* pressed /*r2: low byte -> item+0x11 (wheel: signed delta byte)*/, const int* payload /*r3: dword -> item+0xc, 0=absolute pos, 1=relative delta*/, const short* x /*[sp+0]: halfword -> item+8*/, const short* y /*[sp+4]: halfword -> item+0xa*/) -> r0 = out; plain AAPCS, caller pops, no callee-stack cleanup",
+   "x86_to_arm_notes": "CHANGED ABI: delete the naked x86 bridge call_game_make_mouse_event; call as an ordinary C function pointer. Argument order is identical to the x86 bridge (out, &action, &pressed, &payload, &x, &y): r0=out slot, r1=&action, r2=&pressed, r3=&payload, then &x and &y on the stack. WIDTH FIX: this factory dereferences action, pressed and payload as 32-bit LDR (and x,y as 16-bit LDRH). The x86 host passed BYTE* for action/pressed (relied on little-endian over-read). On ARM pass pointers to 32-bit ints (`int action32=action, pressed32=(int)(signed char)pressed;`) and pointers to 16-bit `short` for x/y (payload stays 32-bit). Wheel: action=4, pressed32 = clamped delta (-128..127), x=y=0, payload=0, exactly as the real PointerWheelChanged handler (sub_625a50). Result checks stay valid: event != NULL, readable >= 0x14, *((BYTE*)event+4)==0. Same x/y clamp rules (short range for payload!=0). 0x62a1bc/0x62a208 are template-sibling factories with other argument widths; do not use them.",
+   "expected_bytes": "2d e9 f8 4f 0d f1 20 0b 81 46 14 20",
+   "evidence": [
+    "arm32re.py func 62a128: new(0x14) via 0xb4929c; stores [0]=vtable 0x1769dde0(VA) .?AVMouseItem@@, strb 0 -> [4], strh [r4]->[8] (stack arg0), strh [r4]->[0xa] (stack arg1), r5=[r3] -> [0xc], strb [r8]=*r1 -> [0x10], strb [r6]=*r2 -> [0x11], `str r0,[sb]` (out slot), `mov r0,sb`",
+    "real caller sub_62499c (pointer move, payload=1): 0x624a1c..0x624a38 sets r3=&1(payload), r2=&0(pressed int), r1=&0(action int), [sp]=&x([r7+0x28]),[sp+4]=&y([r7+0x2a]) then bl 0x62a128 -> matches the arg map (and matches host comment payload=1 for UWP direct-pointer)",
+    "real caller sub_626570 (press/release) passes ints 2/1 as action/pressed and controller+0xc4/+0xc6 (shorts) as x/y; sub_625a50 (wheel) uses sibling 0x62a208 with action=4 and a signed byte clamp +/-0x7f/-0x80 = host WM_MOUSEWHEEL clamp",
+    "position evidence: x86 order mouse(0x8d6500) < key(0x8d65e0) < text(0x8d6670); ARM order mouse 0x62a128 < key 0x62a254 < text 0x62a2b4, three MouseItem template instantiations occupy the first 0x12c bytes (x86 0xe0 = 3 x ~0x4a)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.mouse_event_layout",
+   "x86_symbol": "queue_mouse_event: IsBadReadPtr(event,0x14) && *((BYTE*)event+4)==0",
+   "x86_value": "0x14 / 0",
+   "kind": "offset",
+   "arm_rva": "0x14",
+   "summary": "MouseItem: size 0x14, [0]=vtable, [4]=item type 0, [8]=x(short), [0xa]=y(short), [0xc]=payload(dword), [0x10]=action(byte), [0x11]=pressed/wheel(byte).",
+   "arm_signature": "sizeof(MouseItem)=0x14; item type byte at +4 == 0",
+   "x86_to_arm_notes": "UNCHANGED: size 0x14 and type 0 are the same on ARM, so the host sanity check stays valid.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 62a128: `movs r0,#0x14; bl new` ... `strb.w sl(=0),[r0,#4]`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.make_key_event",
+   "x86_symbol": "RVA_128_KEY_EVENT_FACTORY / call_game_make_key_event_115 (ecx=out, edx=&key, stack &state)",
+   "x86_value": "0x008d65e0",
+   "kind": "function",
+   "arm_rva": "0x0062a254",
+   "summary": "make_unique<KeyCodeItem>(key, state): operator new(0x10), vtable .?AVKeyCodeItem@@ (0x136ddf0), type byte +4 = 2, key byte +8, state dword +0xc.",
+   "arm_signature": "void** make_key_event(void** out /*r0 sret unique_ptr<KeyCodeItem>*/, const int* key /*r1: low byte = mapped key -> item+8*/, const int* state /*r2: dword -> item+0xc, 1=down 0=up*/) -> r0 = out; plain AAPCS, no stack args",
+   "x86_to_arm_notes": "CHANGED ABI: delete call_game_make_key_event_115 naked bridge; plain 3-register call. Argument order out,&key,&state is the same as the x86 bridge. WIDTH FIX: key is LDR (32-bit) read, so pass a pointer to a 32-bit int (`int key32 = mapped_key;`) instead of `&mapped_key` (BYTE); state is already DWORD. Post-check unchanged: event != NULL, readable >= 0x10, *((BYTE*)event+4)==2.",
+   "expected_bytes": "2d e9 78 48 0d f1 10 0b 06 46 10 20",
+   "evidence": [
+    "arm32re.py func 62a254: new(0x10); `ldr r4,[r4]`(state) ; `ldr r2,[r5]`(key) ; `movs r3,#2; strb r3,[r0,#4]`; vtable 0x1769ddf0 .?AVKeyCodeItem@@; `strb r2,[r0,#8]; str r4,[r0,#0xc]; str r0,[r6]`",
+    "real callers: HIDController::keyDown 0x627188 (state r2=&1 -> [r7]=1, key r1=&[r7+0x2c]) and onKeyUp 0x625d64 ([r7]=0, key [r7+0x18]); both then enqueue via 0x587294 and update controller[0xc9+key]",
+    "type byte 2 is KeyCodeItem on x86 host check ([4]!=2) too"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.make_text_event",
+   "x86_symbol": "RVA_128_TEXT_EVENT_FACTORY / call_game_make_text_event_115 (ecx=out, edx=&std::string, stack &primary_flag,&sequence_flag)",
+   "x86_value": "0x008d6670",
+   "kind": "function",
+   "arm_rva": "0x0062a2b4",
+   "summary": "make_unique<TextItem>(const std::string& text, primaryFlag, sequenceByte): operator new(0x24), vtable .?AVTextItem@@ (0x136de08), type byte +4 = 3, std::string copy at +8 (16-byte SSO, size +0x18, cap +0x1c), flags at +0x20/+0x21.",
+   "arm_signature": "void** make_text_event(void** out /*r0 sret unique_ptr<TextItem>*/, const MsvcSmallString* text /*r1*/, const BYTE* primary_flag /*r2 -> item+0x20*/, const BYTE* sequence_flag /*r3 -> item+0x21*/) -> r0 = out; plain AAPCS, no stack args",
+   "x86_to_arm_notes": "CHANGED ABI: x86 needed a naked bridge (ECX/EDX + 2 stack args, plain RET). On ARM all four arguments are in r0-r3: `make_text(&event, &text_115, &primary_flag, &sequence_flag)` as an ordinary call. The string layout is UNCHANGED (MSVC 14.1 ARM std::string = 16-byte SSO buffer, size@+0x10, capacity@+0x14, heap pointer in buffer when capacity>=0x10), so MsvcSmallString115 {char storage[16]; DWORD length; DWORD capacity=15;} remains correct; the factory copy-assigns it (sub_841b8 = basic_string::assign(str,0,npos)), so a stack temporary is fine. Flag bytes are LDRB so BYTE* is correct here. Post-check unchanged: readable >= 0x24, ((BYTE*)event)[4]==3. Order check: primary_flag is item+0x20 (host passes 0), sequence_flag is item+0x21 (host passes controller[0x1f0] then increments).",
+   "expected_bytes": "2d e9 f0 4f 0d f1 1c 0b 85 b0 6f 46",
+   "evidence": [
+    "arm32re.py func 62a2b4: new(0x24); `ldrb r6,[r4]`(r4=r3 arg3) ; `ldrb r4,[r5]`(r5=r2 arg2); `movs r3,#3; strb r3,[r0,#4]`; vtable 0x1769de08; `strd r2(0),r3(0xf),[r0,#0x18]` (size/cap of embedded string at +8); `adds r0,#8; bl 841b8(r0=item+8,r1=string,r2=0,r3=-1)`; `strb.w r4,[r8,#0x20]; strb.w r6,[r8,#0x21]`",
+    "arm32re.py func 841b8: reads source size at [r1+0x10] and capacity [r1+0x14], inline buffer when cap<0x10 else [r1] pointer -> identical to MsvcSmallString115",
+    "real caller HIDController::queueTextItem 0x627108: `ldrb r2,[r0,#0x1f0]; ... strb r2,[r7+0x10](seq); strb 0,[r7+0x14](primary); r3=&seq(r7+0x10); r2=&primary(r7+0x14); r1=string; bl 62a2b4` -> r2=primary, r3=sequence"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.text_event_layout",
+   "x86_symbol": "queue_character_event: IsBadReadPtr(event,0x24) && ((BYTE*)event)[4]==3",
+   "x86_value": "0x24 / 3",
+   "kind": "offset",
+   "arm_rva": "0x24",
+   "summary": "TextItem size 0x24 and type byte 3.",
+   "arm_signature": "sizeof(TextItem)=0x24; type byte at +4 == 3",
+   "x86_to_arm_notes": "UNCHANGED, host check remains valid.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 62a2b4: `movs r0,#0x24; bl new`, `movs r3,#3; strb r3,[r0,#4]`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.key_event_layout",
+   "x86_symbol": "queue_keyboard_event: IsBadReadPtr(event,0x10) && ((BYTE*)event)[4]==2",
+   "x86_value": "0x10 / 2",
+   "kind": "offset",
+   "arm_rva": "0x10",
+   "summary": "KeyCodeItem size 0x10 and type byte 2.",
+   "arm_signature": "sizeof(KeyCodeItem)=0x10; type byte at +4 == 2",
+   "x86_to_arm_notes": "UNCHANGED, host check remains valid.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 62a254: `movs r0,#0x10`, `movs r3,#2; strb r3,[r0,#4]`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.map_virtual_key",
+   "x86_symbol": "RVA_128_MAP_VIRTUAL_KEY / Game115MapVirtualKeyFn = int fastcall(int vk_minus_8)",
+   "x86_value": "0x008d1720",
+   "kind": "function",
+   "arm_rva": "0x00626d10",
+   "summary": "HIDController virtual-key -> Minecraft key code mapper: a `tbh [pc,r0,lsl #1]` jump table indexed by (VirtualKey - 8), 0xd7 entries (0..0xd6), returns the mapped key code in r0 (0 = unmapped).",
+   "arm_signature": "unsigned int map_virtual_key(unsigned int vk_minus_8 /*r0, MUST be <= 0xd6 or the TBH jumps out of the table*/) -> r0 = mapped key (low byte used); leaf, no stack args",
+   "x86_to_arm_notes": "CHANGED CC only: x86 fastcall(ecx) -> plain AAPCS (r0). Keep the host guard `if (virtual_key < 8 || virtual_key > 0xde) return FALSE;` (identical bounds: the real callers check `sub r0,r3,#8; cmp r0,#0xd6; bhi skip`) and call `map_virtual_key(virtual_key - 8)`; the result `(BYTE)` stays nonzero-checked. Both real callers (key-down handler 0x625b10 @0x625d4c and key-up 0x625d64 @0x625da0) behave the same. Function is 1016 bytes (TBH table + case bodies), not a hook target.",
+   "expected_bytes": "2d e9 00 48 eb 46 df e8 10 f0 d7 00",
+   "evidence": [
+    "arm32re.py func 625d64 (onKeyUp): `ldr r3,[r7,#0x18]`(VirtualKey from args vtable+0x18) ; `sub.w r0,r3,#8 ; cmp r0,#0xd6 ; bhi -> r5=0 ; else bl 626d10 ; r5=r0` then uses r5 as key and as index into controller+0xc9",
+    "arm32re.py callers 626d10 -> exactly two call sites: 0x625d4c (sub_625b10 key-down) and 0x625da0 (sub_625d64 key-up)",
+    "arm32re.py func 626d10: `push {fp,lr}; mov fp,sp; tbh [pc,r0,lsl #1]` + inline halfword table; matches the x86 host comment \"HIDController subtracts the first VirtualKey value before entering this jump table\""
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.vk_range_guard",
+   "x86_symbol": "queue_keyboard_event: if (virtual_key < 8 || virtual_key > 0xde) return FALSE",
+   "x86_value": "8..0xde",
+   "kind": "data",
+   "arm_rva": "0x8",
+   "summary": "Valid VK range for the mapper: 8..0xde inclusive (index 0..0xd6).",
+   "arm_signature": "virtual_key in [8,0xde]",
+   "x86_to_arm_notes": "UNCHANGED (cmp r0,#0xd6 unsigned after sub #8).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 625d64 @0x625d98: `sub.w r0,r3,#8; cmp r0,#0xd6; bhi`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.hid_key_held_table",
+   "x86_symbol": "queue_keyboard_event: controller[(host_is_128 ? 0xc9 : 0xbf) + mapped_key] = state ? 1 : 0",
+   "x86_value": "0xc9",
+   "kind": "offset",
+   "arm_rva": "0xc9",
+   "summary": "HIDController+0xc9..+0x1c8: 256-byte per-mapped-key \"held\" table (also suppresses key-down repeats in the stock handler).",
+   "arm_signature": "BYTE* controller; controller[0xc9 + mapped_key] = state ? 1 : 0",
+   "x86_to_arm_notes": "UNCHANGED offset 0xc9 (table size 0x100, mapped_key is a byte so max index 0x1c8 < object size). Host still sets it AFTER enqueue like the real handlers (down: set 1 after enqueue; up: clear after enqueue). Optional shortcut: for key-down you may call HIDController::keyDown (0x627188: r0=controller, r1=mapped key int; it checks the table, creates the item and enqueues) instead of open-coding it; there is no equivalent stand-alone key-up (0x625d64 takes WinRT KeyEventArgs), so keep the open-coded path.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 623c74 (HIDController ctor): `add.w r0,r4,#0xc9; mov.w r2,#0x100; movs r1,#0; bl memset` (and `strb.w r8,[r4,#0xc8]`)",
+    "arm32re.py func 627188 (keyDown): `adds r3,r4,r1; ldrb.w r3,[r3,#0xc9]; cbnz skip ... strb.w #1,[r3,#0xc9]` ; 0x625d64 key-up: `strb.w r6(0),[r3,#0xc9]` after enqueue"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.hid_text_sequence_byte",
+   "x86_symbol": "queue_character_event: sequence_flag = controller[host_is_128 ? 0x1f0 : 0x1e0]; controller[...] = sequence_flag + 1",
+   "x86_value": "0x1f0",
+   "kind": "offset",
+   "arm_rva": "0x1f0",
+   "summary": "HIDController+0x1f0: byte counter copied into TextItem+0x21 and incremented per text item (indexes the 256 x 0x18-byte std::string slot array at +0x1f4 used by the stock handler).",
+   "arm_signature": "BYTE seq = controller[0x1f0]; controller[0x1f0] = seq + 1;",
+   "x86_to_arm_notes": "UNCHANGED offset 0x1f0. The stock code additionally copies the string into controller+0x1f4+seq*0x18 before building the item; that persistent copy is NOT needed because the TextItem copies the string itself (x86 host already omits it).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 627108 (queueTextItem): `ldrb.w r2,[r0,#0x1f0]; adds r3,r2,#1; strb.w r3,[r0,#0x1f0]; strb r2,[r7,#0x10]` -> factory r3=&seq",
+    "arm32re.py func 623c74: `strb.w r8,[r4,#0x1f0]` and 0x100-element x 0x18-byte string array constructed at +0x1f4 (`add.w r0,r4,#0x1f4; mov.w r2,#0x100; movs r1,#0x18; bl b49884`)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.mouse_actual_offset",
+   "x86_symbol": "mouse_actual_offset() [host_is_128] : controller[0xa0] (BYTE)",
+   "x86_value": "0xa0",
+   "kind": "offset",
+   "arm_rva": "0xa0",
+   "summary": "HIDController+0xa0: byte \"actual\" relative-pointer mode flag (1 = pointer captured/relative).",
+   "arm_signature": "BYTE actual = controller[0xa0]",
+   "x86_to_arm_notes": "UNCHANGED offset 0xa0. Used by game_requests_relative_mouse, set_game_relative_actual, and the three mouse-mode hooks. The stock ARM pointer handlers (0x624a64, 0x625084, 0x625398) read it to choose relative vs absolute event construction, so the host must keep writing it (set_game_relative_actual) exactly like x86.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 623c74: `strb.w r8,[r4,#0xa0]` (init 0) right after `_Mtx_init_in_situ(this+0x68)`",
+    "mouse lambdas 0x58e88c (toggle) / 0x58e93c (relative): `ldrb.w r3,[r2,#0xa0]` on controller; stock readers 0x624c60/0x625128/0x6255ca `ldrb [rX,#0xa0]` in pointer handlers"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.mouse_command_offset",
+   "x86_symbol": "mouse_command_offset() [host_is_128] : *(int*)(controller + 0x28)",
+   "x86_value": "0x28",
+   "kind": "offset",
+   "arm_rva": "0x28",
+   "summary": "HIDController+0x28: 32-bit pointer-mode command (0 none, 1 = request relative, 2 = request absolute); consumed by the stock pointer-press handler (0x626570 @0x626806: cmp #1 -> sub_627b74, cmp #2 -> sub_627c88) which talks to CoreWindow.",
+   "arm_signature": "*(int*)(controller + 0x28) = 0/1/2",
+   "x86_to_arm_notes": "UNCHANGED offset 0x28 and int width. Values keep the x86 meaning: relative hook writes 1 (only when actual==0), absolute hook writes 2, toggle writes 2 when it flips actual 0->1 else 1; host clears to 0 in set_game_relative_actual. Because the host never routes events through the stock handlers a stale 1/2 would only be consumed by a later real handler call, so keep clearing it.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 623c74: `str.w r8,[r4,#0x28]` (init 0)",
+    "arm32re.py func 58e88c/58e8f0/58e93c: `str r3,[r2,#0x28]` with #1/#2 (identical to x86 expected bytes c7 40 28 02 for absolute)",
+    "arm32re.py dis 626806: `ldr r2,[r4,#0x28]; cmp r2,#1 ... cmp r2,#2` = stock consumer"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.mouse_relative_hook",
+   "x86_symbol": "RVA_128_MOUSE_RELATIVE (win32_request_relative_mouse); expected 8b 41 04 8b 40 04 80 b8 a0 00 (mov eax,[ecx+4]; mov eax,[eax+4]; cmp byte [eax+0xa0],0)",
+   "x86_value": "0x007e8300",
+   "kind": "hook_site",
+   "arm_rva": "0x0058e93c",
+   "summary": "std::function<void()>::_Do_call of lambda_5f99b711... (vtable .?AV?$_Func_impl@V<lambda_5f99b711adf8e56454c48484b03c18d3>@@...@std@@ at 0x01369c28, slot 2 cell 0x01369c30): `controller = this->adapter->controller; if (controller->actual == 0) controller->command = 1;` Invoked by AppPlatform_Winrt::vf18 (0x582b00, vtable slot 18 / offset 0x48 \"request relative mouse\").",
+   "arm_signature": "void relative_do_call(void* lambda_self /*r0*/)  [24 bytes, 4-aligned, bytes at +0..+0x17]",
+   "x86_to_arm_notes": "REPLACE the x86 hook mechanism. x86 wrote `E9 rel32` + 5 NOPs over the entry (write_relative_jump); do NOT port that. On ARM the three sites are std::function<void()> _Do_call bodies (vtable slot 2 = byte offset +8) of three lambda _Func_impl classes, so there are two equivalent plans: (A, RECOMMENDED) overwrite the single vtable cell with the host function pointer (cell is in .data, PAGE_READWRITE, no code patching, works on W^X-strict systems incl. Windows RT, no FlushInstructionCache needed): `void** cell=(void**)(image+CELL_RVA); require(*cell == (void*)(image+FN_RVA+1)); VirtualProtect(cell,4,PAGE_READWRITE,&old); *cell=(void*)hook /*bit0 already set for a Thumb C function*/; restore protection`. (B, fallback) 8-byte Thumb-2 absolute-jump trampoline at the function entry (function is 4-byte aligned and >= 18 bytes): bytes `DF F8 00 F0` (= ldr.w pc,[pc,#0]) followed by the 32-bit literal `(DWORD)hook | 1` little-endian at entry+4; VirtualProtect(entry, 8, PAGE_EXECUTE_READWRITE) + FlushInstructionCache(GetCurrentProcess(), entry, 8). The literal is read from Align(entry+4,4) = entry+4 because the entry is 4-aligned. Replacement signature: `static void win32_request_xxx(void* lambda_self)` plain AAPCS (remove __attribute__((thiscall))); `lambda_self` is the std::function impl object: lambda_self+4 = adapter, adapter+4 = controller (identical to x86 get_mouse_mode_controller, so get_mouse_mode_controller() can be ported 1:1: object+4 -> adapter, adapter+4 -> controller, IsBadReadPtr probes unchanged). Return value unused (void _Do_call). The hook runs wherever the dispatcher runs the std::function (the AppPlatform_Winrt::vf18/19/22 front-ends hand it to sub_589590, the RunAsync wrapper that the host dispatcher patch owns). Semantics to keep in the replacement (same as x86): do nothing to actual; `if (controller && controller[0xa0]==0) *(int*)(controller+0x28)=1;` plus host bookkeeping (initial_menu_cursor_guard branch, host_relative_requested=TRUE, mouse_clip_dirty=TRUE). Large enough for the 8-byte trampoline: yes (24 bytes). Vtable cell RVA 0x01369c30 holds 0x0098e93d (VA at preferred base, Thumb bit set) = image+0x58e93c+1. NOTE the first 12 bytes of the relative and toggle functions are IDENTICAL (2d e9 00 48 eb 46 43 68 5a 68 92 f8); to distinguish them check 16 bytes (byte 14 differs: 0x33 vs 0x0b) or, better, the vtable cell value.",
+   "expected_bytes": "2d e9 00 48 eb 46 43 68 5a 68 92 f8 a0 30 0b b9",
+   "evidence": [
+    "arm32re.py func 58e93c: push {fp,lr}; mov fp,sp; ldr r3,[r0,#4]; ldr r2,[r3,#4]; ldrb.w r3,[r2,#0xa0]; cbnz -> ret; movs r3,#1; str r3,[r2,#0x28]; pop {fp,pc}   (len 24)",
+    "arm32re.py vtable 1369c28 -> slot 2 = 0x98e93d (= RVA 0x58e93c +0x400000 +1); AppPlatform_Winrt::vf18 (0x582b00) builds a std::function with this vtable (movw/movt 0x9c28/0x176 at 0x582b14) around `ldr.w r0,[r0,#0x3b4]` (adapter) and runs it through sub_589590",
+    "x86 order toggle(0x7e8260) < absolute(0x7e82c0) < relative(0x7e8300) equals ARM order toggle 0x58e88c < absolute 0x58e8f0 < relative 0x58e93c; identical semantics sequence with x86 expected bytes (cmp byte [..+0xa0],0 ; mov dword [..+0x28],1)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.mouse_absolute_hook",
+   "x86_symbol": "RVA_128_MOUSE_ABSOLUTE (win32_request_absolute_mouse); expected 8b 41 04 8b 40 04 c7 40 28 02 (mov eax,[ecx+4]; mov eax,[eax+4]; mov dword [eax+0x28],2)",
+   "x86_value": "0x007e82c0",
+   "kind": "hook_site",
+   "arm_rva": "0x0058e8f0",
+   "summary": "std::function<void()>::_Do_call of lambda_291b8672... (vtable at 0x01369c0c, slot 2 cell 0x01369c14): `this->adapter->controller->command = 2;` Invoked by AppPlatform_Winrt::vf19 (0x582b4c, vtable offset 0x4c \"request absolute mouse\").",
+   "arm_signature": "void absolute_do_call(void* lambda_self /*r0*/)  [18 bytes, 4-aligned]",
+   "x86_to_arm_notes": "REPLACE the x86 hook mechanism. x86 wrote `E9 rel32` + 5 NOPs over the entry (write_relative_jump); do NOT port that. On ARM the three sites are std::function<void()> _Do_call bodies (vtable slot 2 = byte offset +8) of three lambda _Func_impl classes, so there are two equivalent plans: (A, RECOMMENDED) overwrite the single vtable cell with the host function pointer (cell is in .data, PAGE_READWRITE, no code patching, works on W^X-strict systems incl. Windows RT, no FlushInstructionCache needed): `void** cell=(void**)(image+CELL_RVA); require(*cell == (void*)(image+FN_RVA+1)); VirtualProtect(cell,4,PAGE_READWRITE,&old); *cell=(void*)hook /*bit0 already set for a Thumb C function*/; restore protection`. (B, fallback) 8-byte Thumb-2 absolute-jump trampoline at the function entry (function is 4-byte aligned and >= 18 bytes): bytes `DF F8 00 F0` (= ldr.w pc,[pc,#0]) followed by the 32-bit literal `(DWORD)hook | 1` little-endian at entry+4; VirtualProtect(entry, 8, PAGE_EXECUTE_READWRITE) + FlushInstructionCache(GetCurrentProcess(), entry, 8). The literal is read from Align(entry+4,4) = entry+4 because the entry is 4-aligned. Replacement signature: `static void win32_request_xxx(void* lambda_self)` plain AAPCS (remove __attribute__((thiscall))); `lambda_self` is the std::function impl object: lambda_self+4 = adapter, adapter+4 = controller (identical to x86 get_mouse_mode_controller, so get_mouse_mode_controller() can be ported 1:1: object+4 -> adapter, adapter+4 -> controller, IsBadReadPtr probes unchanged). Return value unused (void _Do_call). The hook runs wherever the dispatcher runs the std::function (the AppPlatform_Winrt::vf18/19/22 front-ends hand it to sub_589590, the RunAsync wrapper that the host dispatcher patch owns). Semantics to keep: `*(int*)(controller+0x28)=2; initial_menu_cursor_guard=FALSE; host_relative_requested=FALSE; mouse_clip_dirty=TRUE`. Large enough for the 8-byte trampoline: yes, but only 18 bytes (do not use a 10-byte patch + anything longer than 18). Vtable cell RVA 0x01369c14 holds 0x0098e8f1 = image+0x58e8f0+1. Its first 12 bytes are unique (ends 02 22 5b 68 = movs r2,#2; ldr r3,[r3,#4]).",
+   "expected_bytes": "2d e9 00 48 eb 46 43 68 02 22 5b 68 9a 62 bd e8",
+   "evidence": [
+    "arm32re.py func 58e8f0: push {fp,lr}; mov fp,sp; ldr r3,[r0,#4]; movs r2,#2; ldr r3,[r3,#4]; str r2,[r3,#0x28]; pop {fp,pc}  (len 18)",
+    "arm32re.py vtable 1369c0c -> slot 2 = 0x98e8f1; AppPlatform_Winrt::vf19 (0x582b4c) uses this vtable (movw 0x9c0c at 0x582b60)",
+    "x86 expected pattern c7 40 28 02 (store 2 at +0x28) is the same operation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.mouse_toggle_hook",
+   "x86_symbol": "RVA_128_MOUSE_TOGGLE (win32_toggle_mouse_mode); expected 8b 41 04 8b 50 04 80 ba a0 00 (mov eax,[ecx+4]; mov edx,[eax+4]; cmp byte [edx+0xa0],0)",
+   "x86_value": "0x007e8260",
+   "kind": "hook_site",
+   "arm_rva": "0x0058e88c",
+   "summary": "std::function<void()>::_Do_call of lambda_a0bcba93... (vtable at 0x01369c60, slot 2 cell 0x01369c68): `if (controller->actual==0){actual=1;command=2;} else {actual=0;command=1;}`. Invoked by AppPlatform_Winrt::vf22 (0x582b98, vtable offset 0x58 \"toggle mouse mode\").",
+   "arm_signature": "void toggle_do_call(void* lambda_self /*r0*/)  [44 bytes, 4-aligned]",
+   "x86_to_arm_notes": "REPLACE the x86 hook mechanism. x86 wrote `E9 rel32` + 5 NOPs over the entry (write_relative_jump); do NOT port that. On ARM the three sites are std::function<void()> _Do_call bodies (vtable slot 2 = byte offset +8) of three lambda _Func_impl classes, so there are two equivalent plans: (A, RECOMMENDED) overwrite the single vtable cell with the host function pointer (cell is in .data, PAGE_READWRITE, no code patching, works on W^X-strict systems incl. Windows RT, no FlushInstructionCache needed): `void** cell=(void**)(image+CELL_RVA); require(*cell == (void*)(image+FN_RVA+1)); VirtualProtect(cell,4,PAGE_READWRITE,&old); *cell=(void*)hook /*bit0 already set for a Thumb C function*/; restore protection`. (B, fallback) 8-byte Thumb-2 absolute-jump trampoline at the function entry (function is 4-byte aligned and >= 18 bytes): bytes `DF F8 00 F0` (= ldr.w pc,[pc,#0]) followed by the 32-bit literal `(DWORD)hook | 1` little-endian at entry+4; VirtualProtect(entry, 8, PAGE_EXECUTE_READWRITE) + FlushInstructionCache(GetCurrentProcess(), entry, 8). The literal is read from Align(entry+4,4) = entry+4 because the entry is 4-aligned. Replacement signature: `static void win32_request_xxx(void* lambda_self)` plain AAPCS (remove __attribute__((thiscall))); `lambda_self` is the std::function impl object: lambda_self+4 = adapter, adapter+4 = controller (identical to x86 get_mouse_mode_controller, so get_mouse_mode_controller() can be ported 1:1: object+4 -> adapter, adapter+4 -> controller, IsBadReadPtr probes unchanged). Return value unused (void _Do_call). The hook runs wherever the dispatcher runs the std::function (the AppPlatform_Winrt::vf18/19/22 front-ends hand it to sub_589590, the RunAsync wrapper that the host dispatcher patch owns). Semantics to keep (identical to x86 win32_toggle_mouse_mode): `if(!controller) return; if(initial_menu_cursor_guard){command=0; host_relative_requested=FALSE; mouse_clip_dirty=TRUE; return;} actual = (actual==0); command = actual ? 2 : 1; host_relative_requested = (actual==0); mouse_clip_dirty=TRUE`. Large enough for the 8-byte trampoline: yes (44 bytes). Vtable cell RVA 0x01369c68 holds 0x0098e88d = image+0x58e88c+1. First 12 bytes identical to the relative hook (see that fact); compare 16 bytes or the vtable cell.",
+   "expected_bytes": "2d e9 00 48 eb 46 43 68 5a 68 92 f8 a0 30 33 b9",
+   "evidence": [
+    "arm32re.py func 58e88c: push {fp,lr}; mov fp,sp; ldr r3,[r0,#4]; ldr r2,[r3,#4]; ldrb.w r3,[r2,#0xa0]; cbnz r3,L; movs r3,#1; strb r3,[r2,#0xa0]; movs r3,#2; str r3,[r2,#0x28]; pop; L: movs r3,#0; strb r3,[r2,#0xa0]; movs r3,#1; str r3,[r2,#0x28]; pop  (len 44)",
+    "arm32re.py vtable 1369c60 -> slot 2 = 0x98e88d; AppPlatform_Winrt::vf22 (0x582b98) uses this vtable (movw 0x9c60 at 0x582bac)",
+    "host win32_toggle_mouse_mode flips actual and sets command 2/1 exactly as the ARM body does"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.mouse_hook_alt_platform_vfuncs",
+   "x86_symbol": "n/a (x86 hooks the lambda bodies, not the AppPlatform front-ends)",
+   "x86_value": "n/a",
+   "kind": "vtable_slot",
+   "arm_rva": "0x013695ec",
+   "summary": "Alternative hook points: AppPlatform_Winrt vtable (0x013695a4) slots 18, 19, 22 = functions 0x582b00 (relative), 0x582b4c (absolute), 0x582b98 (toggle); cells at vtable+0x48/+0x4c/+0x58 = RVA 0x013695ec / 0x013695f0 / 0x013695fc.",
+   "arm_signature": "void vfN(AppPlatform_Winrt* this /*r0*/)",
+   "x86_to_arm_notes": "Only needed if you prefer to intercept before the std::function/dispatcher is created. The replacement would then use get_hid_controller(platform) (platform+0x3b4 -> +4) instead of get_mouse_mode_controller(lambda). Not recommended: the x86 port hooks the lambda bodies and the dispatcher patch is handled elsewhere. Provided for completeness. (arm_rva field is not meaningful for this fact; see x86_to_arm_notes.)",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py vtable 13695a4 -> slot 18 = 0x982b01 (fn 0x582b00), slot 19 = 0x982b4d, slot 22 = 0x982b99",
+    "xrefs of the three _Func_impl vtables: 0x582b14 (vf18), 0x582b60 (vf19), 0x582bac (vf22)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "input.mouse_mode_this_object",
+   "x86_symbol": "get_mouse_mode_controller(object): object+4 -> adapter; adapter+4 -> controller [host_is_128]",
+   "x86_value": "0x4/0x4",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "In the hooks `this` is the std::function impl object (lambda), not the AppPlatform: +0 vtable, +4 captured adapter pointer.",
+   "arm_signature": "BYTE* get_mouse_mode_controller(void* lambda_self){ BYTE* adapter=*(BYTE**)((BYTE*)lambda_self+4); return adapter?*(BYTE**)(adapter+4):NULL; }",
+   "x86_to_arm_notes": "UNCHANGED logic; port 1:1 (keep the IsBadReadPtr probes). Do not use get_hid_controller(platform) on these `this` pointers.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 582b00: `ldr.w r0,[r0,#0x3b4]; strd r3(vtable),r0,[r7]` -> lambda+0 = vtable, lambda+4 = adapter",
+    "58e88c/58e8f0/58e93c all start with `ldr r3,[r0,#4]; ldr rX,[r3,#4]`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.hook_mechanism_write_relative_jump",
+   "x86_symbol": "write_relative_jump(site, target): E9 rel32 + 5 x 0x90 over 10 bytes; install_mouse_mode_hooks 10-byte memcmp of expected bytes",
+   "x86_value": "0xe9 + 0x90 x5, 10 bytes",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "x86-only patch encoding; ARM replacement is a vtable-cell swap (preferred) or an 8-byte Thumb-2 absolute jump.",
+   "arm_signature": "see input.mouse_*_hook",
+   "x86_to_arm_notes": "NO LONGER NEEDED: the 10-byte x86 expected_bytes arrays (relative_128/absolute_128/toggle_128) and the +/-2GB rel32 range check. ARM: validate the vtable cell == image+fn_rva+1 and (optionally) memcmp the 16 expected bytes listed per hook. Trampoline bytes (plan B): DF F8 00 F0 then (hook|1) little-endian (verified with capstone: `ldr.w pc, [pc, #0]`). BL/B.W would be range-limited (+/-16 MB) so use the literal form. The three hooks are installed once at startup from install_mouse_mode_hooks (called in the 1.2.8 branch after resolve_fmod_delay_imports_128); keep that order.",
+   "expected_bytes": "DF F8 00 F0",
+   "evidence": [
+    "capstone Thumb decode of bytes df f8 00 f0 -> `ldr.w pc, [pc, #0]`",
+    "all three hook functions start at 4-byte aligned addresses (0x58e88c, 0x58e8f0, 0x58e93c) and are >= 18 bytes"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.asm_bridges_obsolete",
+   "x86_symbol": "call_game_make_mouse_event / call_game_make_text_event / call_game_make_text_event_115 / call_game_make_key_event_115 (naked x86 asm, caller-cleanup compensation)",
+   "x86_value": "naked asm",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "The four x86 naked bridges exist only to emulate ECX/EDX register args + plain-RET stack args. They are meaningless on ARM.",
+   "arm_signature": "typedef void** (*MakeMouseFn)(void** out,const int* action,const int* pressed,const int* payload,const short* x,const short* y); typedef void** (*MakeKeyFn)(void** out,const int* key,const int* state); typedef void** (*MakeTextFn)(void** out,const void* std_string,const BYTE* primary,const BYTE* sequence); typedef void (*EnqueueFn)(void* handler,void** slot); typedef unsigned (*MapVkFn)(unsigned vk_minus_8);",
+   "x86_to_arm_notes": "REMOVE all naked asm and __attribute__((thiscall/fastcall)) typedefs for the input path (GameEnqueueInputFn, Game115MapVirtualKeyFn, GameKeyHandlerFn). Pointers to game code must be built as Thumb function pointers: `(void*)(image + rva + 1)`. The ARM callee never pops stack args (AAPCS), so there is no x86 \"left on the stack\" quirk. Only mouse needs stack args (5th and 6th: &x, &y); the C compiler places them.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 62a128/62a254/62a2b4: return `mov r0,<saved r0>`; no stack adjustments beyond the callee prologue/epilogue; stack args read as [sp,#0x28]/[sp,#0x2c] after a 10-register push (i.e. caller [sp]/[sp+4])"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.window_proc_no_abi",
+   "x86_symbol": "window_proc (WM_KEYDOWN/KEYUP/CHAR/UNICHAR/MOUSEWHEEL/MOUSEMOVE/L,R,MBUTTON*, WM_ACTIVATEAPP, focus/size handling, 1.2.8 exit-confirm hit box 35..65% x 54..65%)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "window_proc contains no game ABI/RVA/offset assumptions of its own: it only calls queue_mouse_event / queue_keyboard_event / queue_character_event / paste_clipboard_as_game_text and Win32 APIs.",
+   "arm_signature": "LRESULT CALLBACK window_proc(HWND,UINT,WPARAM,LPARAM) (Win32 ABI is the same on ARM32)",
+   "x86_to_arm_notes": "UNCHANGED apart from its dependencies: (1) `text_input_active` is set from MinecraftKeyboardManager flag (see input.text_focus_flag); (2) `client_world_active_128()` (client-state area) feeds pending_main_menu_exit_confirmation; (3) handler order/semantics (autorepeat suppression via win32_key_down[], Ctrl+V paste, T-key suppression, WM_MOUSEWHEEL delta clamp to int8, mouse deltas relative to client centre with payload=1 when mouse_capture_active, absolute payload=0 otherwise) map directly onto the ARM item semantics verified above. Message arguments (WPARAM/LPARAM) are 32-bit on ARM32 exactly like x86, so the LOWORD/HIWORD/(short) casts remain valid. The percentage hit-box constants are UI-layout (not binary) values; the layout is data-driven and identical across builds of the same Minecraft version, so keep them.",
+   "expected_bytes": null,
+   "evidence": [
+    "reading win32_host.c 14626-14852: only queue_* calls + Win32 API; no pointer/offset math",
+    "real ARM handlers confirm wheel clamp (sub_625a50) and payload=1 relative / payload=0 absolute usage (sub_62499c, sub_626570)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.text_focus_flag",
+   "x86_symbol": "refresh_relative_mouse_from_client_128: keyboard=*(client+0x44); keyboard vtable == image+0x01569eac; (keyboard[5] & 2) -> text_input_active (read by window_proc/handle_win32_character/paste)",
+   "x86_value": "client+0x44, keyboard+5 bit1",
+   "kind": "offset",
+   "arm_rva": "0x5",
+   "summary": "text_input_active gates WM_CHAR/WM_UNICHAR/Ctrl+V/T-key handling. ARM MinecraftKeyboardManager::isFocused is `ldrb r3,[r0,#5]; and r3,r3,#2; lsrs r0,r3,#1` -> byte +5 bit 1: UNCHANGED.",
+   "arm_signature": "bool text_focus = (*(BYTE*)(keyboard + 5) & 2) != 0",
+   "x86_to_arm_notes": "bit/byte offset UNCHANGED (+5 mask 2). The ClientInstance->keyboard offset (0x44) and the ARM keyboard vtable (x86 0x01569eac) belong to the client-state agent; MinecraftKeyboardManager vtable on ARM is 0x0135d010 (rtti .?AVKeyboardManager@@; show 0x395504 / hide 0x395620 / isFocused 0x395854 already named by other agents). Cross-reference only; not re-verified here beyond the byte+5 bit1 read.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 395854 (named MinecraftKeyboardManager::isFocused_bit1): `ldrb r3,[r0,#5]; and r3,r3,#2; lsrs r0,r3,#1`"
+   ],
+   "confidence": "medium",
+   "verifier_correction": "The ARM MinecraftKeyboardManager vtable is 0x0135cfcc (client_state.keyboardmanager_vtable); 0x0135d010 (.?AVKeyboardManager@@) is the abstract base and must NOT be used. Byte +5 bit 1 is the focus flag.",
+   "keyboard_vtable_rva": "0x0135cfcc"
+  },
+  {
+   "id": "input.mouse_payload_semantics",
+   "x86_symbol": "queue_pointer_position / queue_mouse_event: payload 1 = relative delta (x,y signed short, clamp SHRT_MIN..SHRT_MAX), payload 0 = absolute (x,y 0..0xffff); action 0 move,1 left,2 right,3 middle,4 wheel; pressed 1/0",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": null,
+   "summary": "MouseItem fields are 16-bit x/y at +8/+0xa on ARM too (strh), payload dword at +0xc, action byte +0x10, pressed/wheel byte +0x11.",
+   "arm_signature": "x,y: short; payload: int; action/pressed: low byte stored",
+   "x86_to_arm_notes": "UNCHANGED semantics. x86 clamps (0..0xffff when payload==0, signed short when payload!=0) are still right because the item stores the low 16 bits via strh; pass `short` variables (cast the clamped int to (short)(WORD)). The stock handlers use controller+0xc4/+0xc6 (shorts) as the persistent last pointer position; the host does not touch them.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 62a128: strh at [0x8]/[0xa] from LDRH of the two stack pointers; sub_626570 passes controller+0xc4/+0xc6 as x/y",
+    "sub_62499c passes payload=1 for direct pointer movement; host comment states the same for the UWP callback"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.stock_character_handler_guard",
+   "x86_symbol": "queue_character_event filters: codepoint<0x20 except 8 and 0xd (1.2.8 keeps CR), >0x10ffff, surrogates; UTF-8 encode",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": null,
+   "summary": "Stock ARM CharacterReceived handler (0x625e50) skips when controller+0x24 != 0 or code < 0x20, converts with WideCharToMultiByte(65001) and calls HIDController::queueTextItem (0x627108).",
+   "arm_signature": "void onCharacterReceived(HIDController* this /*r0*/, sender /*r1*/, CharacterReceivedEventArgs* args /*r2*/)",
+   "x86_to_arm_notes": "Host does not call this handler (it builds the item itself via 0x62a2b4), therefore the controller+0x24 guard is bypassed on ARM just like on x86. NOTE the stock code drops chars < 0x20 (incl. 8 and 0xd); host keeps 8/0xd on 1.2.8, matching x86 behaviour (Backspace/Enter arrive through the key path 0x625b10 as well); no change required.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 625e50: `ldrb.w r3,[r0,#0x24]; cmp; bne exit ; ... cmp r3,#0x20; blo exit ; WideCharToMultiByte(0xfde9...) ; bl 627108`"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "input.legacy_01510_input_constants",
+   "x86_symbol": "APP_PLATFORM_HID_OFFSET 0x258; RVA_ENQUEUE_INPUT 0x5ffe90; RVA_MOUSE_EVENT_FACTORY 0x38dfb0; RVA_TEXT_EVENT_FACTORY 0x38e270; RVA_KEY_DOWN_HANDLER/KEY_UP_HANDLER (fastcall controller,vk); mouse hooks 0x5ffb10/30/40 with 10-byte x86 patterns (0x88/0x44); adapter offsets 0x278/0xb8/0xbf/0x1e0",
+   "x86_value": "legacy",
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "All 0.15.10 / 1.1.5 constants in the input region.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "NOT NEEDED on ARM: the port targets only the 1.2.8 path (host_is_128). Drop the 0.15.10 branch of get_hid_controller (APP_PLATFORM_HID_OFFSET 0x258), the key_handler fastcall path, call_game_make_text_event (C-string factory), and the 1.1.5 numbers (0x278, 0xb8, 0x44, 0xbf, 0x1e0). Keep only the 1.2.8 numbers listed in the other facts.",
+   "expected_bytes": null,
+   "evidence": [
+    "scope statement: Minecraft 1.2.8 path only"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.sync_hid_pointer_scale",
+   "x86_symbol": "sync_hid_pointer_scale(scale_x, scale_y): only logs; leaves HID pointer transform untouched",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "The function reads controller (get_hid_controller) only to return early; it does not write any HID field.",
+   "arm_signature": "void sync_hid_pointer_scale(float, float)",
+   "x86_to_arm_notes": "No ARM-specific work (floats are passed in s0/s1 under hard-float AAPCS, irrelevant because the function only logs `(int)(scale*1000)`).",
+   "expected_bytes": null,
+   "evidence": [
+    "reading win32_host.c 14004-14022"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "input.dispatch_thread_note",
+   "x86_symbol": "x86 mouse hooks run on whatever thread the fake dispatcher runs the std::function",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "AppPlatform_Winrt::vf18/19/22 package the lambda into a std::function and run it through the dispatcher RunAsync wrapper (sub_589590, named by another agent).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "The hooks only touch controller bytes/ints and host globals (host_relative_requested, mouse_clip_dirty, initial_menu_cursor_guard); same threading assumptions as x86. EnqueueInput is mutex-protected so queue_* may run on the window thread.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 582b00: `bl 589590` with r2 = std::function frame; 0x58e8xx lambda bodies are its _Do_call"
+   ],
+   "confidence": "medium"
+  }
+ ],
+ "port_instructions": [
+  "Object graph (unchanged numbers): platform = *(void**)(game_app_main + 0x1c); adapter = *(BYTE**)(platform + 0x3b4); controller = *(BYTE**)(adapter + 4); input_handler = *(void**)(controller + 0x10) (== adapter). Keep get_hid_controller() for host_is_128 as written; delete the non-1.1.5/1.2.8 branch (APP_PLATFORM_HID_OFFSET).",
+  "input_events_enabled: change IsBadReadPtr(input_handler, 0x1d0) to 0x170 (ARM adapter is 0x170 bytes).",
+  "Replace GameEnqueueInputFn with `typedef void (*GameEnqueueInputFn)(void* handler, void** item_slot)` at image+0x00587294+1 and call `enqueue_input(input_handler, &event)` (event is a local void* holding the factory result; it is NULL afterwards).",
+  "queue_mouse_event: call `make_mouse_event = (void**(*)(void**,const int*,const int*,const int*,const short*,const short*))(image+0x0062a128+1)` with (&event,&action32,&pressed32,&payload32,&x16,&y16) where action32/pressed32 are `int` locals (zero-/sign-extended from the BYTE params; for the wheel pass (int)(signed char)delta) and x16/y16 are `short` (cast of the already-clamped x,y). Keep the event checks (>=0x14 readable, byte[4]==0). Delete call_game_make_mouse_event.",
+  "queue_keyboard_event: map_virtual_key = (unsigned(*)(unsigned))(image+0x00626d10+1) called as map_virtual_key(vk-8) after the existing 8..0xde guard; key factory (image+0x0062a254+1) called as make_key(&event,&key32,&state32) with `int key32=mapped_key; int state32=state;`. Keep [4]==2 and 0x10 checks; then enqueue(input_handler,&event) and `controller[0xc9+mapped_key] = state?1:0` (unchanged offset). Delete call_game_make_key_event_115.",
+  "queue_character_event: keep the UTF-8/MsvcSmallString115 code unchanged (layout identical); sequence byte at controller[0x1f0]; call make_text = (void**(*)(void**,const void*,const BYTE*,const BYTE*))(image+0x0062a2b4+1) as make_text(&event,&text_115,&primary_flag,&sequence_flag); keep [4]==3 and 0x24 checks; enqueue(input_handler,&event). Delete both text bridges and the 0.15.10 C-string path.",
+  "Mouse hooks: replace write_relative_jump + the 10-byte memcmp arrays. Preferred: swap the three std::function vtable cells (.data): relative cell RVA 0x01369c30 (must equal image+0x58e93c+1), absolute cell 0x01369c14 (image+0x58e8f0+1), toggle cell 0x01369c68 (image+0x58e88c+1) with the replacement function pointers. Optionally memcmp the 16 expected bytes at the function RVAs for sanity. Fallback: 8-byte trampoline `DF F8 00 F0` + (hook|1) at the function entry (all three entries are 4-aligned and >= 18 bytes).",
+  "Replacement functions: `static void win32_request_relative_mouse(void* self)`, `win32_request_absolute_mouse(void* self)`, `win32_toggle_mouse_mode(void* self)` with plain AAPCS (remove __attribute__((thiscall))); bodies unchanged: get_mouse_mode_controller(self) = adapter at self+4, controller at adapter+4; mouse_actual_offset()=0xa0 (byte), mouse_command_offset()=0x28 (int). Return void.",
+  "game_requests_relative_mouse / set_game_relative_actual: unchanged (they only use get_hid_controller, 0xa0 and 0x28).",
+  "window_proc, handle_win32_key/character, release_all_win32_keys, queue_pointer_position, paste_clipboard_as_game_text: no machine-specific change; they inherit the ARM-correct queue_* functions."
+ ],
+ "open_questions": [
+  "Which of the dispatcher paths the host patches (sub_589590 RunAsync wrapper) executes the three _Do_call bodies synchronously? If it defers them past the frame, initial_menu_cursor_guard timing could differ from x86 (outside this area).",
+  "ClientInstance->keyboard offset (0x44) and the ARM MinecraftKeyboardManager vtable used to derive text_input_active are not re-verified here (client-state area).",
+  "Exact meaning of the stock consumers sub_627b74 (command 1) / sub_627c88 (command 2) was not decoded (they talk to CoreWindow); only needed to know that the host must clear +0x28 to 0.",
+  "HIDController total size is >= 0x1a48 (Platform::Heap::Allocate(0x1a48,0x1a58) in sub_586b00); not needed by the host (largest touched offset 0x1f0)."
+ ]
+}

@@ -1,0 +1,2 @@
+/*
+ * The 1.1.5 AppMainXaml helper puts its first two arguments in ECX/EDX,

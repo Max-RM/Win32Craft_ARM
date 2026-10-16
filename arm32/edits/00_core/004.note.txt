@@ -1,0 +1,1 @@
+Open the x86-only naked bridge block (call_game_create_app_main_xaml .. call_game_resize).

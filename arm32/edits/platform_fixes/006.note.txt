@@ -1,0 +1,1 @@
+install_win32_platform_fixes_128 patches the pickFile vtable cell; new install_arm32_platform_fixes (contract).

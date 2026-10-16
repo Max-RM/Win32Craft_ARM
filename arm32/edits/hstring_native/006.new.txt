@@ -1,0 +1,5 @@
+HRESULT WINAPI WindowsSubstring(HSTRING string, UINT32 start, HSTRING *result)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "WindowsSubstring", (HSTRING, UINT32, HSTRING *), (string, start, result));
+#endif

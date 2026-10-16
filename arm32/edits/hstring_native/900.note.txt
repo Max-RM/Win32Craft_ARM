@@ -1,0 +1,1 @@
+REVIEW FIX (ARM only): CoCreateInstanceFromApp takes 6 params (reserved PVOID is 4th); the stub declared 5, so on ARM query_count received the reserved r3=0 and the function always returned E_INVALIDARG. x86 text unchanged (#ifdef).

@@ -1,0 +1,10 @@
+static BOOL install_create_file2_compat(BYTE *image, SIZE_T create_file2_rva)
+{
+#ifdef WIN32CRAFT_ARM32
+    /* facts pe_imports.create_file2_iat: CreateFile2 is native on 8.1/10 and the x86 hook is not used; never write an
+     * IAT cell on ARM through this x86-era helper. */
+    (void)image;
+    (void)create_file2_rva;
+    log_line("ARM32: install_create_file2_compat refused (CreateFile2 is native)");
+    return FALSE;
+#endif

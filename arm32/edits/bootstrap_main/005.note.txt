@@ -1,0 +1,1 @@
+ARM32 Win32Bootstrap (identification, contract in order, window, main loop with heartbeat + watchdog); x86 original kept under #else.

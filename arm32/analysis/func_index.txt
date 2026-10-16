@@ -1,0 +1,577 @@
+   237-   241     5 R current_app_platform                             128,PATCH
+   307-   319    13 R Win32CraftResolveDelayLoadedAPI                  PATCH
+   321-   328     8 R Win32CraftResolveDelayLoadsFromDll               
+   330-   336     7 R Win32CraftDelayLoadFailureHook                   PATCH
+   347-   368    22 R Win32CraftCreateFile2                            PATCH
+   370-   385    16 R install_create_file2_compat                      PATCH
+   387-   430    44 R win32_unhandled_exception                        PATCH
+   432-   450    19 R install_crash_trace                              PATCH
+   497-   514    18 R call_game_create_app_main_xaml                   ASM
+   519-   531    13 R call_game_create_app_main_128                    128,ASM
+   541-   558    18 R call_game_make_mouse_event                       ASM
+   571-   582    12 R call_game_make_text_event                        ASM
+   594-   607    14 R call_game_make_text_event_115                    ASM
+   617-   628    12 R call_game_make_key_event_115                     ASM
+   636-   647    12 R call_game_resize                                 ASM
+  1061-  1086    26 R patch_hlsl_lod_intrinsic                         PATCH
+  1088-  1113    26 R patch_hlsl_root_signature                        PATCH
+  1115-  1160    46 R win32_include_open                               PATCH
+  1162-  1168     7 R win32_include_close                              PATCH
+  1190-  1228    39 R win32_include_proxy_open                         PATCH
+  1230-  1251    22 R win32_include_proxy_close                        PATCH
+  1260-  1310    51 R win32_set_scissor_rects                          PATCH
+  1312-  1330    19 R install_scissor_fix                              PATCH
+  1332-  1346    15 u win32_draw_indexed                               PATCH
+  1348-  1359    12 u win32_draw                                       PATCH
+  1361-  1368     8 u log_d3d_stage                                    
+  1370-  1377     8 u win32_ps_set_shader                              PATCH
+  1379-  1386     8 u win32_vs_set_shader                              PATCH
+  1388-  1398    11 u win32_draw_indexed_instanced                     PATCH
+  1400-  1409    10 u win32_draw_instanced                             PATCH
+  1411-  1419     9 u win32_om_set_render_targets                      PATCH
+  1421-  1427     7 u win32_clear_render_target_view                   
+  1429-  1437     9 u win32_clear_depth_stencil_view                   PATCH
+  1439-  1485    47 u install_draw_trace                               PATCH
+  1487-  1492     6 R fake_fmod_system_create                          
+  1494-  1501     8 R fake_fmod_get_version                            PATCH
+  1503-  1509     7 R fake_fmod_init                                   
+  1511-  1517     7 R fake_fmod_three_floats                           
+  1519-  1526     8 R fake_fmod_create_group                           
+  1528-  1535     8 R fake_fmod_get_group                              
+  1537-  1543     7 R fake_fmod_add_group                              PATCH
+  1545-  1549     5 R fake_fmod_no_args                                
+  1551-  1556     6 R fake_fmod_bool                                   
+  1558-  1563     6 R fake_fmod_float                                  
+  1565-  1571     7 R fake_fmod_create_sound                           
+  1573-  1578     6 R fake_fmod_two_floats                             
+  1580-  1586     7 R fake_fmod_get_count                              
+  1588-  1594     7 R fake_fmod_get_subsound                           
+  1596-  1602     7 R fake_fmod_play_sound                             
+  1604-  1609     6 R fake_fmod_vectors                                
+  1611-  1617     7 R fake_fmod_is_playing                             
+  1619-  1626     8 R fake_fmod_listener                               
+  1714-  1724    11 R ascii_prefix                                     PATCH
+  1726-  1740    15 R read_fmod_output_preference                      
+  1742-  1747     6 R fmod_error_text                                  PATCH
+  1749-  1755     7 R log_fmod_call                                    
+  1757-  1766    10 R resolve_fmod                                     
+  1768-  1827    60 R load_real_fmod                                   PATCH
+  1829-  1843    15 R normalize_fmod_path                              
+  1845-  1854    10 R log_fmod_sound_result                            
+  1856-  1889    34 R log_fmod_driver_state                            
+  1891-  1907    17 R bridge_fmod_system_create                        PATCH
+  1909-  1916     8 R bridge_fmod_get_num_drivers                      
+  1918-  1933    16 R bridge_fmod_get_driver_info                      
+  1935-  1939     5 R bridge_fmod_set_driver                           
+  1941-  1945     5 R bridge_fmod_set_output                           
+  1947-  1959    13 R bridge_fmod_get_version                          
+  1961-  1968     8 R fmod_output_name                                 PATCH
+  1970-  2004    35 R try_fmod_init_output                             
+  2006-  2028    23 R bridge_fmod_init                                 PATCH
+  2032-  2046    15 R bridge_fmod_set_3d_settings                      
+  2047-  2058    12 R force_fmod_group_audible                         
+  2060-  2071    12 R bridge_fmod_get_group                            
+  2072-  2097    26 R bridge_fmod_add_group                            PATCH
+  2098-  2108    11 R bridge_fmod_set_volume                           
+  2110-  2135    26 R bridge_fmod_create_common                        PATCH
+  2136-  2159    24 R bridge_fmod_create_stream                        PATCH
+  2160-  2186    27 R bridge_fmod_set_attributes                       
+  2187-  2210    24 R bridge_fmod_set_listener                         PATCH
+  2212-  2216     5 R host_ascii_lower_w                               
+  2218-  2227    10 R host_argument_equals                             
+  2229-  2248    20 R host_next_argument                               PATCH
+  2250-  2264    15 R Win32CraftParseHostOptions                       PATCH
+  2266-  2269     4 R Win32CraftPresentSyncInterval                    PATCH
+  2271-  2274     4 R fake_add_ref                                     PATCH
+  2276-  2284     9 R fake_release                                     PATCH
+  2286-  2301    16 R fake_kind_is_async                               PATCH
+  2303-  2411   109 R fake_query_interface                             128,PATCH
+  2418-  2421     4 R fake_guid_equal                                  PATCH
+  2423-  2536   114 R fake_speech_query_interface                      PATCH
+  2549-  2681   133 R fake_resource_query_interface                    PATCH
+  2683-  2690     8 R fake_get_iids                                    PATCH
+  2692-  2700     9 R fake_get_runtime_class_name                      PATCH
+  2702-  2709     8 R fake_get_trust_level                             PATCH
+  2711-  2732    22 R fake_factory_current                             PATCH
+  2734-  2742     9 R fake_package_installed_location                  PATCH
+  2744-  2752     9 R fake_appdata_local_folder                        PATCH
+  2754-  2762     9 R fake_folder_path                                 PATCH
+  2764-  2772     9 R is_buffer_byte_access_iid                        PATCH
+  2774-  2777     4 R fake_crypto_buffer_add_ref                       PATCH
+  2779-  2787     9 R fake_crypto_buffer_release                       PATCH
+  2789-  2800    12 R fake_crypto_buffer_query_interface               PATCH
+  2802-  2809     8 R fake_crypto_buffer_get_iids                      PATCH
+  2811-  2818     8 R fake_crypto_buffer_class_name                    PATCH
+  2820-  2827     8 R fake_crypto_buffer_trust                         PATCH
+  2829-  2835     7 R fake_crypto_buffer_capacity                      PATCH
+  2837-  2843     7 R fake_crypto_buffer_length                        PATCH
+  2845-  2851     7 R fake_crypto_buffer_set_length                    PATCH
+  2853-  2857     5 R fake_crypto_byte_query_interface                 PATCH
+  2859-  2862     4 R fake_crypto_byte_add_ref                         PATCH
+  2864-  2867     4 R fake_crypto_byte_release                         PATCH
+  2869-  2875     7 R fake_crypto_byte_buffer                          PATCH
+  2877-  2927    51 R create_crypto_buffer                             PATCH
+  2929-  2938    10 R fake_crypto_compare                              PATCH
+  2940-  2949    10 R fake_crypto_generate_random                      PATCH
+  2951-  2962    12 R fake_crypto_generate_random_number               PATCH
+  2964-  2972     9 R fake_crypto_create_from_array                    PATCH
+  2974-  2998    25 R fake_crypto_copy_to_array                        PATCH
+  3000-  3010    11 R fake_hardware_get_package_token                  PATCH
+  3012-  3023    12 R fake_hardware_token_id                           PATCH
+  3025-  3036    12 R fake_hardware_token_signature                    PATCH
+  3038-  3045     8 R fake_hardware_token_certificate                  PATCH
+  3047-  3060    14 R fake_data_reader_from_buffer                     PATCH
+  3062-  3069     8 R fake_data_reader_get_value                       PATCH
+  3071-  3077     7 R fake_data_reader_put_value                       PATCH
+  3079-  3086     8 R fake_data_reader_unconsumed                      PATCH
+  3088-  3096     9 R fake_data_reader_read_byte                       PATCH
+  3098-  3113    16 R fake_data_reader_read_bytes                      PATCH
+  3115-  3122     8 R fake_memory_limit                                PATCH
+  3124-  3163    40 R fake_memory_usage                                PATCH
+  3165-  3172     8 R fake_coreapp_id                                  PATCH
+  3174-  3183    10 R fake_currentapp_get_license                      PATCH
+  3185-  3194    10 R fake_currentapp_load_listing                     PATCH
+  3196-  3206    11 R fake_currentapp_get_receipt                      PATCH
+  3208-  3217    10 R fake_currentapp_get_unfulfilled                  PATCH
+  3219-  3226     8 R fake_currentapp_app_id                           PATCH
+  3228-  3235     8 R fake_currentapp_link_uri                         PATCH
+  3238-  3257    20 R win32_shell_open_hstring                         PATCH
+  3259-  3280    22 R fake_launcher_launch_uri                         PATCH
+  3282-  3287     6 R fake_launcher_launch_uri_options                 PATCH
+  3290-  3297     8 R fake_launcher_option_get                         PATCH
+  3299-  3304     6 R fake_launcher_option_put                         PATCH
+  3306-  3312     7 R fake_picker_get_hstring                          PATCH
+  3314-  3319     6 R fake_picker_put_hstring                          PATCH
+  3321-  3328     8 R fake_picker_get_int                              PATCH
+  3330-  3335     6 R fake_picker_put_int                              PATCH
+  3337-  3353    17 R fake_picker_put_default_extension                PATCH
+  3355-  3371    17 R fake_picker_put_suggested_name                   PATCH
+  3373-  3381     9 R fake_picker_get_file_type_choices                PATCH
+  3383-  3389     7 R fake_map_insert                                  PATCH
+  3391-  3443    53 R fake_picker_pick_save_file                       PATCH
+  3449-  3457     9 R fake_picker_get_file_type_filter                 PATCH
+  3459-  3464     6 R fake_vector_append_hstring                       PATCH
+  3466-  3473     8 R fake_vector_get_size                             PATCH
+  3475-  3482     8 R fake_vector_get_hstring_at                       PATCH
+  3484-  3491     8 R fake_vector_get_view                             PATCH
+  3493-  3500     8 R fake_vector_index_of                             PATCH
+  3502-  3507     6 R fake_vector_set_hstring                          PATCH
+  3509-  3514     6 R fake_vector_insert_hstring                       PATCH
+  3516-  3521     6 R fake_vector_remove_at                            PATCH
+  3523-  3527     5 R fake_vector_no_args                              PATCH
+  3531-  3562    32 R fake_picker_pick_open_file                       PATCH
+  3564-  3568     5 R fake_is_secondary_storage_object                 
+  3570-  3574     5 R fake_storage_object_path                         
+  3576-  3593    18 R fake_storage_query_interface                     PATCH
+  3595-  3601     7 R fake_storage_get_path                            PATCH
+  3603-  3613    11 R fake_storage_get_name                            PATCH
+  3615-  3625    11 R fake_storage_get_file_type                       PATCH
+  3627-  3634     8 R fake_storage_get_content_type                    PATCH
+  3636-  3643     8 R fake_storage_get_attributes                      PATCH
+  3645-  3652     8 R fake_storage_get_date_created                    PATCH
+  3654-  3661     8 R fake_storage_is_of_type                          PATCH
+  3663-  3683    21 R fake_build_local_storage_path                    PATCH
+  3685-  3691     7 R fake_return_secondary_storage_operation          PATCH
+  3693-  3735    43 R fake_copy_file_replace                           PATCH
+  3741-  3767    27 R fake_folder_create_file_with_collision           PATCH
+  3773-  3797    25 R fake_storage_copy_async                          PATCH
+  3799-  3802     4 R fake_not_implemented                             PATCH
+  3804-  3809     6 R fake_cached_defer_updates                        PATCH
+  3811-  3819     9 R fake_cached_complete_updates                     PATCH
+  3821-  3828     8 R fake_async_info_get_id                           PATCH
+  3830-  3837     8 R fake_async_info_get_status                       PATCH
+  3839-  3846     8 R fake_async_info_get_error_code                   PATCH
+  3848-  3852     5 R fake_async_info_cancel                           PATCH
+  3854-  3858     5 R fake_async_info_close                            PATCH
+  3860-  3889    30 R fake_async_put_completed                         PATCH
+  3891-  3898     8 R fake_async_get_completed                         PATCH
+  3900-  3963    64 R fake_async_get_results                           PATCH
+  3965-  3973     9 R fake_listing_string                              PATCH
+  3975-  3982     8 R fake_listing_age_rating                          PATCH
+  3984-  3995    12 R fake_listing_products                            PATCH
+  3997-  4004     8 R fake_map_lookup                                  PATCH
+  4006-  4013     8 R fake_map_size                                    PATCH
+  4015-  4023     9 R fake_map_has_key                                 PATCH
+  4025-  4032     8 R fake_map_split                                   PATCH
+  4034-  4042     9 R fake_api_type_present                            PATCH
+  4044-  4054    11 R fake_api_member_present                          PATCH
+  4056-  4068    13 R fake_api_method_present_with_arity               PATCH
+  4070-  4080    11 R fake_api_contract_major                          PATCH
+  4082-  4093    12 R fake_api_contract_minor                          PATCH
+  4095-  4109    15 R fake_language_get_at                             PATCH
+  4111-  4118     8 R fake_language_get_size                           PATCH
+  4120-  4129    10 R fake_language_index_of                           PATCH
+  4131-  4143    13 R fake_language_get_many                           PATCH
+  4145-  4154    10 R fake_application_get_languages                   PATCH
+  4156-  4160     5 R fake_application_get_primary                     PATCH
+  4162-  4168     7 R fake_application_put_primary                     PATCH
+  4170-  4179    10 R fake_geographic_activate                         PATCH
+  4181-  4186     6 R fake_geographic_string                           PATCH
+  4188-  4193     6 R fake_geographic_code                             PATCH
+  4195-  4200     6 R fake_geographic_code_three_letter                PATCH
+  4202-  4207     6 R fake_geographic_code_three_digit                 PATCH
+  4209-  4214     6 R fake_geographic_display_name                     PATCH
+  4216-  4224     9 R fake_geographic_currencies                       PATCH
+  4226-  4235    10 R fake_xaml_get_current                            PATCH
+  4242-  4251    10 R fake_xaml_window_current                         PATCH
+  4253-  4262    10 R fake_xaml_window_content                         PATCH
+  4264-  4317    54 R fake_xaml_window_actual_size                     PATCH
+  4319-  4330    12 R fake_xaml_rasterization_scale                    PATCH
+  4332-  4341    10 R fake_display_get_for_current_view                PATCH
+  4343-  4350     8 R fake_display_orientation                         PATCH
+  4352-  4359     8 R fake_display_resolution_scale                    PATCH
+  4361-  4368     8 R fake_display_stereo_enabled                      PATCH
+  4370-  4378     9 R fake_display_add_event                           PATCH
+  4380-  4386     7 R fake_display_remove_event                        PATCH
+  4388-  4395     8 R fake_display_null_async                          PATCH
+  4397-  4406    10 R fake_application_view_current                    PATCH
+  4408-  4415     8 R fake_application_view_get_bool                   PATCH
+  4417-  4424     8 R fake_application_view_get_fullscreen             PATCH
+  4426-  4433     8 R fake_application_view_get_int                    PATCH
+  4435-  4441     7 R fake_application_view_put_value                  PATCH
+  4443-  4450     8 R fake_application_view_get_title                  PATCH
+  4452-  4460     9 R fake_application_view_add_event                  PATCH
+  4462-  4468     7 R fake_application_view_remove_event               PATCH
+  4470-  4477     8 R fake_application_view_null_object                PATCH
+  4479-  4486     8 u fake_application_view_try                        PATCH
+  4488-  4496     9 R application_view_enter_fullscreen_116            PATCH
+  4498-  4504     7 R application_view_exit_fullscreen_116             PATCH
+  4506-  4510     5 R fake_application_view_noop                       PATCH
+  4512-  4520     9 R fake_application_view_try_resize                 PATCH
+  4522-  4528     7 R fake_application_view_set_size                   PATCH
+  4530-  4541    12 R fake_display_dpi_x                               PATCH
+  4543-  4554    12 R fake_display_dpi_y                               PATCH
+  4556-  4561     6 R fake_xaml_noop                                   PATCH
+  4563-  4577    15 R fake_win32_application_exit                      PATCH
+  4579-  4588    10 R fake_core_window_dispatcher                      PATCH
+  4590-  4605    16 R fake_core_window_bounds                          PATCH
+  4607-  4614     8 R fake_core_window_null_object                     PATCH
+  4616-  4623     8 R fake_core_window_get_int                         PATCH
+  4625-  4631     7 R fake_core_window_put_int                         PATCH
+  4633-  4640     8 R fake_core_window_get_bool                        PATCH
+  4642-  4650     9 R fake_core_window_pointer_position                PATCH
+  4655-  4659     5 R fake_core_window_noop                            PATCH
+  4661-  4675    15 R fake_core_window_close                           PATCH
+  4677-  4689    13 R fake_core_window_event_add_116                   PATCH
+  4691-  4698     8 R fake_core_window_add_activated_116               PATCH
+  4700-  4707     8 R fake_core_window_add_visibility_116              PATCH
+  4709-  4743    35 u fake_core_window_event_state_116                 PATCH
+  4757-  4765     9 R fake_core_window_key_state                       PATCH
+  4767-  4776    10 R fake_core_window_current                         PATCH
+  4778-  4785     8 R fake_core_dispatcher_thread_access               PATCH
+  4789-  4818    30 R fake_core_dispatcher_process_events              PATCH
+  4825-  4830     6 R lock_dispatcher_queue                            
+  4832-  4835     4 R unlock_dispatcher_queue                          
+  4837-  4882    46 R queue_dispatcher_handler                         PATCH
+  4884-  4890     7 R fake_core_dispatcher_run_async                   PATCH
+  4892-  4897     6 R fake_core_dispatcher_run_idle                    PATCH
+  4899-  4945    47 R drain_dispatcher_queue                           PATCH
+  4947-  4956    10 R fake_mouse_device_current                        PATCH
+  4958-  4973    16 R fake_mouse_device_add_moved                      PATCH
+  4975-  4981     7 R fake_mouse_device_remove_moved                   PATCH
+  4983-  4989     7 R fake_thread_pool_result                          PATCH
+  4998-  5017    20 R win32_work_item_thread                           PATCH
+  5019-  5053    35 R fake_thread_pool_queue                           PATCH
+  5055-  5060     6 R fake_thread_pool_run                             PATCH
+  5062-  5068     7 R fake_thread_pool_run_priority                    PATCH
+  5070-  5078     9 R fake_thread_pool_run_options                     PATCH
+  5156-  5165    10 R fake_core_text_get_for_current_view              PATCH
+  5167-  5176    10 R fake_core_text_create_edit_context               PATCH
+  5178-  5185     8 R fake_core_text_null_object                       PATCH
+  5187-  5194     8 R fake_core_text_get_name                          PATCH
+  5196-  5203     8 R fake_core_text_get_value                         PATCH
+  5205-  5211     7 R fake_core_text_put_value                         PATCH
+  5213-  5222    10 R fake_core_text_add_event                         PATCH
+  5224-  5230     7 R fake_core_text_remove_event                      PATCH
+  5245-  5252     8 u core_text_update_range_get                       PATCH
+  5254-  5260     7 u core_text_update_text_get                        PATCH
+  5262-  5269     8 u core_text_update_selection_get                   PATCH
+  5271-  5293    23 u core_text_update_language_get                    PATCH
+  5303-  5327    25 u paste_core_text_selection                        PATCH
+  5332-  5367    36 R paste_clipboard_as_game_text                     PATCH
+  5369-  5382    14 R core_text_text_updating_add                      PATCH
+  5384-  5394    11 R core_text_text_updating_remove                   PATCH
+  5396-  5431    36 u dispatch_core_text_update_text                   PATCH
+  5433-  5440     8 u dispatch_core_text_character                     PATCH
+  5442-  5446     5 R fake_core_text_notify                            PATCH
+  5448-  5455     8 R fake_core_text_focus_enter                       PATCH
+  5457-  5465     9 R fake_core_text_focus_leave                       PATCH
+  5467-  5483    17 R fake_core_text_notify_text_changed               PATCH
+  5485-  5496    12 R fake_core_text_notify_selection_changed          PATCH
+  5539-  5546     8 R fake_license_active                              PATCH
+  5548-  5555     8 R fake_license_trial                               PATCH
+  5557-  5564     8 R fake_license_add_changed                         PATCH
+  5587-  5601    15 R append_ipv4_octet                                
+  5603-  5612    10 R set_host_ipv4_text                               PATCH
+  5614-  5660    47 R resolve_local_ipv4                               PATCH
+  5662-  5672    11 R fake_network_get_host_names                      PATCH
+  5674-  5687    14 R fake_host_vector_get_at                          PATCH
+  5689-  5697     9 R fake_host_vector_size                            PATCH
+  5699-  5707     9 R fake_host_vector_index_of                        PATCH
+  5709-  5722    14 R fake_host_vector_get_many                        PATCH
+  5724-  5733    10 R fake_host_iterable_first                         PATCH
+  5735-  5747    13 R fake_host_iterator_current                       PATCH
+  5749-  5756     8 R fake_host_iterator_has_current                   PATCH
+  5758-  5766     9 R fake_host_iterator_move_next                     PATCH
+  5768-  5781    14 R fake_host_iterator_get_many                      PATCH
+  5783-  5790     8 R fake_host_name_ip_information                    PATCH
+  5792-  5798     7 R fake_host_name_text                              PATCH
+  5800-  5807     8 R fake_host_name_type                              PATCH
+  5809-  5815     7 R fake_host_name_is_equal                          PATCH
+  5823-  5832    10 R fake_network_get_collection                      PATCH
+  5834-  5843    10 R fake_network_get_internet_profile                PATCH
+  5845-  5852     8 R fake_network_profile_name                        PATCH
+  5854-  5861     8 R fake_network_connectivity_level                  PATCH
+  5863-  5870     8 R fake_network_profile_boolean                     PATCH
+  5872-  5879     8 R fake_network_profile_null_object                 PATCH
+  5881-  5890    10 R fake_network_get_connection_cost                 PATCH
+  5892-  5899     8 R fake_network_cost_type                           PATCH
+  5901-  5910    10 R fake_network_get_names                           PATCH
+  5912-  5919     8 R fake_empty_vector_get_at                         PATCH
+  5921-  5928     8 R fake_empty_vector_size                           PATCH
+  5930-  5939    10 R fake_empty_vector_index_of                       PATCH
+  5941-  5952    12 R fake_empty_vector_get_many                       PATCH
+  5954-  5963    10 R fake_empty_iterable_first                        PATCH
+  5965-  5971     7 R fake_empty_iterator_current                      PATCH
+  5973-  5980     8 R fake_empty_iterator_has_current                  PATCH
+  5982-  5986     5 R fake_empty_iterator_move_next                    PATCH
+  5988-  5998    11 R fake_empty_iterator_get_many                     PATCH
+  6000-  6008     9 R fake_network_get_proxy_async                     PATCH
+  6010-  6019    10 R fake_network_get_sorted_pairs                    PATCH
+  6021-  6029     9 R fake_network_add_changed                         PATCH
+  6031-  6037     7 R fake_network_remove_changed                      PATCH
+  6039-  6048    10 R fake_gamepad_get_all                             PATCH
+  6050-  6059    10 R fake_gamepad_add_changed                         PATCH
+  6061-  6068     8 R fake_gamepad_remove_changed                      PATCH
+  6561-  6570    10 R fake_speech_activate                             PATCH
+  6572-  6581    10 R fake_speech_get_all_voices                       PATCH
+  6583-  6591     9 R fake_speech_get_default_voice                    PATCH
+  6593-  6603    11 R fake_speech_synthesize                           PATCH
+  6605-  6611     7 R fake_speech_put_voice                            PATCH
+  6613-  6621     9 R fake_speech_get_voice                            PATCH
+  6623-  6628     6 R fake_speech_close                                PATCH
+  6630-  6638     9 R fake_speech_get_options                          PATCH
+  6640-  6647     8 R fake_speech_option_get                           PATCH
+  6649-  6655     7 R fake_speech_option_put                           PATCH
+  6657-  6664     8 R fake_speech_voice_string                         PATCH
+  6666-  6673     8 R fake_speech_voice_language                       PATCH
+  6675-  6682     8 R fake_speech_voice_gender                         PATCH
+  6684-  6696    13 R fake_speech_vector_get_at                        PATCH
+  6698-  6705     8 R fake_speech_vector_size                          PATCH
+  6707-  6715     9 R fake_speech_vector_index_of                      PATCH
+  6717-  6730    14 R fake_speech_vector_get_many                      PATCH
+  6732-  6740     9 R fake_speech_iterable_first                       PATCH
+  6742-  6750     9 R fake_speech_iterator_current                     PATCH
+  6752-  6759     8 R fake_speech_iterator_has_current                 PATCH
+  6761-  6768     8 R fake_speech_iterator_move_next                   PATCH
+  6770-  6774     5 R fake_speech_iterator_get_many                    PATCH
+  6849-  6859    11 R fake_audio_graph_settings_create                 PATCH
+  6875-  6885    11 R fake_audio_graph_create_async                    PATCH
+  6887-  6894     8 R fake_audio_graph_result_status                   PATCH
+  6896-  6903     8 R fake_audio_graph_result_graph                    PATCH
+  6921-  6930    10 R fake_resource_context_activate                   PATCH
+  6932-  6941    10 R fake_resource_context_get                        PATCH
+  6943-  6948     6 R fake_resource_context_create_matching            PATCH
+  6950-  6955     6 R fake_resource_context_global_set                 PATCH
+  6957-  6962     6 R fake_resource_context_global_reset               PATCH
+  6964-  6969     6 R fake_resource_context_global_reset_names         PATCH
+  6971-  6976     6 R fake_resource_context_global_set_persistent      PATCH
+  6978-  6987    10 R fake_resource_context_qualifiers                 PATCH
+  6989-  6993     5 R fake_resource_context_reset                      PATCH
+  6995-  7000     6 R fake_resource_context_reset_names                PATCH
+  7002-  7007     6 R fake_resource_context_override                   PATCH
+  7009-  7013     5 R fake_resource_context_clone                      PATCH
+  7015-  7024    10 R fake_resource_context_languages                  PATCH
+  7026-  7031     6 R fake_resource_context_set_languages              PATCH
+  7033-  7040     8 R fake_resource_map_changed_add                    PATCH
+  7042-  7047     6 R fake_resource_map_changed_remove                 PATCH
+  7049-  7065    17 R fake_resource_string_map_lookup                  PATCH
+  7067-  7074     8 R fake_resource_string_map_size                    PATCH
+  7076-  7087    12 R fake_resource_string_map_has_key                 PATCH
+  7089-  7097     9 R fake_resource_string_map_get_view                PATCH
+  7099-  7106     8 R fake_resource_string_map_insert                  PATCH
+  7108-  7113     6 R fake_resource_string_map_remove                  PATCH
+  7115-  7119     5 R fake_resource_string_map_clear                   PATCH
+  7121-  7128     8 R fake_resource_string_map_split                   PATCH
+  7133-  7142    10 R fake_resource_manager_current                    PATCH
+  7144-  7151     8 R fake_resource_manager_is_reference               PATCH
+  7153-  7161     9 R fake_resource_manager_main_map                   PATCH
+  7163-  7170     8 R fake_resource_manager_all_maps                   PATCH
+  7172-  7176     5 R fake_resource_manager_default_context            PATCH
+  7178-  7183     6 R fake_resource_manager_pri_noop                   PATCH
+  7185-  7192     8 R fake_resource_map_uri                            PATCH
+  7194-  7201     8 R fake_resource_map_value                          PATCH
+  7203-  7208     6 R fake_resource_map_value_for_context              PATCH
+  7210-  7218     9 R fake_resource_map_subtree                        PATCH
+  7319-  7328    10 R fake_analytics_version_info_get                  PATCH
+  7330-  7338     9 R fake_analytics_device_family                     PATCH
+  7340-  7349    10 R fake_analytics_device_family_version             PATCH
+  7351-  7359     9 R fake_analytics_device_form                       PATCH
+  7517-  7835   319 R win32_get_activation_factory                     128,PATCH
+  7837-  8205   369 R install_activation_redirect                      PATCH
+  8207-  8216    10 R win32_platform_object_ctor                       
+  8218-  8226     9 R win32_get_ibox_vtable                            PATCH
+  8228-  8233     6 R win32_platform_allocate1                         PATCH
+  8235-  8257    23 R win32_platform_allocate2                         PATCH
+  8259-  8309    51 R install_vccorlib_compat                          PATCH
+  8311-  8328    18 R copy_ascii_sample                                PATCH
+  8341-  8345     5 R copyright_ascii_lower                            
+  8347-  8358    12 R copyright_is_lang_path_w                         
+  8360-  8363     4 R copyright_mode_reads_a                           
+  8365-  8368     4 R copyright_mode_reads_w                           
+  8370-  8377     8 R copyright_remember_temp                          PATCH
+  8379-  8388    10 R Win32CraftCleanupCopyrightTemps                  PATCH
+  8390-  8461    72 R lang_apply_line_override                         PATCH
+  8481-  8485     5 R game_string_data                                 PATCH
+  8487-  8508    22 R resource_path_has_suffix                         PATCH
+  8510-  8561    52 R __attribute__                                    128,CC,PATCH
+  8563-  8576    14 R patch_128_zip_slot                               128,PATCH
+  8578-  8589    12 R install_128_zip_resource_overrides               128,PATCH
+  8591-  8680    90 R copyright_write_override_file                    PATCH
+  8682-  8688     7 R Win32CraftPrepareCopyrightLangW                  
+  8690-  8712    23 R Win32CraftPrepareCopyrightLangA                  PATCH
+  8717-  8738    22 R start_screen_is_path_w                           PATCH
+  8740-  8750    11 R find_bytes_in_range                              PATCH
+  8752-  8804    53 R json_find_matching                               PATCH
+  8806-  8827    22 R json_replace_owned_range                         PATCH
+  8829-  8844    16 R json_find_exact_key                              PATCH
+  8846-  9010   165 R start_screen_force_development_control           PATCH
+  9012-  9082    71 R start_screen_write_override_file                 PATCH
+  9084-  9090     7 R Win32CraftPrepareStartScreenJsonW                
+  9092-  9115    24 R Win32CraftPrepareStartScreenJsonA                PATCH
+  9117-  9122     6 R remember_115_stdio_path                          PATCH
+  9125-  9141    17 R win32_01510_fopen                                PATCH
+  9143-  9158    16 R win32_01510_wfopen                               PATCH
+  9160-  9178    19 R win32_01510_wfopen_s                             
+  9180-  9213    34 R win32_115_fopen                                  PATCH
+  9215-  9262    48 R win32_115_wfopen_s                               PATCH
+  9265-  9275    11 R win32_115_wfopen                                 PATCH
+  9277-  9295    19 R remember_115_scan                                
+  9297-  9307    11 R win32_115_vsscanf                                
+  9309-  9326    18 R win32_115_vfscanf                                
+  9328-  9348    21 R patch_115_iat_slot                               PATCH
+  9350-  9356     7 u win32_115_abort                                  
+  9358-  9366     9 u win32_115__exit                                  
+  9368-  9376     9 u win32_115_exit                                   
+  9378-  9384     7 u win32_115_terminate                              
+  9386-  9392     7 u win32_115_std_terminate                          PATCH
+  9394-  9411    18 R log_115_termination_stack                        PATCH,LITRVA
+  9413-  9419     7 u win32_115_invalid_parameter                      
+  9421-  9429     9 u win32_115_invalid_parameter_noreturn             
+  9431-  9436     6 u win32_115_purecall                               PATCH
+  9438-  9477    40 u install_115_termination_trace                    PATCH
+  9480-  9496    17 R install_01510_copyright_override                 PATCH
+  9498-  9522    25 R install_115_stdio_trace                          PATCH
+  9524-  9552    29 R trace_115_one_asset                              PATCH
+  9554-  9561     8 R trace_115_asset_candidates                       
+  9563-  9586    24 R dump_115_stdio_state                             
+  9588-  9603    16 R win32_cxx_throw                                  PATCH
+  9605-  9621    17 R install_exception_trace                          PATCH
+  9623-  9693    71 R win32_d3d_compile                                PATCH
+  9695-  9712    18 R install_d3d_compile_trace                        PATCH
+  9714-  9834   121 R win32_d3d11_create_device                        PATCH
+  9836-  9868    33 R patch_win7_device2_queries_to_base               PATCH
+  9870-  9914    45 R patch_win7_dxgi_device3_query_to_base            128,PATCH
+  9916-  9958    43 R patch_win7_discard_views                         128,PATCH
+  9960-  9978    19 R install_d3d11_device_compat                      PATCH
+  9980- 10022    43 R win32_present                                    PATCH
+ 10024- 10044    21 R install_swap_chain_present_hook                  PATCH
+ 10065- 10088    24 u install_game_tick_trace                          PATCH,LITRVA
+ 10243- 10267    25 u install_client_update_trace                      PATCH
+ 10269- 10274     6 R screen_vector_count                              
+ 10363- 10412    50 u install_screen_render_trace                      PATCH
+ 10414- 10423    10 R log_game_callback                                
+ 10477- 10506    30 u install_game_callback_trace                      PATCH
+ 10538- 10543     6 R material_string                                  
+ 10573- 10596    24 u install_material_trace                           PATCH,LITRVA
+ 10598- 10623    26 u install_render_state_guard                       PATCH,LITRVA
+ 10659- 10684    26 R install_material_task_compat                     PATCH
+ 10686- 10718    33 R compile_material_group_now                       PATCH
+ 10756- 10776    21 R install_development_version_text_01510           PATCH
+ 10778- 10797    20 R write_relative_jump                              PATCH
+ 10799- 10810    12 R verify_patched_audio_exe                         PATCH,LITRVA
+ 10812- 10883    72 R resolve_fmod_delay_imports_115                   PATCH,LITRVA
+ 10885- 10961    77 R resolve_fmod_delay_imports_128                   128,PATCH,LITRVA
+ 10971- 11092   122 u resolve_fmod_delay_imports_116                   PATCH,LITRVA
+ 11094- 11131    38 R install_native_fmod_bridge                       PATCH,LITRVA
+ 11133- 11205    73 R win32_vectored_exception                         PATCH,LITRVA
+ 11207- 11305    99 R create_user_data                                 PATCH
+ 11307- 11312     6 R log_hresult                                      PATCH
+ 11314- 11319     6 R log_pointer                                      
+ 11322- 11329     8 u safe_read_pointer                                PATCH
+ 11331- 11593   263 R initialize_game_d3d                              128,PATCH
+ 11595- 11658    64 R initialize_game_app                              PATCH
+ 11660- 11671    12 R get_current_thread_id_dynamic                    PATCH
+ 11673- 11746    74 R log_115_main_thread_context                      PATCH
+ 11748- 11774    27 R win32_115_constructor_watchdog_thread            
+ 11776- 11803    28 R start_115_constructor_watchdog                   PATCH
+ 11805- 11880    76 R initialize_game_app_115                          PATCH
+ 11882- 11904    23 R initialize_game_app_128                          128,PATCH
+ 11906- 11943    38 R activate_game_app_128                            128,CC,PATCH
+ 11945- 11978    34 R render_game_target_128                           128,CC,PATCH
+ 11980- 12030    51 R activate_game_app_115                            PATCH
+ 12032- 12100    69 R render_game_target_115                           PATCH
+ 12109- 12121    13 R win32_115_restore_adapter_references             ASM
+ 12123- 12223   101 R patch_115_xaml_self_references                   PATCH,LITRVA
+ 12234- 12256    23 R apply_runtime_patches                            PATCH
+ 12258- 12354    97 R patch_xbox_actions_noop                          128,PATCH
+ 12356- 12421    66 R patch_chat_textbox_compat                        PATCH
+ 12423- 12564   142 R activate_game_app                                PATCH
+ 12566- 12664    99 R render_game_target                               PATCH
+ 12667- 12688    22 R get_hid_controller                               128,PATCH
+ 12693- 12703    11 R get_mouse_mode_controller                        128,PATCH
+ 12705- 12708     4 R mouse_actual_offset                              128
+ 12710- 12713     4 R mouse_command_offset                             128
+ 12806- 12873    68 R install_mouse_mode_hooks                         128,PATCH
+ 12875- 12909    35 R game_requests_relative_mouse                     
+ 12911- 12920    10 R plausible_client_instance_128                    128,PATCH
+ 12934- 12944    11 R install_client_state_hook_128                    128,PATCH,LITRVA
+ 12946- 12956    11 R client_world_active_128                          128
+ 12963- 12973    11 R top_scene_128                                    128,PATCH
+ 12975- 13025    51 R refresh_relative_mouse_from_client_128           128,CC,PATCH,LITRVA
+ 13027- 13038    12 R center_mouse_cursor                              
+ 13040- 13052    13 R set_game_relative_actual                         
+ 13054- 13077    24 R apply_mouse_clip                                 PATCH
+ 13079- 13114    36 R update_mouse_capture                             PATCH
+ 13117- 13124     8 R append_wide_path                                 PATCH
+ 13126- 13178    53 R copy_valid_png                                   PATCH
+ 13180- 13188     9 R line_has_key                                     
+ 13190- 13195     6 R copy_bytes                                       
+ 13197- 13291    95 R update_custom_skin_options                       PATCH
+ 13293- 13303    11 R invoke_custom_skin_callback                      CC
+ 13332- 13338     7 R game_msvc_string_data_01510                      PATCH
+ 13340- 13353    14 R game_msvc_string_equals_01510                    
+ 13355- 13380    26 R destroy_file_browser_arguments_01510             PATCH
+ 13382- 13419    38 R make_callback_path_string_01510                  PATCH
+ 13421- 13451    31 R invoke_file_browser_callback_01510               PATCH
+ 13453- 13476    24 R show_world_file_dialog_01510                     PATCH
+ 13479- 13487     9 u Win32WorldFileDialogEarly2016                    
+ 13530- 13570    41 R install_file_browser_compat_01510                PATCH
+ 13740- 13746     7 u win32_show_achievements_noop                     PATCH
+ 13748- 13758    11 u win32_show_game_invite_noop                      PATCH
+ 13760- 13765     6 R win32_process_pending_game_ui_noop               PATCH
+ 13767- 13779    13 R win32_show_profile_card_noop                     PATCH
+ 13781- 13790    10 R win32_show_profile_card_for_user_noop            PATCH
+ 13792- 13806    15 R install_xbox_tcui_noops_128                      128,PATCH
+ 13808- 13833    26 R install_xbox_tcui_noops                          PATCH
+ 13897- 13939    43 R install_win32_platform_fixes_115                 PATCH
+ 13941- 13955    15 R install_win32_platform_fixes_128                 128,PATCH
+ 13957- 14002    46 R install_win32_platform_fixes                     PATCH,LITRVA
+ 14004- 14022    19 R sync_hid_pointer_scale                           
+ 14024- 14190   167 R resize_game_window                               128,PATCH
+ 14201- 14267    67 R queue_mouse_event                                128,PATCH
+ 14292- 14318    27 R install_chat_submit_compat_01510                 PATCH
+ 14320- 14330    11 R request_chat_submit_01510                        
+ 14332- 14349    18 R process_chat_submit_01510                        128,PATCH
+ 14353- 14418    66 R queue_keyboard_event                             128,PATCH
+ 14423- 14517    95 R queue_character_event                            128,PATCH
+ 14519- 14536    18 R handle_win32_key                                 PATCH
+ 14538- 14551    14 R release_all_win32_keys                           
+ 14553- 14594    42 R handle_win32_character                           128
+ 14596- 14624    29 R queue_pointer_position                           PATCH
+ 14626- 14852   227 R window_proc                                      128,PATCH
+ 14856- 15109   254 R Win32Bootstrap                                   128,PATCH,LITRVA
+ 15114- 15122     9 R DllMain                                          PATCH
+ 15124- 15146    23 R D3D11CreateDevice                                PATCH
+ 15148- 15163    16 R CreateDirect3D11DeviceFromDXGIDevice             PATCH
+ 15165- 15181    17 R CreateDXGIFactory2                               PATCH

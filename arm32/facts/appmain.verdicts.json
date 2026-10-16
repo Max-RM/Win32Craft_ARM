@@ -1,0 +1,185 @@
+{
+ "area": "appmain",
+ "verdicts": [
+  {
+   "id": "appmain.create_app_main",
+   "verdict": "CONFIRMED",
+   "note": "Re-derived: 0x597b4c is a pdata start, first 12 bytes 2de9ff48 0df1200b 6f46 0646 match. r0=result saved in r6, r1 in r5, r2 in r4; operator_new(0x28)+5 strd zero-fill; 'ldr r2,[r4]' then 'mov r1,r5; bl 0x57ceec'; 'str r0,[r6]; mov r0,r6'. No stack args. Independent anchor: only caller is 0x595508 in AppView::OnActivated, which passes r0=&local, r1=AppView+0x18, r2=&[r7+0x10] where [r7+0x10]=CoreWindow* from sub_10471c, and then compares the returned r0 (cmp r4,r0) - confirms r0==result is returned. Ctor 0x57ceec bytes 2de9f049 0df1140b 8bb0 6f46 also match."
+  },
+  {
+   "id": "appmain.create_app_main_abi_thunk",
+   "verdict": "CONFIRMED",
+   "note": "x86 thunk (win32_host.c 516-531) pushes 16(%esp) = activation_argument pointer, EAX=fn, ECX=result, EDX=ctx, caller-cleans 4 bytes: x86 stack arg is the holder pointer, ARM r2. Reproduced from the ARM callee prologue and the OnActivated caller."
+  },
+  {
+   "id": "appmain.startup_ctx",
+   "verdict": "CONFIRMED",
+   "note": "AppView ctor 0x594c60: strd #0,#0 -> +0x14/+0x18, strb +0x1c=0, strd [+0x30]=0,[+0x34]=0xF, strb +0x20=0, +0x38/+0x39 are separate flags => ctx = AppView+0x18..+0x37 (size 0x20), string base ctx+8, size ctx+0x18, cap ctx+0x1c. AppMain::init 0x57d0b8 reads ldr r1,[r4] (->0x12f390), ldrb [r4,#4] -> game+0x264, add r1,r4,#8 -> string::assign(game+0x1f8, ctx+8, 0, -1) via 0x841b8. restart_game 0x57d224 re-calls init with [this+8] (0x57d390 'ldr r1,[r4,#8]'; call at 0x57d398) so pointer must stay alive. Recommendation to set cap=0xF is sound."
+  },
+  {
+   "id": "appmain.activation_argument",
+   "verdict": "CONFIRMED",
+   "note": "Agile ctor 0x57baf8 QIs the CoreWindow with IID at VA 0x118d948 (RVA 0xd8d948) through vtable slot 0; r0==0 -> flag [agile+0xc]=1, no marshaling. Fake default QI branch (win32_host.c 2406-2409) returns S_OK with object+AddRef for any unknown IID on win32_core_window (the 116-only branches are not taken on 1.2.8), and the QI'd reference is released at 0x57bb8c, so balanced. No ICoreWindow5 / ICoreAcceleratorKeys / dispatcher-priority IID exists anywhere in the ARM exe (guid search empty), so no other QI special-casing is needed."
+  },
+  {
+   "id": "appmain.layout",
+   "verdict": "CONFIRMED",
+   "note": "Ctor 0x57ceec: str vtable [r4], str r1 [r4,#8], Agile at r4+0xc (flag [r4,#0x18]=2 then set by ctor), r6=r4+0x1c unique_ptr platform, str [r4,#0x20]/[r4,#0x24]=0; make_AppPlatform_Winrt 0x57fc30 new(0x428)+memset; make_MinecraftGame 0x57fc70 new(0x3c0)+memset. init 0x57d0b8: 'ldrd r4,r3,[r5,#0x20]; str r3,[r4,#0xc]' (game+0x20, empty obj +0x24 -> game+0xc). update_frame reads [r4,#0x1c],[r4,#0x20],[r4,#4]. No store to AppMain+0x10 besides Agile helpers (Agile ptr +0xc, ctx +0x10, token +0x14, flag +0x18). AppMain+4 restart flag cleared at 0x57d462."
+  },
+  {
+   "id": "appmain.size_check_0x24",
+   "verdict": "CONFIRMED",
+   "note": "sizeof(AppMain)=0x28 (operator_new(0x28) at 0x597b5c, five strd zero-fills). 0x24 probe is sufficient; using 0x28 also fine."
+  },
+  {
+   "id": "appmain.appmain_vtable",
+   "verdict": "CONFIRMED",
+   "note": "rtti AppMain -> 0x13694a8; slots hold VA 0x97cfd1 / 0x97d225 (RVA 0x57cfd0 / 0x57d224 | thumb). expected_bytes d1cf970025d29700 correct. Slot 1 is restart_game (re-calls init with [this+8], recreates the game)."
+  },
+  {
+   "id": "appmain.appmain_ctor_init",
+   "verdict": "CONFIRMED",
+   "note": "Ctor calls init at 0x57cfc2 (bl 0x57d0b8) with r1=[r4,#8] and r2=temp Agile; init: platform->initialize 0x6203c0, spin-wait loop at 0x57d114 on [[platform+0x270]+8]->+4==1, make_MinecraftGame, 0x12f390(game,ctx[0]), game+0x264, string assign, platform vtable[0x1dc/4=119] on the g_platform object (0x57d19c), game vtable[0x6c]=vf27, strb 1 -> game+8, platform vtable[3](0), Agile::Get then bl 0x57df28 at 0x57d1e4. All reproduced. Caveat for the porter: the bare spin wait (0x57d114) blocks the calling thread until a platform worker thread signals; the factory must be called from a thread where the worker's own startup does not require this thread to pump the HWND/dispatcher queue (not provable here, but the x86 host has the same structure)."
+  },
+  {
+   "id": "appmain.app_main_frame",
+   "verdict": "CONFIRMED",
+   "note": "0x57d3a8 pdata start, bytes 2de9b048 0df10c0b 83f624f7 match. Body: platform tick 0x582cec, HID update 0x626570 (platform+0x3b4 -> +4), task-queue drain loop (sub_3d2414), game vtable[0x58]=slot22 (0x12ce88 update), [r4+4] flag -> AppMain vtable[1] then clear, return game vtable[0x68]=slot26 (0x1270e0 'ldrb r0,[r0,#9]'). Only caller 0x59539c in AppView::Run: 'ldr r0,[r6,#0x14]; bl 0x57d3a8; cmp r0,#0; bne exit'."
+  },
+  {
+   "id": "appmain.frame_enabled_byte",
+   "verdict": "CONFIRMED",
+   "note": "No store to AppMain+0x10 in AppMain code. But the claim that the only gating in Run is AppView+0x38/+0x39 is incomplete: Run (0x5952d0) also does pre-frame work (scan of game+0xd0 client map, ProcessEvents via CoreDispatcher) and post-frame work gated on platform+8 (see missing list). Nothing for the host to write on 1.2.8."
+  },
+  {
+   "id": "appmain.render_dsv_offset",
+   "verdict": "CONFIRMED",
+   "note": "5bbb30 ReleaseTargets: ctx=[r0+0x110] vtable[0x84] (OMSetRenderTargets), releases +0x118,+0x11c,+0x120. 5bc0cc InitTargets(owner,display,renderer=r5): +0x118/+0x11c via device vtable[0x24] CreateRenderTargetView, +0x120 via vtable[0x28] CreateDepthStencilView (texture created via vtable[0x14]), +0x124 GetBuffer texture. Matches x86 +0x120 DSV."
+  },
+  {
+   "id": "appmain.app_visibility",
+   "verdict": "CONFIRMED",
+   "note": "Re-decoded AppView::OnVisibilityChanged 0x5956cc: visible -> platform=[[AppView+0x14]+0x1c]; vtable[0x6c] (slot27 0x583cf8) then movs r1,#1; vtable[0x54] (slot21 0x621620 'strb r1,[r0,#9]'); not visible -> vtable[0x68] (slot26 0x583cc4) only. No other AppMain member (0x57d478..0x57fe38 scanned) contains the vf27/vf21 pair; AppMain::onWindowActivationChanged 0x57e160 (state 0->vf27, 1->vf26) is the only twin, and it takes an enum, not bool, so passing TRUE=1 would call vf26 (deactivate) - do NOT substitute it. Equivalence to the x86 function body remains unprovable (medium), but the ARM-side semantics are reproduced. Initial +0x3b0 state is 2 (0x5816b6) so vf27 takes the 'cbnz' branch: state=1, +0x21d=0, +0xfc=0."
+  },
+  {
+   "id": "appmain.game_class",
+   "verdict": "CONFIRMED",
+   "note": "rtti MinecraftGame -> primary 0x133bacc (offset 0) + 0x133bb44/0x133bb64/0x133bbd8 at this+0x10/0x14/0x18. 29 slots (0x74 bytes; next word at 0x133bb40 is a COL pointer). vtable bytes e180520099e25200 = 0x5280e1,0x52e299 correct. new(0x3c0)+memset confirmed at 0x57fc82/0x57fc92."
+  },
+  {
+   "id": "appmain.game_vf23_setSize",
+   "verdict": "CONFIRMED",
+   "note": "Slot 23 (+0x5c) holds VA 0x52f861 -> 0x12f860, bytes 2de9f048 0df1100b 2ded028b match. Reads: s0 saved to s16 immediately (vmov s16,s0), r1->r5, r2->r4, default 0->0xf0/0x8c. Call sites in onWindowSizeChanged: simple path 0x57e06a 'vldr s0,[pc]' literal at 0x57e15c = 0.0f, r1/r2=w/h, blx [vt+0x5c]; ClientInstance path passes a computed float in s0 to a different object (CI->+0x14->+0x18) whose vtable[0x5c] has the same arity. x86 call_game_resize pushes 3 dwords (w,h,mode) = 3 args; ARM third arg is float s0, x86 literal 0 == 0.0f. Typedef void(*)(void*,int,int,float) is correct; host must build hard-float (default for arm-windows-msvc)."
+  },
+  {
+   "id": "appmain.game_vf24_windowSizeChanged",
+   "verdict": "CONFIRMED",
+   "note": "Slot 24 (+0x60) = VA 0x52f8f1 -> 0x12f8f0; bytes 2de97848 0df1100b 1446 0d46 match. Called at 0x57e080 'ldr r3,[r3,#0x60]' with r1,r2 = w,h only (no s0). Plain (void*,int,int)."
+  },
+  {
+   "id": "appmain.game_vtable_probe_0x64",
+   "verdict": "CONFIRMED",
+   "note": "vtable 0x133bacc..0x133bb3f (0x74 bytes); slots 23/24 at +0x5c/+0x60 are inside 0x64."
+  },
+  {
+   "id": "appmain.game_quit_flag",
+   "verdict": "CONFIRMED",
+   "note": "0x1270c0 'movs r3,#1; strb [r0,#9]' slot 25, 0x1270e0 bytes ...407a = 'ldrb r0,[r0,#9]' slot 26; update_frame returns slot 26 result (AppView::Run exits loop when nonzero)."
+  },
+  {
+   "id": "appmain.platform_screen_width",
+   "verdict": "CONFIRMED",
+   "note": "0x582660 bytes 2de90048eb46d0f83003bde8 = 'ldr.w r0,[r0,#0x330]' (platform vtable slot 82); onWindowSizeChanged 0x57e08a 'str.w r3,[r5,#0x330]'; 0x583b94 (slot 143) 'str.w r3,[r0,#0x330]' from owner global [0x19b86ac]+0x94. Host has no other 0x330 use (grep: only lines 11921, 14140)."
+  },
+  {
+   "id": "appmain.platform_screen_height",
+   "verdict": "CONFIRMED",
+   "note": "0x582680 = 'ldr.w r0,[r0,#0x334]' (slot 83); stores at 0x57e090 and 0x583bca. Only host uses: lines 11922, 14141."
+  },
+  {
+   "id": "appmain.platform_dpi_scale",
+   "verdict": "CONFIRMED",
+   "note": "0x5822d8: DisplayInformation (0x57f7a0, activation factory) vtable[0x2c]=slot11 LogicalDpi, [0x30]=slot12 RawDpiX, [0x34]=slot13 RawDpiY; literals at 0x5823c8..0x5823d0 = 0x3c2aaaab (1/96), 0x3d214285 (1/25.4), 0x3f000000 (0.5); stores +0x338/+0x33c/+0x340. Host fake display_information_vtable (win32_host.c 7386) maps slots 11/12/13 to fake_display_dpi_x/x/y = 96.0f, so scale=1.0 and init size == client rect."
+  },
+  {
+   "id": "appmain.platform_hid_adapter_0x3b4",
+   "verdict": "CONFIRMED",
+   "note": "AppPlatform ctor 0x581610 'add.w r6,r4,#0x3b4' receives InputAdapter::make (0x58530c); update_frame 'ldr.w r3,[r3,#0x3b4]; ldr r0,[r3,#4]'; adapter ctor 0x586b00 stores dispatcher at +0 and HIDController (Heap::Allocate 0x1a58, ctor 0x623c74) at +4 (0x586bfe 'str r4,[r5,#4]'). Matches host get_hid_controller (0x3b4 then +4)."
+  },
+  {
+   "id": "appmain.hid_input_handler_probe_0x1d0",
+   "verdict": "CONFIRMED",
+   "note": "HIDController ctor 0x623c74 'strd r5,r8,[r4,#0x10]' with r5=adapter (r1; call site 0x586bda passes r1=r5=adapter this). HIDController::update 0x626570 calls enqueueInput 0x587294 with r0=[r4,#0x10] (0x626632 'ldr r0,[r4,#0x10]'; bl 0x587294), which is the host's enqueue_input 'input_handler'. Allocation of that object is new(0x170)+memset(0x170) at 0x58531c/0x58532e. 0x170 probe is safe; the claim that the x86 0x1d0 is the same class's x86 size is inferred only (x86 object is 0x60 larger, which is unexplained), so the confidence 'medium' is right. Note adapter == AppPlatform+0x3b4 object (same pointer), i.e. controller+0x10 points back at the adapter."
+  },
+  {
+   "id": "appmain.corewindow_slots_used",
+   "verdict": "CONFIRMED",
+   "note": "Independently reproduced: slot 7 (0x1c) in 0x57df60 with r1=&rect, uses +8/+0xc only; slot 9 (0x24) via helper 0x575cc8; slot 20 (0x50) in HID update with key r1 in {0x12,0x20,1,...} and out r2 compared ==1; slots 15 (0x3c), 22 (0x58), 23 (0x5c) in 0x627c14/0x627d28; slot 16 (0x40) twice in 0x623fe0; add_* 0x70(28), 0x88(34), 0x90(36) in 0x623fe0 and 0xb0(44), 0xb8(46), 0xc0(48), 0xd0(52) in 0x62420c. Host win32_core_window_vtable index mapping (win32_host.c 5083-5115) agrees; GetAsyncKeyState fake signature (object,key,INT*) matches r0,r1,r2. Additional slots not listed in the fact: see missing (CoreDispatcher slot 8; IMouseDevice slot 6 at 0x6240a8)."
+  },
+  {
+   "id": "appmain.iid_agile_object",
+   "verdict": "CONFIRMED",
+   "note": "guid search finds RVA 0xd8d948 (VA 0x118d948); bytes 94 2b ea 94 cc e9 e0 49 c0 ff ee 64 ca 8f 5b 90 = {94EA2B94-E9CC-49E0-C0FF-EE64CA8F5B90}; used by 0x57bb20 and 0x57f958."
+  },
+  {
+   "id": "appmain.iid_icorewindow_proxy",
+   "verdict": "CONFIRMED",
+   "note": "guid 79B9D5F2-879E-4B89-B798-79E47598030C -> RVA 0xdb726c, single ref 0x57f926 (GetProxyImpl slow path of Agile::Get). Never reached when flag==1 (0x57f8ec 'cmp r3,#1; beq')."
+  },
+  {
+   "id": "appmain.corewindow_global_agile",
+   "verdict": "CONFIRMED",
+   "note": "xref 0x1576fcc -> 0x4a5b6, 0x5841e4, 0x585174 (setter, movw/movt 0x1976fcc), 0xc1c070; zero at load. The setter is reached from AppPlatform ctor 0x581610 at 0x5816e4."
+  },
+  {
+   "id": "appmain.global_app_platform",
+   "verdict": "CORRECTED",
+   "corrected_arm_rva": "0x015b7ea8",
+   "note": "The ctor does 'movw r2,#0x7ea8; movt r2,#0x19b' = VA 0x019b7ea8, i.e. RVA 0x019b7ea8-0x400000 = 0x015b7ea8 (.data+0x288ea8). The finder's 0x01597ea8 is the VA minus 0x420000 (wrong by 0x20000); arm32re xref 15b7ea8 lists the real users (0x112554 fallback getter etc.), xref 1597ea8 lists none. Semantics (g_platform written from AppMain+0x1c at 0x57cf84-0x57cf92) are right."
+  },
+  {
+   "id": "appmain.global_dx_device_resources",
+   "verdict": "CORRECTED",
+   "corrected_arm_rva": "0x015badbc",
+   "note": "movw/movt 0x19badbc is a VA; RVA = 0x15badbc. xref 15badbc -> 0x57d048, 0x57d244, 0x57df40, 0x57e2ba, 0x57fbf8, 0xc1c04e; xref 159adbc has no users. Finder's 0x0159adbc is off by 0x20000."
+  },
+  {
+   "id": "appmain.call_game_resize_thunk",
+   "verdict": "CONFIRMED",
+   "note": "x86 thunk (win32_host.c 635-647): ECX=game, pushes mode,h,w = 3 stack args; ARM vf23 consumes r1,r2 + s0. Direct call is correct."
+  },
+  {
+   "id": "appmain.thiscall_typedefs",
+   "verdict": "CONFIRMED",
+   "note": "GameResizeFn/GameWindowSizeChangedFn typedefs at win32_host.c 474-477 are shared with the 0.15.10/1.1.5 paths; for the ARM-only 1.2.8 port they must be redefined (no thiscall, float 4th arg). Game128FrameFn returns the quit byte in r0 (confirmed)."
+  },
+  {
+   "id": "appmain.current_app_platform",
+   "verdict": "CONFIRMED",
+   "note": "AppMain+0x1c = AppPlatform_Winrt in ctor, frame, restart, dtor (0x57d048 area); the host's host_is_128 ? 0x1c : 4 stays valid."
+  },
+  {
+   "id": "appmain.no_byte_patches",
+   "verdict": "CONFIRMED",
+   "note": "Read win32_host.c 11882-11978, 14135-14190, 237-241, 516-531, 630-647: only direct writes to platform+0x330/0x334 and calls through RVAs/vtables; no memcpy-style code patches in these regions."
+  },
+  {
+   "id": "appmain.appview_not_used",
+   "verdict": "CONFIRMED",
+   "note": "OnActivated 0x595460 (factory call at 0x595508, CoreWindow vtable[0x48]=Activate at 0x59554a, AppMain::onActivated 0x57d478 at 0x595566), Run 0x5952d0, OnVisibilityChanged 0x5956cc, OnWindowActivated 0x595740 (not mentioned by the finder; calls 0x57e160 with the activation-state enum), OnSizeChanged 0x595790 tail-jumping to 0x57df28 are real. Host replaces them."
+  },
+  {
+   "id": "appmain.onWindowSizeChanged",
+   "verdict": "CONFIRMED",
+   "note": "0x57df28 bytes 2de9f04b 0df1180b 83f664f1 match. Flow reproduced: updateDpiScale(platform), CoreWindow slot7 bounds twice with lroundf(w*[+0x33c]) / lroundf(h*[+0x340]), game vtable[0x5c] then [0x60], stores +0x330/+0x334, mutex-protected pointer scale at adapter+0xa0/+0xa4, ApplicationView QI IID 0xdb736c (IApplicationView3) slot 9. Strategy A (manual) remains the safer port. Note: restart_game 0x57d224 also runs init -> this function again against the fake CoreWindow bounds."
+  }
+ ],
+ "missing": [
+  "AppView::Run (0x5952d0) does more per iteration than the single update_frame call the host loop replicates: pre-frame it walks the game+0xd0 client-instance map and processes the CoreDispatcher events (sub_574c48 -> dispatcher vtable[0x1c] ProcessEvents(opt)); post-frame (0x5953a4-0x5953da) it gates on platform+8 (via 0x112590 / fallback global 0x15b7ea8): if platform+8!=0 then game+0x2f0!=0 -> sub_1314cc(game,1,0) (calls sub_1186f8(ci,1,0) per ClientInstance) and game+0x1bc=AppMain, else AppMain vtable[1] (restart_game). The x86 0.15.10/1.1.5 host explicitly sets platform+8=TRUE; the 1.2.8 x86 host does not, and the finder has no fact saying who sets platform+8 on ARM or whether skipping this block matters. Needs an owner (xref writers of AppPlatform_Winrt+8, meaning of game+0x2f0 / sub_1314cc).",
+  "CoreDispatcher (win32_core_dispatcher) slots the game calls are not in any appmain fact: slot 8 RunAsync(priority r1, handler r2, IAsyncAction** r3) via helper 0x575ed8 from 0x627b74/0x627c88 (mouse-mode lambdas, getMainDispatcher 0x5841d8) and slot 7 ProcessEvents(r1) in AppView::Run (not used by host). Fake dispatcher vtable order (6 HasThreadAccess,7 ProcessEvents,8 RunAsync,9 RunIdleAsync) matches, argument registers match the existing fake signatures.",
+  "IMouseDevice: HIDController ctor (0x623fe0 at 0x6240a8) calls vtable[0x18]=slot 6 add_MouseMoved(handler r1, token* r2) on a MouseDevice object obtained from MouseDevice::GetForCurrentView; host mouse_device_vtable must keep slot 6 an add_ (fake_mouse_device_add_moved) - owned by input area but absent from appmain slots list.",
+  "Host-side fakes consumed during the factory call are only in port_instructions #9, not as facts: IDisplayInformation factory (sub_57f7a0) and slot 11/12/13 floats; ApplicationView.GetForCurrentView (sub_57f640) + IApplicationView3 slot 9 get_IsFullScreenMode(BYTE*); InputPane (sub_57f824, slot 0x28 get_OccludedRect used in 0x57e2e8); CoreTextServicesManager (0x628248). A failing HRESULT on any of these goes to sub_838cc (throw).",
+  "x86 refresh_relative_mouse_from_client_128 / center_mouse paths read current_app_platform() fields via other areas; not a gap for appmain but note platform vtable[0x164/4=89] (called on the g_platform object obtained through 0x112590 / global 0x15b7ea8 in update_frame 0x57d3f2 and restart_game 0x57d284) returns the main-thread task queue drained each frame, so g_platform (0x15b7ea8) must be set by the AppMain ctor before the first frame - already true, but initialize_game_app_128 must not run frame before the factory returns.",
+  "game vtable slot 27 (0x6c) is called in init (0x57d1b8, game->vf27) and platform vtable[0x1dc/4]=119 via global (0x57d19c) during init; not host-called, but listed nowhere (informational)."
+ ]
+}

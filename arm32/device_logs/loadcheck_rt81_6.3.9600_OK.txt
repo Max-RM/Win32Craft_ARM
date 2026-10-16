@@ -1,0 +1,208 @@
+loadcheck - Win32Craft ARM32 dependency check
+folder: C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft
+Windows version 6.3 build 9600
+
+== Win32Craft.1.2.8-arm32.exe (23597056 bytes)
+  [ok]   api-ms-win-core-fibers-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-com-l1-1-0.dll               served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-psapi-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-0.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-sysinfo-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-sysinfo-l1-2-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-string-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-debug-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-synch-l1-2-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-localization-l1-2-0.dll      served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-file-l1-1-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-errorhandling-l1-1-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-heap-l2-1-0.dll              served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-core-heap-l2-1-0.dll
+  [ok]   api-ms-win-core-handle-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-synch-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-file-l2-1-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-file-l1-2-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-profile-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-crt-runtime-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-runtime-l1-1-0.dll
+  [ok]   api-ms-win-crt-string-l1-1-0.dll             served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-string-l1-1-0.dll
+  [ok]   api-ms-win-crt-math-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-math-l1-1-0.dll
+  [ok]   api-ms-win-crt-stdio-l1-1-0.dll              served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-stdio-l1-1-0.dll
+  [ok]   api-ms-win-crt-time-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-time-l1-1-0.dll
+  [ok]   api-ms-win-crt-convert-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-convert-l1-1-0.dll
+  [ok]   api-ms-win-crt-heap-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-heap-l1-1-0.dll
+  [ok]   api-ms-win-crt-utility-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-utility-l1-1-0.dll
+  [ok]   api-ms-win-crt-filesystem-l1-1-0.dll         served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-filesystem-l1-1-0.dll
+  [ok]   api-ms-win-crt-locale-l1-1-0.dll             served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-locale-l1-1-0.dll
+  [ok]   api-ms-win-eventing-provider-l1-1-0.dll      served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-timezone-l1-1-0.dll          served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-datetime-l1-1-1.dll          served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-util-l1-1-0.dll              served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-winrt-error-l1-1-0.dll       served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-winrt-error-l1-1-1.dll       served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-winrt-string-l1-1-0.dll      served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-1.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-winrt-l1-1-0.dll             served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-interlocked-l1-1-0.dll       served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-delayload-l1-1-1.dll         served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-delayload-l1-1-0.dll         served by C:\Windows\system32\KERNEL32.DLL
+  51 import DLLs checked
+
+== win32craft.dll (143872 bytes)
+  [ok]   api-ms-win-crt-string-l1-1-0.dll             served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-string-l1-1-0.dll
+  6 import DLLs checked
+
+== fmod_ARM.dll (1118720 bytes)
+  [ok]   api-ms-win-core-winrt-l1-1-0.dll             served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-winrt-string-l1-1-0.dll      served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-com-l1-1-1.dll               served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-file-l1-2-1.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-handle-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-errorhandling-l1-1-1.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-profile-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-synch-l1-2-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-2.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-libraryloader-l1-2-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-libraryloader-l2-1-0.dll     served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-core-libraryloader-l2-1-0.dll
+  [ok]   api-ms-win-core-file-l2-1-1.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-string-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-crt-utility-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-utility-l1-1-0.dll
+  [ok]   api-ms-win-crt-math-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-math-l1-1-0.dll
+  [ok]   api-ms-win-crt-stdio-l1-1-0.dll              served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-stdio-l1-1-0.dll
+  [ok]   api-ms-win-crt-string-l1-1-0.dll             served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-string-l1-1-0.dll
+  [ok]   api-ms-win-crt-convert-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-convert-l1-1-0.dll
+  [ok]   api-ms-win-crt-heap-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-heap-l1-1-0.dll
+  [ok]   api-ms-win-crt-runtime-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-runtime-l1-1-0.dll
+  [ok]   api-ms-win-core-sysinfo-l1-2-1.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-interlocked-l1-2-0.dll       served by C:\Windows\system32\KERNELBASE.dll
+  27 import DLLs checked
+
+== ucrtbase.dll (684552 bytes)
+  [ok]   api-ms-win-core-string-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-errorhandling-l1-1-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-timezone-l1-1-0.dll          served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-file-l1-1-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-namedpipe-l1-1-0.dll         served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-handle-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-file-l2-1-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-heap-l1-1-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-synch-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-0.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-libraryloader-l1-1-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processenvironment-l1-1-0.dll served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-datetime-l1-1-0.dll          served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-localization-l1-2-0.dll      served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-sysinfo-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-synch-l1-2-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-console-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-debug-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-file-l1-2-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-profile-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-memory-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-util-l1-1-0.dll              served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-rtlsupport-l1-1-0.dll        served by C:\Windows\SYSTEM32\ntdll.dll
+  [ok]   api-ms-win-core-interlocked-l1-1-0.dll       served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-1.dll    served by C:\Windows\system32\KERNEL32.DLL
+  25 import DLLs checked
+
+== vccorlib140.dll (342504 bytes)
+  [ok]   api-ms-win-crt-stdio-l1-1-0.dll              served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-stdio-l1-1-0.dll
+  [ok]   api-ms-win-crt-heap-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-heap-l1-1-0.dll
+  [ok]   api-ms-win-crt-string-l1-1-0.dll             served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-string-l1-1-0.dll
+  [ok]   api-ms-win-crt-runtime-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-runtime-l1-1-0.dll
+  [ok]   api-ms-win-core-winrt-string-l1-1-0.dll      served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-com-l1-1-0.dll               served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-winrt-error-l1-1-0.dll       served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-errorhandling-l1-1-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-synch-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-localization-l1-2-0.dll      served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-libraryloader-l1-2-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-heap-l1-1-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-debug-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-util-l1-1-0.dll              served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-winrt-l1-1-0.dll             served by C:\Windows\SYSTEM32\combase.dll
+  [ok]   api-ms-win-core-handle-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-1.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-processthreads-l1-1-0.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-profile-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-sysinfo-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-interlocked-l1-1-0.dll       served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-crt-math-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-math-l1-1-0.dll
+  25 import DLLs checked
+
+== msvcp140.dll (559016 bytes)
+  [ok]   api-ms-win-crt-heap-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-heap-l1-1-0.dll
+  [ok]   api-ms-win-crt-runtime-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-runtime-l1-1-0.dll
+  [ok]   api-ms-win-crt-string-l1-1-0.dll             served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-string-l1-1-0.dll
+  [ok]   api-ms-win-crt-locale-l1-1-0.dll             served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-locale-l1-1-0.dll
+  [ok]   api-ms-win-crt-stdio-l1-1-0.dll              served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-stdio-l1-1-0.dll
+  [ok]   api-ms-win-crt-filesystem-l1-1-0.dll         served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-filesystem-l1-1-0.dll
+  [ok]   api-ms-win-crt-time-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-time-l1-1-0.dll
+  [ok]   api-ms-win-crt-environment-l1-1-0.dll        served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-environment-l1-1-0.dll
+  [ok]   api-ms-win-crt-math-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-math-l1-1-0.dll
+  [ok]   api-ms-win-crt-convert-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-convert-l1-1-0.dll
+  [ok]   api-ms-win-crt-utility-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-utility-l1-1-0.dll
+  [ok]   api-ms-win-core-rtlsupport-l1-1-0.dll        served by C:\Windows\SYSTEM32\ntdll.dll
+  [ok]   api-ms-win-core-errorhandling-l1-1-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-string-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-localization-l1-2-0.dll      served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-synch-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-file-l1-1-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-handle-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-file-l2-1-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-util-l1-1-0.dll              served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-heap-l2-1-0.dll              served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-core-heap-l2-1-0.dll
+  [ok]   api-ms-win-core-synch-l1-2-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-0.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-sysinfo-l1-2-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-threadpool-l1-2-0.dll        served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-libraryloader-l1-2-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-profile-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-file-l1-2-0.dll              served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-1.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-sysinfo-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-interlocked-l1-1-0.dll       served by C:\Windows\system32\KERNELBASE.dll
+  32 import DLLs checked
+
+== concrt140.dll (270728 bytes)
+  [ok]   api-ms-win-crt-heap-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-heap-l1-1-0.dll
+  [ok]   api-ms-win-crt-runtime-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-runtime-l1-1-0.dll
+  [ok]   api-ms-win-crt-string-l1-1-0.dll             served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-string-l1-1-0.dll
+  [ok]   api-ms-win-crt-stdio-l1-1-0.dll              served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-stdio-l1-1-0.dll
+  [ok]   api-ms-win-core-interlocked-l1-1-0.dll       served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-0.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-handle-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-errorhandling-l1-1-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-synch-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-fibers-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-synch-l1-2-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-sysinfo-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-sysinfo-l1-2-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-threadpool-l1-2-0.dll        served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-libraryloader-l1-2-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-debug-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-util-l1-1-0.dll              served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-processthreads-l1-1-1.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-profile-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  21 import DLLs checked
+
+== vcruntime140.dll (72976 bytes)
+  [ok]   api-ms-win-crt-runtime-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-runtime-l1-1-0.dll
+  [ok]   api-ms-win-crt-string-l1-1-0.dll             served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-string-l1-1-0.dll
+  [ok]   api-ms-win-crt-heap-l1-1-0.dll               served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-heap-l1-1-0.dll
+  [ok]   api-ms-win-crt-stdio-l1-1-0.dll              served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-stdio-l1-1-0.dll
+  [ok]   api-ms-win-crt-convert-l1-1-0.dll            served by C:\Users\venezia\Desktop\Minecraft_1.2.8.0_ARM32_Win32Craft\api-ms-win-crt-convert-l1-1-0.dll
+  [ok]   api-ms-win-core-util-l1-1-0.dll              served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-errorhandling-l1-1-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-rtlsupport-l1-1-0.dll        served by C:\Windows\SYSTEM32\ntdll.dll
+  [ok]   api-ms-win-core-interlocked-l1-1-0.dll       served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-1.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-synch-l1-1-0.dll             served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-fibers-l1-1-0.dll            served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-libraryloader-l1-2-0.dll     served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-profile-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  [ok]   api-ms-win-core-processthreads-l1-1-0.dll    served by C:\Windows\system32\KERNEL32.DLL
+  [ok]   api-ms-win-core-sysinfo-l1-1-0.dll           served by C:\Windows\system32\KERNELBASE.dll
+  16 import DLLs checked
+
+==== RESULT: 0 problem(s) ====
+All imports resolve on this machine.
+
+Press Enter to close...

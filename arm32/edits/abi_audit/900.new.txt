@@ -1,0 +1,14 @@
+#define ARM32_MEMORY_BARRIER() __sync_synchronize()
+/* The ARM kernel32.lib does NOT export InterlockedIncrement/Decrement/Exchange (they are compiler intrinsics on ARM; verified:
+ * lld-link "undefined symbol: InterlockedIncrement" against um/arm/kernel32.lib), but win32_compat.h declares them as imports.
+ * Use the GCC/clang atomic builtins (seq_cst == the full barrier Windows' Interlocked* give).  The guards make this a no-op if
+ * a header-level definition (win32_compat.h / 00_core) is added before this point. */
+#ifndef InterlockedIncrement
+#define InterlockedIncrement(p)    __atomic_add_fetch((volatile LONG *)(p), 1, __ATOMIC_SEQ_CST)
+#endif
+#ifndef InterlockedDecrement
+#define InterlockedDecrement(p)    __atomic_sub_fetch((volatile LONG *)(p), 1, __ATOMIC_SEQ_CST)
+#endif
+#ifndef InterlockedExchange
+#define InterlockedExchange(p, v)  __atomic_exchange_n((volatile LONG *)(p), (LONG)(v), __ATOMIC_SEQ_CST)
+#endif

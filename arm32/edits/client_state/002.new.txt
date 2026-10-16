@@ -1,0 +1,4 @@
+#endif /* WIN32CRAFT_ARM32 client_state */
+
+static void center_mouse_cursor(HWND window)
+{

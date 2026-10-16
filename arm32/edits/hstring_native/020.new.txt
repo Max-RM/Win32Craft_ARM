@@ -1,0 +1,4 @@
+void WINAPI RoFreeParameterizedTypeExtra(void *extra) {
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD_VOID("RoFreeParameterizedTypeExtra", (void *), (extra));
+#endif

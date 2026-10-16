@@ -1,0 +1,9 @@
+HRESULT WINAPI Win32CraftCoGetContextToken(ULONG_PTR *token)
+{
+#ifdef WIN32CRAFT_ARM32
+    {
+        typedef HRESULT (WINAPI *NativeFn)(ULONG_PTR *);
+        NativeFn native = (NativeFn)resolve_ole32("CoGetContextToken");
+        if (native && token) return native(token);
+    }
+#endif

@@ -1,0 +1,339 @@
+#ifdef WIN32CRAFT_ARM32
+/* ======================================================================================================
+ * ARM32 (unit iat_hooks): IAT hook helpers and host options.  Facts: pe_imports, gfx_compat, fl91, chat_xbox.
+ * ====================================================================================================== */
+
+/* Feature-level ceiling applied by the D3D11CreateDevice hook (facts fl91.hook_force_fl91).  Default 0x9100 = 9_1,
+ * 0 = "game" (keep the game's own list).  Host option --feature-level=..., environment WIN32CRAFT_FEATURE_LEVEL. */
+static UINT arm32_feature_level_cap = 0x9100u;
+static BOOL arm32_feature_level_resolved;
+
+typedef struct Arm32FeatureLevelName {
+    const wchar_t *text;
+    const char *name;
+    UINT level;
+} Arm32FeatureLevelName;
+
+static const Arm32FeatureLevelName arm32_feature_level_names[] = {
+    { L"9_1", "9_1", 0x9100u }, { L"9_2", "9_2", 0x9200u }, { L"9_3", "9_3", 0x9300u },
+    { L"10_0", "10_0", 0xa000u }, { L"10_1", "10_1", 0xa100u },
+    { L"11_0", "11_0", 0xb000u }, { L"11_1", "11_1", 0xb100u },
+    { L"game", "game list (no clamp)", 0u }
+};
+
+static BOOL arm32_iat_streq(const char *left, const char *right)
+{
+    while (*left && *right) {
+        if (*left != *right) return FALSE;
+        ++left;
+        ++right;
+    }
+    return *left == 0 && *right == 0;
+}
+
+/* "9_1", "9.3", "11_0", "game" (case-insensitive) -> D3D_FEATURE_LEVEL value or 0 for "game" */
+static BOOL arm32_parse_feature_level(const wchar_t *text, UINT *level_out)
+{
+    wchar_t normalized[16];
+    UINT length = 0;
+    UINT index;
+
+    if (!text) return FALSE;
+    while (text[length] && length + 1 < ARRAYSIZE(normalized)) {
+        normalized[length] = text[length] == L'.' ? L'_' : text[length];
+        ++length;
+    }
+    if (text[length]) return FALSE;
+    normalized[length] = 0;
+    for (index = 0; index < ARRAYSIZE(arm32_feature_level_names); ++index) {
+        if (host_argument_equals(normalized, arm32_feature_level_names[index].text)) {
+            *level_out = arm32_feature_level_names[index].level;
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static const wchar_t *arm32_iat_argument_value(const wchar_t *argument, const wchar_t *prefix)
+{
+    while (*prefix) {
+        if (host_ascii_lower_w(*argument) != host_ascii_lower_w(*prefix)) return NULL;
+        ++argument;
+        ++prefix;
+    }
+    return argument;
+}
+
+static void arm32_iat_narrow_for_log(char *out, SIZE_T out_size, const wchar_t *text)
+{
+    SIZE_T index = 0;
+    while (text[index] && index + 1 < out_size) {
+        out[index] = text[index] < 0x80 ? (char)text[index] : '?';
+        ++index;
+    }
+    out[index] = 0;
+}
+
+void Win32CraftParseHostOptions(void)
+{
+    const wchar_t *cursor = GetCommandLineW();
+    wchar_t argument[128];
+    wchar_t wide[32];
+    char environment[32];
+    char narrow[40];
+    char line[224];
+    DWORD environment_length;
+    UINT level = 0;
+    UINT index;
+    BOOL expect_level = FALSE;
+    const wchar_t *value;
+    const char *source = "default";
+    const char *name = "9_1";
+
+    host_unlimited_fps = FALSE;
+    arm32_feature_level_cap = 0x9100u;
+    environment_length = GetEnvironmentVariableA("WIN32CRAFT_FEATURE_LEVEL", environment, sizeof(environment));
+    if (environment_length && environment_length < sizeof(environment)) {
+        for (index = 0; index <= environment_length; ++index)
+            wide[index] = (wchar_t)(unsigned char)environment[index];
+        if (arm32_parse_feature_level(wide, &level)) {
+            arm32_feature_level_cap = level;
+            source = "environment WIN32CRAFT_FEATURE_LEVEL";
+        } else {
+            wsprintfA(line, "WIN32CRAFT_FEATURE_LEVEL='%s' is not one of 9_1 9_2 9_3 10_0 10_1 11_0 11_1 game - ignored",
+                      environment);
+            log_line(line);
+        }
+    } else if (environment_length) {
+        log_line("WIN32CRAFT_FEATURE_LEVEL is longer than 31 characters - ignored");
+    }
+
+    cursor = host_next_argument(cursor, argument, ARRAYSIZE(argument));
+    while (*cursor) {
+        cursor = host_next_argument(cursor, argument, ARRAYSIZE(argument));
+        value = NULL;
+        if (expect_level) {
+            expect_level = FALSE;
+            value = argument;
+        } else if (host_argument_equals(argument, L"-maxfps")) {
+            host_unlimited_fps = TRUE;
+        } else if (host_argument_equals(argument, L"--feature-level")) {
+            expect_level = TRUE;
+        } else {
+            value = arm32_iat_argument_value(argument, L"--feature-level=");
+        }
+        if (value) {
+            if (arm32_parse_feature_level(value, &level)) {
+                arm32_feature_level_cap = level;
+                source = "command line --feature-level";
+            } else {
+                arm32_iat_narrow_for_log(narrow, sizeof(narrow), value);
+                wsprintfA(line, "--feature-level='%s' is not one of 9_1 9_2 9_3 10_0 10_1 11_0 11_1 game - ignored",
+                          narrow);
+                log_line(line);
+            }
+        }
+    }
+    log_line(host_unlimited_fps
+        ? "Win32 frame limit: unlimited (VSync disabled)"
+        : "Win32 frame limit: display VSync");
+
+    for (index = 0; index < ARRAYSIZE(arm32_feature_level_names); ++index) {
+        if (arm32_feature_level_names[index].level == arm32_feature_level_cap)
+            name = arm32_feature_level_names[index].name;
+    }
+    wsprintfA(line, "ARM32 effective feature level cap: %s (0x%04X), source: %s",
+              name, (unsigned)arm32_feature_level_cap, source);
+    log_line(line);
+    arm32_feature_level_resolved = TRUE;
+}
+
+/* printable-ASCII copy of a possibly unreadable C string (copy_ascii_sample is defined further down the file) */
+static void arm32_iat_copy_ascii(char *out, SIZE_T out_size, const char *text)
+{
+    SIZE_T index = 0;
+    if (!out || !out_size) return;
+    if (text && !IsBadReadPtr(text, 1)) {
+        while (index + 1 < out_size && !IsBadReadPtr(text + index, 1) && text[index]) {
+            unsigned char value = (unsigned char)text[index];
+            out[index] = (value >= 0x20 && value < 0x7f) ? (char)value : '.';
+            ++index;
+        }
+    }
+    out[index] = 0;
+}
+
+/* "module.dll+0xOFFSET (base ptr)" for a code/data address, from the export-directory name of the owning image.
+ * Only VirtualQuery/IsBadReadPtr are used so it is safe on any pointer. */
+static void arm32_iat_describe_address(const void *address, char *out, SIZE_T out_size)
+{
+    MEMORY_BASIC_INFORMATION info;
+    const BYTE *base;
+    const char *module_name = NULL;
+    char name_copy[48];
+    DWORD pe_offset;
+    DWORD export_rva;
+    DWORD name_rva;
+
+    if (!out || !out_size) return;
+    out[0] = 0;
+    if (!address) {
+        wsprintfA(out, "null");
+        return;
+    }
+    if (!VirtualQuery(address, &info, sizeof(info)) || !info.AllocationBase || info.State != MEM_COMMIT) {
+        wsprintfA(out, "%p (not mapped)", address);
+        return;
+    }
+    base = (const BYTE *)info.AllocationBase;
+    if (!IsBadReadPtr(base, 0x40) && base[0] == 'M' && base[1] == 'Z') {
+        pe_offset = *(const DWORD *)(base + 0x3c);
+        if (pe_offset >= 0x40 && pe_offset < 0x1000 && !IsBadReadPtr(base + pe_offset, 0x80) &&
+            *(const DWORD *)(base + pe_offset) == 0x00004550u) {
+            export_rva = *(const DWORD *)(base + pe_offset + 0x78);
+            if (export_rva && !IsBadReadPtr(base + export_rva, 0x28)) {
+                name_rva = *(const DWORD *)(base + export_rva + 0xc);
+                if (name_rva) module_name = (const char *)(base + name_rva);
+            }
+        }
+    }
+    if (module_name) {
+        arm32_iat_copy_ascii(name_copy, sizeof(name_copy), module_name);
+    } else {
+        name_copy[0] = '?';
+        name_copy[1] = 0;
+    }
+    wsprintfA(out, "%s+0x%lx (image base %p)", name_copy,
+              (unsigned long)((ULONG_PTR)address - (ULONG_PTR)base), (const void *)base);
+}
+
+/* Walk `lookup_rva` (hint/name table) in parallel with `iat_rva` and return the IAT cell of the import called
+ * `function_name`; NULL when absent. */
+static void **arm32_iat_walk_names(BYTE *image, DWORD image_size, DWORD lookup_rva, DWORD iat_rva,
+                                      const char *function_name)
+{
+    UINT index;
+    for (index = 0; index < 8192; ++index) {
+        const DWORD *entry_address = (const DWORD *)(image + lookup_rva + 4 * index);
+        DWORD entry;
+        if (IsBadReadPtr(entry_address, sizeof(*entry_address))) return NULL;
+        entry = *entry_address;
+        if (!entry) return NULL;
+        if (entry & 0x80000000u) continue;
+        if (entry + 2 >= image_size) continue;
+        if (arm32_iat_streq((const char *)(image + entry + 2), function_name))
+            return (void **)(image + iat_rva + 4 * index);
+    }
+    return NULL;
+}
+
+/* Find the IAT cell of a function imported BY NAME in the live PE image: the normal import directory, or the delay
+ * import directory when `delay` (RVA-based descriptors, attributes bit 0).  The DLL name is not compared because the
+ * patcher renames several of them (VCRUNTIME140_APP.dll -> VCRUNTIME140.dll, ...).  PE32 layout: data directory
+ * array at nt+0x78, import = [1] (nt+0x80), delay import = [13] (nt+0xe0). */
+static void **arm32_iat_find_cell(BYTE *image, BOOL delay, const char *function_name)
+{
+    const BYTE *nt;
+    const DWORD *descriptor;
+    DWORD pe_offset;
+    DWORD image_size;
+    DWORD directory_rva;
+    UINT count;
+
+    if (!image || IsBadReadPtr(image, 0x40)) return NULL;
+    pe_offset = *(const DWORD *)(image + 0x3c);
+    nt = image + pe_offset;
+    if (pe_offset < 0x40 || pe_offset > 0x1000 || IsBadReadPtr(nt, 0x108) || *(const DWORD *)nt != 0x00004550u)
+        return NULL;
+    image_size = *(const DWORD *)(nt + 0x50);
+    directory_rva = *(const DWORD *)(nt + (delay ? 0xe0 : 0x80));
+    if (!directory_rva || directory_rva >= image_size) return NULL;
+    descriptor = (const DWORD *)(image + directory_rva);
+    for (count = 0; count < 256; ++count) {
+        void **cell;
+        if (!delay) {
+            /* OriginalFirstThunk, TimeDateStamp, ForwarderChain, Name, FirstThunk */
+            if (IsBadReadPtr(descriptor, 20)) return NULL;
+            if (!descriptor[3] && !descriptor[4]) return NULL;
+            cell = arm32_iat_walk_names(image, image_size,
+                                           descriptor[0] ? descriptor[0] : descriptor[4], descriptor[4],
+                                           function_name);
+            descriptor += 5;
+        } else {
+            /* grAttrs, rvaDLLName, rvaHmod, rvaIAT, rvaINT, rvaBoundIAT, rvaUnloadIAT, dwTimeStamp */
+            if (IsBadReadPtr(descriptor, 32)) return NULL;
+            if (!descriptor[1]) return NULL;
+            cell = (descriptor[0] & 1u)
+                ? arm32_iat_walk_names(image, image_size, descriptor[4], descriptor[3], function_name)
+                : NULL;
+            descriptor += 8;
+        }
+        if (cell) return cell;
+    }
+    return NULL;
+}
+
+/* IAT cell of `function_name`: the live import table wins over the fact RVA (a disagreement is logged). */
+static void **arm32_iat_resolve_cell(BYTE *image, BOOL delay, const char *function_name, DWORD fact_rva)
+{
+    void **by_name = arm32_iat_find_cell(image, delay, function_name);
+    void **by_fact = (void **)(image + fact_rva);
+    char line[256];
+
+    if (!by_name) {
+        wsprintfA(line, "ARM32 import %.80s not found by name in the %s import directory; using fact rva %08lx",
+                  function_name, delay ? "delay" : "normal", (unsigned long)fact_rva);
+        log_line(line);
+        return by_fact;
+    }
+    if (by_name != by_fact) {
+        wsprintfA(line, "ARM32 WARNING import %.80s: live import table cell rva %08lx != fact rva %08lx - using the live cell",
+                  function_name, (unsigned long)((ULONG_PTR)by_name - (ULONG_PTR)image), (unsigned long)fact_rva);
+        log_line(line);
+    }
+    return by_name;
+}
+
+/* Function pointers stored in data must carry the Thumb bit (PORT_RULES 5); ours already do, OR-ing is idempotent. */
+static void *arm32_iat_thumb_pointer(void *function)
+{
+    return (void *)((ULONG_PTR)function | 1u);
+}
+
+/* Hook one regular IAT cell: resolve by name, require the loader-resolved value (non-null), log where it points,
+ * remember it in *original_out BEFORE the hook becomes live, then patch with arm32_patch_cell (RW only). */
+static BOOL arm32_iat_hook_import(BYTE *image, BOOL delay, const char *function_name, DWORD fact_rva,
+                              void *hook, void **original_out, const char *what)
+{
+    void **cell = arm32_iat_resolve_cell(image, delay, function_name, fact_rva);
+    void *original;
+    char where[160];
+    char line[400];
+
+    if (!cell || ((ULONG_PTR)cell & 3u) || IsBadReadPtr(cell, sizeof(*cell))) {
+        wsprintfA(line, "ARM32 hook %s: IAT cell %p is null, misaligned or unreadable", what, (void *)cell);
+        log_line(line);
+        return FALSE;
+    }
+    original = *cell;
+    arm32_iat_describe_address(original, where, sizeof(where));
+    wsprintfA(line, "ARM32 hook %s: cell rva %08lx currently %p = %s", what,
+              (unsigned long)((ULONG_PTR)cell - (ULONG_PTR)image), original, where);
+    log_line(line);
+    if (!original) {
+        wsprintfA(line, "ARM32 hook %s: the cell is null, the loader did not resolve this import - not hooked", what);
+        log_line(line);
+        return FALSE;
+    }
+    if (original_out) *original_out = original;
+    if (!arm32_patch_cell(cell, original, arm32_iat_thumb_pointer(hook), NULL, what)) {
+        if (original_out) *original_out = NULL;
+        return FALSE;
+    }
+    return TRUE;
+}
+
+#else
+void Win32CraftParseHostOptions(void)
+{
+    const wchar_t *cursor = GetCommandLineW();

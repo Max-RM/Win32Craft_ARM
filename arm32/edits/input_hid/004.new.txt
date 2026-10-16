@@ -1,0 +1,61 @@
+#ifdef WIN32CRAFT_ARM32
+/* facts input.make_mouse_event / input.enqueue_input: MouseItem factory 0x62a128 through the 00_core bridge (32-bit
+ * action/pressed/payload, 16-bit x/y locals), then EnqueueInput(adapter, &slot).  Wheel = action 4 with the signed
+ * delta byte in `pressed`, payload 0, x = y = 0 (same as the stock PointerWheelChanged handler 0x625a50). */
+static BOOL queue_mouse_event(int x, int y, DWORD payload,
+                              BYTE action, BYTE pressed)
+{
+    static unsigned logged_events;
+    static BOOL logged_disabled;
+    void *event = NULL;
+    BYTE *controller;
+    void *input_handler;
+    WORD event_x;
+    WORD event_y;
+    char line[128];
+
+    if (!input_events_enabled) {
+        if (!logged_disabled) {
+            log_line("Win32 input injection is not available");
+            logged_disabled = TRUE;
+        }
+        return FALSE;
+    }
+    controller = arm32_input_target(&input_handler);
+    if (!controller) return FALSE;
+
+    if (payload) {
+        if (x < SHRT_MIN) x = SHRT_MIN;
+        if (y < SHRT_MIN) y = SHRT_MIN;
+        if (x > SHRT_MAX) x = SHRT_MAX;
+        if (y > SHRT_MAX) y = SHRT_MAX;
+    } else {
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
+        if (x > 0xffff) x = 0xffff;
+        if (y > 0xffff) y = 0xffff;
+    }
+
+    event_x = (WORD)x;
+    event_y = (WORD)y;
+    call_game_make_mouse_event(game_image + ARM_INPUT_MAKE_MOUSE_EVENT, &event, &action, &pressed,
+                               &payload, &event_x, &event_y);
+    if (!event || IsBadReadPtr(event, ARM_INPUT_MOUSE_EVENT_LAYOUT) ||
+        *((BYTE *)event + 4) != 0) {
+        log_line("mouse event factory returned an invalid event");
+        return FALSE;
+    }
+    arm32_enqueue_input(input_handler, event);
+
+    if (logged_events < 12) {
+        wsprintfA(line, "mouse event: x=%d y=%d action=%u pressed=%u payload=%u",
+                  x, y, (unsigned)action, (unsigned)pressed, (unsigned)payload);
+        log_line(line);
+        ++logged_events;
+    }
+    return TRUE;
+}
+#else /* WIN32CRAFT_ARM32 */
+static BOOL queue_mouse_event(int x, int y, DWORD payload,
+                              BYTE action, BYTE pressed)
+{

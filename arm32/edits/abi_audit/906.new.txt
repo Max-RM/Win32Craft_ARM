@@ -1,0 +1,7 @@
+    currentapp_factory_vtable[9] = (const void *)arm32_currentapp_request_app_purchase;
+    currentapp_factory_vtable[10] = (const void *)arm32_currentapp_request_product_purchase;
+    currentapp_factory_vtable[13] = (const void *)arm32_currentapp_get_product_receipt;
+    wsprintfA(line, "ARM32 WinRT fakes: %u NULL vtable slots now log and return E_NOTIMPL", filled);
+    log_line(line);
+    __atomic_store_n(&done, 2, __ATOMIC_RELEASE);
+}

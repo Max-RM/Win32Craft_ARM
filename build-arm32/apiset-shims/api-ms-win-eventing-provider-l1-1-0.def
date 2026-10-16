@@ -1,0 +1,6 @@
+LIBRARY api-ms-win-eventing-provider-l1-1-0.dll
+EXPORTS
+EventRegister=ADVAPI32.EventRegister
+EventSetInformation=ADVAPI32.EventSetInformation
+EventUnregister=ADVAPI32.EventUnregister
+EventWriteTransfer=ADVAPI32.EventWriteTransfer

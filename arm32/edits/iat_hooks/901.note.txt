@@ -1,0 +1,1 @@
+reviewer: install_arm32_iat_hooks is run-once (a repeated call would re-initialise live fake WinRT objects).

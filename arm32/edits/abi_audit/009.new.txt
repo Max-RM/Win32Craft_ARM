@@ -1,0 +1,21 @@
+    if (selected) set_host_ipv4_text(selected);
+    local_ipv4_resolved = TRUE;
+}
+#ifdef WIN32CRAFT_ARM32
+#undef resolve_local_ipv4
+/* NetworkInformation.GetHostNames can be asked from several game threads.  host_name.text is written first and the
+ * "resolved" flag last; on ARM the stores can become visible in the other order, so a second thread could return a
+ * half-written IPv4 string.  State 0 = idle, 1 = one thread resolving, 2 = text published (release/acquire). */
+static volatile LONG arm32_local_ipv4_state;
+
+static void resolve_local_ipv4(void)
+{
+    if (__atomic_load_n(&arm32_local_ipv4_state, __ATOMIC_ACQUIRE) == 2) return;
+    if (__sync_val_compare_and_swap(&arm32_local_ipv4_state, 0, 1) == 0) {
+        arm32_resolve_local_ipv4_once();
+        __atomic_store_n(&arm32_local_ipv4_state, 2, __ATOMIC_RELEASE);
+        return;
+    }
+    while (__atomic_load_n(&arm32_local_ipv4_state, __ATOMIC_ACQUIRE) != 2) Sleep(0);
+}
+#endif

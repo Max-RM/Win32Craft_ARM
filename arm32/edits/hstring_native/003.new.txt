@@ -1,0 +1,5 @@
+INT WINAPI WindowsCompareStringOrdinal(HSTRING left, HSTRING right, INT *result)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "WindowsCompareStringOrdinal", (HSTRING, HSTRING, INT *), (left, right, result));
+#endif

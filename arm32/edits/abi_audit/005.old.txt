@@ -1,0 +1,2 @@
+    if (!result) return E_POINTER;
+    if (object && object->kind == FAKE_ASYNC_STRING) {

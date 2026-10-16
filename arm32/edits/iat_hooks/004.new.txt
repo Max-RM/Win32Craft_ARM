@@ -1,0 +1,28 @@
+#ifdef WIN32CRAFT_ARM32
+    /* facts pe_imports.activation_factory_iat: vccorlib GetActivationFactoryByPCWSTR (LPCWSTR, GUID&, void**) is the
+     * ONLY WinRT activation path of the ARM exe; same host dispatcher as x86, every other class goes to the original. */
+    (void)slot;
+    (void)old_protection;
+    (void)ignored;
+    if (!arm32_iat_hook_import(image, FALSE, "?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z",
+                           (DWORD)activation_factory_rva, (void *)win32_get_activation_factory,
+                           (void **)&original_activation, "GetActivationFactoryByPCWSTR")) {
+        log_line("ARM32: WinRT activation redirect NOT installed");
+        return FALSE;
+    }
+    log_line("ARM32: WinRT activation redirect installed (host fakes first, vccorlib for every other class)");
+    return TRUE;
+}
+#else
+    if (!VirtualProtect(slot, sizeof(*slot), PAGE_READWRITE, &old_protection)) {
+        log_line("VirtualProtect activation IAT failed");
+        return FALSE;
+    }
+    original_activation = *slot;
+    *slot = win32_get_activation_factory;
+    VirtualProtect(slot, sizeof(*slot), old_protection, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), slot, sizeof(*slot));
+    log_line("WinRT Package/ApplicationData redirect installed");
+    return TRUE;
+}
+#endif

@@ -1,0 +1,4 @@
+HRESULT WINAPI RoCaptureErrorContext(HRESULT error) {
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "RoCaptureErrorContext", (HRESULT), (error));
+#endif

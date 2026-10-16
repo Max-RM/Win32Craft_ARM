@@ -1,0 +1,1 @@
+int WINAPI Win32BootstrapEarly2016(void);

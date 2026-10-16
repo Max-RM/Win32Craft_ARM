@@ -1,0 +1,5 @@
+#endif
+
+static BOOL patch_win7_device2_queries_to_base(
+    BYTE *image, SIZE_T device_iid_rva, SIZE_T context_iid_rva)
+{

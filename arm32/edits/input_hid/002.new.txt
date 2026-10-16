@@ -1,0 +1,306 @@
+#ifdef WIN32CRAFT_ARM32
+/* ======================================================================================================
+ * ARM32 input path (unit input_hid; facts input.*).  1.2.8 only.
+ *
+ *   AppMain+0x1c -> AppPlatform_Winrt, +0x3b4 -> InputAdapter (0x170 bytes), adapter+4 -> HIDController,
+ *   controller+0x10 -> adapter again (the `this` of EnqueueInput), controller +0x28 int pointer-mode command,
+ *   +0xa0 byte "actual", +0xc9..+0x1c8 held-key table, +0x1f0 text sequence byte.
+ * ====================================================================================================== */
+typedef void (*Arm32EnqueueInputFn)(void *adapter, void **item_slot);
+typedef unsigned (*Arm32MapVirtualKeyFn)(unsigned vk_minus_8);
+
+static BYTE *get_hid_controller(void *platform)
+{
+    BYTE *adapter;
+    if (!platform ||
+        IsBadReadPtr((BYTE *)platform + ARM_INPUT_PLATFORM_ADAPTER_OFFSET, sizeof(void *))) {
+        return NULL;
+    }
+    adapter = *(BYTE **)((BYTE *)platform + ARM_INPUT_PLATFORM_ADAPTER_OFFSET);
+    if (!adapter || IsBadReadPtr(adapter + ARM_INPUT_ADAPTER_TO_CONTROLLER, sizeof(void *))) {
+        return NULL;
+    }
+    return *(BYTE **)(adapter + ARM_INPUT_ADAPTER_TO_CONTROLLER);
+}
+
+/* In the three std::function<void()> lambda bodies `this` is the _Func_impl object: +0 vtable, +4 the captured
+ * InputAdapter*, adapter+4 the HIDController (facts input.mouse_mode_this_object). */
+static BYTE *get_mouse_mode_controller(void *lambda_self)
+{
+    BYTE *adapter;
+    if (!lambda_self || IsBadReadPtr((BYTE *)lambda_self + 4, sizeof(void *))) return NULL;
+    adapter = *(BYTE **)((BYTE *)lambda_self + 4);
+    if (!adapter || IsBadReadPtr(adapter + ARM_INPUT_ADAPTER_TO_CONTROLLER, sizeof(void *))) return NULL;
+    return *(BYTE **)(adapter + ARM_INPUT_ADAPTER_TO_CONTROLLER);
+}
+
+static SIZE_T mouse_actual_offset(void)
+{
+    return ARM_INPUT_MOUSE_ACTUAL_OFFSET;
+}
+
+static SIZE_T mouse_command_offset(void)
+{
+    return ARM_INPUT_MOUSE_COMMAND_OFFSET;
+}
+
+/* HIDController plus the EnqueueInput `this`, both probed.  The 0x170 size is the real allocation of the ARM adapter
+ * (the x86 0x1d0 probe would be larger than the object).  Logs the object graph once and any failure reason a few
+ * times, because the log is the only feedback from the device. */
+static BYTE *arm32_input_target(void **input_handler_out)
+{
+    static unsigned logged_failures;
+    static BOOL logged_ready;
+    void *platform;
+    BYTE *controller;
+    void *handler = NULL;
+    const char *why = NULL;
+    char line[256];
+
+    *input_handler_out = NULL;
+    if (!game_image || !game_app_main) return NULL;
+    platform = current_app_platform();
+    controller = platform ? get_hid_controller(platform) : NULL;
+    if (!controller) {
+        why = "no HIDController (AppMain+0x1c -> platform+0x3b4 -> adapter+4)";
+    } else if (IsBadReadPtr(controller, ARM_INPUT_HID_TEXT_SEQUENCE_BYTE + 1)) {
+        why = "HIDController is not readable up to +0x1f0";
+    } else {
+        handler = *(void **)(controller + ARM_INPUT_CONTROLLER_INPUT_HANDLER);
+        if (!handler) why = "HIDController+0x10 (EnqueueInput this) is null";
+        else if (IsBadReadPtr(handler, ARM_INPUT_INPUT_HANDLER_READABLE_SIZE))
+            why = "EnqueueInput this is not readable (0x170 bytes)";
+    }
+    if (why) {
+        if (logged_failures < 8) {
+            wsprintfA(line, "ARM32 input target unavailable: %s (platform=%p controller=%p handler=%p)",
+                      why, platform, (void *)controller, handler);
+            log_line(line);
+            ++logged_failures;
+        }
+        return NULL;
+    }
+    if (!logged_ready) {
+        wsprintfA(line,
+            "ARM32 input target: platform=%p controller=%p handler=%p actual=%u command=%d hold25=%u",
+            platform, (void *)controller, handler,
+            (unsigned)controller[ARM_INPUT_MOUSE_ACTUAL_OFFSET],
+            *(int *)(controller + ARM_INPUT_MOUSE_COMMAND_OFFSET), (unsigned)controller[0x25]);
+        log_line(line);
+        logged_ready = TRUE;
+    }
+    *input_handler_out = handler;
+    return controller;
+}
+
+/* facts input.enqueue_input: void(void *adapter r0, void **slot r1).  `slot` is the ADDRESS of the pointer variable
+ * that owns the item (unique_ptr by reference); the callee moves it into the queue and zeroes the variable. */
+static void arm32_enqueue_input(void *input_handler, void *event)
+{
+    Arm32EnqueueInputFn enqueue_input =
+        (Arm32EnqueueInputFn)ARM_CODE(game_image, ARM_INPUT_ENQUEUE_INPUT);
+    void *slot = event;
+    enqueue_input(input_handler, &slot);
+}
+
+/*
+ * The three AppPlatform_Winrt mouse-mode entry points (vf18 relative, vf19 absolute, vf22 toggle) wrap a tiny lambda
+ * into a std::function and run it through CoreDispatcher.RunAsync, i.e. the host's drain_dispatcher_queue calls the
+ * lambda's _Do_call on the host thread.  The stock lambdas only write a one-frame command to HIDController+0x28; we
+ * replace them (facts input.mouse_*_hook) so the DLL retains the requested state.  Plain AAPCS, `this` in r0.
+ */
+static void win32_request_relative_mouse(void *lambda_self)
+{
+    static unsigned logged;
+    BYTE *controller = get_mouse_mode_controller(lambda_self);
+    if (logged < 32) {
+        char line[192];
+        wsprintfA(line,
+            "Minecraft 1.2.8 relative mouse delegate invoked: this=%p controller=%p guard=%d actual=%d",
+            lambda_self, (void *)controller, initial_menu_cursor_guard,
+            controller ? controller[mouse_actual_offset()] : -1);
+        log_line(line);
+        ++logged;
+    }
+    if (initial_menu_cursor_guard) {
+        /* App activation emits one relative-mode request before the first main-menu screen owns the pointer.
+         * Ignore only that startup phase; the first real menu click or an explicit absolute request removes the
+         * guard, so entering a world can capture normally. */
+        if (controller) *(int *)(controller + mouse_command_offset()) = 0;
+        host_relative_requested = FALSE;
+        mouse_clip_dirty = TRUE;
+        return;
+    }
+    if (controller && controller[mouse_actual_offset()] == 0) {
+        *(int *)(controller + mouse_command_offset()) = 1;
+    }
+    /* The "actual" byte is owned by the host under an HWND, so it must not suppress the request. */
+    host_relative_requested = TRUE;
+    mouse_clip_dirty = TRUE;
+}
+
+static void win32_request_absolute_mouse(void *lambda_self)
+{
+    static unsigned logged;
+    BYTE *controller = get_mouse_mode_controller(lambda_self);
+    if (logged < 32) {
+        char line[192];
+        wsprintfA(line,
+            "Minecraft 1.2.8 absolute mouse delegate invoked: this=%p controller=%p",
+            lambda_self, (void *)controller);
+        log_line(line);
+        ++logged;
+    }
+    if (controller) {
+        *(int *)(controller + mouse_command_offset()) = 2;
+    }
+    initial_menu_cursor_guard = FALSE;
+    host_relative_requested = FALSE;
+    mouse_clip_dirty = TRUE;
+}
+
+static void win32_toggle_mouse_mode(void *lambda_self)
+{
+    static unsigned logged;
+    BYTE *controller = get_mouse_mode_controller(lambda_self);
+    if (logged < 32) {
+        char line[192];
+        wsprintfA(line,
+            "Minecraft 1.2.8 toggle mouse delegate invoked: this=%p controller=%p guard=%d",
+            lambda_self, (void *)controller, initial_menu_cursor_guard);
+        log_line(line);
+        ++logged;
+    }
+    if (!controller) return;
+    if (initial_menu_cursor_guard) {
+        *(int *)(controller + mouse_command_offset()) = 0;
+        host_relative_requested = FALSE;
+        mouse_clip_dirty = TRUE;
+        return;
+    }
+    controller[mouse_actual_offset()] =
+        controller[mouse_actual_offset()] == 0;
+    *(int *)(controller + mouse_command_offset()) =
+        controller[mouse_actual_offset()] ? 2 : 1;
+    host_relative_requested = controller[mouse_actual_offset()] == 0;
+    mouse_clip_dirty = TRUE;
+}
+
+/* facts input.mouse_*_hook: the three lambdas are the slot-2 (_Do_call) cells of their std::function _Func_impl
+ * vtables in .data.  Plan A overwrites the cell (data only, no code patching).  Plan B (fallback, only when the cell no
+ * longer holds image+fn+1 but the function bytes still match) writes the 8-byte absolute jump over the entry.  Every
+ * site is verified before anything is patched. */
+static BOOL install_arm32_input_hooks(BYTE *image)
+{
+    typedef struct Arm32MouseHookSite {
+        const char *name;
+        DWORD function_rva;
+        DWORD cell_rva;
+        const BYTE *expected_bytes;
+        void *hook;
+    } Arm32MouseHookSite;
+    static BOOL installed;
+    Arm32MouseHookSite sites[3];
+    BOOL use_cell[3];
+    unsigned index;
+    char line[256];
+
+    if (installed) return TRUE;
+    if (!image) return FALSE;
+    sites[0].name = "relative mouse hook";
+    sites[0].function_rva = ARM_INPUT_MOUSE_RELATIVE_HOOK;
+    sites[0].cell_rva = 0x01369c30u;
+    sites[0].expected_bytes = ARM_INPUT_MOUSE_RELATIVE_HOOK_EXPECTED;
+    sites[0].hook = (void *)win32_request_relative_mouse;
+    sites[1].name = "absolute mouse hook";
+    sites[1].function_rva = ARM_INPUT_MOUSE_ABSOLUTE_HOOK;
+    sites[1].cell_rva = 0x01369c14u;
+    sites[1].expected_bytes = ARM_INPUT_MOUSE_ABSOLUTE_HOOK_EXPECTED;
+    sites[1].hook = (void *)win32_request_absolute_mouse;
+    sites[2].name = "toggle mouse hook";
+    sites[2].function_rva = ARM_INPUT_MOUSE_TOGGLE_HOOK;
+    sites[2].cell_rva = 0x01369c68u;
+    sites[2].expected_bytes = ARM_INPUT_MOUSE_TOGGLE_HOOK_EXPECTED;
+    sites[2].hook = (void *)win32_toggle_mouse_mode;
+
+    for (index = 0; index < 3; ++index) {
+        void **cell = (void **)(image + sites[index].cell_rva);
+        void *wanted = ARM_CODE(image, sites[index].function_rva);
+        BOOL bytes_ok = arm32_check_bytes(image + sites[index].function_rva,
+                                          sites[index].expected_bytes, 16, sites[index].name);
+        use_cell[index] = !IsBadReadPtr(cell, sizeof(*cell)) && *cell == wanted;
+        if (!use_cell[index]) {
+            wsprintfA(line, "ARM32 %s: vtable cell %p holds %p, expected %p", sites[index].name,
+                      (void *)cell, IsBadReadPtr(cell, sizeof(*cell)) ? NULL : *cell, wanted);
+            log_line(line);
+            if (!bytes_ok) {
+                log_line("mouse-mode hook signature mismatch");
+                return FALSE;
+            }
+        }
+    }
+    for (index = 0; index < 3; ++index) {
+        void **cell = (void **)(image + sites[index].cell_rva);
+        void *hook = (void *)((ULONG_PTR)sites[index].hook | 1u);
+        BOOL ok;
+        if (use_cell[index]) {
+            ok = arm32_patch_cell(cell, ARM_CODE(image, sites[index].function_rva), hook, NULL,
+                                  sites[index].name);
+        } else {
+            ok = arm32_write_thumb_jump(image + sites[index].function_rva, hook, sites[index].name);
+        }
+        if (!ok) {
+            log_line("mouse-mode hook installation failed");
+            return FALSE;
+        }
+    }
+    installed = TRUE;
+    log_line("installed persistent HWND relative-mouse hooks (ARM32 std::function cells)");
+    return TRUE;
+}
+
+static BOOL install_mouse_mode_hooks(BYTE *image)
+{
+    return install_arm32_input_hooks(image);
+}
+
+static BOOL game_requests_relative_mouse(void)
+{
+    static int previous_requested = -1;
+    static int previous_actual = -1;
+    static int previous_command = -1;
+    void *platform;
+    BYTE *controller;
+    int actual = 0;
+    int command = 0;
+    char line[128];
+
+    if (!game_app_main) return host_relative_requested;
+    platform = current_app_platform();
+    controller = get_hid_controller(platform);
+    if (controller) {
+        actual = controller[mouse_actual_offset()] != 0;
+        command = *(int *)(controller + mouse_command_offset());
+        /* The command is the hooks' one-frame request.  The stock per-frame HID update (0x626570, run inside the game
+         * frame right after this) would turn a pending 1 (or a 2 while +0x25 is set) into dispatcher delegates
+         * (0x627c14 / 0x627d28) that call CoreWindow capture/cursor APIs and create a CoreCursor through the real
+         * WinRT factory.  The host owns the pointer under an HWND, so the request is consumed here, after it was logged
+         * (facts input.mouse_command_offset, audit residual "command consumer byte +0x25"). */
+        if (command) *(int *)(controller + mouse_command_offset()) = 0;
+    }
+    if ((int)host_relative_requested != previous_requested ||
+        actual != previous_actual || command != previous_command) {
+        wsprintfA(line,
+                  "HID mouse mode: requested=%d actual=%d command=%d",
+                  host_relative_requested, actual, command);
+        log_line(line);
+        previous_requested = host_relative_requested;
+        previous_actual = actual;
+        previous_command = command;
+    }
+    return host_relative_requested;
+}
+#else /* WIN32CRAFT_ARM32 */
+static BYTE *get_hid_controller(void *platform)
+{
+    if (host_is_115 || host_is_128) {

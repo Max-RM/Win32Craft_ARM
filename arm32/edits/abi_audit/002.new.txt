@@ -1,0 +1,7 @@
+static BOOL fake_kind_is_async(FakeKind kind)
+{
+#ifdef WIN32CRAFT_ARM32
+    /* the CurrentApp2 empty-string operation answers QueryInterface(IAsyncInfo) like every other fake IAsyncOperation */
+    if (kind == ARM32_FAKE_KIND_EMPTY_STRING_ASYNC) return TRUE;
+#endif
+    switch (kind) {

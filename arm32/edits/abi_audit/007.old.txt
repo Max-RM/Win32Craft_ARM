@@ -1,0 +1,30 @@
+static HRESULT WINAPI fake_core_text_notify_text_changed(
+    FakeInspectable *object, LONGLONG modified_range, INT new_length,
+    LONGLONG new_selection)
+{
+    char line[160];
+    (void)object;
+    core_text_document_length = new_length;
+    core_text_selection_start = (INT)(DWORD)new_selection;
+    core_text_selection_end = (INT)(DWORD)((ULONGLONG)new_selection >> 32);
+    wsprintfA(line,
+        "CoreText NotifyTextChanged: range=%ld..%ld length=%d selection=%ld..%ld",
+        (LONG)(DWORD)modified_range,
+        (LONG)(DWORD)((ULONGLONG)modified_range >> 32), new_length,
+        (LONG)core_text_selection_start, (LONG)core_text_selection_end);
+    log_line(line);
+    return S_OK;
+}
+
+static HRESULT WINAPI fake_core_text_notify_selection_changed(
+    FakeInspectable *object, LONGLONG selection)
+{
+    char line[112];
+    (void)object;
+    core_text_selection_start = (INT)(DWORD)selection;
+    core_text_selection_end = (INT)(DWORD)((ULONGLONG)selection >> 32);
+    wsprintfA(line, "CoreText NotifySelectionChanged: %ld..%ld",
+        (LONG)core_text_selection_start, (LONG)core_text_selection_end);
+    log_line(line);
+    return S_OK;
+}

@@ -1,0 +1,1 @@
+ARM32 additive helper for window_proc: WM_GETMINMAXINFO clamp (texture limit of the D3D feature level).

@@ -1,0 +1,5 @@
+        OutputDebugStringA(line);
+    }
+}
+
+static void arm32_boot_log_os_version(void)

@@ -1,0 +1,56 @@
+#ifdef WIN32CRAFT_ARM32
+static void log_115_main_thread_context(const char *reason)
+{
+    typedef HANDLE (WINAPI *OpenThreadFn)(DWORD, BOOL, DWORD);
+    typedef DWORD (WINAPI *SuspendThreadFn)(HANDLE);
+    typedef BOOL (WINAPI *GetThreadContextFn)(HANDLE, CONTEXT *);
+    typedef DWORD (WINAPI *ResumeThreadFn)(HANDLE);
+    static OpenThreadFn open_thread;
+    static SuspendThreadFn suspend_thread;
+    static GetThreadContextFn get_thread_context;
+    static ResumeThreadFn resume_thread;
+    HMODULE kernel32;
+    HANDLE thread;
+    CONTEXT context;
+    char line[192];
+
+    if (!game115_main_thread_id) {
+        log_line("ARM32 thread context: main thread id is unavailable");
+        return;
+    }
+    kernel32 = GetModuleHandleW(L"kernel32.dll");
+    if (!open_thread && kernel32) {
+        open_thread = (OpenThreadFn)GetProcAddress(kernel32, "OpenThread");
+        suspend_thread = (SuspendThreadFn)GetProcAddress(kernel32, "SuspendThread");
+        get_thread_context = (GetThreadContextFn)GetProcAddress(kernel32, "GetThreadContext");
+        resume_thread = (ResumeThreadFn)GetProcAddress(kernel32, "ResumeThread");
+    }
+    if (!open_thread || !suspend_thread || !get_thread_context || !resume_thread) {
+        log_line("ARM32 thread context: thread-context APIs unavailable");
+        return;
+    }
+    thread = open_thread(0x0002u | 0x0008u | 0x0040u, FALSE, game115_main_thread_id);
+    if (!thread) {
+        log_line("ARM32 thread context: OpenThread failed");
+        return;
+    }
+    if (suspend_thread(thread) == 0xffffffffu) {
+        log_line("ARM32 thread context: SuspendThread failed");
+        CloseHandle(thread);
+        return;
+    }
+    ZeroMemory(&context, sizeof(context));
+    context.ContextFlags = 0x00200003u; /* CONTEXT_ARM | CONTEXT_CONTROL | CONTEXT_INTEGER */
+    if (get_thread_context(thread, &context)) {
+        wsprintfA(line, "ARM32 main thread context (%s)", reason ? reason : "snapshot");
+        arm32_log_context(line, &context);
+        arm32_log_stack_scan("main thread", context.Sp, 64, 64);
+    } else {
+        log_line("ARM32 thread context: GetThreadContext failed");
+    }
+    resume_thread(thread);
+    CloseHandle(thread);
+}
+#else
+static void log_115_main_thread_context(const char *reason)
+{

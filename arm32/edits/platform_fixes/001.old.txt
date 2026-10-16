@@ -1,0 +1,80 @@
+static BOOL __attribute__((thiscall)) win32_128_zip_get_contents(
+    void *self, const GameStringX86 *path, GameStringX86 *output,
+    BOOL require_valid_pack)
+{
+    static const BYTE copyright_key[] = "menu.copyright=";
+    static const BYTE copyright_replacement[] = COPYRIGHT_OVERRIDE_LINE_A;
+    static const BYTE development_key[] = "development_version=";
+    static const BYTE development_replacement[] = DEVELOPMENT_OVERRIDE_LINE_A;
+    Game128StringAssignFn assign = (Game128StringAssignFn)(
+        game_image + RVA_128_STRING_ASSIGN);
+    const char *contents;
+    BYTE *copyright_output = NULL;
+    BYTE *final_output = NULL;
+    BYTE *start_screen_output = NULL;
+    DWORD copyright_size = 0;
+    DWORD final_size = 0;
+    DWORD start_screen_size = 0;
+    BOOL result;
+
+    result = original_128_zip_get_contents(
+        self, path, output, require_valid_pack);
+    if (!result) return result;
+    contents = game_string_data(output);
+    if (!contents || IsBadReadPtr(contents, output->length)) return result;
+    if (resource_path_has_suffix(path, "start_screen.json")) {
+        if (start_screen_force_development_control(
+                (const BYTE *)contents, output->length,
+                &start_screen_output, &start_screen_size)) {
+            assign(output, (const char *)start_screen_output,
+                   start_screen_size);
+            HeapFree(GetProcessHeap(), 0, start_screen_output);
+        }
+        return result;
+    }
+    if (!resource_path_has_suffix(path, ".lang")) return result;
+    if (!lang_apply_line_override(
+            (const BYTE *)contents, output->length,
+            copyright_key, sizeof(copyright_key) - 1,
+            copyright_replacement, sizeof(copyright_replacement) - 1,
+            &copyright_output, &copyright_size))
+        return result;
+    if (lang_apply_line_override(
+            copyright_output, copyright_size,
+            development_key, sizeof(development_key) - 1,
+            development_replacement, sizeof(development_replacement) - 1,
+            &final_output, &final_size)) {
+        assign(output, (const char *)final_output, final_size);
+        HeapFree(GetProcessHeap(), 0, final_output);
+    }
+    HeapFree(GetProcessHeap(), 0, copyright_output);
+    return result;
+}
+
+static BOOL patch_128_zip_slot(BYTE *image, SIZE_T slot_rva)
+{
+    void **slot = (void **)(image + slot_rva);
+    DWORD old_protection;
+    DWORD ignored;
+    if (*slot != image + RVA_128_ZIP_GET_CONTENTS &&
+        *slot != win32_128_zip_get_contents) return FALSE;
+    if (!VirtualProtect(slot, sizeof(*slot), PAGE_READWRITE,
+                        &old_protection)) return FALSE;
+    *slot = win32_128_zip_get_contents;
+    VirtualProtect(slot, sizeof(*slot), old_protection, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), slot, sizeof(*slot));
+    return TRUE;
+}
+
+static BOOL install_128_zip_resource_overrides(BYTE *image)
+{
+    original_128_zip_get_contents = (Game128ZipGetContentsFn)(
+        image + RVA_128_ZIP_GET_CONTENTS);
+    if (!patch_128_zip_slot(image, RVA_128_ZIP_OWNING_GET_CONTENTS_SLOT) ||
+        !patch_128_zip_slot(image, RVA_128_ZIP_GET_CONTENTS_SLOT)) {
+        log_line("Minecraft 1.2.8 ZIP resource override installation failed");
+        return FALSE;
+    }
+    log_line("Minecraft 1.2.8 ZIP screen/language overrides installed");
+    return TRUE;
+}

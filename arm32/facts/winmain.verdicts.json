@@ -1,0 +1,192 @@
+{
+ "area": "winmain",
+ "verdicts": [
+  {
+   "id": "winmain.entry_chain",
+   "verdict": "CONFIRMED",
+   "note": "Entry 0xB49B29 = push{fp,lr}; bl 0xB49CF8; pop; b.w 0xB49A24; bytes 2de90048eb4600f0e3f8bde8 match. pdata entry for b49a24 exists. _initterm_e range 0x103f4c0..0x103f4d8 re-read from table at RVA 0xC3F4C0 (entries c4c4..c4d4, last = 0xF48C09)."
+  },
+  {
+   "id": "winmain.call_site",
+   "verdict": "CONFIRMED",
+   "note": "Independently: file[0xB48ECA:0xB48ED2]=00f0abfc 0446 41f5; RVA->file = rva-0xC00 for .text; bl decodes (capstone, VA 0xF49ACA) to 0xF4A424; preceding setup r2=_get_narrow_winmain_command_line, r0=pool 0xB49B10 (0x400000, HIGHLOW reloc present), r3=r4=return0 stub, r1=0; only the BL needs replacing. Patched BL (keystone) = edf0e9f9, decodes to bl 0x1036ea0 (llvm-objdump agrees)."
+  },
+  {
+   "id": "winmain.replaced_callee_chain",
+   "verdict": "CONFIRMED",
+   "note": "b4a424 = push{fp,lr};mov fp,sp;pop;b.w b4a574 (bytes match); b4a574 first touches of r0-r3 are writes; it calls GetCmdArguments/Allocate; ff6a0 calls 596328 at 0xff866; 596328 builds IID words 0aacf7a4/49df5e1d/6afb3480/d15ebc68 (= 0AACF7A4-5E1D-49DF-8034-FB6A68BC5ED1), L\"Windows.ApplicationModel.Core.CoreApplication\" (raw UTF-16 hits at 0xdb6c08,0xdb7f0e), and does ldr r3,[r3,#0x34]; blx r3 (slot 13)."
+  },
+  {
+   "id": "winmain.callee_args_abi",
+   "verdict": "CONFIRMED",
+   "note": "r0..r3 are not read by either callee; 0x8b980 = movs r0,#0 stub; no stack args. Win32Bootstrap(void) is correct."
+  },
+  {
+   "id": "winmain.return_path",
+   "verdict": "CONFIRMED",
+   "note": "Return address 0xB49ACE = mov r4,r0; next bl 0x8b980 (returns 0) -> cbnz not taken -> mov r0,r4; bl exit. Own unicorn run (bases 0x400000, 0x5a30000, 0x7e100000): bl+trampoline+stub gives r0=42, PC=site+4, LR=site+5, SP unchanged."
+  },
+  {
+   "id": "winmain.crt_state_at_call",
+   "verdict": "CONFIRMED",
+   "note": "Init table and sub_b48c08 (InitializeData + atexit of UninitializeData) re-read. Minor typo: the flag cell is VA 0x01914df8 (RVA 0x1514df8, in the .data zero-init tail beyond raw size 0x1E3400 so it is 0 at load), not 0x01514df8. RoInitialize path b49cd0 gated on VA 0x01914e00 (also zero-init tail). Conclusion stands."
+  },
+  {
+   "id": "winmain.trampoline_pic",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced: keystone gives dff808c0 fc44 dcf800c0 6047, literal = 0x173043C-(0xC36EA0+8)=0x00AF9594; capstone decodes back as ldr.w ip,[pc,#8]/add ip,pc/ldr.w ip,[ip]/bx ip. PC semantics hand-checked (add at T+4 reads T+8). Slack: file[0xC3629C:0xC36400] all zero; last pdata entry 0xC36E89 packed len 8 halfwords => ends 0xC36E98; last .text reloc at 0xC36E98; no reloc/pdata/HIGHLOW ref into 0xC36E9C..0xC37000 (only refs to function VAs 0xC36E89/0xC36E4D). Own unicorn test at three bases passes. EXTRA: .text VirtualSize is 0xC35E9C so the trampoline lies past VirtualSize inside the last page; I tested the NT loader (x64 Win11, SEC_IMAGE LoadLibrary of crafted PEs with VirtualSize<RawSize): bytes beyond VirtualSize within the raw data ARE mapped, so it works, but llvm-objdump and similar tools do not show it. Recommend also raising .text VirtualSize to 0xC35EB0 (same page count, SizeOfCode unchanged)."
+  },
+  {
+   "id": "winmain.trampoline_abs_variant",
+   "verdict": "CONFIRMED",
+   "note": "Reasoning agrees: the literal would be unrelocated; irrelevant to the chosen design. Not separately emulated."
+  },
+  {
+   "id": "winmain.trampoline_new_section_fallback",
+   "verdict": "CONFIRMED",
+   "note": "Arithmetic re-done: 0x1731000-(0xB49ACA+4)=0xBE7532 < 16MB; header room ok (section table ends 0x350, zero to 0x400). A separate RX section is the right fallback."
+  },
+  {
+   "id": "winmain.bl_range_note",
+   "verdict": "CONFIRMED",
+   "note": "Correct: BL cannot target an IAT cell (data); distance site->cell 0xBE696E (finder rounds from site, 0xBE696C)."
+  },
+  {
+   "id": "winmain.pe.large_address_aware",
+   "verdict": "CONFIRMED",
+   "note": "file 0x156 = 0x0122 reproduced."
+  },
+  {
+   "id": "winmain.pe.os_subsystem_version",
+   "verdict": "CONFIRMED",
+   "note": "OS ver at 0x180/0x182 = 6.2, subsystem 6.2 at 0x188/0x18A, Subsystem=2; no manifest string in file, .rsrc 0x2e8 bytes."
+  },
+  {
+   "id": "winmain.pe.dll_characteristics",
+   "verdict": "CONFIRMED",
+   "note": "0x9140 at file 0x19E reproduced; 0x8140 built and parsed by llvm-readobj (DYNAMIC_BASE|NX|TS_AWARE). Reloc table fully parsed: 134901 type-7 + 232404 type-3, no RELOCS_STRIPPED, so keeping DYNAMIC_BASE is sound and the PIC trampoline is base independent (verified at 3 bases). Caveat: the claim that clearing APPCONTAINER is REQUIRED was not reproduced: a crafted x64 exe with APPCONTAINER (0x9160) ran normally on this Win11 box, and an APPCONTAINER DLL loaded fine. Clearing is still harmless/recommended (matches x86 patcher)."
+  },
+  {
+   "id": "winmain.pe.section_table_room",
+   "verdict": "CONFIRMED",
+   "note": "Table 0x238..0x350 (7 sections), zero 0x350..0x400, SizeOfHeaders 0x400. New header written at 0x350 and parsed by llvm-readobj."
+  },
+  {
+   "id": "winmain.pe.new_section_layout",
+   "verdict": "CONFIRMED",
+   "note": "Built my own .d3imp (52 descriptors=0x410, name @0x410, hint/name @0x420, ILT 0x434, IAT 0x43C, vsize 0x444, raw 0x600 at file 0x1680A00, RVA 0x1730000 = align(.reloc end 0x172FD28)); llvm-readobj --coff-imports lists win32craft.dll!Win32Bootstrap. Original dir at RVA 0x13269A8 = file 0x1325DA8, 50 descriptors, size 0x3FC, null terminator zero."
+  },
+  {
+   "id": "winmain.pe.import_descriptors",
+   "verdict": "CONFIRMED",
+   "note": "50 descriptors reproduced with names/IAT RVAs. No dxgi.dll import; ResolveDelayLoadedAPI @0xC375F8 (delayload-l1-1-1), DelayLoadFailureHook @0xC375F0, CreateFile2 @0xC3765C all api-set imports; ResolveDelayLoadsFromDll not imported on ARM. d3d11!D3D11CreateDevice @0xC37A50 and install_d3d11_device_compat exists in win32_host.c:9960. Design caveat listed under missing (api-set redirects)."
+  },
+  {
+   "id": "winmain.pe.size_of_image",
+   "verdict": "CONFIRMED",
+   "note": "Orig 0x1730000 at 0x190; new = align(0x1730000+0x444)=0x1731000 (my patched file parses to 24317952). SizeOfImage field is pe+0x50 = 0x190 for pe=0x140."
+  },
+  {
+   "id": "winmain.pe.size_of_initialized_data",
+   "verdict": "CONFIRMED",
+   "note": "0xAF5800 at 0x160 -> +0x600 = 0xAF5E00 (matches my build); SizeOfCode 0xC36000 at 0x15C, checksum 0."
+  },
+  {
+   "id": "winmain.pe.load_config",
+   "verdict": "CONFIRMED",
+   "note": "dd[10]=0x11859A8 size 0x68; SecurityCookie VA 0x1737F94, GuardCFCheck VA 0x1037BF8, SEH/dispatch/table/count 0, GuardFlags 0x100; no GUARD_CF in DllCharacteristics. Untouched is right."
+  },
+  {
+   "id": "winmain.pe.tls",
+   "verdict": "CONFIRMED",
+   "note": "TLS dir fields reproduced: raw 0x1A72000..0x1A72008, index VA 0x1915070 (.data), callbacks VA 0x103F4E0 (array empty at RVA 0xC3F4E0), characteristics 0x300000."
+  },
+  {
+   "id": "winmain.pe.exception_directory",
+   "verdict": "CONFIRMED",
+   "note": "dd[3]=0x15BE000 size 0xB3250 = 91722 entries, sorted; no entry >= 0xC36E9C; last entry 0xC36E89 (16 bytes). Unregistered tail-jump leaf is fine (LR preserved)."
+  },
+  {
+   "id": "winmain.pe.base_relocations",
+   "verdict": "CONFIRMED",
+   "note": "dd[5]=0x1674000 size 0xBBD28 parsed exactly to the end; 216 bytes zero slack after; patch adds no relocs."
+  },
+  {
+   "id": "winmain.pe.other_directories",
+   "verdict": "CONFIRMED",
+   "note": "Directory table dumped: dd0 0x131F2E0/0x76C8, dd2 0x1673000/0x2E8, dd4=0, dd6 0x1185950/0x54 (3 entries), dd11=0, dd12 0xC37000/0xBF8, dd13 0x131F20C/0x60 (2 delay descriptors, tcui l1-1-0 and l1-1-2) all reproduced; file length == .reloc raw end. Export count 284 not re-checked."
+  },
+  {
+   "id": "winmain.rename.vccorlib",
+   "verdict": "CONFIRMED",
+   "note": "Exactly 1 ASCII hit at file 0x1328CDE (case-insensitive also 1, no UTF-16). Descriptor #24. All 63 imported names found in VS redist onecore\\arm vccorlib140.dll (machine 0x1C4)."
+  },
+  {
+   "id": "winmain.rename.msvcp",
+   "verdict": "CONFIRMED",
+   "note": "1 hit at 0x132C3C8; 258 imports all exported by redist arm msvcp140.dll."
+  },
+  {
+   "id": "winmain.rename.concrt",
+   "verdict": "CONFIRMED",
+   "note": "1 hit at 0x132CD0A; 43 imports all exported by redist arm concrt140.dll."
+  },
+  {
+   "id": "winmain.rename.vcruntime",
+   "verdict": "CONFIRMED",
+   "note": "1 hit at 0x132CE36; 19 imports all exported by redist arm vcruntime140.dll. No other _APP strings in the exe."
+  },
+  {
+   "id": "winmain.rename.fmod",
+   "verdict": "CONFIRMED",
+   "note": "fmod_ARM.dll exactly once at 0x13277EA (descriptor #1); no rename needed. fmod_ARM.dll itself: machine 0x1C4, DllCharacteristics 0x1140 at file 0x17E, imports VCRUNTIME140_APP.dll (see missing)."
+  },
+  {
+   "id": "winmain.rename.xinputuap_optional",
+   "verdict": "CONFIRMED",
+   "note": "XINPUTUAP.dll once at 0x1326DAE, 13 chars (XInput1_4.dll is also 13); descriptor #0, IAT 0xC375B0."
+  },
+  {
+   "id": "winmain.input_sha256",
+   "verdict": "CONFIRMED",
+   "note": "Get-FileHash and python both give B01D5F12...FCF8, size 23595520 = 0x1680A00."
+  },
+  {
+   "id": "winmain.host.bootstrap_signature",
+   "verdict": "CONFIRMED",
+   "note": "win32_host.c:14856-14883 read: GetModuleHandleW(NULL), SizeOfImage at image+e_lfanew+0x50, return 3 for unknown. win32craft.def uses decorated _Win32Bootstrap@0 aliases, so an ARM .def must export the plain name; import name Win32Bootstrap hint 0 is fine."
+  },
+  {
+   "id": "winmain.host.image_identification_and_branches",
+   "verdict": "CONFIRMED",
+   "note": "Lines 14872-14892 match the description (host_is_128 from size compare, host_is_windows7 from GetVersion==6.1). Deletion list is plausible; not every named function re-read."
+  },
+  {
+   "id": "winmain.host.iat_cells_used_in_bootstrap",
+   "verdict": "CONFIRMED",
+   "note": "All ten ARM cells re-resolved by import name: CXX_THROW 0xC374E4, CREATE_FILE2 0xC3765C, ACTIVATION 0xC37BF0, OBJECT_CTOR 0xC37B90, ALLOCATE1 0xC37B7C, ALLOCATE2 0xC37B80, IBOX_ARRAY 0xC37B88, IBOX 0xC37BC8, D3DCompile 0xC370B4, D3D11CreateDevice 0xC37A50. Cells hold Thumb pointers (bit0 set): host replacement pointers must keep bit0 (natural for Thumb C functions)."
+  },
+  {
+   "id": "winmain.host.crash_trace_context",
+   "verdict": "UNVERIFIABLE",
+   "note": "Host-side diagnostics claim; not re-derived (no binary evidence involved)."
+  },
+  {
+   "id": "winmain.host.callees_in_bootstrap",
+   "verdict": "UNVERIFIABLE",
+   "note": "Ownership map to other fact files; not re-derived."
+  },
+  {
+   "id": "winmain.host.dllmain",
+   "verdict": "CONFIRMED",
+   "note": "win32_host.c:15114-15122 read; DllMain trivial."
+  }
+ ],
+ "missing": [
+  "PE: .text VirtualSize (0xC35E9C) should be raised to 0xC35EB0 so the trampoline at RVA 0xC36EA0 is inside the declared section (loader maps it anyway - tested - but disassemblers/verifiers such as llvm-objdump do not show it). Not mentioned by finder.",
+  "fmod_ARM.dll patch is only an open question; concrete values: string VCRUNTIME140_APP.dll occurs once at file 0xF989A (rename to VCRUNTIME140.dll, NUL pad); DllCharacteristics 0x1140 at file 0x17E (APPCONTAINER DLLs load fine in a desktop process per my x64 test, so clearing is optional; the rename is what matters since VCRUNTIME140_APP.dll is VCLibs-only). fmod_ARM.dll also imports api-ms-win-core-winrt-l1-1-0/-string (real OS on Win10).",
+  "x86 patcher redirected 7 api-set/dll names (xinputuap, core-com-l1-1-0, winrt-error l1-1-0/1-1, winrt-l1-1-0, winrt-string, eventing-provider) to win32craft.dll, so the host's own Ro*/Windows*/Co*/Event*/XInputGetState implementations served the game on every OS, not only Win7. The ARM exe imports the same sets (RoInitialize, 8 WindowsXxxString, 3 error fns, 8 Co* incl. CoCreateInstanceFromApp, 4 Event*, XInputGetState). The finder's not-needed reasoning (sets exist on Win8.1/10) is true for loading but ignores that the host's fake WinRT behaviour is bypassed on ARM; needs an explicit decision (imports/appmain owners), possibly redirecting selected descriptors' name RVAs to a win32craft.dll string as x86 did.",
+  "Claim that clearing APPCONTAINER is REQUIRED is not reproduced (my test exe with 0x9160 ran). Clearing remains recommended.",
+  "Delay-import IAT cells (tcui 0x15121FC/0x1512200/0x1512208): descriptors confirmed, but host overwrite timing versus first delay-load call is not argued."
+ ]
+}

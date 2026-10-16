@@ -1,0 +1,4 @@
+HRESULT WINAPI SetRestrictedErrorInfo(void *info) {
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "SetRestrictedErrorInfo", (void *), (info));
+#endif

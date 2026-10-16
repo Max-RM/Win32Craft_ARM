@@ -1,0 +1,6 @@
+    if (image_size == 0x02db1000) return bootstrap_116(image, instance);
+    if (image_size == IMAGE_SIZE_0132_PATCHED ||
+        image_size == IMAGE_SIZE_0142_PATCHED) {
+        if (image_size == IMAGE_SIZE_0142_PATCHED) install_crash_trace();
+        return Win32BootstrapEarly2016();
+    }

@@ -1,0 +1,27 @@
+#ifdef WIN32CRAFT_ARM32
+static void log_115_termination_stack(const char *reason)
+{
+    void *frames[24];
+    USHORT count;
+    USHORT index;
+    ULONG_PTR image_base;
+    ULONG_PTR image_size;
+    DWORD rva;
+    char line[128];
+    wsprintfA(line, "Termination stack: %s", reason);
+    log_line(line);
+    arm32_game_image_range(&image_base, &image_size);
+    count = RtlCaptureStackBackTrace(1, ARRAYSIZE(frames), frames, NULL);
+    for (index = 0; index < count; ++index) {
+        if (arm32_in_image((ULONG_PTR)frames[index], image_base, image_size, &rva)) {
+            wsprintfA(line, "  termination frame %u: %p (game rva %08lx)",
+                      (unsigned)index, frames[index], (unsigned long)rva);
+        } else {
+            wsprintfA(line, "  termination frame %u: %p", (unsigned)index, frames[index]);
+        }
+        log_line(line);
+    }
+}
+#else
+static void log_115_termination_stack(const char *reason)
+{

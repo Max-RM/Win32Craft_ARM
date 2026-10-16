@@ -1,0 +1,1 @@
+ARM32 reviewer fix (3/3): install the corrected ICurrentApp slots and publish the finished state with release semantics.

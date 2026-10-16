@@ -1,0 +1,4 @@
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+static void create_user_data(void)

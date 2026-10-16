@@ -1,0 +1,1 @@
+#define ARM32_MEMORY_BARRIER() __sync_synchronize()

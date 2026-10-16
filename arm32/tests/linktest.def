@@ -1,0 +1,11 @@
+LIBRARY win32craft.dll
+EXPORTS
+Win32Bootstrap
+D3D11CreateDevice
+CreateDirect3D11DeviceFromDXGIDevice
+CreateDXGIFactory2
+ResolveDelayLoadedAPI=Win32CraftJsStartDebugging
+VirtualAllocFromApp=KERNEL32.VirtualAlloc
+Sleep=KERNEL32.Sleep
+RoInitialize
+WindowsCreateString

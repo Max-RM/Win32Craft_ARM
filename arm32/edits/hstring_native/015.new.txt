@@ -1,0 +1,5 @@
+HRESULT WINAPI RoActivateInstance(HSTRING name, void **instance)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "RoActivateInstance", (HSTRING, void **), (name, instance));
+#endif

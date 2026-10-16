@@ -1,0 +1,22 @@
+#ifdef WIN32CRAFT_ARM32
+static BOOL install_d3d11_device_compat(
+    BYTE *image, SIZE_T d3d11_create_device_rva)
+{
+    char line[160];
+
+    if (!arm32_iat_hook_import(image, FALSE, "D3D11CreateDevice", (DWORD)d3d11_create_device_rva,
+                           (void *)win32_d3d11_create_device, (void **)&original_d3d11_create_device,
+                           "D3D11CreateDevice")) {
+        log_line("ARM32: D3D11CreateDevice hook NOT installed");
+        return FALSE;
+    }
+    wsprintfA(line, "ARM32: D3D11CreateDevice hook installed (BGRA flag, feature level cap 0x%04X)",
+              (unsigned)arm32_feature_level_cap);
+    log_line(line);
+    return TRUE;
+}
+#else
+static BOOL install_d3d11_device_compat(
+    BYTE *image, SIZE_T d3d11_create_device_rva)
+{
+    GameD3D11CreateDeviceFn *slot =

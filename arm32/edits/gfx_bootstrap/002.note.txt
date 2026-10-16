@@ -1,0 +1,1 @@
+closes #else/#endif of win32_present + install_swap_chain_present_hook.

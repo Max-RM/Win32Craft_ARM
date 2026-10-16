@@ -1,0 +1,9 @@
+            log_line("NetworkNames QI returned IIterable");
+        }
+    } else {
+#ifdef WIN32CRAFT_ARM32
+        arm32_log_default_query_interface(object, iid);
+#endif
+        *result = object;
+        fake_add_ref(object);
+    }

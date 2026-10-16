@@ -1,0 +1,120 @@
+/* --- Windows.UI.ViewManagement.InputPane ---
+ * The ARM AppPlatform_Winrt constructor (0x581828 -> InputAdapter hideKeyboard 0x586ed0) UNCONDITIONALLY posts a
+ * RunAsync lambda (0x586f8c) that calls InputPane::GetForCurrentView() + IInputPane2::TryHide() and, only afterwards, clears a
+ * flag.  It therefore runs on the first drain_dispatcher_queue() before the first frame; the show-keyboard twin (0x586cc4,
+ * IInputPane2::TryShow) and the occluded-rect query (0x57e2e8, IInputPane slot 10) run whenever a text box gets focus.  The real
+ * InputPane has no view on a plain HWND thread, so GetForCurrentView fails and the game turns the failure into a C++/CX
+ * COMException thrown inside the host's dispatcher drain.  This fake answers all of it harmlessly.
+ *   IInputPaneStatics 95F4AF3A: slot 6 GetForCurrentView(InputPane**)
+ *   IInputPane  : 6 add_Showing(handler, token*), 7 remove_Showing(token), 8 add_Hiding, 9 remove_Hiding, 10 get_OccludedRect(Rect*)
+ *   IInputPane2 8A6B3F26-7090-4793-944C-C3F2CDE26276: 6 TryShow(bool*), 7 TryHide(bool*) */
+static HRESULT WINAPI arm32_input_pane_query_interface(
+    FakeInspectable *object, REFIID iid, void **result);
+
+static HRESULT WINAPI arm32_input_pane_get_for_current_view(
+    FakeInspectable *object, void **result);
+
+static HRESULT WINAPI arm32_input_pane_add_event(
+    FakeInspectable *object, void *handler, LONGLONG *token)
+{
+    (void)object;
+    (void)handler;
+    if (!token) return E_POINTER;
+    *token = 1;
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_input_pane_remove_event(
+    FakeInspectable *object, LONGLONG token)
+{
+    (void)object;
+    (void)token;
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_input_pane_occluded_rect(
+    FakeInspectable *object, float *rect)
+{
+    (void)object;
+    if (!rect) return E_POINTER;
+    rect[0] = 0.0f;
+    rect[1] = 0.0f;
+    rect[2] = 0.0f;
+    rect[3] = 0.0f;
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_input_pane_try(
+    FakeInspectable *object, BYTE *result)
+{
+    static volatile LONG count;
+    (void)object;
+    if (!result) return E_POINTER;
+    *result = TRUE;
+    if (InterlockedIncrement(&count) <= 8) {
+        log_line("ARM32 InputPane.TryShow/TryHide accepted (fake input pane, no on-screen keyboard)");
+    }
+    return S_OK;
+}
+
+static const void *arm32_input_pane_factory_vtable[7] = {
+    fake_query_interface, fake_add_ref, fake_release,
+    fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
+    arm32_input_pane_get_for_current_view
+};
+
+static const void *arm32_input_pane_vtable[11] = {
+    arm32_input_pane_query_interface, fake_add_ref, fake_release,
+    fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
+    arm32_input_pane_add_event, arm32_input_pane_remove_event,
+    arm32_input_pane_add_event, arm32_input_pane_remove_event,
+    arm32_input_pane_occluded_rect
+};
+
+static const void *arm32_input_pane2_vtable[8] = {
+    arm32_input_pane_query_interface, fake_add_ref, fake_release,
+    fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
+    arm32_input_pane_try, arm32_input_pane_try
+};
+
+static FakeInspectable arm32_input_pane_factory = {
+    arm32_input_pane_factory_vtable, 1, FAKE_XAML_APPLICATION_FACTORY
+};
+static FakeInspectable arm32_input_pane = {
+    arm32_input_pane_vtable, 1, FAKE_XAML_APPLICATION
+};
+static FakeInspectable arm32_input_pane2 = {
+    arm32_input_pane2_vtable, 1, FAKE_XAML_APPLICATION
+};
+
+static HRESULT WINAPI arm32_input_pane_query_interface(
+    FakeInspectable *object, REFIID iid, void **result)
+{
+    static const GUID input_pane2_iid = {
+        0x8a6b3f26, 0x7090, 0x4793,
+        {0x94, 0x4c, 0xc3, 0xf2, 0xcd, 0xe2, 0x62, 0x76}
+    };
+    FakeInspectable *target = &arm32_input_pane;
+    (void)object;
+    if (!result) return E_POINTER;
+    if (iid && memcmp(iid, &input_pane2_iid, sizeof(GUID)) == 0) {
+        target = &arm32_input_pane2;
+    }
+    *result = target;
+    fake_add_ref(target);
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_input_pane_get_for_current_view(
+    FakeInspectable *object, void **result)
+{
+    (void)object;
+    if (!result) return E_POINTER;
+    *result = &arm32_input_pane;
+    fake_add_ref(&arm32_input_pane);
+    return S_OK;
+}
+
+static BOOL arm32_activation_override(
+    LPCWSTR class_name, const GUID *iid, void **result)
+{

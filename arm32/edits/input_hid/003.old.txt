@@ -1,0 +1,7 @@
+        log_line(line);
+        ++logged_events;
+    }
+    return TRUE;
+}
+
+/* 0.15.10 normally receives Enter from the XAML TextBox KeyDown callback.

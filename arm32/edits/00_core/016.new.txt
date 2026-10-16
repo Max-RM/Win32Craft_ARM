@@ -1,0 +1,3 @@
+#ifndef WIN32CRAFT_ARM32
+#include "win32_host_116.inl"
+#endif

@@ -1,0 +1,1 @@
+ARM32: IApplicationView3::TryResizeView/SetPreferredMinSize take a Size by value = two floats in s0/s1 on AAPCS-VFP.

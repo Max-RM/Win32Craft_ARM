@@ -1,0 +1,1 @@
+ARM: native (the shim only duplicates the input).

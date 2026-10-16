@@ -1,0 +1,1 @@
+ARM: HSTRING self-test (logged once).

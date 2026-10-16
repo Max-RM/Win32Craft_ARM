@@ -1,0 +1,3 @@
+HRESULT WINAPI WindowsPreallocateStringBuffer(
+    UINT32 length, WCHAR **buffer, void **handle)
+{

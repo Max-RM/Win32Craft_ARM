@@ -1,0 +1,1 @@
+closes the #else/#endif opened by edit 001 (anchor: center_mouse_cursor definition).

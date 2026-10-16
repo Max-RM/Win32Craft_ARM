@@ -1,0 +1,3 @@
+HRESULT WINAPI RoRegisterActivationFactories(
+    HSTRING *classes, void **callbacks, UINT32 count, void **cookie)
+{

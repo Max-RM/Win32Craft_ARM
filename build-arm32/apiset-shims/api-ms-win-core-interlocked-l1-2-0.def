@@ -1,0 +1,3 @@
+LIBRARY api-ms-win-core-interlocked-l1-2-0.dll
+EXPORTS
+InitializeSListHead=KERNEL32.InitializeSListHead

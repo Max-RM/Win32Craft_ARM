@@ -1,0 +1,1 @@
+ARM32 Present/Present1 hooks, device-lost policy and the gfx helpers (FL9_x clamp, owner size mirroring, frame target binding); x86 win32_present kept under #else.

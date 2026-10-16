@@ -1,0 +1,38 @@
+#ifdef WIN32CRAFT_ARM32
+static LONG WINAPI win32_unhandled_exception(EXCEPTION_POINTERS *pointers)
+{
+    CONTEXT *context;
+    DWORD *stack;
+    UINT index;
+    char line[160];
+    if (!pointers || !pointers->ExceptionRecord || !pointers->ContextRecord) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    context = pointers->ContextRecord;
+    wsprintfA(line, "unhandled exception 0x%08lx at %p",
+        (unsigned long)pointers->ExceptionRecord->ExceptionCode,
+        pointers->ExceptionRecord->ExceptionAddress);
+    log_line(line);
+    if (pointers->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
+        pointers->ExceptionRecord->NumberParameters >= 2) {
+        wsprintfA(line, "  access violation: %s address %08lx",
+            pointers->ExceptionRecord->ExceptionInformation[0] == 0 ? "read of"
+            : (pointers->ExceptionRecord->ExceptionInformation[0] == 1 ? "write to" : "execute of"),
+            (unsigned long)pointers->ExceptionRecord->ExceptionInformation[1]);
+        log_line(line);
+    }
+    arm32_log_context("crash", context);
+    stack = (DWORD *)(ULONG_PTR)context->Sp;
+    if (!IsBadReadPtr(stack, 12 * sizeof(*stack))) {
+        for (index = 0; index < 12; ++index) {
+            wsprintfA(line, "  crash stack +%02x: %08lx",
+                index * 4, (unsigned long)stack[index]);
+            log_line(line);
+        }
+    }
+    arm32_log_stack_scan("crash", context->Sp, 64, 64);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#else
+static LONG WINAPI win32_unhandled_exception(EXCEPTION_POINTERS *pointers)
+{

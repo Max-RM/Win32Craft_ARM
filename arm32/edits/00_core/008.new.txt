@@ -1,0 +1,59 @@
+#ifdef WIN32CRAFT_ARM32
+static LONG CALLBACK win32_vectored_exception(EXCEPTION_POINTERS *details)
+{
+    DWORD code;
+    void *frames[64];
+    USHORT frame_count;
+    unsigned index;
+    ULONG_PTR image_base;
+    ULONG_PTR image_size;
+    DWORD rva;
+    char line[160];
+
+    if (!details || !details->ExceptionRecord || !details->ContextRecord) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    code = details->ExceptionRecord->ExceptionCode;
+    /* Same filter as x86: only C++ throws and fail-fast; first-chance access violations are produced on purpose by
+     * IsBadReadPtr, logging them here would recurse. */
+    if (code == 0x80000001u && fmod_real_module) {
+        BYTE *module = (BYTE *)fmod_real_module;
+        BYTE *address = (BYTE *)details->ExceptionRecord->ExceptionAddress;
+        DWORD pe_offset = *(DWORD *)(module + 0x3c);
+        DWORD module_size = *(DWORD *)(module + pe_offset + 24 + 0x38);
+        if (address >= module && address < module + module_size) {
+            log_line("FMOD guard-page notification resumed");
+            return -1; /* EXCEPTION_CONTINUE_EXECUTION */
+        }
+    }
+    if (code != 0xe06d7363 && code != 0xc0000409) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    wsprintfA(line, "VEH exception 0x%08lx at %p", (unsigned long)code,
+              details->ExceptionRecord->ExceptionAddress);
+    log_line(line);
+    if (code == 0xe06d7363 && details->ExceptionRecord->NumberParameters >= 3) {
+        wsprintfA(line, "  C++ throw: object=%08lx throwinfo=%08lx",
+                  (unsigned long)details->ExceptionRecord->ExceptionInformation[1],
+                  (unsigned long)details->ExceptionRecord->ExceptionInformation[2]);
+        log_line(line);
+    }
+    arm32_log_context("VEH", details->ContextRecord);
+
+    arm32_game_image_range(&image_base, &image_size);
+    frame_count = RtlCaptureStackBackTrace(0, ARRAYSIZE(frames), frames, NULL);
+    for (index = 0; index < frame_count; ++index) {
+        if (arm32_in_image((ULONG_PTR)frames[index], image_base, image_size, &rva)) {
+            wsprintfA(line, "  VEH frame[%u] = %p (game rva %08lx)",
+                      index, frames[index], (unsigned long)rva);
+        } else {
+            wsprintfA(line, "  VEH frame[%u] = %p", index, frames[index]);
+        }
+        log_line(line);
+    }
+    arm32_log_stack_scan("VEH", details->ContextRecord->Sp, 1024, 64);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#else
+static LONG CALLBACK win32_vectored_exception(EXCEPTION_POINTERS *details)
+{

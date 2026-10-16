@@ -1,0 +1,6 @@
+HRESULT WINAPI WindowsSubstringWithSpecifiedLength(
+    HSTRING string, UINT32 start, UINT32 length, HSTRING *result)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "WindowsSubstringWithSpecifiedLength", (HSTRING, UINT32, UINT32, HSTRING *), (string, start, length, result));
+#endif

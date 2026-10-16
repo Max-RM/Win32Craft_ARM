@@ -1,0 +1,8 @@
+        log_line(line);
+        ++logged_events;
+    }
+    return TRUE;
+}
+#endif /* WIN32CRAFT_ARM32 (input_hid: queue_mouse_event) */
+
+/* 0.15.10 normally receives Enter from the XAML TextBox KeyDown callback.

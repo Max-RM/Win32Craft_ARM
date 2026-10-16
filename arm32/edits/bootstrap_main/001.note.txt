@@ -1,0 +1,1 @@
+ARM32 image-size gate constants (the x86 IMAGE_SIZE_* values are not valid on ARM; api_compat.c needs its own copy of 0x01731000).

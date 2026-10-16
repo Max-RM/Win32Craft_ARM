@@ -1,0 +1,4 @@
+#include "win32_compat.h"
+#ifdef WIN32CRAFT_ARM32
+#include "win32_host_arm32.h"
+#endif

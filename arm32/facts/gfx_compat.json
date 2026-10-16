@@ -1,0 +1,398 @@
+{
+ "area": "gfx_compat",
+ "facts": [
+  {
+   "id": "gfx_compat.iat_d3d_compile",
+   "x86_symbol": "RVA_128_D3D_COMPILE_IAT (install_d3d_compile_trace)",
+   "x86_value": "0x011d20b4",
+   "kind": "iat",
+   "arm_rva": "0x00C370B4",
+   "summary": "IAT cell of D3DCOMPILER_47.dll!D3DCompile (regular, non-delay import). Single call site: mce::ShaderProgramDX11::compileShaderProgram (0x005BDECC) via thunk 0x00A3B944.",
+   "arm_signature": "HRESULT D3DCompile(const void* src /*r0*/, SIZE_T srcSize /*r1*/, const char* srcName /*r2*/, const D3D_SHADER_MACRO* defines /*r3*/, ID3DInclude* include /*[sp+0]*/, const char* entry /*[sp+4]*/, const char* target /*[sp+8]*/, UINT flags1 /*[sp+0xc]*/, UINT flags2 /*[sp+0x10]*/, ID3DBlob** code /*[sp+0x14]*/, ID3DBlob** errors /*[sp+0x18]*/) -> r0; plain AAPCS, STDMETHODCALLTYPE/WINAPI are empty on ARM",
+   "x86_to_arm_notes": "Only the RVA changes. The host function win32_d3d_compile keeps the identical 11-argument prototype (GameD3DCompileFn); on ARM the compiler spills args 5..11 to the stack in the same order the game does, so no asm is needed. The runtime content of the cell is the export address of D3DCOMPILER_47!D3DCompile WITH the Thumb bit set; save it unchanged in original_d3d_compile and store &win32_d3d_compile (the compiler sets bit0 for Thumb functions automatically). On disk the cell holds the unbound name RVA (0x01328416), so do not use the on-disk value as an expected-bytes check. The cell lives in .rdata (0xC37000..0xC37BF8): VirtualProtect(PAGE_READWRITE) it exactly like x86. The thunk at 0x00A3B944 is movw ip,#0x70B4; movt ip,#0x103; ldr.w pc,[ip] (VA 0x010370B4 = RVA 0x00C370B4), so patching the cell redirects every caller.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports D3D -> 00c370b4 D3DCOMPILER_47.dll!D3DCompile",
+    "arm32re.py impcallers D3DCompile -> IAT=00c370b4 thunk=00a3b944, ONE call at 005be4ba in sub_5bdecc",
+    "capstone decode of thunk bytes 47f2b40c c0f2031c dcf800f0 at 0xA3B944 -> movw ip,#0x70b4; movt ip,#0x103; ldr.w pc,[ip] => VA 0x010370b4 => RVA 0xC370B4",
+    "RE_GUIDE.md lists D3DCompile IAT cell 0x00C370B4 (lead-verified)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.iat_d3d11_create_device",
+   "x86_symbol": "RVA_128_D3D11_CREATE_DEVICE_IAT (install_d3d11_device_compat)",
+   "x86_value": "0x011d2a44",
+   "kind": "iat",
+   "arm_rva": "0x00C37A50",
+   "summary": "IAT cell of d3d11.dll!D3D11CreateDevice (regular import). Two call sites in gfx:GameOwner::InitDevice (0x005BC258): 0x5BC3A0 (first try) and 0x5BC3EC (WARP retry). Thunk at 0x00A3B968.",
+   "arm_signature": "HRESULT D3D11CreateDevice(IDXGIAdapter* adapter /*r0*/, UINT driverType /*r1*/, HMODULE software /*r2*/, UINT flags /*r3*/, const D3D_FEATURE_LEVEL* levels /*[sp+0]*/, UINT levelCount /*[sp+4]*/, UINT sdkVersion /*[sp+8]*/, ID3D11Device** dev /*[sp+0xc]*/, D3D_FEATURE_LEVEL* outLevel /*[sp+0x10]*/, ID3D11DeviceContext** ctx /*[sp+0x14]*/) -> r0",
+   "x86_to_arm_notes": "RVA change only; the 10-argument GameD3D11CreateDeviceFn typedef is unchanged. Same Thumb-bit remarks as the D3DCompile cell. The ARM exe has NO other d3d/dxgi imports (imports list: d3d11.dll!D3D11CreateDevice only; no CreateDirect3D11DeviceFromDXGIDevice, no CreateDXGIFactory2, no dxgi.dll), so the host-exported forwarders D3D11CreateDevice/CreateDirect3D11DeviceFromDXGIDevice/CreateDXGIFactory2 (win32_host.c 15124-15181) are not reachable from the ARM 1.2.8 exe unless the patched exe deliberately re-points its import to win32craft.dll.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports d3d -> 00c37a50 d3d11.dll!D3D11CreateDevice",
+    "arm32re.py impcallers D3D11CreateDevice -> IAT=00c37a50 thunk=00a3b968, calls at 005bc3a0 and 005bc3ec, both in sub_5bc258",
+    "thunk bytes 47f6502c c0f2031c dcf800f0 at 0xA3B968 -> movw ip,#0x7a50; movt ip,#0x103; ldr.w pc,[ip] => RVA 0xC37A50",
+    "arm32re.py imports | unique dll names -> only d3d11.dll and D3DCOMPILER_47.dll for graphics; imports CreateDirect3D11/CreateDXGI -> empty"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.iat_d3d_preprocess_reflect",
+   "x86_symbol": "(not hooked by x86 host; neighbouring IAT slots of D3DCompile)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x00C370B0",
+   "summary": "D3DCOMPILER_47!D3DPreprocess cell = 0x00C370B0 (caller 0x005BE19E, same function as D3DCompile), D3DCOMPILER_47!D3DReflect cell = 0x00C370B8 (caller 0x005B8F1A in gfx:ShaderProgramDX11::reflect_D3DReflect 0x005B8EDC).",
+   "arm_signature": "HRESULT D3DPreprocess(src r0, size r1, srcName r2, defines r3, ID3DInclude* [sp+0], ID3DBlob** text [sp+4], ID3DBlob** errors [sp+8]); HRESULT D3DReflect(src r0, size r1, REFIID r2, void** r3)",
+   "x86_to_arm_notes": "The x86 host does not hook either, so nothing to port. NOTE: the game calls D3DPreprocess FIRST, handing the game's own HeaderInclude object directly (not through the host's include proxy), so the preprocessed text it sees is UNPATCHED; it is only used to build a shader-cache key (see gfx_compat.shader_compile_flow). If an ARM host ever needs patched includes in preprocess output, hook cell 0x00C370B0 as well.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py impcallers D3D -> D3DPreprocess IAT=00c370b0 call 005be19e in sub_5bdecc; D3DReflect IAT=00c370b8 call 005b8f1a in sub_5b8edc",
+    "disassembly 0x5BE19E: bl thunk[D3DCOMPILER_47.dll!D3DPreprocess] with [sp]=&HeaderInclude object (r7+0x1590, vptr 0x0176B164)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.iid_dxgi_device3",
+   "x86_symbol": "RVA_128_DXGI_DEVICE3_IID (patch_win7_dxgi_device3_query_to_base)",
+   "x86_value": "0x012d8b28",
+   "kind": "iid",
+   "arm_rva": "0x00DBC2C4",
+   "summary": "IID_IDXGIDevice3 {6007896c-3244-4afd-bf18-a6d3beda5023} in .rdata (4-byte aligned, not 16-aligned). The game QI's the ID3D11Device for it at 5 sites: gfx:GameOwner::InitDevice 0x5BC258 (+0x1CE), gfx:DeviceResources::queryAdapterInfo 0x5B9F4C (+0x4A), gfx:Renderer::createWindowSizeDependentResources 0x5BB774 (+0x26), gfx:Renderer::trim_IDXGIDevice3_Trim 0x5BB928 (+0x20; calls vtbl slot 0x44 = IDXGIDevice3::Trim), swap-chain-desc builder 0x5BEAAC (+0x9A). Every use is QI -> GetAdapter (vtbl 0x1C) with NO null check on the QI result (same crash-on-null as x86 1.1.5).",
+   "arm_signature": "IID constant (16 bytes); passed as r1 (REFIID) of IUnknown::QueryInterface(this r0, riid r1, void** r2)",
+   "x86_to_arm_notes": "The x86 patch overwrote this GUID with IID_IDXGIDevice so that Windows 7 (no IDXGIDevice3) would return a valid pointer. On ARM Windows RT 8.1 / Windows 10 ARM32 DXGI 1.3 (IDXGIDevice3) is present, so the patch is NOT needed and must not be applied (drop patch_win7_dxgi_device3_query_to_base; it is also gated on host_is_windows7 which is always FALSE on ARM). If it were ever needed the replacement would be 16 bytes at RVA 0x00DBC2C4 (expected bytes 6c8907604432fd4abf18a6d3beda5023).",
+   "expected_bytes": "6c8907604432fd4abf18a6d3beda5023",
+   "evidence": [
+    "arm32re.py guid 6007896c-3244-4afd-bf18-a6d3beda5023 -> 00dbc2c4 refs=5 (5b9f4c+0x4a, 5bb774+0x26, 5bb928+0x20, 5bc258+0x1ce, 5beaac+0x9a)",
+    "raw bytes at 0xDBC2C4 = 6c8907604432fd4abf18a6d3beda5023 = little-endian GUID 6007896c-3244-4afd-bf18-a6d3beda5023",
+    "x86 host comment: ID3D11Device -> IDXGIDevice3 -> GetAdapter -> IDXGIAdapter3; ARM 5bc258 does QI(0xDBC2C4) then vtbl[7] GetAdapter then QI(0xDBC2A4 IDXGIAdapter3), same sequence"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.iid_d3d_context",
+   "x86_symbol": "RVA_128_D3D_CONTEXT_IID (defined, NOT referenced by any 1.2.8 code path)",
+   "x86_value": "0x012d8c7c",
+   "kind": "iid",
+   "arm_rva": "0x00DBC3FC",
+   "summary": "IID_ID3D11DeviceContext2 {420d5b32-b90c-4da4-bef0-359f6a24a83a}. Single use: gfx:GameOwner::InitDevice 0x5BC258 (+0x1B0): base immediate context (renderer+0x110) ->QI-> stored at renderer+0x114 (ID3D11DeviceContext2*). Its consumer is AppPlatform_Winrt::DiscardWindowViews (0x00582970).",
+   "arm_signature": "IID constant (16 bytes)",
+   "x86_to_arm_notes": "x86 1.2.8 never patches this constant (Win32Bootstrap only calls patch_win7_device2_queries_to_base when !host_is_128), so nothing to port. Semantic confirmed by field offsets: x86 renderer_context2_offset 0x114 == ARM QI output renderer+0x114. ID3D11DeviceContext2 exists on Windows 8.1+ so the QI succeeds on ARM; no downgrade patch. No IID_ID3D11Device2 / Device1 / DeviceContext1 / DeviceContext3 GUID exists in the ARM exe (guid search empty): the game keeps the plain ID3D11Device from D3D11CreateDevice at owner+0xC0.",
+   "expected_bytes": "325b0d420cb9a44dbef0359f6a24a83a",
+   "evidence": [
+    "arm32re.py guid 420d5b32-b90c-4da4-bef0-359f6a24a83a -> 00dbc3fc refs=1 (5bc408 in sub_5bc258+0x1b0)",
+    "disasm 0x5BC406-0x5BC41A: r3=[r4] (r4=renderer+0x110); r1=IID; r2=renderer+0x114; ldr r3,[r3]; ldr r3,[r3] ; blx r3 = vtbl[0] QueryInterface",
+    "AppPlatform_Winrt::DiscardWindowViews 0x582970: ldrd r3,r1,[r4,#0x114] then vtbl+0x1d8 (slot 118 = ID3D11DeviceContext1::DiscardView) -> consumer of renderer+0x114",
+    "guid searches for ID3D11Device2 9d06dffa-..., ID3D11Device1, DeviceContext1, DeviceContext3 return no hits"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.iid_d3d_annotation",
+   "x86_symbol": "RVA_128_D3D_ANNOTATION_IID (defined, NOT referenced by any 1.2.8 code path)",
+   "x86_value": "0x012d8c4c",
+   "kind": "iid",
+   "arm_rva": "0x00DBC3DC",
+   "summary": "IID_ID3DUserDefinedAnnotation {b2daad8b-03d4-4dbf-95eb-32ab4b63d0ab}. Single use in gfx:GameOwner::InitDevice (+0x26C at 0x5BC4C4): base context (renderer+0x110) ->QI-> stored at renderer+0x140. No BeginEvent/EndEvent consumer found in the renderer code region (only release/dtor sites touch +0x140 there).",
+   "arm_signature": "IID constant (16 bytes)",
+   "x86_to_arm_notes": "Not patched on x86 1.2.8 (constant unused) and not needed on ARM: ID3DUserDefinedAnnotation is available on Windows 8+. Nothing to port; if the host ever calls it, ARM offset is renderer+0x140.",
+   "expected_bytes": "8baddab2d403bf4d95eb32ab4b63d0ab",
+   "evidence": [
+    "arm32re.py guid b2daad8b-03d4-4dbf-95eb-32ab4b63d0ab -> 00dbc3dc refs=1 (5bc4c4 in sub_5bc258+0x26c)",
+    "disasm 0x5BC4C0-0x5BC4D6: r3=[r5+0x110]; r1=IID; r2=r5+0x140; vtbl[0] QI"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.iid_extras",
+   "x86_symbol": "(no x86 constant) IDXGIAdapter3 / IDXGIFactory2 IIDs the ARM game queries",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x00DBC2A4",
+   "summary": "IID_IDXGIAdapter3 {645967a4-1392-4310-a798-8053ce3e93fd} at 0x00DBC2A4 (uses: 0x5B9F4C+0xEC and 0x5BC258+0x202; both null-checked: QueryVideoMemoryInfo vtbl 0x38 then SetVideoMemoryReservation vtbl 0x3C). IID_IDXGIFactory2 {50c83a1c-e072-4c48-87b0-3630fa36a6d0} at 0x00DBC5AC (use: 0x5BEAAC+0xCC, the CoreWindow swap-chain-desc builder the HWND host bypasses).",
+   "arm_signature": "IID constants",
+   "x86_to_arm_notes": "Information only. IDXGIAdapter3 is Windows 10 only; on Windows RT 8.1 the QI fails and the game skips the optional video-memory reservation (null check present), so nothing must be patched. The host creates its own HWND swap chain with IDXGIFactory (see initialize_game_d3d), not IDXGIFactory2.",
+   "expected_bytes": "a467596492131043a7988053ce3e93fd",
+   "evidence": [
+    "arm32re.py guid 645967a4-1392-4310-a798-8053ce3e93fd -> 00dbc2a4 refs=2",
+    "arm32re.py guid 50c83a1c-e072-4c48-87b0-3630fa36a6d0 -> 00dbc5ac refs=1 (5beb78 in sub_5beaac+0xcc)",
+    "disasm 0x5BC470: cbz r4 after QI; vtbl[0x38] QueryVideoMemoryInfo(0,0,&info) / vtbl[0x3c] SetVideoMemoryReservation(0,0,info.AvailableForReservation)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.shader_compile_flow",
+   "x86_symbol": "win32_d3d_compile / D3DCompile call path",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x005BDECC",
+   "summary": "mce::ShaderProgramDX11::compileShaderProgram (name from its own log strings). Only caller of D3DCompile/D3DPreprocess. Callers: 0x005BD3D0 (3 calls: stages at this+4/+8/+0xC) and 0x004A1DF0. Flow: (1) build macro list; (2) D3DPreprocess(src, includes) -> text -> hash -> shader-cache lookup (D3DPreprocess output is only a cache key); (3) on cache miss D3DCompile(original source, same macros, same HeaderInclude); (4) on failure logs 'HLSL Compiler error: ' + errors; on success copies bytecode into this+0x40 and writes the cache file; (5) stage type this+0x30 (0 vs, 1 ps, 2 gs) later selects CreateVertex/Pixel/GeometryShader.",
+   "arm_signature": "void fn(ShaderStage* this /*r0*/, const std::string* shaderName /*r1; used only for the cache key text, Flags2 passed to D3DCompile is the constant 0*/)",
+   "x86_to_arm_notes": "The ARM game passes exactly what the x86 host hook assumes: pSrcData = std::string data at this+0x58 (size at +0x68), pSourceName non-null std::string data, pDefines = a 2-entry array {{\"VERSION\", <decimal D3D feature level, e.g. \"45312\">},{NULL,NULL}} built on the stack (VERSION string produced by 0x1140D4 from owner+0xB8 = the feature level written by D3D11CreateDevice; chain: [0x015B86AC]->+0xAC (renderer)->+0x108 (owner back pointer)->+0xB8), pInclude = address of a stack object whose vptr is HeaderInclude vtable 0x0136B164 (NOT NULL and NOT D3D_COMPILE_STANDARD_FILE_INCLUDE), entry \"main\", target built as <vs|ps|gs>_<major>_<minor><suffix>, flags1 = 0x8000 (D3DCOMPILE_OPTIMIZATION_LEVEL3), flags2 = 0. Therefore the host hook always takes the 'custom include' branch (Win32IncludeProxy); the D3D_COMPILE_STANDARD_FILE_INCLUDE branch + win32_include_open/close + shader_include_directory are dead on ARM. The HeaderInclude is stack-allocated for the duration of the call (the proxy only stores the pointer during the call, as on x86). Prerequisite for any compile: global owner pointer at RVA 0x015B86AC (see gfx_compat.owner_global_and_screen_global) must be set before the first compile (already done by the host: owner global store).",
+   "expected_bytes": "2de9f04f0df11c0b43f692f140f20a64",
+   "evidence": [
+    "arm32re.py impcallers D3DCompile -> single call 005be4ba in sub_5bdecc; strx 'HLSL Compiler error' -> mov32 at 005be4f8 in same function; log strings 'mce::ShaderProgramDX11::compileShaderProgram' and 'Unknown mShaderType: ' in same function",
+    "dis 0x5BE470-0x5BE4BA: r0=this+0x58 data, r1=this+0x68, r2=name data, r3=r7+0x1728 (macro array), [sp]=r7+0x1590 (HeaderInclude object), [sp+4]='main'(0x011bc52c), [sp+8]=target, [sp+0xc]=0x8000, [sp+0x10]=sb(=0 set at 0x5BE2B8), [sp+0x14]=r7+0x1580 (ppCode), [sp+0x18]=r7+0x1578 (ppErrors)",
+    "0x5BDF2E-0x5BDF66: [r7+0x1728]='VERSION' (0x011bc534), [r7+0x172c]=std::string from 0x1140D4(owner+0xB8), [r7+0x1730..0x1737]=0 terminator",
+    "0x5BDFDA: str vptr 0x0176B164 (RTTI .?AVHeaderInclude@@, arm32re.py rtti HeaderInclude -> vtable 0x0136B164) into the include object"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.include_interface",
+   "x86_symbol": "ID3DIncludeVtbl{Open,Close} used by Win32IncludeProxy (win32_include_proxy_open/close)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x0136B164",
+   "summary": "game's ID3DInclude implementation HeaderInclude: vtable 0x0136B164 = {Open = 0x005BB180, Close = 0x0008B980 (ICF'd 12-byte stub 'movs r0,#0; return', shared with AbsorptionMobEffect::vf4)}. Layout identical to ID3DInclude (no IUnknown): slot0 Open, slot1 Close.",
+   "arm_signature": "HRESULT Open(HeaderInclude* this /*r0*/, D3D_INCLUDE_TYPE type /*r1, unused*/, const char* fileName /*r2*/, const void* parentData /*r3, unused*/, const void** ppData /*[sp+0]*/, UINT* pBytes /*[sp+4]*/) -> 0 (S_OK); HRESULT Close(this /*r0*/, const void* data /*r1*/) -> 0",
+   "x86_to_arm_notes": "The x86 proxy (win32_include_proxy_open/close) is source-compatible: it calls original->lpVtbl->Open/Close with the standard 6/2-argument ID3DInclude prototypes, which the ARM compiler maps to AAPCS (ppData and pBytes on the stack) exactly like the game's callee reads them. HeaderInclude::Open ignores type and parentData, reads the file through the game's own resource provider registry, returns *ppData = pointer into a std::string whose heap buffer is moved into a vector inside the HeaderInclude object (valid until the HeaderInclude is destroyed after D3DCompile returns), *pBytes = size without terminating NUL. Close is a no-op returning 0. Nothing in the proxy depends on game struct offsets. The proxy is only useful if text patching of include files is kept (see gfx_compat.hlsl_lod_patch).",
+   "expected_bytes": "2de9f04b0df1180b46f638f0adf26c4d",
+   "evidence": [
+    "arm32re.py rtti HeaderInclude -> vtable rva=0136b164; ptrs 136b164 -> [0]=0x009bb181 (VA|1 -> RVA 0x5BB180 named HeaderInclude::vf0), [1]=0x0048b981 (VA|1 -> RVA 0x8B980)",
+    "func 0x5BB180: reads this+0x10 string, ldr sp+0x490/0x494 = stack args ppData/pBytes (stores *r6 = data ptr, *r7 = size), return 0",
+    "func 0x8B980 (len 12): push {fp,lr}; movs r0,#0; pop {fp,pc}",
+    "D3DCompile arg [sp] and D3DPreprocess arg [sp] both = r7+0x1590 whose first word is vptr 0x0176B164 (VA)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.hlsl_lod_patch",
+   "x86_symbol": "patch_hlsl_lod_intrinsic: literal \"tex.CalculateLevelOfDetailUnclamped(TextureSampler0, uv)\" -> \"(0.0f)\" + space padding (data patch of include text, not game code)",
+   "x86_value": "literal string",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Not a code/RVA patch: a text substitution applied to include-file buffers inside the D3DCompile hook. The identical text exists exactly once in the ARM package: Minecraft_1.2.8.0_ARM32/data/shaders/hlsl/util.fxh line 8 (texture2D_AA, included via #include \"Util.fxh\" from entity/renderchunk/banner/... shaders). The call is only reachable under #if TEXEL_AA && VERSION >= 0xa000 (feature level >= 10_0). The game selects target ps_5_0 for FL 11_x, ps_4_1 for 10_1, ps_4_0 for 10_0 and ps_4_0_level_9_x for FL 9_x.",
+   "arm_signature": "n/a (text patch)",
+   "x86_to_arm_notes": "ARM-equivalent = the identical text patch (same literal, same file content) but it is very probably unnecessary on Windows RT 8.1 / Windows 10 ARM32: the original UWP ARM app compiled these same sources with the system D3DCOMPILER_47.dll (the package ships no d3dcompiler; the exe imports it from the OS), and on FL 9_x the intrinsic sits in an unused function and in an #if'd-out call. The x86 patch most likely worked around a non-Microsoft/old compiler (Win7/Wine). Recommendation: DROP at first bring-up; re-add (keep the Win32IncludeProxy, patch only this literal) only if the log shows 'D3DCompile failed ... CalculateLevelOfDetailUnclamped'.",
+   "expected_bytes": null,
+   "evidence": [
+    "grep -r CalculateLevelOfDetailUnclamped Minecraft_1.2.8.0_ARM32/data -> only data/shaders/hlsl/util.fxh:8 'if (tex.CalculateLevelOfDetailUnclamped(TextureSampler0, uv) < -0.5f)'",
+    "grep VERSION data/shaders/hlsl -> entity/renderchunk/texture_ccolor/texture_raw_alphatest .fragment.hlsl: '#if !defined(TEXEL_AA) || !defined(TEXEL_AA_FEATURE) || (VERSION < 0xa000)' guard the texture2D_AA use",
+    "disasm 0x5BE2E0-0x5BE35E: FL 0x9100/9200/9300 -> major 4 minor 0 (+ '_level_9_1'/'_level_9_3' from 0x5BDD0C), 0xa000 -> 4_0, 0xa100 -> 4_1, 0xb000/0xb100 -> 5_0",
+    "ls Minecraft_1.2.8.0_ARM32 -> no D3DCOMPILER_47.dll in package; exe imports D3DCOMPILER_47.dll (3 functions)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "gfx_compat.hlsl_rootsig_patch",
+   "x86_symbol": "patch_hlsl_root_signature: literal \"#define ROOT_SIGNATURE [RootSignature(MinecraftRootSignature)]\" -> \"#define ROOT_SIGNATURE\"",
+   "x86_value": "literal string",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Text substitution that can never match on 1.2.8: neither 'ROOT_SIGNATURE' nor 'MinecraftRootSignature' occurs anywhere under Minecraft_1.2.8.0_ARM32/data (root signatures belong to later D3D12-era shader sources).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Drop patch_hlsl_root_signature entirely (no-op on 1.2.8).",
+   "expected_bytes": null,
+   "evidence": [
+    "grep -r MinecraftRootSignature data -> no match; grep -r ROOT_SIGNATURE data -> no match",
+    "ARM exe strings: no 'RootSignature' in HLSL sources are read from the exe; HLSL comes from data/shaders/hlsl/*.fxh|.hlsl"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.standard_file_include_branch",
+   "x86_symbol": "D3D_COMPILE_STANDARD_FILE_INCLUDE branch: win32_include_open/close, win32_include vtable, shader_include_directory[MAX_PATH*2]",
+   "x86_value": "((ID3DInclude*)(UINT_PTR)1)",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Never taken on ARM: the game's D3DCompile pInclude is always &HeaderInclude (custom object); there is no call with pInclude=1 or NULL.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Delete the branch and win32_include_open/close/win32_include/shader_include_directory in the ARM host (also removes the only use of fopen/fseek in the compile path). The NULL-include case is not exercised either.",
+   "expected_bytes": null,
+   "evidence": [
+    "single D3DCompile call site 0x5BE4BA passes [sp]=r7+0x1590 (stack object, vptr 0x0176B164); D3DPreprocess call 0x5BE19E likewise"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.d3d11_create_device_call",
+   "x86_symbol": "win32_d3d11_create_device argument assumptions (flags|=0x20, feature level list, driver_type==1 retry)",
+   "x86_value": "0x20 / 0xb100 / 1 / 5",
+   "kind": "function",
+   "arm_rva": "0x005BC258",
+   "summary": "gfx:GameOwner::InitDevice(owner r0, renderer r1) = x86 RVA_128_INIT_DEVICE (0x0082cff0, same (owner,renderer) signature). It builds the feature level array {0xb100,0xb000,0xa100,0xa000,0x9300,0x9200,0x9100} (when owner+0xBC byte != 0 it instead uses the 4-entry list {b100,b000,a100,a000} and flags=0x20), calls D3D11CreateDevice(adapter=owner+0xC4, driver = adapter?0:1 (HARDWARE), NULL, flags, levels, n, 7 (D3D11_SDK_VERSION), &owner+0xC0 (device), &owner+0xB8 (feature level), &renderer+0x110 (immediate context)), on failure releases the outputs and RETRIES itself with driver type 5 (WARP) at 0x5BC3EC. Afterwards QI's Context2 -> renderer+0x114, IDXGIDevice3 -> GetAdapter -> IDXGIAdapter3 video-memory reservation (null-guarded), ID3DUserDefinedAnnotation -> renderer+0x140.",
+   "arm_signature": "void/HRESULT-ignored fn(GameOwner* owner /*r0*/, Renderer* renderer /*r1*/); callee-saved r4-r11; no stack args",
+   "x86_to_arm_notes": "Host hook win32_d3d11_create_device (IAT hook of cell 0x00C37A50) vs ARM behaviour: (a) 'flags | 0x20 (BGRA_SUPPORT)': the game only sets 0x20 when owner+0xBC != 0, which a ZeroMemory'd owner leaves 0; keep a minimal hook that ORs 0x20 because the host swap chain / render targets are B8G8R8A8 (cheap and harmless on FL 9_x..11_x). (b) Win7 filter that removes feature level 0xb100: Windows 8+ accepts 11_1 in the list -> DROP (host_is_windows7 must be hard-wired FALSE on ARM). (c) WARP fallback 'if FAILED && driver_type==1 retry with 5': the game already retries with WARP itself (second D3D11CreateDevice call 0x5BC3EC) -> DROP. (d) captured_base_device/captured_base_context AddRef bookkeeping + the 'Windows 7 fallback' block in initialize_game_d3d only exists to repair failed Device2/Context2 QI on Win7 -> DROP (Context2 QI succeeds on 8.1+). (e) log_pointer of outputs (host_is_116 only) irrelevant. Do not rely on x86 stack/ABI: just keep the 10-arg prototype.",
+   "expected_bytes": "2de9f04f0df11c0b44f6ccf792b06f46",
+   "evidence": [
+    "dis 0x5BC264-0x5BC2EA: feature level constants 0xb100,0xb000,0xa100,0xa000,0x9300,0x9200,0x9100 pushed into a vector via sub_c7b4c",
+    "dis 0x5BC376-0x5BC3A0: sp[0]=levels ptr, sp[4]=count, sp[8]=7, sp[0xc]=owner+0xC0, sp[0x10]=owner+0xB8, sp[0x14]=renderer+0x110, r0=[owner+0xC4], r1=sl (1 or 0), r3=[r7+4] flags (0 or 0x20)",
+    "dis 0x5BC3AA-0x5BC3EC: on r0<0: release context/device, call D3D11CreateDevice again with r1=5",
+    "x86 host owner_device_offset=0xc0, renderer_context_offset=0x110, renderer_context2_offset=0x114 all equal the ARM offsets above",
+    "arm32re.py callers 5bc258 -> 0x134EAC in sub_134d40 with r0=[0x15B86AC] (owner), r1=[owner+0xAC] (renderer)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.owner_renderer_context_offsets",
+   "x86_symbol": "renderer_context_offset 0x110, renderer_context2_offset 0x114, owner_device_offset 0xc0 (offsets read in initialize_game_d3d / install_scissor_fix input)",
+   "x86_value": "0x110 / 0x114 / 0xc0",
+   "kind": "offset",
+   "arm_rva": "0x110",
+   "summary": "UNCHANGED on ARM: renderer+0x110 = ID3D11DeviceContext* (base immediate context; also written by D3D11CreateDevice at 0x5BC3A0 and read by Renderer::getContext 0x5BB8D8 which AddRef-copies it), renderer+0x114 = ID3D11DeviceContext2*, renderer+0x118 = RTV, renderer+0x120 = DSV (read by DiscardWindowViews 0x582970), renderer+0x140 = ID3DUserDefinedAnnotation*, owner+0xC0 = ID3D11Device* (Renderer::getDevice 0x5BB8AC reads renderer+0x108 (owner back pointer) then +0xC0), owner+0xB8 = D3D_FEATURE_LEVEL (DWORD), owner+0xC4 = adapter, owner+0xBC = byte flag (BGRA/custom-adapter mode), owner+0xAC = Renderer* (created by the owner ctor 0x5B7E7C, which also stores the owner back-pointer into renderer+0x108). All of these are pointer/DWORD fields, same 4-byte pointers as x86, so the offsets coincide.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "No change for the offsets used by install_scissor_fix(game_context) (renderer+0x110). The scissor/draw-trace hooks read NO other game struct field. (renderer+0x104 swap chain, +0x124 backbuffer, owner size 0xd0, renderer size 0x204 belong to the gfx_init area.)",
+   "expected_bytes": null,
+   "evidence": [
+    "0x5BC3A0 call: [sp+0x14]=r4 where r4=r5+0x110 (r5=renderer arg) = ppImmediateContext",
+    "0x5BB8D8 Renderer::getContext: ldr r3,[r0,#0x110]; AddRef via vtbl[1]",
+    "0x582994-0x5829A4 DiscardWindowViews: ldrd r3,r1,[r4,#0x114] ; ldr r1,[r4,#0x120] (rtv=+0x118, dsv=+0x120 as in x86 renderer_rtv_offset 0x118 / renderer_dsv_offset 0x120)",
+    "0x5BB8AC Renderer::getDevice: ldr r3,[r0,#0x108]; ldr r3,[r3,#0xc0]",
+    "0x13DB5C unique_ptr reset: owner size 0xd0, renderer (owner+0xac) size 0x204"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.owner_global_and_screen_global",
+   "x86_symbol": "RVA_128_OWNER_GLOBAL (0x017c50f4) as read by the compile path / scissor path",
+   "x86_value": "0x017c50f4",
+   "kind": "data",
+   "arm_rva": "0x015B86AC",
+   "summary": "ARM global holding the owner (DeviceResources) pointer: 0x015B86AC (unique_ptr-like; reset helper 0x0013DB5C, creation helper 0x0013F2A0 'new 0xd0 + ctor'). Read by the compile path (VERSION macro) and by sub_5b9f4c/134d40. A second global 0x015B86B0 points to a screen-size object with float W at +0x14 and float H at +0x18; it is the fallback size used by Renderer::setScissorRect and by Renderer::createWindowSizeDependentResources.",
+   "arm_signature": "void* owner = *(void**)(image+0x015B86AC)",
+   "x86_to_arm_notes": "The host already stores the owner pointer into the owner global (initialize_game_d3d) - on ARM store it at image+0x015B86AC (needed BEFORE the first shader compile because compileShaderProgram dereferences G->+0xAC->+0x108->+0xB8; renderer+0x108 must hold the owner back-pointer, which the game's own owner ctor 0x5B7E7C sets: str r4,[r3,#0x108] at 0x5B7F20). 0x015B86B0 W/H floats are the scissor Y-flip height: keep them equal to the HWND client size (see gfx_compat.scissor_hook). Full owner/renderer ownership is covered by the gfx_init area.",
+   "expected_bytes": null,
+   "evidence": [
+    "0x134EA6-0x134EAC: r0=[0x019b86ac]; r1=[r0+0xac]; bl 0x5bc258 (InitDevice(owner,renderer))",
+    "0x13DB5C: loads 0x019b86ac, resets unique_ptr, deletes owner (size 0xd0) after releasing owner+0xac (size 0x204)",
+    "0x5BDF0A-0x5BDF24: [0x019b86ac]->+0xac->+0x108->+0xb8 passed to 0x1140D4 (int->string) = VERSION value",
+    "0x5BB5AB-0x5BB5AC & 0x5BB7D4-0x5BB7DE: [0x019b86b0]+0x14 / +0x18 float loads"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "gfx_compat.scissor_hook",
+   "x86_symbol": "install_scissor_fix / win32_set_scissor_rects: patches ID3D11DeviceContext vtable slot 45 (RSSetScissorRects) of game_context = *(renderer+0x110)",
+   "x86_value": "context->lpVtbl[45]",
+   "kind": "hook_site",
+   "arm_rva": "0x005BB560",
+   "summary": "The hook itself is a data patch of d3d11.dll's own vtable and is architecture independent (slot 45, 4-byte slots on ARM32 too): keep it unchanged. The game's single RSSetScissorRects call site is gfx:Renderer::setScissorRect (0x005BB560): it converts four normalized floats (s0..s3 = x, y, w, h in 0..1, bottom-left origin) to a RECT{left=W*x, top=H*(1-y-h), right=W*(x+w), bottom=H*(1-y)} on the stack, gets the base context via Renderer::getContext (renderer+0x110) and calls vtbl[0xB4] = slot 45 with NumRects=1 (r1=#1), pRects=r2=&RECT. W,H come from the u32 pair at [[renderer+0xE4]+8/+0xC] when renderer+0xE4 != 0, otherwise from the floats at [0x015B86B0]+0x14/+0x18. Applied by gfx:Renderer::applyScissorState (0x005C2510) from the 4 floats in globals at 0x019159F8 when the scissor-enabled byte at RVA 0x0151519A is 1.",
+   "arm_signature": "void setScissorRect(float x /*s0*/, float y /*s1*/, float w /*s2*/, float h /*s3*/, Renderer* renderer /*r1; r0 unused*/); void STDMETHODCALLTYPE hook(ID3D11DeviceContext* ctx /*r0*/, UINT n /*r1*/, const D3D11_RECT* rects /*r2*/) (plain AAPCS)",
+   "x86_to_arm_notes": "ARM code uses the same game-side Y conversion (H*(1-...) with H taken from the CoreWindow-sized screen object when no RT size is present) that the x86 comment blames, so the fix is expected to remain needed; it is idempotent (only touches rects with negative/oversized coordinates) so it is safe to keep unconditionally. Hook needs only: game_context pointer (renderer+0x110, unchanged), game_window HWND, vtable slot 45 (confirmed by the game's own 'ldr r3,[r3,#0xb4]' = 45*4), VirtualProtect on the vtable page (d3d11.dll rdata, copy-on-write per process). CFG: the exe's indirect calls are plain 'blx r3' (no __guard_check_icall use: the guard-check pointer at 0xC37BF8 is referenced only by the load-config and one pool), so calling into the host function from the vtable slot is unrestricted. Only one call site exists, so no other D3D scissor path needs hooking. Whether the offset really reproduces on ARM must be checked on device (cannot be proven statically).",
+   "expected_bytes": "2de980480df1040b45f648f688b06f46",
+   "evidence": [
+    "scan of every 'ldr.w rX,[rY,#0xb4]' followed within 4 bytes by blx and preceded by 'movs r1,#1' across .text -> exactly one hit, 0x5BB60A in function 0x5BB560",
+    "dis 0x5BB560-0x5BB62A: vcvt.s32.f32 of W*x, (x+w)*W, H-H*y, H-(y+h)*H stored to [r7+0x10/0x18/0x1c/0x14] = RECT{left,top,right,bottom}; bl 0x5BB8D8 (getContext = [renderer+0x110]); movs r1,#1; r2=&RECT; ldr r3,[r3,#0xb4]; blx r3",
+    "0x5BB578: ldr r2,[r1,#0xe4]; ldrd r3,r2,[r2,#8] vs fallback 0x5BB59E-0x5BB5AC ([0x019b86b0]+0x14/0x18)",
+    "0x5C25AC: bl 0x5BB560 from sub_5c2510 with s0..s3 loaded from 0x019159F8..+0xC; guarded by byte at 0x0191519A == 1"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.draw_trace",
+   "x86_symbol": "install_draw_trace / win32_draw_indexed / win32_draw / win32_*_set_shader / win32_om_set_render_targets / win32_clear_*: vtable slots 9,11,12,13,20,21,33,50,53 of the D3D11 context",
+   "x86_value": "vtable[9..53]",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Dead debug code on 1.2.8: install_draw_trace() has no caller anywhere in win32_host.c (only its definition at line 1439). It reads no game struct (only counters and the context vtable of the D3D runtime).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Drop. If the ARM port wants draw tracing for debugging it works unchanged against the d3d11.dll vtable (slot numbers are ABI, not arch specific).",
+   "expected_bytes": null,
+   "evidence": [
+    "grep -n 'install_draw_trace' win32_host.c -> only the definition (line 1439); grep game_draw_indexed_count -> only the trace functions"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.win7_discard_views",
+   "x86_symbol": "patch_win7_discard_views: RVA_128_DISCARD_WINDOW_VIEWS first byte 0xa1/0xc3 -> 0xc3 (ret) (x86 machine-code patch, Windows 7 only)",
+   "x86_value": "0x007d68e0",
+   "kind": "function",
+   "arm_rva": "0x00582970",
+   "summary": "AppPlatform_Winrt::DiscardWindowViews (vf33) = discardWindowSizeDependentResources helper: DiscardView(renderer+0x114 ctx2, rtv renderer+0x118) and DiscardView(ctx2, dsv renderer+0x120) through ID3D11DeviceContext1 slot 118 (vtbl+0x1D8) with no null check on ctx2.",
+   "arm_signature": "void fn(AppPlatform_Winrt* this /*r0, unused*/); no stack args",
+   "x86_to_arm_notes": "NOT needed: the patch exists only because Windows 7 lacks ID3D11DeviceContext2/1 so renderer+0x114 stays null. Windows RT 8.1 and Windows 10 ARM32 provide it. Do not port patch_win7_discard_views (and the 'function[0] != 0xa1 && != 0xc3' prologue check has no ARM analogue). If a no-op were ever wanted the ARM equivalent would be bx lr (0x4770) written at 0x00582970.",
+   "expected_bytes": "2de918480df1080b48f2ac63c0f29b13",
+   "evidence": [
+    "dis 0x582970-0x5829A6: ldr r3,[0x19b86ac]; ldr r4,[r3,#0xac]; ldrd r3,r1,[r4,#0x114]; ldr r3,[r3]; ldr r3,[r3,#0x1d8]; blx; second call with [r4,#0x120]",
+    "name AppPlatform_Winrt::DiscardWindowViews(vf33) recorded by another agent via RTTI vtable 0x013695A4",
+    "gfx:Renderer::ctor 0x5BB62C zero-initialises renderer+0x110..0x140, confirming the context/Context2/RTV/DSV/backbuffer/annotation slot layout"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.win7_device2_context2_patch",
+   "x86_symbol": "patch_win7_device2_queries_to_base (RVA_D3D_DEVICE_IID/RVA_D3D_CONTEXT_IID); only called when !host_is_128",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Not applied on the 1.2.8 x86 path (Win32Bootstrap line 14941) and never applicable on ARM.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Drop. The ARM game does not even query ID3D11Device2 (no GUID in exe).",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 14941-14946: 'if (!host_is_128) patch_win7_device2_queries_to_base(...)'",
+    "arm32re.py guid 9d06dffa-d1e5-4d07-83a8-1bb123f2f841 -> no hits"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.host_is_windows7",
+   "x86_symbol": "host_is_windows7 (GetVersion() == 6.1) gating every Win7 compat branch",
+   "x86_value": "GetVersion major 6 minor 1",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Windows 7 has no ARM edition; the ARM32 target is Windows RT 8.1 / Windows 10 ARM32 desktop.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Hard-wire host_is_windows7 = FALSE in the ARM host and delete the dependent branches in my area: 11_1 feature-level filter, captured_base_device/context fallback, patch_win7_* functions. (BufferCount = windows7 ? 1 : 2 and the RGBA swap-chain fallback in initialize_game_d3d are in the gfx_init area.)",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 14886-14892 host_is_windows7 derived from GetVersion",
+    "RE_GUIDE.md: target is Windows RT 8.1 / Windows 10 ARM32"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.hook_function_pointers",
+   "x86_symbol": "IAT/vtable slot stores of win32_d3d_compile, win32_d3d11_create_device, win32_set_scissor_rects",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "ARM pointer/ABI notes for the three installers (install_d3d_compile_trace, install_d3d11_device_compat, install_scissor_fix).",
+   "arm_signature": "all three hook functions are ordinary C functions; WINAPI/STDMETHODCALLTYPE expand to nothing on ARM",
+   "x86_to_arm_notes": "(1) Function pointers stored into IAT cells / vtable slots must be Thumb pointers (bit0 = 1): compiling win32craft.dll as thumbv7-windows gives that for free when you take the address of a function; original_* values loaded from the cells already carry bit0. (2) Pointer size and slot size stay 4 bytes, so VirtualProtect(slot, sizeof(*slot)) and the FlushInstructionCache calls are unchanged. (3) Argument passing: the x86 STDMETHODCALLTYPE callee-pops convention disappears; hook prototypes must keep exactly the same argument count and order as the original callee (D3DCompile 11 args, D3D11CreateDevice 10 args, RSSetScissorRects 3 args incl. this) - arguments beyond r3 arrive on the stack in the order shown in the arm_signature fields. (4) The install order in Win32Bootstrap does not change: all three D3D IAT/vtable patches are installed before the game constructs the owner/renderer (install_d3d_compile_trace and install_d3d11_device_compat) or right after the context exists (install_scissor_fix).",
+   "expected_bytes": null,
+   "evidence": [
+    "RE_GUIDE.md: all code pointers stored in data have bit 0 set (Thumb)",
+    "thunks 0xA3B944 / 0xA3B968: movw/movt ip + ldr.w pc,[ip] read the IAT cell at call time, so replacing the cell works for every caller"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_compat.d3dcompiler_availability",
+   "x86_symbol": "n/a (host assumes d3dcompiler_47 on the machine)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "The ARM exe has a regular (non-delay) import of D3DCOMPILER_47.dll (D3DPreprocess, D3DCompile, D3DReflect) and the package does not ship that DLL, so the OS must provide an ARM32 D3DCOMPILER_47.dll (present on Windows RT 8.1 and Windows 10 ARM32).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Deployment note only; nothing to patch. If the DLL is missing the exe will not load at all before Win32Bootstrap runs.",
+   "expected_bytes": null,
+   "evidence": [
+    "ls Minecraft_1.2.8.0_ARM32 -> no D3DCOMPILER_47.dll; arm32re.py imports D3DCOMPILER -> 3 cells 0xC370B0/B4/B8"
+   ],
+   "confidence": "medium"
+  }
+ ],
+ "port_instructions": [
+  "Constants for the ARM 1.2.8 host: ARM_D3D_COMPILE_IAT = 0x00C370B4; ARM_D3D11_CREATE_DEVICE_IAT = 0x00C37A50. These are the ONLY RVAs this area needs. RVA_128_DXGI_DEVICE3_IID / RVA_128_D3D_CONTEXT_IID / RVA_128_D3D_ANNOTATION_IID have no ARM use (ARM equivalents, if ever wanted: 0x00DBC2C4 / 0x00DBC3FC / 0x00DBC3DC).",
+  "Win32Bootstrap (ARM): set host_is_windows7 = FALSE (remove the GetVersion probe). Delete calls to patch_win7_dxgi_device3_query_to_base, patch_win7_device2_queries_to_base and patch_win7_discard_views; delete those three functions. No game code or .rdata byte is patched by this area on ARM.",
+  "install_d3d11_device_compat(image, 0x00C37A50): keep the IAT hook only as a thin wrapper: adjusted_flags = flags | 0x20; call original_d3d11_create_device with the other 9 arguments unchanged; keep the log line. Remove: the 0xb100 feature-level filter, the driver_type==1 -> WARP retry (the game retries with D3D_DRIVER_TYPE_WARP itself at 0x5BC3EC), the captured_base_device/captured_base_context AddRef logic, the host_is_116 blocks, and the matching 'Windows 7 fallback' / captured_* release code in initialize_game_d3d. Store the original with the Thumb bit as read from the cell.",
+  "install_d3d_compile_trace(image, 0x00C370B4): for the first ARM bring-up make win32_d3d_compile a pure forwarder with failure logging: call original_d3d_compile(source, size, name, defines, include_handler, entry, target, flags1, flags2, code, errors) with include_handler passed through UNCHANGED, and keep only the 'if (FAILED) log source/entry/target/HRESULT + errors blob text' block. Delete win32_include_open/close, win32_include, shader_include_directory and the D3D_COMPILE_STANDARD_FILE_INCLUDE branch (the ARM game always passes its own HeaderInclude object).",
+  "Include proxy (Win32IncludeProxy, win32_include_proxy_open/close) and patch_hlsl_lod_intrinsic: keep OUT of the first ARM build. They are source-compatible with the ARM game (ID3DInclude slot0 Open(this,type,file,parent,ppData,pBytes), slot1 Close(this,data); HeaderInclude at vtable 0x0136B164 ignores type/parent, Close is a no-op) so they can be re-enabled unchanged if the log shows a D3DCompile failure mentioning CalculateLevelOfDetailUnclamped; in that case the only literal to substitute is 'tex.CalculateLevelOfDetailUnclamped(TextureSampler0, uv)' (present once, in data/shaders/hlsl/util.fxh).",
+  "Delete patch_hlsl_root_signature completely: neither ROOT_SIGNATURE nor MinecraftRootSignature exists in the 1.2.8 shader sources.",
+  "install_scissor_fix(game_context): keep exactly as on x86 (slot index 45 of the context vtable; original_set_scissor_rects saved; hook = void STDMETHODCALLTYPE(ID3D11DeviceContext*, UINT, const D3D11_RECT*)). game_context must be *(ID3D11DeviceContext**)(renderer + 0x110) (unchanged offset; the game's own scissor call uses the same pointer). Install it after the game's InitDevice has run. GetClientRect(game_window) is the only other input.",
+  "Do not port install_draw_trace and its win32_draw*/win32_*_set_shader/win32_om_*/win32_clear_* stubs (dead code on 1.2.8).",
+  "Before the first shader compile make sure image+0x015B86AC holds the owner pointer and renderer+0x108 holds the owner back-pointer (set by the game's owner ctor 0x5B7E7C when the host calls the owner ctor the same way as x86 initialize_game_d3d); otherwise compileShaderProgram dereferences null while building the VERSION macro.",
+  "Exports D3D11CreateDevice/CreateDirect3D11DeviceFromDXGIDevice/CreateDXGIFactory2 of win32craft.dll (win32_host.c 15124-15181) are not referenced by the ARM 1.2.8 exe imports (it imports d3d11.dll!D3D11CreateDevice directly, nothing from dxgi.dll); keep them only if the patched ARM exe re-points imports to win32craft.dll."
+ ],
+ "open_questions": [
+  "Is the CalculateLevelOfDetailUnclamped substitution really unnecessary on every target ARM device? Static evidence (same sources, same system D3DCompiler as the original UWP app, call only under VERSION >= 0xa000) says yes, but it must be confirmed by one real compile run on the ARM device (watch for 'D3DCompile failed' log lines).",
+  "Does the scissor Y offset (-599..-47 for a 688 px HWND on x86) reproduce on ARM? The game-side math (H*(1-y-h) with H from [[renderer+0xE4]+0xC] or the CoreWindow-size global 0x015B86B0+0x18) matches the x86 description but the actual runtime values depend on what the host publishes in that screen-size object (0x015B86B0, W at +0x14, H at +0x18) and in renderer+0xE4; the identity/owner of those two objects was not resolved here.",
+  "x86 RVA_128_D3D_CONTEXT_IID semantic (ID3D11DeviceContext2) is inferred from the 0.15.10 comment and the matching renderer+0x114 offset, not from x86 bytes (x86 binary unavailable).",
+  "ID3DUserDefinedAnnotation at renderer+0x140: no consumer calling BeginEvent/EndEvent was found in the renderer region; a consumer elsewhere (e.g. mce debug markers) was not exhaustively excluded.",
+  "The disk shader cache written/read around D3DCompile (path built at 0x5BE6C8-0x5BE700 via ofstream sub_3048D4) was not traced; the host's CreateFile2/path fixes (another area) must let it create files, otherwise every launch recompiles all shaders."
+ ]
+}

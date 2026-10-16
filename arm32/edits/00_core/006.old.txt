@@ -1,0 +1,2 @@
+static LONG WINAPI win32_unhandled_exception(EXCEPTION_POINTERS *pointers)
+{

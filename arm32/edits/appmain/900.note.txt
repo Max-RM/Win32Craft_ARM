@@ -1,0 +1,1 @@
+Reviewer fix: refuse to call the factory when the fake CoreWindow vtable is unset; log the GameOwner global (diagnostic only).

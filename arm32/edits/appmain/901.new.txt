@@ -1,0 +1,16 @@
+    if (!game_app_main || !image || !GetClientRect(window, &client) ||
+        IsBadReadPtr(game_app_main, ARM32_AM_SIZE)) {
+        wsprintfA(line, "Minecraft 1.2.8 activate: AppMain %p, image %p, window %p, GetLastError %lu: "
+                  "AppMain missing/unreadable or GetClientRect failed", game_app_main, (void *)image, (void *)window,
+                  (unsigned long)GetLastError());
+        log_line(line);
+        return FALSE;
+    }
+    platform = *(void **)((BYTE *)game_app_main + ARM32_AM_PLATFORM_OFFSET);
+    game = *(void **)((BYTE *)game_app_main + ARM32_AM_GAME_OFFSET);
+    if (!platform || !game || IsBadReadPtr(game, sizeof(void *)) ||
+        IsBadReadPtr(platform, ARM32_AM_PLATFORM_PROBE)) {
+        wsprintfA(line, "Minecraft 1.2.8 activate: AppPlatform %p or MinecraftGame %p missing/unreadable", platform, game);
+        log_line(line);
+        return FALSE;
+    }

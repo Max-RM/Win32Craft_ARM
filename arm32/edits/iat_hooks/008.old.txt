@@ -1,0 +1,4 @@
+static BOOL install_d3d11_device_compat(
+    BYTE *image, SIZE_T d3d11_create_device_rva)
+{
+    GameD3D11CreateDeviceFn *slot =

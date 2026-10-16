@@ -1,0 +1,3 @@
+LIBRARY api-ms-win-core-delayload-l1-1-1.dll
+EXPORTS
+ResolveDelayLoadedAPI=KERNEL32.ResolveDelayLoadedAPI

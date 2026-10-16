@@ -1,0 +1,54 @@
+#ifdef WIN32CRAFT_ARM32
+/* Cross-unit hook (defined in api_compat.c by unit hstring_native): lets the FMOD/HSTRING side be served by the same
+ * fake WinRT objects as the game's own activation calls. */
+typedef HRESULT (*Win32CraftActivationFn)(LPCWSTR class_name, const GUID *iid, void **result);
+extern Win32CraftActivationFn Win32CraftActivationDispatcher;
+
+/* Installs every by-name IAT / delay-IAT hook of the ARM32 host (PORT_RULES contract).  Returns FALSE when a mandatory
+ * hook (activation redirect, D3D11CreateDevice) could not be installed.  Not installed on ARM on purpose:
+ * install_vccorlib_compat (the desktop vccorlib140.dll has real bodies; the IBox hooks would break it) and
+ * install_create_file2_compat (CreateFile2 is native on 8.1/10). */
+static BOOL install_arm32_iat_hooks(BYTE *image)
+{
+    BOOL activation_ok;
+    BOOL device_ok;
+    BOOL optional_ok = TRUE;
+    char line[200];
+
+    if (!image) {
+        log_line("ARM32 IAT hooks: image base is null");
+        return FALSE;
+    }
+    if (!game_image) game_image = image;
+    if (!host_is_128 || host_is_115 || host_is_116 || host_is_windows7) {
+        log_line("ARM32 IAT hooks: host flags were not set for 1.2.8 - forcing host_is_128 only");
+        host_is_128 = TRUE;
+        host_is_115 = FALSE;
+        host_is_116 = FALSE;
+        host_is_windows7 = FALSE;
+    }
+    if (!arm32_feature_level_resolved) Win32CraftParseHostOptions();
+    log_pointer("ARM32 IAT hooks: game image base", image);
+
+    if (!install_exception_trace(image, ARM_CHAT_XBOX_EXCEPTION_TRACE_IAT)) optional_ok = FALSE;
+    activation_ok = install_activation_redirect(image, ARM_PE_IMPORTS_ACTIVATION_FACTORY_IAT);
+    if (activation_ok) {
+        Win32CraftActivationDispatcher = win32_get_activation_factory;
+        log_line("ARM32: Win32CraftActivationDispatcher set to the host activation factory");
+    }
+    if (!install_d3d_compile_trace(image, ARM_PE_IMPORTS_D3D_COMPILE_IAT)) optional_ok = FALSE;
+    if (!install_d3d_preprocess_trace(image, ARM_GFX_COMPAT_IAT_D3D_PREPROCESS_REFLECT)) optional_ok = FALSE;
+    device_ok = install_d3d11_device_compat(image, ARM_PE_IMPORTS_D3D11_CREATE_DEVICE_IAT);
+    if (!install_xbox_tcui_noops_128(image)) optional_ok = FALSE;
+    log_line("ARM32: vccorlib compat and CreateFile2 hooks are intentionally not installed");
+
+    wsprintfA(line, "ARM32 IAT hooks: activation=%s d3d11=%s optional=%s",
+              activation_ok ? "ok" : "FAILED", device_ok ? "ok" : "FAILED", optional_ok ? "ok" : "some missing");
+    log_line(line);
+    return activation_ok && device_ok;
+}
+#endif
+
+static BOOL install_xbox_tcui_noops(
+    BYTE *image, SIZE_T process_pending_rva, SIZE_T show_profile_rva)
+{

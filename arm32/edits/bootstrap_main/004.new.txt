@@ -1,0 +1,8 @@
+#ifdef WIN32CRAFT_ARM32
+    case WM_GETMINMAXINFO:
+        arm32_clamp_min_max_info(window, (Arm32MinMaxInfo *)lparam);
+        return 0;
+#endif
+    case WM_CLOSE:
+        DestroyWindow(window);
+        return 0;

@@ -1,0 +1,1 @@
+ARM32: activation IAT cell patched by name through arm32_iat_hook_import; fake-object setup above is shared with x86.

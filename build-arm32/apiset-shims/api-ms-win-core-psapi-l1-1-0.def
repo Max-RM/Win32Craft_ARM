@@ -1,0 +1,3 @@
+LIBRARY api-ms-win-core-psapi-l1-1-0.dll
+EXPORTS
+K32GetProcessMemoryInfo=KERNEL32.K32GetProcessMemoryInfo

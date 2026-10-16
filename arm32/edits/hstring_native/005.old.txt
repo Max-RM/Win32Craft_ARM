@@ -1,0 +1,3 @@
+HRESULT WINAPI WindowsSubstringWithSpecifiedLength(
+    HSTRING string, UINT32 start, UINT32 length, HSTRING *result)
+{

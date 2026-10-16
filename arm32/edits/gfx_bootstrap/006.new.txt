@@ -1,0 +1,4 @@
+    log_line("HWND renderer targets, viewport, UI and HID size synchronized");
+    return TRUE;
+}
+#endif /* WIN32CRAFT_ARM32 resize_game_window */

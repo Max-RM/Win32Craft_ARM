@@ -1,0 +1,19 @@
+Win32Craft 1.2.8 ARM32 - installation (overlay for the game folder)
+
+Requirements: Windows RT 8.1 (also copy the win81-runtime files, see make_arm32_device_package.py) or Windows 10 ARM32 desktop;
+Direct3D 11.2 runtime. The game runs at Direct3D feature level 9_1 by default.
+
+1. Copy your Minecraft 1.2.8 ARM32 game folder (the one with Minecraft.Windows.exe, data\, resources.pri) to a
+   writable location outside WindowsApps, e.g. C:\Games\Minecraft128. Keep the original folder untouched.
+2. In the COPY, rename fmod_ARM.dll to fmod_ARM.dll.orig (backup of the original).
+3. Copy everything in this folder EXCEPT MANIFEST.txt, INSTALL.txt and the fmod-silent folder into the game copy:
+     Win32Craft.1.2.8-arm32.exe, fmod_ARM.dll (patched), win32craft.dll,
+     concrt140.dll, msvcp140.dll, vccorlib140.dll, vcruntime140.dll
+   Minecraft.Windows.exe stays as it is (the original is not modified).
+4. Run Win32Craft.1.2.8-arm32.exe. The log is written to win32craft.log next to the exe (or in %TEMP% if that folder is
+   not writable). If anything fails, send that file.
+
+No sound / hang during startup in FMOD: replace the copied fmod_ARM.dll with fmod-silent\fmod_ARM.dll
+(a silent stub, the game then runs without audio).
+Other feature level: Win32Craft.1.2.8-arm32.exe --feature-level 10_0   (or set WIN32CRAFT_FEATURE_LEVEL).
+See ARM32.md in the repository for details. This build has not been verified on a real device.

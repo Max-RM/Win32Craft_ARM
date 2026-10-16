@@ -1,0 +1,1 @@
+ARM32: CryptographicBuffer.GenerateRandom lazily resolves SystemFunction036 from any game thread; without barriers a second thread could see the flag but a NULL pointer and silently use the weak LCG fallback.

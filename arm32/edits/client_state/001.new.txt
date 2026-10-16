@@ -1,0 +1,375 @@
+#ifdef WIN32CRAFT_ARM32
+/* ======================================================================================================
+ * ARM32 client-state unit (facts client_state.*).  Same object model as x86 (4-byte pointers):
+ * ClientInstance +4 second vtable / +0x18 MinecraftGame* / +0x28 LevelRenderer* / +0x44 keyboard manager /
+ * +0x2c0 SceneStack*, MinecraftGame +0x6c SceneStack*, SceneStack begin@0 end@4 stride 8.
+ * Vtable constants below are plain data addresses (no Thumb bit); only CODE pointers stored in vtables have
+ * bit 0 set (image + rva + 1), which is why ARM_CODE() is used for every function compare/call.
+ * ====================================================================================================== */
+typedef void (*ClientRenderFn)(void *self, ULONG_PTR r1, ULONG_PTR r2, ULONG_PTR r3);
+typedef DWORD (*SceneFlagFn)(void *scene);
+
+static ClientRenderFn client_render_original_arm32;
+static volatile LONG client_render_calls_arm32;
+static BOOL client_hook_installed_arm32;
+static DWORD client_hook_install_tick_arm32;
+
+/* Milliseconds since the first call, for log intervals only.  The compat header declares no tick API, so use
+ * QueryPerformanceCounter with double math (no 64-bit division helper is needed/linked on ARM32). */
+static DWORD arm32_client_ms(void)
+{
+    static double base_ticks;
+    static BOOL have_base;
+    LARGE_INTEGER counter, frequency;
+    double ticks, freq;
+
+    if (!QueryPerformanceCounter(&counter) || !QueryPerformanceFrequency(&frequency)) return 0;
+    ticks = (double)(DWORD)(counter.QuadPart >> 32) * 4294967296.0 + (double)(DWORD)counter.QuadPart;
+    freq = (double)(DWORD)(frequency.QuadPart >> 32) * 4294967296.0 + (double)(DWORD)frequency.QuadPart;
+    if (freq < 1.0) return 0;
+    if (!have_base) {
+        have_base = TRUE;
+        base_ticks = ticks;
+    }
+    return (DWORD)((ticks - base_ticks) * 1000.0 / freq);
+}
+
+/* Log (at most 12 distinct values in total) an object whose vptr is not the one the host expects, so a wrong
+ * vtable constant shows up in the log instead of silently disabling text focus / gameplay mouse capture. */
+static void arm32_note_unexpected_vtable(const char *what, const void *object, const void *actual,
+                                         const void *expected)
+{
+    static const void *seen[12];
+    static int seen_count;
+    char line[320];
+    int index;
+
+    for (index = 0; index < seen_count; ++index)
+        if (seen[index] == actual) return;
+    if (seen_count >= (int)(sizeof(seen) / sizeof(seen[0]))) return;
+    seen[seen_count++] = actual;
+    wsprintfA(line,
+              "Minecraft 1.2.8 client-state: %s %p has vtable %p (image+0x%08lx) but the host expects %p (image+0x%08lx)",
+              what, object, actual, (unsigned long)((ULONG_PTR)actual - (ULONG_PTR)game_image),
+              expected, (unsigned long)((ULONG_PTR)expected - (ULONG_PTR)game_image));
+    log_line(line);
+}
+
+static BOOL plausible_client_instance_128(BYTE *client, void *vtable)
+{
+    static BYTE *last_reported;
+    static LONG reports;
+    char line[320];
+    void *second_vtable = game_image + ARM_CLIENT_STATE_CLIENTINSTANCE_VTABLE_SECONDARY;
+
+    if (!client) return FALSE;
+    if (!IsBadReadPtr(client, ARM_CLIENT_STATE_CLIENTINSTANCE_SIZE) &&
+        *(void **)client == vtable &&
+        *(void **)(client + ARM_CLIENT_STATE_CLIENTINSTANCE_OFF_0X04_VTABLE2) == second_vtable) {
+        return TRUE;
+    }
+    /* the captured pointer is rejected: say why (once per distinct pointer, at most 4 times) */
+    if (client != last_reported && reports < 4) {
+        last_reported = client;
+        ++reports;
+        if (IsBadReadPtr(client, ARM_CLIENT_STATE_CLIENTINSTANCE_SIZE)) {
+            wsprintfA(line,
+                      "Minecraft 1.2.8 client-state: captured ClientInstance %p is not readable for 0x%lx bytes",
+                      client, (unsigned long)ARM_CLIENT_STATE_CLIENTINSTANCE_SIZE);
+        } else {
+            wsprintfA(line,
+                      "Minecraft 1.2.8 client-state: captured ClientInstance %p rejected: [0]=%p (expected %p) "
+                      "[4]=%p (expected %p) image=%p",
+                      client, *(void **)client, vtable,
+                      *(void **)(client + ARM_CLIENT_STATE_CLIENTINSTANCE_OFF_0X04_VTABLE2), second_vtable,
+                      game_image);
+        }
+        log_line(line);
+    }
+    return FALSE;
+}
+
+/* Capture the live ClientInstance at ClientInstance::vf3 (facts client_state.render_slot3_function).  The game
+ * function consumes r0=this and r2/r3 (r1 is never read); all four registers are forwarded unchanged and the
+ * original reads no stack arguments, so a plain 4-register C call through the Thumb pointer is complete.  The
+ * caller of slot 3 is not known (it may be another thread), hence no assumptions about frequency or thread and
+ * the first calls are logged.  No process-memory searches belong in the frame loop. */
+static void win32_client_render_128(void *self, ULONG_PTR r1, ULONG_PTR r2, ULONG_PTR r3)
+{
+    LONG call = InterlockedIncrement(&client_render_calls_arm32);
+    char line[320];
+
+    if (client_instance_128 != (BYTE *)self)
+        log_pointer("Minecraft 1.2.8 live render client", self);
+    if (call <= 3 || call == 100 || call == 1000 || call == 10000 || call == 100000 || call == 1000000) {
+        wsprintfA(line,
+                  "Minecraft 1.2.8 ClientInstance::vf3 hook call #%ld: self=%p thread=%lu +%lu ms since hook "
+                  "install r1=%08lx r2=%08lx r3=%08lx",
+                  call, self, (unsigned long)GetCurrentThreadId(),
+                  (unsigned long)(arm32_client_ms() - client_hook_install_tick_arm32),
+                  (unsigned long)r1, (unsigned long)r2, (unsigned long)r3);
+        log_line(line);
+    }
+    client_instance_128 = (BYTE *)self;
+    if (client_render_original_arm32)
+        client_render_original_arm32(self, r1, r2, r3);
+}
+
+/* Replace the single vtable cell (ClientInstance primary vtable slot 3, shared by every ClientInstance).
+ * Returns FALSE (with a precise log) when the cell does not hold image+0x11a280+1 or the function entry bytes
+ * differ; the caller decides whether that is fatal. */
+static BOOL install_client_state_hook_128(BYTE *image)
+{
+    void **slot;
+    void *expected;
+    void *hook = (void *)win32_client_render_128;
+    void **vtable;
+    char line[400];
+
+    if (!image) {
+        log_line("Minecraft 1.2.8 client-state hook: image base is NULL");
+        return FALSE;
+    }
+    slot = (void **)(image + ARM_CLIENT_STATE_RENDER_HOOK_SLOT);
+    expected = ARM_CODE(image, ARM_CLIENT_STATE_RENDER_SLOT3_FUNCTION);
+    vtable = (void **)(image + ARM_CLIENT_STATE_CLIENTINSTANCE_VTABLE_PRIMARY);
+    if (((ULONG_PTR)hook & 1u) == 0) {
+        wsprintfA(line, "Minecraft 1.2.8 client-state hook: hook function %p has no Thumb bit; refusing to patch", hook);
+        log_line(line);
+        return FALSE;
+    }
+    if (slot != vtable + 3) {
+        wsprintfA(line, "Minecraft 1.2.8 client-state hook: internal constant mismatch slot=%p vtable+3=%p",
+                  (void *)slot, (void *)(vtable + 3));
+        log_line(line);
+        return FALSE;
+    }
+    if (IsBadReadPtr(slot, sizeof(*slot))) {
+        wsprintfA(line, "Minecraft 1.2.8 client-state hook: vtable cell %p (image+0x%08lx) is unreadable",
+                  (void *)slot, (unsigned long)ARM_CLIENT_STATE_RENDER_HOOK_SLOT);
+        log_line(line);
+        return FALSE;
+    }
+    if (*slot == hook && client_render_original_arm32) {
+        log_line("Minecraft 1.2.8 client-state hook: already installed");
+        client_hook_installed_arm32 = TRUE;
+        return TRUE;
+    }
+    if (*slot != expected) {
+        wsprintfA(line,
+                  "Minecraft 1.2.8 client-state hook: vtable cell %p (image+0x%08lx) holds %p (image+0x%08lx) but "
+                  "expected %p (image+0x%08lx = ClientInstance::vf3 | Thumb bit); not patched",
+                  (void *)slot, (unsigned long)ARM_CLIENT_STATE_RENDER_HOOK_SLOT, *slot,
+                  (unsigned long)((ULONG_PTR)*slot - (ULONG_PTR)image), expected,
+                  (unsigned long)(ARM_CLIENT_STATE_RENDER_SLOT3_FUNCTION + 1u));
+        log_line(line);
+        if (!IsBadReadPtr(vtable, 7 * sizeof(void *))) {
+            wsprintfA(line,
+                      "Minecraft 1.2.8 client-state hook: ClientInstance vtable %p slots 0..6 = %p %p %p %p %p %p %p "
+                      "(image=%p)",
+                      (void *)vtable, vtable[0], vtable[1], vtable[2], vtable[3], vtable[4], vtable[5], vtable[6],
+                      (void *)image);
+            log_line(line);
+        }
+        return FALSE;
+    }
+    if (!arm32_check_bytes(image + ARM_CLIENT_STATE_RENDER_SLOT3_FUNCTION,
+                           ARM_CLIENT_STATE_RENDER_SLOT3_FUNCTION_EXPECTED,
+                           sizeof(ARM_CLIENT_STATE_RENDER_SLOT3_FUNCTION_EXPECTED),
+                           "ClientInstance::vf3 entry (0x0011a280)")) {
+        log_line("Minecraft 1.2.8 client-state hook: ClientInstance::vf3 entry bytes differ; refusing to hook");
+        return FALSE;
+    }
+    client_render_original_arm32 = (ClientRenderFn)expected;
+    client_hook_install_tick_arm32 = arm32_client_ms();
+    if (!arm32_patch_cell(slot, expected, hook, NULL, "ClientInstance vtable slot 3 (vf3 render/tick hook)")) {
+        client_render_original_arm32 = NULL;
+        log_line("Minecraft 1.2.8 client-state hook: vtable cell patch failed");
+        return FALSE;
+    }
+    if (*slot != hook) {
+        wsprintfA(line, "Minecraft 1.2.8 client-state hook: cell %p reads back %p after patching (expected %p)",
+                  (void *)slot, *slot, hook);
+        log_line(line);
+        return FALSE;
+    }
+    client_hook_installed_arm32 = TRUE;
+    wsprintfA(line,
+              "Minecraft 1.2.8 client-state hook installed: cell %p original %p hook %p; waiting for the game to "
+              "call ClientInstance::vf3",
+              (void *)slot, expected, hook);
+    log_line(line);
+    return TRUE;
+}
+
+static BOOL client_world_active_128(void)
+{
+    BYTE *level_renderer;
+    void *vptr;
+    if (!plausible_client_instance_128(client_instance_128,
+            game_image + ARM_CLIENT_STATE_CLIENTINSTANCE_VTABLE_PRIMARY)) return FALSE;
+    level_renderer = *(BYTE **)(client_instance_128 + ARM_CLIENT_STATE_CLIENTINSTANCE_OFF_0X28_LEVELRENDERER);
+    if (!level_renderer || IsBadReadPtr(level_renderer, sizeof(void *))) return FALSE;
+    vptr = *(void **)level_renderer;
+    if (vptr == game_image + ARM_CLIENT_STATE_LEVELRENDERER_VTABLE) return TRUE;
+    arm32_note_unexpected_vtable("LevelRenderer", level_renderer, vptr,
+                                 game_image + ARM_CLIENT_STATE_LEVELRENDERER_VTABLE);
+    return FALSE;
+}
+
+/* SceneStack holds a vector<shared_ptr<AbstractScene>> at +0/+4 (4-byte pointers, stride 8, identical to x86).
+ * ClientInstance::getTopScene (ARM RVA 0x11be24) uses the local stack at +0x2c0, falling back to MinecraftGame's
+ * stack at +0x6c.  UIScene vtable slot 41 (+0xa4) is is_showing_menu, slot 42 (+0xa8) is should_steal_mouse.
+ * These are the JSON screen flags, not a list of controller types or keys. */
+static BYTE *top_scene_128(BYTE *stack)
+{
+    BYTE *begin, *end;
+    if (!stack || IsBadReadPtr(stack, 8)) return NULL;
+    begin = *(BYTE **)stack;
+    end = *(BYTE **)(stack + 4);
+    if (!begin || (ULONG_PTR)end <= (ULONG_PTR)begin ||
+        ((ULONG_PTR)end - (ULONG_PTR)begin) % 8 ||
+        IsBadReadPtr(end - 8, 8)) return NULL;
+    return *(BYTE **)(end - 8);
+}
+
+/* Progress/diagnostic log for the capture hook: it is the ONLY place the ClientInstance is captured and its caller
+ * is unknown, so tell the user (log) when nothing arrived after 5/15/30/60 s and every minute afterwards. */
+static void arm32_client_wait_diagnostics(void)
+{
+    static BOOL captured_logged;
+    static DWORD start_tick, frames, next_report_ms = 5000;
+    static LONG reports;
+    char line[400];
+    DWORD now, elapsed;
+
+    if (captured_logged) return;
+    now = arm32_client_ms();
+    if (client_instance_128) {
+        if (frames) {
+            wsprintfA(line,
+                      "Minecraft 1.2.8 client-state: ClientInstance %p captured after %lu frames / %lu ms of waiting",
+                      client_instance_128, (unsigned long)frames, (unsigned long)(now - start_tick));
+            log_line(line);
+        }
+        captured_logged = TRUE;
+        return;
+    }
+    if (!frames) start_tick = now;
+    ++frames;
+    elapsed = now - start_tick;
+    if (elapsed < next_report_ms || reports >= 12) return;
+    ++reports;
+    next_report_ms = next_report_ms == 5000 ? 15000 : next_report_ms == 15000 ? 30000 :
+                     next_report_ms == 30000 ? 60000 : next_report_ms + 60000;
+    wsprintfA(line,
+              "Minecraft 1.2.8 client-state: no ClientInstance captured after %lu frames / %lu ms (slot-3 hook "
+              "installed=%d, hook calls=%ld); text-focus and gameplay mouse-capture detection stay inactive until "
+              "the game calls ClientInstance::vf3 (RVA 0x%08lx)",
+              (unsigned long)frames, (unsigned long)elapsed, (int)client_hook_installed_arm32,
+              (long)client_render_calls_arm32, (unsigned long)ARM_CLIENT_STATE_RENDER_SLOT3_FUNCTION);
+    log_line(line);
+}
+
+static void refresh_relative_mouse_from_client_128(void)
+{
+    BYTE *scene, *owner;
+    BOOL gameplay = FALSE;
+    static int previous_gameplay = -1;
+    static BOOL announced_client, reported_no_scene, reported_bad_slots, reported_no_image;
+    char line[400];
+
+    if (!host_is_128 || !game_app_main) return;
+    if (!game_image) {
+        if (!reported_no_image) {
+            reported_no_image = TRUE;
+            log_line("Minecraft 1.2.8 client-state: game_image is NULL, client-state refresh skipped");
+        }
+        return;
+    }
+    arm32_client_wait_diagnostics();
+    /* MinecraftKeyboardManager::show/hide (ARM RVAs 0x395504/0x395620) maintain bit 1 of byte +5 even when no
+     * on-screen keyboard is requested (facts client_state.keyboardmanager_focus_byte). */
+    if (plausible_client_instance_128(client_instance_128,
+            game_image + ARM_CLIENT_STATE_CLIENTINSTANCE_VTABLE_PRIMARY)) {
+        BYTE *keyboard = *(BYTE **)(client_instance_128 + ARM_CLIENT_STATE_CLIENTINSTANCE_OFF_0X44_KEYBOARD);
+        BOOL focused = FALSE;
+        if (!announced_client) {
+            announced_client = TRUE;
+            wsprintfA(line,
+                      "Minecraft 1.2.8 client-state: ClientInstance %p accepted (owner=%p keyboard=%p "
+                      "level_renderer=%p local_scene_stack=%p)",
+                      client_instance_128,
+                      *(void **)(client_instance_128 + ARM_CLIENT_STATE_CLIENTINSTANCE_OFF_0X18_OWNER),
+                      keyboard,
+                      *(void **)(client_instance_128 + ARM_CLIENT_STATE_CLIENTINSTANCE_OFF_0X28_LEVELRENDERER),
+                      *(void **)(client_instance_128 + ARM_CLIENT_STATE_CLIENTINSTANCE_OFF_0X2C0_SCENESTACK));
+            log_line(line);
+        }
+        if (keyboard && !IsBadReadPtr(keyboard, 6)) {
+            if (*(void **)keyboard == game_image + ARM_CLIENT_STATE_KEYBOARDMANAGER_VTABLE)
+                focused = (keyboard[ARM_CLIENT_STATE_KEYBOARDMANAGER_FOCUS_BYTE] & 2) != 0;
+            else
+                arm32_note_unexpected_vtable("MinecraftKeyboardManager", keyboard, *(void **)keyboard,
+                                             game_image + ARM_CLIENT_STATE_KEYBOARDMANAGER_VTABLE);
+        }
+        if (text_input_active != focused) {
+            text_input_active = focused;
+            pending_high_surrogate = 0;
+            if (!focused) suppress_next_t_character = FALSE;
+            log_line(focused ? "Minecraft 1.2.8 text focus entered"
+                             : "Minecraft 1.2.8 text focus left");
+        }
+    }
+    if (client_world_active_128()) {
+        scene = top_scene_128(*(BYTE **)(client_instance_128 + ARM_CLIENT_STATE_CLIENTINSTANCE_OFF_0X2C0_SCENESTACK));
+        if (!scene) {
+            owner = *(BYTE **)(client_instance_128 + ARM_CLIENT_STATE_CLIENTINSTANCE_OFF_0X18_OWNER);
+            if (owner && !IsBadReadPtr(owner + ARM_CLIENT_STATE_MINECRAFTGAME_OFF_0X6C_SCENESTACK, sizeof(void *)))
+                scene = top_scene_128(*(BYTE **)(owner + ARM_CLIENT_STATE_MINECRAFTGAME_OFF_0X6C_SCENESTACK));
+        }
+        if (scene && !IsBadReadPtr(scene, sizeof(void *))) {
+            void **vtable = *(void ***)scene;
+            if (vtable == (void **)(game_image + ARM_CLIENT_STATE_UISCENE_VTABLE)) {
+                void *flag41 = ARM_CODE(game_image, ARM_CLIENT_STATE_UISCENE_SLOT41_IS_SHOWING_MENU);
+                void *flag42 = ARM_CODE(game_image, ARM_CLIENT_STATE_UISCENE_SLOT42_SHOULD_STEAL_MOUSE);
+                if (vtable[0xa4 / 4] != flag41 || vtable[0xa8 / 4] != flag42) {
+                    /* never call an unverified function through a vtable cell */
+                    if (!reported_bad_slots) {
+                        reported_bad_slots = TRUE;
+                        wsprintfA(line,
+                                  "Minecraft 1.2.8 client-state: UIScene vtable %p slot41=%p (expected %p) "
+                                  "slot42=%p (expected %p); gameplay detection disabled",
+                                  (void *)vtable, vtable[0xa4 / 4], flag41, vtable[0xa8 / 4], flag42);
+                        log_line(line);
+                    }
+                } else {
+                    /* hud_screen.json sets should_steal_mouse=true: this means
+                     * capture the desktop pointer for gameplay, not release it. */
+                    gameplay = !((SceneFlagFn)vtable[0xa4 / 4])(scene) &&
+                               ((SceneFlagFn)vtable[0xa8 / 4])(scene) &&
+                               !text_input_active;
+                }
+            } else {
+                arm32_note_unexpected_vtable("top scene (not UIScene)", scene, (void *)vtable,
+                                             game_image + ARM_CLIENT_STATE_UISCENE_VTABLE);
+            }
+        } else if (!reported_no_scene) {
+            reported_no_scene = TRUE;
+            log_line("Minecraft 1.2.8 client-state: world is active but no top scene was found "
+                     "(local stack and MinecraftGame stack empty or unreadable)");
+        }
+    }
+    if ((int)gameplay != previous_gameplay) {
+        log_line(gameplay ? "Minecraft 1.2.8 scene: gameplay capture"
+                          : "Minecraft 1.2.8 scene: UI cursor");
+        previous_gameplay = gameplay;
+    }
+    if (host_relative_requested != gameplay) {
+        host_relative_requested = gameplay;
+        mouse_clip_dirty = TRUE;
+    }
+}
+#else /* !WIN32CRAFT_ARM32: x86 client-state code below is the unmodified original */
+static BOOL plausible_client_instance_128(BYTE *client, void *vtable)
+{

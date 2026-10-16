@@ -1,0 +1,4 @@
+    log_line("Minecraft 1.2.8 Xbox TCUI hooks disabled");
+    return TRUE;
+}
+#endif

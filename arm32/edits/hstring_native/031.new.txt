@@ -1,0 +1,9 @@
+void WINAPI RoFailFastWithErrorContext(HRESULT error) {
+#ifdef WIN32CRAFT_ARM32
+    {
+        char line[96];
+        wsprintfA(line, "RoFailFastWithErrorContext(0x%08lx) forwarded to combase", (unsigned long)error);
+        compat_log(line);
+    }
+    NATIVE_FORWARD_VOID("RoFailFastWithErrorContext", (HRESULT), (error));
+#endif

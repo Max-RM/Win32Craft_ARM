@@ -1,0 +1,1 @@
+    protected_size = last_rva - first_rva + sizeof(void *);

@@ -1,0 +1,11 @@
+    if (!VirtualProtect(slot, sizeof(*slot), PAGE_READWRITE, &old_protection)) {
+        log_line("VirtualProtect activation IAT failed");
+        return FALSE;
+    }
+    original_activation = *slot;
+    *slot = win32_get_activation_factory;
+    VirtualProtect(slot, sizeof(*slot), old_protection, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), slot, sizeof(*slot));
+    log_line("WinRT Package/ApplicationData redirect installed");
+    return TRUE;
+}

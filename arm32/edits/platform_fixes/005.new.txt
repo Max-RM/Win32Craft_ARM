@@ -1,0 +1,36 @@
+#ifdef WIN32CRAFT_ARM32
+/* ARM32 AppPlatform_Winrt::pickFile replacement (facts platform_fixes.pick_file_fn): plain AAPCS
+ * void pickFile(AppPlatform_Winrt *this /r0/, Callback *cb /r1/), reached only through vtable slot 35.
+ * The original stores cb at (this+0x3B4)->+0xA8 and queues a WinRT FileOpenPicker lambda that later calls
+ * cb->vtable[2](cb); keep the observable state, then run the synchronous Win32 dialog (which invokes the callback). */
+static void win32_pick_custom_skin_128(void *platform, void *callback)
+{
+    void *adapter = NULL;
+    char line[160];
+
+    if (platform &&
+        !IsBadReadPtr((BYTE *)platform + ARM_PLATFORM_FIXES_PLATFORM_ADAPTER_OFFSET, sizeof(void *))) {
+        adapter = *(void **)((BYTE *)platform + ARM_PLATFORM_FIXES_PLATFORM_ADAPTER_OFFSET);
+    }
+    if (adapter &&
+        !IsBadReadPtr((BYTE *)adapter + ARM_PLATFORM_FIXES_ADAPTER_CALLBACK_OFFSET, sizeof(void *))) {
+        *(void **)((BYTE *)adapter + ARM_PLATFORM_FIXES_ADAPTER_CALLBACK_OFFSET) = callback;
+    }
+    wsprintfA(line, "ARM32 pickFile hook called: platform=%p adapter=%p callback=%p", platform, adapter, callback);
+    log_line(line);
+    win32_pick_custom_skin(NULL, callback);
+}
+#else
+static void __attribute__((thiscall)) win32_pick_custom_skin_128(
+    void *platform, void *callback)
+{
+    void *adapter = NULL;
+    if (platform && !IsBadReadPtr((BYTE *)platform + 0x3b4, sizeof(void *))) {
+        adapter = *(void **)((BYTE *)platform + 0x3b4);
+    }
+    if (adapter && !IsBadReadPtr((BYTE *)adapter + 0xa8, sizeof(void *))) {
+        *(void **)((BYTE *)adapter + 0xa8) = callback;
+    }
+    win32_pick_custom_skin(NULL, callback);
+}
+#endif /* WIN32CRAFT_ARM32 */

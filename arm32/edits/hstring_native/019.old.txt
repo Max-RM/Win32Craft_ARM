@@ -1,0 +1,3 @@
+HRESULT WINAPI RoGetParameterizedTypeInstanceIID(
+    UINT32 count, const WCHAR **names, const void *locator, GUID *iid, void **extra)
+{

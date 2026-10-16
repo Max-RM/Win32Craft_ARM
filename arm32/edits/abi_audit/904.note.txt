@@ -1,0 +1,1 @@
+ARM32 reviewer fix (1/3): correct argument lists for ICurrentApp slots 9/10/13 (the ARM exe calls slot 9 with a bool in r1).

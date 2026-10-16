@@ -1,0 +1,3 @@
+#ifndef WIN32CRAFT_ARM32
+/*
+ * The 1.1.5 AppMainXaml helper puts its first two arguments in ECX/EDX,

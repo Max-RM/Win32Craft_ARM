@@ -1,0 +1,8 @@
+    if (lstrcmpW(class_name, L"Windows.UI.ViewManagement.InputPane") == 0) {
+        *result = &arm32_input_pane_factory;
+        fake_add_ref(&arm32_input_pane_factory);
+        log_line("ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)");
+        return TRUE;
+    }
+    if (lstrcmpW(class_name, L"Windows.UI.ViewManagement.ApplicationView") == 0 &&
+        memcmp(iid, &application_view_statics3_iid, sizeof(GUID)) == 0) {

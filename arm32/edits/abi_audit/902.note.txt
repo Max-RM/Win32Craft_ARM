@@ -1,0 +1,1 @@
+ARM32 reviewer fix: fake Windows.UI.ViewManagement.InputPane (the AppPlatform_Winrt ctor posts a TryHide lambda that runs on the first dispatcher drain; the real InputPane::GetForCurrentView throws on a plain HWND thread).

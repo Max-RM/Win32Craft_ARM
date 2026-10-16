@@ -1,0 +1,2 @@
+static BOOL plausible_client_instance_128(BYTE *client, void *vtable)
+{

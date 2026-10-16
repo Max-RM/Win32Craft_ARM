@@ -1,0 +1,404 @@
+#ifdef WIN32CRAFT_ARM32
+/* ======================================================================================================
+ * ARM32 gfx_bootstrap (unit gfx_bootstrap).  Facts: gfx_device.*, fl91.* (sections 1, 3, 5, 6), gfx_compat (present/scissor).
+ * Contents: host-created swap chain helpers, FL9_x size clamp, owner+0x94/+0x98 mirroring, per-frame target binding,
+ * Present (vtable slot 8) and Present1 (slot 22) hooks with the DEVICE_REMOVED/RESET policy.
+ * Helpers other units may call (all defined before initialize_game_d3d / resize_game_window):
+ *   arm32_gfx_mirror_client_size(w, h)      keep owner+0x94/+0x98 (and the renderer's embedded display w/h) equal to the size
+ *                                           that is written to platform+0x330/+0x334
+ *   arm32_gfx_get_backbuffer_size(&w, &h)   size of the swap-chain buffers actually created (clamped for FL9_x)
+ *   arm32_gfx_bind_frame_targets()          per-frame RSSetViewports + OMSetRenderTargets from the renderer's live views
+ *   arm32_gfx_device_is_lost()              TRUE once the game's Present reported DEVICE_REMOVED/RESET
+ * ====================================================================================================== */
+#define ARM32_GFX_PRESENT_ALLOW_TEARING    0x00000200U
+#define ARM32_GFX_HR_DEVICE_REMOVED        ((HRESULT)0x887A0005L)
+#define ARM32_GFX_HR_DEVICE_HUNG           ((HRESULT)0x887A0006L)
+#define ARM32_GFX_HR_DEVICE_RESET          ((HRESULT)0x887A0007L)
+#define ARM32_GFX_OWNER_CACHED_WIDTH       0x94u   /* facts gfx_device.owner_other_fields: int, copied to platform+0x330 by vf143 */
+#define ARM32_GFX_OWNER_CACHED_HEIGHT      0x98u   /* int, copied to platform+0x334 */
+#define ARM32_GFX_RENDERER_DISPLAY_WIDTH   0xe8u   /* embedded display descriptor (renderer+0xe8): u32 width */
+#define ARM32_GFX_RENDERER_DISPLAY_HEIGHT  0xecu   /* u32 height */
+#define ARM32_GFX_FALLBACK_WIDTH           1280u
+#define ARM32_GFX_FALLBACK_HEIGHT          720u
+
+/* Plain AAPCS prototypes of the game functions (facts gfx_device.calling_convention); callers add the Thumb bit via ARM_CODE */
+typedef void *(*Arm32GfxOperatorNewFn)(size_t);
+typedef void *(*Arm32GfxOwnerCtorFn)(void *owner);
+typedef void (*Arm32GfxInitDeviceFn)(void *owner, void *renderer);
+typedef void (*Arm32GfxInitTargetsFn)(void *owner, const void *display, void *renderer);
+typedef void (*Arm32GfxReleaseTargetsFn)(void *renderer);
+typedef HRESULT (STDMETHODCALLTYPE *Arm32GfxPresent1Fn)(IDXGISwapChain *, UINT, UINT, const void *);
+
+/* facts gfx_device.display_descriptor: identical to the x86 host struct (sizeof 0x20, stereo @0x19 must stay 0) */
+typedef struct Arm32GfxDisplay {
+    UINT width;
+    UINT height;
+    BYTE reserved_08[0x11];
+    BYTE stereo;
+    BYTE reserved_1a[2];
+    IDXGISwapChain *swap_chain;
+} Arm32GfxDisplay;
+typedef char arm32_gfx_display_layout_check[
+    (sizeof(Arm32GfxDisplay) == 0x20 &&
+     __builtin_offsetof(Arm32GfxDisplay, stereo) == 0x19 &&
+     __builtin_offsetof(Arm32GfxDisplay, swap_chain) == 0x1c) ? 1 : -1];
+
+/* D3D11_TEXTURE2D_DESC (only used by the failure diagnostics) */
+typedef struct Arm32GfxTex2DDesc {
+    UINT Width, Height, MipLevels, ArraySize, Format;
+    UINT SampleCount, SampleQuality;
+    UINT Usage, BindFlags, CPUAccessFlags, MiscFlags;
+} Arm32GfxTex2DDesc;
+
+/* IID_IDXGISwapChain1 {790a45f7-0d42-4876-983a-0a55cfe6f4aa} */
+static const GUID arm32_gfx_iid_swap_chain1 = {
+    0x790a45f7U, 0x0d42, 0x4876, {0x98, 0x3a, 0x0a, 0x55, 0xcf, 0xe6, 0xf4, 0xaa}
+};
+
+static Arm32GfxPresent1Fn arm32_original_present1;
+static volatile LONG arm32_gfx_device_lost;
+static UINT arm32_gfx_width;             /* size of the swap-chain buffers / render targets actually created */
+static UINT arm32_gfx_height;
+static UINT arm32_gfx_texture_limit = 2048u; /* FL9_1 until InitDevice reports the real level */
+static BOOL arm32_gfx_resizing;
+static BOOL arm32_gfx_scissor_installed;
+
+static BYTE *arm32_gfx_image(void)
+{
+    return game_image ? game_image : (BYTE *)GetModuleHandleW(NULL);
+}
+
+/* Largest texture / render-target dimension of a D3D feature level (fl91 sections 3 and 6: 2048 on 9_1/9_2, 4096 on 9_3) */
+static UINT arm32_gfx_texture_limit_for_level(UINT feature_level)
+{
+    if (feature_level >= 0xB000u) return 16384u;
+    if (feature_level >= 0xA000u) return 8192u;
+    if (feature_level >= 0x9300u) return 4096u;
+    return 2048u;
+}
+
+/* Keep the aspect ratio when a requested backbuffer exceeds the limit (float math: no 32-bit divide helper on Cortex-A9) */
+static void arm32_gfx_clamp_size(UINT *width, UINT *height, const char *who)
+{
+    UINT w = *width;
+    UINT h = *height;
+    UINT limit = arm32_gfx_texture_limit;
+    UINT larger;
+    float scale;
+    char line[192];
+
+    if (w <= limit && h <= limit) return;
+    larger = w > h ? w : h;
+    scale = (float)limit / (float)larger;
+    w = (UINT)((float)w * scale + 0.5f);
+    h = (UINT)((float)h * scale + 0.5f);
+    if (w < 1u) w = 1u;
+    if (h < 1u) h = 1u;
+    if (w > limit) w = limit;
+    if (h > limit) h = limit;
+    wsprintfA(line, "%s: requested %ux%u exceeds the %u px texture limit of this feature level; clamped to %ux%u",
+              who, *width, *height, limit, w, h);
+    log_line(line);
+    *width = w;
+    *height = h;
+}
+
+/* audit.json gap: AppPlatform_Winrt::vf143 (device re-init) copies owner+0x94/+0x98 back into platform+0x330/+0x334, so they
+ * must equal the size the host writes there.  The renderer's embedded display descriptor (renderer+0xe8/+0xec) is what the
+ * game itself updates after every swap-chain resize, so keep it in step too. */
+static void arm32_gfx_mirror_client_size(int width, int height)
+{
+    BYTE *owner = (BYTE *)game_resource_owner;
+    BYTE *renderer = (BYTE *)game_renderer;
+
+    if (owner) {
+        *(int *)(owner + ARM32_GFX_OWNER_CACHED_WIDTH) = width;
+        *(int *)(owner + ARM32_GFX_OWNER_CACHED_HEIGHT) = height;
+    }
+    if (renderer) {
+        *(UINT *)(renderer + ARM32_GFX_RENDERER_DISPLAY_WIDTH) = (UINT)width;
+        *(UINT *)(renderer + ARM32_GFX_RENDERER_DISPLAY_HEIGHT) = (UINT)height;
+    }
+}
+
+static void arm32_gfx_get_backbuffer_size(UINT *width, UINT *height)
+{
+    if (width) *width = arm32_gfx_width;
+    if (height) *height = arm32_gfx_height;
+}
+
+static BOOL arm32_gfx_device_is_lost(void)
+{
+    return arm32_gfx_device_lost != 0;
+}
+
+/* Device removed/reset policy (audit.json "present result handling", facts gfx_device.present_path): the game maps these
+ * HRESULTs to GameOwner::releaseDevice, which Releases the owner device (+0xc0) and the renderer swap chain (+0x104) that
+ * the host created and keeps using.  The host cannot rebuild the HWND swap chain behind the game's back, so: log the
+ * reason once, tell the game S_OK (it never sees the error), stop touching the dead device and close the window for a
+ * clean exit instead of letting the game tear down host-owned objects. */
+static void arm32_gfx_note_device_lost(HRESULT result, const char *where)
+{
+    char line[256];
+    HRESULT reason = S_OK;
+    UINT feature_level = 0;
+    BYTE *owner = (BYTE *)game_resource_owner;
+    ID3D11Device *device = owner
+        ? *(ID3D11Device **)(owner + ARM_GFX_DEVICE_OWNER_DEVICE_OFFSET) : NULL;
+
+    if (InterlockedExchange(&arm32_gfx_device_lost, 1)) return;
+    if (device && !IsBadReadPtr(device, sizeof(void *)) &&
+        device->lpVtbl && !IsBadReadPtr(device->lpVtbl, 40 * sizeof(void *))) {
+        /* ID3D11Device vtable: GetFeatureLevel = 37, GetDeviceRemovedReason = 39 */
+        feature_level = COMCALL(device, 37, UINT, STDMETHODCALLTYPE)(device);
+        reason = COMCALL(device, 39, HRESULT, STDMETHODCALLTYPE)(device);
+    }
+    wsprintfA(line, "%s returned HRESULT 0x%08lX (device removed/reset); GetDeviceRemovedReason=0x%08lX feature level=0x%04X",
+              where, (unsigned long)result, (unsigned long)reason, feature_level);
+    log_line(line);
+    log_line("gfx: GPU device lost; reporting S_OK to the game so GameOwner::releaseDevice does not free host-owned objects; closing the window");
+    if (game_window) PostMessageW(game_window, WM_CLOSE, 0, 0);
+}
+
+/* Per-frame binding used instead of the x86 inline code in render_game_target_128 (reads the renderer's LIVE views so a
+ * game-side target recreation cannot leave the host bound to stale views; viewport = real swap-chain buffer size). */
+static BOOL arm32_gfx_bind_frame_targets(void)
+{
+    static unsigned target_change_logs;
+    BYTE *renderer = (BYTE *)game_renderer;
+    ID3D11RenderTargetView *rtv;
+    ID3D11DepthStencilView *dsv;
+    D3D11_VIEWPORT viewport;
+    RECT client;
+    UINT width = arm32_gfx_width;
+    UINT height = arm32_gfx_height;
+
+    if (!renderer || !game_context || arm32_gfx_device_lost) return FALSE;
+    rtv = *(ID3D11RenderTargetView **)(renderer + ARM_GFX_DEVICE_RENDERER_RTV);
+    dsv = *(ID3D11DepthStencilView **)(renderer + ARM_GFX_DEVICE_RENDERER_DSV);
+    if (!rtv) return FALSE;
+    if (rtv != game_target) {
+        ID3D11RenderTargetView *old = game_target;
+        if (target_change_logs < 8) {
+            char line[160];
+            ++target_change_logs;
+            wsprintfA(line, "gfx: renderer render-target view changed %p -> %p (dsv %p)", (void *)old, (void *)rtv, (void *)dsv);
+            log_line(line);
+        }
+        ID3D11RenderTargetView_AddRef(rtv);
+        game_target = rtv;
+        if (old) ID3D11RenderTargetView_Release(old);
+    }
+    if ((!width || !height) && game_window && GetClientRect(game_window, &client)) {
+        width = (UINT)(client.right - client.left);
+        height = (UINT)(client.bottom - client.top);
+    }
+    ZeroMemory(&viewport, sizeof(viewport));
+    viewport.Width = (float)width;
+    viewport.Height = (float)height;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+    ID3D11DeviceContext_RSSetViewports(game_context, 1, &viewport);
+    ID3D11DeviceContext_OMSetRenderTargets(game_context, 1, &game_target, dsv);
+    return TRUE;
+}
+
+/* Failure diagnostics for InitTargets (it only logs HRESULTs through the game's own log, which the user does not have) */
+static void arm32_gfx_diagnose_targets(ID3D11Device *device, IDXGISwapChain *swap_chain, UINT width, UINT height)
+{
+    ID3D11Texture2D *backbuffer = NULL;
+    ID3D11RenderTargetView *view = NULL;
+    ID3D11Texture2D *depth = NULL;
+    Arm32GfxTex2DDesc desc;
+    HRESULT result;
+
+    if (!device || !swap_chain) return;
+    result = IDXGISwapChain_GetBuffer(swap_chain, 0, &IID_ID3D11Texture2D, (void **)&backbuffer);
+    log_hresult("diag IDXGISwapChain::GetBuffer(0, ID3D11Texture2D)", result);
+    if (SUCCEEDED(result) && backbuffer) {
+        result = ID3D11Device_CreateRenderTargetView(device, backbuffer, NULL, &view);
+        log_hresult("diag ID3D11Device::CreateRenderTargetView(backbuffer)", result);
+        if (view) ID3D11RenderTargetView_Release(view);
+        ID3D11Texture2D_Release(backbuffer);
+    }
+    ZeroMemory(&desc, sizeof(desc));
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = 0x2d; /* DXGI_FORMAT_D24_UNORM_S8_UINT, the only depth format valid on FL9_1 besides D16 */
+    desc.SampleCount = 1;
+    desc.BindFlags = 0x40; /* D3D11_BIND_DEPTH_STENCIL */
+    result = COMCALL(device, 5, HRESULT, STDMETHODCALLTYPE, const void *, const void *, ID3D11Texture2D **)(
+        device, &desc, NULL, &depth);
+    log_hresult("diag ID3D11Device::CreateTexture2D(D24S8 depth)", result);
+    if (depth) ID3D11Texture2D_Release(depth);
+}
+
+/* Runs the game's InitTargets (RTV renderer+0x118, DSV +0x120, back buffer +0x124 from GetBuffer; the depth texture is
+ * transient) for the current swap chain and takes the host's own reference on the RTV (same as the x86 host). */
+static BOOL arm32_gfx_recreate_targets(UINT width, UINT height, const char *why)
+{
+    Arm32GfxInitTargetsFn init_targets =
+        (Arm32GfxInitTargetsFn)ARM_CODE(arm32_gfx_image(), ARM_GFX_DEVICE_INIT_TARGETS);
+    BYTE *renderer = (BYTE *)game_renderer;
+    Arm32GfxDisplay display;
+    ID3D11RenderTargetView *rtv;
+    void *dsv;
+    void *backbuffer;
+    char line[200];
+
+    if (!renderer || !game_resource_owner || !game_swap_chain) return FALSE;
+    if (game_target) {
+        ID3D11RenderTargetView_Release(game_target);
+        game_target = NULL;
+    }
+    ZeroMemory(&display, sizeof(display)); /* stereo (+0x19) stays 0: stereo needs Texture2DArray views (invalid on FL9_x) */
+    display.width = width;
+    display.height = height;
+    display.swap_chain = game_swap_chain;
+    wsprintfA(line, "gfx: calling game InitTargets (%s) %ux%u", why, width, height);
+    log_line(line);
+    init_targets(game_resource_owner, &display, game_renderer);
+    rtv = *(ID3D11RenderTargetView **)(renderer + ARM_GFX_DEVICE_RENDERER_RTV);
+    dsv = *(void **)(renderer + ARM_GFX_DEVICE_RENDERER_DSV);
+    backbuffer = *(void **)(renderer + ARM_GFX_DEVICE_RENDERER_BACKBUFFER);
+    log_pointer("game render target (+0x118)", rtv);
+    log_pointer("game depth target (+0x120)", dsv);
+    log_pointer("game backbuffer texture (+0x124)", backbuffer);
+    if (!rtv || !dsv || !backbuffer) {
+        log_line("gfx: InitTargets did not produce a complete render target set");
+        arm32_gfx_diagnose_targets(*(ID3D11Device **)((BYTE *)game_resource_owner + ARM_GFX_DEVICE_OWNER_DEVICE_OFFSET),
+                                   game_swap_chain, width, height);
+        return FALSE;
+    }
+    ID3D11RenderTargetView_AddRef(rtv);
+    game_target = rtv;
+    arm32_gfx_width = width;
+    arm32_gfx_height = height;
+    arm32_gfx_mirror_client_size((int)width, (int)height);
+    return TRUE;
+}
+
+/* One Present/Present1 policy for both hooks: synchronized presentation (Win32CraftPresentSyncInterval), no DO_NOT_WAIT,
+ * ALLOW_TEARING masked (the host swap chain is created without DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING and owner+0x90 stays 0),
+ * successful presents counted for render_game_target_128's fallback, DEVICE_REMOVED/RESET never forwarded to the game. */
+static HRESULT arm32_gfx_present_common(
+    IDXGISwapChain *swap_chain, UINT slot, UINT flags, const void *parameters)
+{
+    static unsigned present_count;
+    static unsigned busy_drop_count;
+    static unsigned failure_log_count;
+    UINT actual_sync = Win32CraftPresentSyncInterval();
+    UINT actual_flags = flags & ~(DXGI_PRESENT_DO_NOT_WAIT | ARM32_GFX_PRESENT_ALLOW_TEARING);
+    HRESULT result;
+
+    ++present_count;
+    if (present_count == 1) {
+        char line[192];
+        wsprintfA(line, "game Present(slot %u) %u begin swap=%p sync=%u flags=0x%X (requested flags 0x%X)",
+                  slot, present_count, swap_chain, actual_sync, actual_flags, flags);
+        log_line(line);
+    }
+    if (arm32_gfx_device_lost) {
+        InterlockedIncrement((LONG *)&game_present_success_count);
+        return S_OK;
+    }
+    if (slot == 22) {
+        result = arm32_original_present1
+            ? arm32_original_present1(swap_chain, actual_sync, actual_flags, parameters) : E_FAIL;
+    } else {
+        result = original_swap_chain_present
+            ? original_swap_chain_present(swap_chain, actual_sync, actual_flags) : E_FAIL;
+    }
+    if (result == ARM32_GFX_HR_DEVICE_REMOVED || result == ARM32_GFX_HR_DEVICE_RESET) {
+        arm32_gfx_note_device_lost(result, slot == 22 ? "game Present1" : "game Present");
+        InterlockedIncrement((LONG *)&game_present_success_count);
+        return S_OK;
+    }
+    if (result == DXGI_ERROR_WAS_STILL_DRAWING) {
+        ++busy_drop_count;
+        InterlockedIncrement((LONG *)&game_present_success_count);
+        if (busy_drop_count == 1) log_line("VSync Present unexpectedly reported compositor busy");
+        return S_OK;
+    }
+    if (SUCCEEDED(result)) {
+        InterlockedIncrement((LONG *)&game_present_success_count);
+    } else if (failure_log_count < 16) {
+        ++failure_log_count;
+        log_hresult(result == ARM32_GFX_HR_DEVICE_HUNG ? "game Present failed (DEVICE_HUNG, forwarded)"
+                                                       : "game Present failed (forwarded)", result);
+    }
+    if (present_count == 1) {
+        char line[96];
+        wsprintfA(line, "game Present %u end: HRESULT 0x%08lX", present_count, (unsigned long)result);
+        log_line(line);
+    }
+    return result;
+}
+
+static HRESULT STDMETHODCALLTYPE win32_present(
+    IDXGISwapChain *swap_chain, UINT sync_interval, UINT flags)
+{
+    (void)sync_interval; /* overridden by Win32CraftPresentSyncInterval */
+    return arm32_gfx_present_common(swap_chain, 8, flags, NULL);
+}
+
+static HRESULT STDMETHODCALLTYPE win32_present1(
+    IDXGISwapChain *swap_chain, UINT sync_interval, UINT flags, const void *parameters)
+{
+    (void)sync_interval;
+    return arm32_gfx_present_common(swap_chain, 22, flags, parameters);
+}
+
+/* Hooks IDXGISwapChain::Present (slot 8, the game's default path) and, when the object is an IDXGISwapChain1 with the same
+ * pointer, IDXGISwapChain1::Present1 (slot 22, used when [g_displaySettings+0x30] != 1).  The stored function pointers are
+ * Thumb pointers (the compiler sets bit 0 on &function); the vtable is data, so PAGE_READWRITE (arm32_patch_cell). */
+static BOOL install_swap_chain_present_hook(IDXGISwapChain *swap_chain)
+{
+    void **vtable;
+    void *original = NULL;
+    IDXGISwapChain *swap_chain1 = NULL;
+    HRESULT result;
+    BOOL present_ok;
+
+    if (!swap_chain || !swap_chain->lpVtbl) return FALSE;
+    vtable = swap_chain->lpVtbl;
+    if (vtable[8] == (void *)win32_present) {
+        present_ok = TRUE;
+    } else {
+        present_ok = arm32_patch_cell(&vtable[8], NULL, (void *)win32_present, &original,
+                                      "IDXGISwapChain::Present (vtable slot 8)");
+        if (present_ok) original_swap_chain_present = (SwapChainPresentFn)original;
+    }
+    if (!present_ok) {
+        log_line("swap-chain Present vtable hook failed");
+        return FALSE;
+    }
+    result = ID3D11Device_QueryInterface(swap_chain, &arm32_gfx_iid_swap_chain1, &swap_chain1);
+    if (SUCCEEDED(result) && swap_chain1) {
+        if (swap_chain1 == swap_chain) {
+            if (vtable[22] == (void *)win32_present1) {
+                /* already hooked */
+            } else {
+                original = NULL;
+                if (arm32_patch_cell(&vtable[22], NULL, (void *)win32_present1, &original,
+                                     "IDXGISwapChain1::Present1 (vtable slot 22)")) {
+                    arm32_original_present1 = (Arm32GfxPresent1Fn)original;
+                } else {
+                    log_line("swap-chain Present1 vtable hook failed (Present hook is active)");
+                }
+            }
+        } else {
+            log_pointer("IDXGISwapChain1 interface pointer differs from the swap chain; Present1 not hooked", swap_chain1);
+        }
+        IDXGISwapChain_Release(swap_chain1);
+    } else {
+        log_hresult("swap chain QueryInterface(IDXGISwapChain1) failed; only Present is hooked", result);
+    }
+    log_line("gfx: swap-chain Present/Present1 hooks active");
+    return TRUE;
+}
+#else /* !WIN32CRAFT_ARM32 */
+static HRESULT STDMETHODCALLTYPE win32_present(
+    IDXGISwapChain *swap_chain, UINT sync_interval, UINT flags)

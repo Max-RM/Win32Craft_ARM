@@ -1,0 +1,1 @@
+ARM stubs for the symbols that win32_host_116.inl would define but shared tables still reference.

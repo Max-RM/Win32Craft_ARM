@@ -1,0 +1,1 @@
+reviewer: idempotent IAT hook - never store the hook itself as the original (infinite recursion on a second install_arm32_iat_hooks / install_* call).

@@ -1,0 +1,6 @@
+    if (!game_app_main || !image || !GetClientRect(window, &client) ||
+        IsBadReadPtr(game_app_main, ARM32_AM_SIZE)) return FALSE;
+    platform = *(void **)((BYTE *)game_app_main + ARM32_AM_PLATFORM_OFFSET);
+    game = *(void **)((BYTE *)game_app_main + ARM32_AM_GAME_OFFSET);
+    if (!platform || !game || IsBadReadPtr(game, sizeof(void *)) ||
+        IsBadReadPtr(platform, ARM32_AM_PLATFORM_PROBE)) return FALSE;

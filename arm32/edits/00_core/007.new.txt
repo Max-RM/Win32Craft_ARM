@@ -1,0 +1,6 @@
+    if (host_is_115 || host_is_116) dump_115_stdio_state();
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
+static void install_crash_trace(void)

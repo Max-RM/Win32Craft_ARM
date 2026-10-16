@@ -1,0 +1,1 @@
+ARM32 host options (--feature-level / WIN32CRAFT_FEATURE_LEVEL, default 9_1) and the shared IAT helpers (live import-table lookup by name, hook helper, address describer); x86 original kept under #else.

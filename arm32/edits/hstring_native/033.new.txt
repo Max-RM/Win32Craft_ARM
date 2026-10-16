@@ -1,0 +1,4 @@
+HRESULT WINAPI RoSetErrorReportingFlags(UINT32 flags) {
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "RoSetErrorReportingFlags", (UINT32), (flags));
+#endif

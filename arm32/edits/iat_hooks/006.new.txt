@@ -1,0 +1,320 @@
+#ifdef WIN32CRAFT_ARM32
+/* ======================================================================================================
+ * ARM32 (unit iat_hooks): _CxxThrowException trace, D3DCompile/D3DPreprocess loggers, D3D11CreateDevice hook.
+ * All hook functions are plain AAPCS C functions (WINAPI is empty on ARM); the values written into the IAT cells are
+ * Thumb function pointers (bit 0 set), the originals are read back from the cells with their bit 0.
+ * ====================================================================================================== */
+
+/* The ThrowInfo of the ARM MSVC runtime holds image-relative offsets (verified on the ARM exe: ThrowInfo+12 =
+ * CatchableTypeArray rva {count, CatchableType rva[]}, CatchableType+4 = type_info rva, type_info+8 = decorated name),
+ * so the exception type can be named without touching the runtime. */
+static void arm32_iat_throw_type_name(const void *throw_info, char *out, SIZE_T out_size)
+{
+    ULONG_PTR base;
+    ULONG_PTR size;
+    const BYTE *info = (const BYTE *)throw_info;
+    DWORD array_rva;
+    DWORD catchable_rva;
+    DWORD descriptor_rva;
+    DWORD ignored;
+    LONG count;
+
+    out[0] = 0;
+    arm32_game_image_range(&base, &size);
+    if (!arm32_in_image((ULONG_PTR)info, base, size, &ignored) || IsBadReadPtr(info, 16)) return;
+    array_rva = *(const DWORD *)(info + 12);
+    if (!array_rva || array_rva >= size || IsBadReadPtr((const void *)(base + array_rva), 8)) return;
+    count = *(const LONG *)(base + array_rva);
+    if (count <= 0 || count > 64) return;
+    catchable_rva = *(const DWORD *)(base + array_rva + 4);
+    if (!catchable_rva || catchable_rva >= size || IsBadReadPtr((const void *)(base + catchable_rva), 8)) return;
+    descriptor_rva = *(const DWORD *)(base + catchable_rva + 4);
+    if (!descriptor_rva || descriptor_rva >= size) return;
+    arm32_iat_copy_ascii(out, out_size, (const char *)(base + descriptor_rva + 8));
+}
+
+static void __attribute__((noinline)) arm32_iat_log_cxx_throw(void *exception, const void *throw_info)
+{
+    static volatile LONG throw_count;
+    void *frames[24];
+    char type_name[96];
+    char where[40];
+    char line[256];
+    ULONG_PTR base;
+    ULONG_PTR size;
+    USHORT count;
+    USHORT index;
+    LONG number = InterlockedIncrement(&throw_count);
+
+    if (number > 64 && (number % 64) != 0) return;
+    arm32_iat_throw_type_name(throw_info, type_name, sizeof(type_name));
+    wsprintfA(line, "game raised C++ exception #%ld: type=%s object=%p throw_info=%p%s", (long)number,
+              type_name[0] ? type_name : "?", exception, throw_info,
+              number > 64 ? " (further stacks suppressed)" : "; stack follows");
+    log_line(line);
+    if (number > 64) return;
+    arm32_game_image_range(&base, &size);
+    count = RtlCaptureStackBackTrace(0, 24, frames, NULL);
+    for (index = 0; index < count; ++index) {
+        arm32_rva_text(where, sizeof(where), (ULONG_PTR)frames[index], base, size);
+        wsprintfA(line, "  frame %u: %p%s", (unsigned)index, frames[index], where);
+        log_line(line);
+    }
+}
+
+/* The real call must stay a tail call: no host frame may sit between the throwing game function and
+ * _CxxThrowException while the C++ runtime unwinds (checked in the disassembly: the last instruction is a bx). */
+static void win32_cxx_throw(void *exception, const void *throw_info)
+{
+    arm32_iat_log_cxx_throw(exception, throw_info);
+    original_cxx_throw(exception, throw_info);
+}
+
+static BOOL install_exception_trace(BYTE *image, SIZE_T cxx_throw_rva)
+{
+    if (!arm32_iat_hook_import(image, FALSE, "_CxxThrowException", (DWORD)cxx_throw_rva, (void *)win32_cxx_throw,
+                           (void **)&original_cxx_throw, "_CxxThrowException")) {
+        log_line("ARM32: C++ exception trace NOT installed");
+        return FALSE;
+    }
+    log_line("ARM32: C++ exception trace installed");
+    return TRUE;
+}
+
+/* ---- D3DCompile / D3DPreprocess: pass-through with failure logging (facts gfx_compat, fl91) ---- */
+
+typedef HRESULT (*GameD3DPreprocessFn)(
+    LPCVOID, SIZE_T, LPCSTR, const D3D_SHADER_MACRO *, ID3DInclude *, ID3DBlob **, ID3DBlob **);
+static GameD3DPreprocessFn original_d3d_preprocess;
+
+/* log a compiler message blob line by line (HLSL errors are multi-line) */
+static void arm32_iat_log_blob_text(const char *label, ID3DBlob *blob)
+{
+    const char *text;
+    SIZE_T size;
+    SIZE_T offset = 0;
+    char line[440];
+
+    if (!blob) return;
+    text = (const char *)ID3D10Blob_GetBufferPointer(blob);
+    size = ID3D10Blob_GetBufferSize(blob);
+    if (!text || !size || IsBadReadPtr(text, size)) return;
+    if (size > 6000) size = 6000;
+    while (offset < size) {
+        SIZE_T length = 0;
+        SIZE_T prefix = (SIZE_T)wsprintfA(line, "  %s: ", label);
+        while (offset + length < size && length < 380 && text[offset + length] != '\n' && text[offset + length] != 0)
+            ++length;
+        if (length) {
+            SIZE_T index;
+            for (index = 0; index < length; ++index) {
+                char value = text[offset + index];
+                line[prefix + index] = (value == '\r' || value == '\t') ? ' ' : value;
+            }
+            line[prefix + length] = 0;
+            log_line(line);
+        }
+        offset += length;
+        if (offset < size && text[offset] == 0) break;
+        if (offset < size && text[offset] == '\n') ++offset;
+    }
+}
+
+/* "NAME=VALUE NAME=VALUE" of a D3D_SHADER_MACRO array (the game passes only VERSION=<feature level>) */
+static void arm32_iat_format_macros(char *out, SIZE_T out_size, const D3D_SHADER_MACRO *defines)
+{
+    SIZE_T used = 0;
+    UINT index;
+
+    out[0] = 0;
+    if (!defines) {
+        wsprintfA(out, "(none)");
+        return;
+    }
+    for (index = 0; index < 8 && used + 48 < out_size; ++index) {
+        if (IsBadReadPtr(defines + index, sizeof(*defines)) || !defines[index].Name) break;
+        used += (SIZE_T)wsprintfA(out + used, "%.20s=%.20s ", defines[index].Name,
+                                  defines[index].Definition ? defines[index].Definition : "");
+    }
+}
+
+static HRESULT win32_d3d_compile(
+    LPCVOID source, SIZE_T source_size, LPCSTR source_name,
+    const D3D_SHADER_MACRO *defines, ID3DInclude *include_handler,
+    LPCSTR entry_point, LPCSTR target, UINT flags1, UINT flags2,
+    ID3DBlob **code, ID3DBlob **errors)
+{
+    static volatile LONG compile_count;
+    static volatile LONG failure_count;
+    static volatile LONG warning_count;
+    HRESULT result;
+    LONG number;
+    char macros[128];
+    char line[480];
+
+    /* include_handler (the game's HeaderInclude) and every other argument are forwarded unchanged */
+    result = original_d3d_compile(
+        source, source_size, source_name, defines, include_handler,
+        entry_point, target, flags1, flags2, code, errors);
+    number = InterlockedIncrement(&compile_count);
+    if (FAILED(result)) {
+        if (InterlockedIncrement(&failure_count) <= 64) {
+            arm32_iat_format_macros(macros, sizeof(macros), defines);
+            wsprintfA(line,
+                "D3DCompile #%ld FAILED source=%.100s entry=%.20s target=%.40s bytes=%u flags=0x%X/0x%X macros=[%s] include=%p: HRESULT 0x%08lX",
+                (long)number, source_name ? source_name : "<null>", entry_point ? entry_point : "<null>",
+                target ? target : "<null>", (unsigned)source_size, flags1, flags2, macros, (void *)include_handler,
+                (unsigned long)result);
+            log_line(line);
+            if (errors) arm32_iat_log_blob_text("D3DCompile error", *errors);
+        }
+    } else if (number <= 3) {
+        arm32_iat_format_macros(macros, sizeof(macros), defines);
+        wsprintfA(line, "D3DCompile #%ld ok: source=%.100s entry=%.20s target=%.40s bytes=%u macros=[%s]",
+                  (long)number, source_name ? source_name : "<null>", entry_point ? entry_point : "<null>",
+                  target ? target : "<null>", (unsigned)source_size, macros);
+        log_line(line);
+    } else if (errors && *errors && InterlockedIncrement(&warning_count) <= 8) {
+        wsprintfA(line, "D3DCompile #%ld produced compiler messages (target=%.40s):", (long)number,
+                  target ? target : "<null>");
+        log_line(line);
+        arm32_iat_log_blob_text("D3DCompile message", *errors);
+    }
+    return result;
+}
+
+static HRESULT win32_d3d_preprocess(
+    LPCVOID source, SIZE_T source_size, LPCSTR source_name,
+    const D3D_SHADER_MACRO *defines, ID3DInclude *include_handler,
+    ID3DBlob **code_text, ID3DBlob **errors)
+{
+    static volatile LONG failure_count;
+    HRESULT result = original_d3d_preprocess(
+        source, source_size, source_name, defines, include_handler, code_text, errors);
+
+    /* facts gfx_compat verdict: when D3DPreprocess fails the game silently abandons the stage without ever
+     * reaching D3DCompile, so this is the only place where an include/preprocess error becomes visible. */
+    if (FAILED(result) && InterlockedIncrement(&failure_count) <= 64) {
+        char macros[128];
+        char line[400];
+        arm32_iat_format_macros(macros, sizeof(macros), defines);
+        wsprintfA(line,
+            "D3DPreprocess FAILED source=%.100s bytes=%u macros=[%s] include=%p: HRESULT 0x%08lX",
+            source_name ? source_name : "<null>", (unsigned)source_size, macros, (void *)include_handler,
+            (unsigned long)result);
+        log_line(line);
+        if (errors) arm32_iat_log_blob_text("D3DPreprocess error", *errors);
+    }
+    return result;
+}
+
+static BOOL install_d3d_compile_trace(BYTE *image, SIZE_T d3d_compile_rva)
+{
+    if (!arm32_iat_hook_import(image, FALSE, "D3DCompile", (DWORD)d3d_compile_rva, (void *)win32_d3d_compile,
+                           (void **)&original_d3d_compile, "D3DCompile")) {
+        log_line("ARM32: D3DCompile logger NOT installed (the game keeps using the system compiler directly)");
+        return FALSE;
+    }
+    log_line("ARM32: D3DCompile pass-through logger installed");
+    return TRUE;
+}
+
+static BOOL install_d3d_preprocess_trace(BYTE *image, SIZE_T d3d_preprocess_rva)
+{
+    if (!arm32_iat_hook_import(image, FALSE, "D3DPreprocess", (DWORD)d3d_preprocess_rva, (void *)win32_d3d_preprocess,
+                           (void **)&original_d3d_preprocess, "D3DPreprocess")) {
+        log_line("ARM32: D3DPreprocess logger NOT installed");
+        return FALSE;
+    }
+    log_line("ARM32: D3DPreprocess pass-through logger installed");
+    return TRUE;
+}
+
+/* ---- D3D11CreateDevice: BGRA flag + feature-level clamp (facts fl91.hook_force_fl91) ---- */
+
+static void arm32_iat_format_levels(char *out, SIZE_T out_size, const UINT *levels, UINT count)
+{
+    SIZE_T used = 0;
+    UINT index;
+
+    out[0] = 0;
+    if (!levels || !count) {
+        wsprintfA(out, "(runtime default list)");
+        return;
+    }
+    if (IsBadReadPtr(levels, (UINT_PTR)count * sizeof(*levels))) {
+        wsprintfA(out, "(unreadable list %p)", (const void *)levels);
+        return;
+    }
+    for (index = 0; index < count && index < 12 && used + 8 < out_size; ++index)
+        used += (SIZE_T)wsprintfA(out + used, "%04X ", levels[index]);
+}
+
+/* No WARP retry here: the game retries once with D3D_DRIVER_TYPE_WARP itself (InitDevice 0x5BC3EC) and calls this hook
+ * again, so the clamp applies to the retry as well.  No captured device either (the game's own QIs work natively). */
+static HRESULT win32_d3d11_create_device(
+    void *adapter, UINT driver_type, HMODULE software, UINT flags,
+    const UINT *feature_levels, UINT feature_level_count, UINT sdk_version,
+    ID3D11Device **device, UINT *selected_feature_level,
+    ID3D11DeviceContext **immediate_context)
+{
+    static const UINT ladder[] = { 0xb100u, 0xb000u, 0xa100u, 0xa000u, 0x9300u, 0x9200u, 0x9100u };
+    UINT clamped[16];
+    UINT clamped_count = 0;
+    UINT index;
+    UINT adjusted_flags = flags | 0x20U; /* D3D11_CREATE_DEVICE_BGRA_SUPPORT */
+    UINT cap = arm32_feature_level_cap;
+    const UINT *levels = feature_levels;
+    UINT level_count = feature_level_count;
+    HRESULT result;
+    char requested[96];
+    char effective[96];
+    char line[400];
+
+    arm32_iat_format_levels(requested, sizeof(requested), feature_levels, feature_level_count);
+    if (cap) {
+        if (feature_levels && feature_level_count && feature_level_count <= 64 &&
+            !IsBadReadPtr(feature_levels, (UINT_PTR)feature_level_count * sizeof(*feature_levels))) {
+            for (index = 0; index < feature_level_count; ++index) {
+                if (feature_levels[index] <= cap && clamped_count < ARRAYSIZE(clamped))
+                    clamped[clamped_count++] = feature_levels[index];
+            }
+        } else if (!feature_levels || !feature_level_count) {
+            for (index = 0; index < ARRAYSIZE(ladder); ++index) {
+                if (ladder[index] <= cap) clamped[clamped_count++] = ladder[index];
+            }
+        }
+        if (!clamped_count) clamped[clamped_count++] = cap;
+        levels = clamped;
+        level_count = clamped_count;
+    }
+    arm32_iat_format_levels(effective, sizeof(effective), levels, level_count);
+    wsprintfA(line,
+        "D3D11CreateDevice request: adapter=%p driver=%u flags=0x%X sdk=%u levels(%u)=[%s] -> cap=0x%04X flags=0x%X levels(%u)=[%s]",
+        adapter, driver_type, flags, sdk_version, feature_level_count, requested, cap, adjusted_flags,
+        level_count, effective);
+    log_line(line);
+
+    result = original_d3d11_create_device(
+        adapter, driver_type, software, adjusted_flags,
+        levels, level_count, sdk_version,
+        device, selected_feature_level, immediate_context);
+
+    if (SUCCEEDED(result)) {
+        wsprintfA(line,
+            "D3D11CreateDevice driver=%u OK: HRESULT 0x%08lX selected feature level=0x%04X device=%p context=%p",
+            driver_type, (unsigned long)result, selected_feature_level ? *selected_feature_level : 0,
+            device ? (void *)*device : NULL, immediate_context ? (void *)*immediate_context : NULL);
+    } else {
+        wsprintfA(line, "D3D11CreateDevice driver=%u FAILED: HRESULT 0x%08lX%s", driver_type,
+                  (unsigned long)result,
+                  driver_type == 1U ? " (hardware; the game retries once with WARP)"
+                  : (driver_type == 5U ? " (WARP also failed: the game dereferences the null context next)" : ""));
+    }
+    log_line(line);
+    return result;
+}
+#else
+static void WINAPI win32_cxx_throw(void *exception, const void *throw_info)
+{
+    void *frames[24];

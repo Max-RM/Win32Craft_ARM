@@ -1,0 +1,3 @@
+static BYTE *get_hid_controller(void *platform)
+{
+    if (host_is_115 || host_is_128) {

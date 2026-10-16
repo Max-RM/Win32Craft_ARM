@@ -1,0 +1,4 @@
+#endif
+
+UINT Win32CraftPresentSyncInterval(void)
+{

@@ -1,0 +1,138 @@
+{
+ "area": "client_state",
+ "verdicts": [
+  {
+   "id": "client_state.clientinstance_vtable_primary",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced via rtti: 0x133a758 (COL offset 0) / 0x133a778 (COL offset 4); ctor 0x1179ec stores both (str [r0] / [r0,#4]); reloc type 3 (HIGHLOW) exists on the cells so runtime slot = image+0x11a281. Wording nit: the pointer at +0x1c (0x133a774) is the COL of the SECONDARY vtable (0x133a778); the primary's COL is at -4 (0x133a754). 7 slots 0..6 is right (slot 0 deleting dtor, 3 tick fn)."
+  },
+  {
+   "id": "client_state.clientinstance_vtable_secondary",
+   "verdict": "CONFIRMED",
+   "note": "Confirmed independently by COL: *(0x133a774 file ptr) -> COL with offset field = 4. ctor writes 0x173a778 to [this+4] (after first writing SkinInfoFactory vtable 0x173a7c4 there). Final value is 0x133a778. +0x20 relation holds."
+  },
+  {
+   "id": "client_state.clientinstance_size",
+   "verdict": "CONFIRMED",
+   "note": "vf0 0x117c14: 'mov.w r1,#0x378; bl operator_delete_sized' after dtor; make_shared wrapper 0x13c698 does operator_new(0x388) with 0x10-byte _Ref_count_obj header (ctrl vtable 0x173ba48) and passes block+0x10 to ctor. 0x378 is exact sizeof, so IsBadReadPtr(client,0x378) is valid."
+  },
+  {
+   "id": "client_state.clientinstance_off_0x04_vtable2",
+   "verdict": "CONFIRMED",
+   "note": "Confirmed by ctor 0x1179ec @0x117a34 (str r4,[r0,#4], r4=0x173a778) and COL offset 4."
+  },
+  {
+   "id": "client_state.clientinstance_off_0x18_owner",
+   "verdict": "CONFIRMED",
+   "note": "ctor: str r1,[r0,#0x18]. make_shared wrapper 0x13c698 receives (r1,r2)=(r8,r8) from MinecraftGame::vf27 (0x129eb8, r8=this at 0x129ece, call at 0x12ad68) and passes r2+0x10 as ctor r2 (+0x14), r1 unchanged (+0x18) => +0x18 is the complete MinecraftGame* (primary vptr 0x133bacc), +0x14 is the +0x10 subobject. getTopScene/initLevelRenderer/tick all do ldr [this,#0x18]."
+  },
+  {
+   "id": "client_state.clientinstance_off_0x28_levelrenderer",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced: 0x11b974 (called only from InGamePlayScreen::vf1 @0x2de66e) moves LevelRenderer make_unique wrapper 0x120be8 (operator_new(0x13a8) + LevelRenderer::ctor 0x4873ec) result into [this+0x28] and deletes old via vtable[0](obj,1); teardown 0x118b58 does ldr [r4,#0x28]; str 0; deleting-dtor. tick 0x11a280 also reads [r4,#0x28]."
+  },
+  {
+   "id": "client_state.clientinstance_off_0x44_keyboard",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced: ctor adds #0x44 and calls 0x1201b4 (new 0x68, vptr 0x175cfcc, stores into [r5]); teardown 0x118b88 uses [r4,#0x44] vtable slot 10 (+0x28). Extra independent anchor: text-edit controller code 0x1aede8..0x1aeef4 does [[[ctrl+0x290]+0x10]+0x44]->vtable[0x14] (slot 5, isFocused) then acts on the result."
+  },
+  {
+   "id": "client_state.clientinstance_off_0x2c0_scenestack",
+   "verdict": "CONFIRMED",
+   "note": "getTopScene 0x11be24 (ldrd begin,end from [this+0x2c0]), dtor 0x117db8 (SceneStack::dtor 0x34b854 + operator_delete_sized(...,0xc0)), tick 0x11a280 (strb [[this+0x2c0]+0x39]). Extra anchor: InGamePlayScreen::vf1 @0x2de6a2..0x2de6b2 builds the 'hud.hud_screen' scene (0x328cfc) and pushes it (0x34be78) onto [ClientInstance+0x2c0]; so the HUD UIScene lives on the CLIENT-local stack."
+  },
+  {
+   "id": "client_state.render_slot3_function",
+   "verdict": "CONFIRMED",
+   "note": "Function start (pdata) and first 12 bytes 0fb42de9f0490df1140be6f6 reproduced. Frame math redone: push{r0-r3}(16)+push.w 7 regs(28)+sub sp,#0x30 => r0@sp+0x4c, r1@+0x50, r2@+0x54, r3@+0x58; epilogue 'pop.w{r4-r8,fp}; ldr pc,[sp],#0x14' agrees. Only [sp+0x54] and [sp+0x58] are touched (cmp @0x11a3a6-0x11a3aa and lambda captures @0x11a428); nothing at >=0x5c, [sp+0x50] never read. Lambda _Do_call 0x121a78 passes (*cap(+4)=r2, *cap(+8)=r3) to scene->vtable[0x30] (InGamePlayScreen::vf12 0x2df4e0 does cmp r1,r2). Caller of slot 3 NOT found by me either (scanned 0x110000-0x140000 for 3-arg [#0xc] vcalls and all 185 ClientInstance& std::function bodies) - confidence medium is right. Possible explanation for the r1 gap (my hypothesis): x86 'argument1/argument2' are an 8-byte-aligned pair (64-bit or alignas(8) aggregate) which AAPCS puts in r2:r3 with r1 as alignment padding; either way forwarding r0-r3 verbatim is correct."
+  },
+  {
+   "id": "client_state.render_hook_slot",
+   "verdict": "CONFIRMED",
+   "note": "Cell RVA 0x133a764 = 0x133a758+3*4; file value 0x0051a281; base-reloc entry (type 3) present at that RVA so after load value = image+0x11a281. Compare against image+0x11a280+1. Cell is in .data."
+  },
+  {
+   "id": "client_state.render_original_call_abi",
+   "verdict": "CONFIRMED",
+   "note": "Consistent with callee analysis: no stack args read, r1 ignored, r2/r3 consumed. Plain C 4-register call through a Thumb (bit0) pointer is correct. Return type void (r0 not produced)."
+  },
+  {
+   "id": "client_state.levelrenderer_vtable",
+   "verdict": "CONFIRMED",
+   "note": "arm_rva 0x13636c8 confirmed: LevelRenderer::ctor 0x4873ec writes 0x17636c8 to [r5] at 0x487470 (after LevelListener 0x173bd3c) and 0x1763694 to [r5,#4]; COL of 0x13636c8 has offset 0, COL of 0x1363694 has offset 4; no later vptr rewrite in ctor; no derived LevelRenderer RTTI class. LevelRenderer is created only via 0x120be8 -> [ClientInstance+0x28]. CAUTION on the finder's side-argument: x86 constant 0x1570574 minus ARM 0x1363694 is exactly 0x20cee0, the SAME delta as keyboard and UIScene vtables, i.e. by position the x86 constant matches the ARM *secondary* (offset-4, lower) vtable, not the primary. The 'x86 constant is the pair start' explanation is speculation (x86 binary unavailable); it does not affect ARM because [0]==0x13636c8 is proven by the ctor, but do not use the delta trick for any other multi-base vtable."
+  },
+  {
+   "id": "client_state.keyboardmanager_vtable",
+   "verdict": "CONFIRMED",
+   "note": "rtti -> single vtable 0x135cfcc; ctor 0x1201b4 and dtor 0x395498 store 0x175cfcc into [obj]; object size 0x68. Delta relation 0x20cee0 vs x86 reproduced arithmetically for keyboard and UIScene."
+  },
+  {
+   "id": "client_state.keyboardmanager_focus_byte",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced: vf5 0x395854 = (byte[5]&2)>>1 (vtable slot 5 at 0x135cfe0); ctor clears bits0-2; show 0x395504 sets bit0 (on-screen kb path @0x39559e) and bit1 (@0x3955c2); hide 0x395620 clears bit0/1, sets bit2 in the bit0 branch. Refinement the finder omitted: show() only reaches the bit-1 set if vf6 (+0x18) side-call and vf9 (+0x24, 0x3957b0) return nonzero; vf9 compares static [0x175737c] (file value 0xffffffff = 'any') with the client id, so on a single client it passes. Static [0x17573bc] is set by show and reset to -1 by hide. Semantics match the x86 comment."
+  },
+  {
+   "id": "client_state.keyboardmanager_show_hide",
+   "verdict": "CONFIRMED",
+   "note": "show vtable slot 1 = 0x395504, hide slot 3 = 0x395620; bytes 2de9f0490df1140b87b00546 and 2de918480df1080b04466379 reproduced. show reads 2 stack args ([sp+0x38]/[sp+0x3c] after 28+28 byte frame) in addition to r1-r3, so 'bool(this,r1,r2,r3,+stack)' is correct. Comment-only."
+  },
+  {
+   "id": "client_state.uiscene_vtable",
+   "verdict": "CONFIRMED",
+   "note": "rtti .?AVUIScene@@ -> only vtable 0x135b5d8 (offset 0). Raw byte search for the slot 41/42 pointers (5d 50 76 00 / f5 50 76 00) hits only 0x135b67c / 0x135b680, i.e. no other class inherits or overrides them. Scene-class RTTI list (AbstractScene, BaseScreen, InGamePlayScreen, InGameLivingRoom/RealityMode/RealityTransition, CubemapBackground, UIScene) has no 'HudScreen' scene class; HudScreenController exists only as controller (vtables 0x1345ca0 / +664 0x1345c94). AbstractScene slots 37.. are _purecall and InGamePlayScreen slots 41/42 are return0 stub / an ICF'd InGameLivingRoomScreen::vf42, so the exact-vtable guard is justified. The HUD UIScene is built at 0x328cfc ('hud.hud_screen') from InGamePlayScreen::vf1 and pushed on the client stack (+0x2c0) - confirms the host's expectation that the gameplay top scene is a UIScene. Note: if the top scene is ever InGamePlayScreen itself the host reports 'UI cursor' (same policy as x86)."
+  },
+  {
+   "id": "client_state.uiscene_slot41_is_showing_menu",
+   "verdict": "CONFIRMED",
+   "note": "0x135b5d8+41*4 = 0x135b67c -> 0x76505d (RVA 0x36505c); bytes 2de990480df1080b9cf4caf8 reproduced; body ends ldrb [r4,#8]; and #0x10; lsrs #4. Slot 40 (0x135b678) is is_modal. Plain r0-only call."
+  },
+  {
+   "id": "client_state.uiscene_slot42_should_steal_mouse",
+   "verdict": "CONFIRMED",
+   "note": "0x135b680 -> 0x7650f5 (RVA 0x3650f4); bytes 2de990480df1080b9cf47ef8 reproduced; ldrb [r4,#8]; and #0x40; lsrs #6. Strings referenced only from parse_screen_flags_json 0x17e66c (+0x1ec / +0x2c8)."
+  },
+  {
+   "id": "client_state.uiscene_flag_json_names",
+   "verdict": "CONFIRMED",
+   "note": "Strings at 0xd90c60 ('is_showing_menu') and 0xd90cd4 ('should_steal_mouse'): movw/movt VA 0x1190c60 / 0x1190cd4 minus 0x400000 = RVAs claimed; each has one reference in the parser at 0x17e858 / 0x17e934 (length args 0xf / 0x12 match the string lengths)."
+  },
+  {
+   "id": "client_state.minecraftgame_off_0x6c_scenestack",
+   "verdict": "CONFIRMED",
+   "note": "MinecraftGame::dtor 0x128178 (vptr 0x133bacc at this): ldr [r4,#0x6c]; str 0; SceneStack::dtor; delete size 0xc0. getTopScene 0x11be24 @0x11be56 reads [[[client+0x18]+0x6c]+4]. tick 0x11a280 @0x11a408 does strb [[[client+0x18]+0x6c]+0x39] exactly like it does for [client+0x2c0], confirming both are the same SceneStack type."
+  },
+  {
+   "id": "client_state.scenestack_layout",
+   "verdict": "CONFIRMED",
+   "note": "SceneStack::dtor 0x34b854: ldrd begin,end [r5]; loop with ctrl at [end-4] (ldr r6,[r2,#-4]), use count at ctrl+4, weak at ctrl+8, 'subs r3,#8; str [r5,#4]'. getTopScene returns [end-8] (first dword of last element = raw AbstractScene*). Stride 8, begin@0 end@4 reproduced. UIScene has a single vptr at 0 so the AbstractScene* equals the UIScene*."
+  },
+  {
+   "id": "client_state.getTopScene_function",
+   "verdict": "CONFIRMED",
+   "note": "Start 0x11be24 is a pdata function; bytes 2de91e480df1100b00230446 reproduced. Logic: if [[game+0xd0] map lookup of this]->+0x14 == this AND local stack begin==end then game-stack top else local-stack top. Host's local-first-then-game fallback is equivalent for the single (primary) client."
+  },
+  {
+   "id": "client_state.thiscall_attribute_scenefn",
+   "verdict": "CONFIRMED",
+   "note": "ABI claim correct (this=r0 only, result in r0, normalised 0/1). Correction to the note only: 'bl 0x11fc' is NOT __chkstk. 0x11fc/0x1214 are an MSVC /GS cookie prologue/epilogue (stores sp - [__security_cookie 0x1337f94] to the frame, epilogue re-checks, calls failure handler on mismatch). No stack-depth/thread constraint exists; the RE_GUIDE description 'stack-probe helper' is misleading."
+  },
+  {
+   "id": "client_state.pointer_width_assumptions",
+   "verdict": "CONFIRMED",
+   "note": "All checked structures (vector begin/end at 0/4, shared_ptr {ptr,ctrl} stride 8, vtable slot*4) decode with 4-byte pointers on ARM32 as claimed."
+  },
+  {
+   "id": "client_state.world_active_semantics",
+   "verdict": "CONFIRMED",
+   "note": "Ports 1:1 given vptr 0x133a758, [+4]=0x133a778, size 0x378 and [+0x28]->[0]==0x13636c8. ESC handler use (!client_world_active_128) is purely host logic."
+  }
+ ],
+ "missing": [
+  "Caller/frequency of ClientInstance slot 3 (0x11a280) is still unknown (finder flagged it; I also could not find a virtual call site). Consider verifying at runtime with the existing 'live render client' log that the hook fires every frame/tick before relying on it for self-capture timing.",
+  "No fact states that show() only sets keyboard byte5 bit1 when show-side gates (vf6 +0x18 call, vf9 +0x24 returning nonzero) pass; harmless for single client but the text-focus detection depends on the game actually calling show() on ARM.",
+  "RE_GUIDE/finder describe 'bl 0x11fc' as stack probe; it is a /GS cookie helper (affects only commentary, no port action).",
+  "ARM hook declaration: finder says r1 is unused padding of unknown origin; hypothesis that args are an 8-byte-aligned pair (r2:r3) should be recorded as the likely mapping of x86 argument1/argument2 -> r2/r3.",
+  "No fact for InGamePlayScreen::vf1 (0x2de66e/0x2de6a2) as the place where the LevelRenderer is created and the HUD UIScene is pushed (explains when client_world_active_128 and the UIScene guard become true); optional.",
+  "Host fallback path: top_scene_128(owner+0x6c) is only reachable on x86 semantics when local stack empty; ARM getTopScene additionally requires this==primary client, but this is equivalent for single client (no action)."
+ ]
+}

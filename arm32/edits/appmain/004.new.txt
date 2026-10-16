@@ -1,0 +1,4 @@
+#endif /* WIN32CRAFT_ARM32 */
+
+static BOOL activate_game_app_115(HWND window)
+{

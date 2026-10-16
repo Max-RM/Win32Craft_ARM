@@ -1,0 +1,125 @@
+win32craft_arm32.def - export reconciliation (unit hstring_native)
+====================================================================
+
+Facts: pe_imports.md "win32craft.dll exports on ARM", winmain.md section 4, fmod.json (options B/B').
+Symbols below were taken from `llvm-nm --defined-only -g` of the ARM objects of win32_host.c + api_compat.c built by
+`try_unit.py 00_core hstring_native` (arm32/work/hstring_native/*.arm.obj).
+
+Naming / ABI notes
+------------------
+* clang thumbv7-pc-windows-msvc emits UNDECORATED symbols: no leading underscore, no `@N` suffix (verified with llvm-nm:
+  `Win32Bootstrap`, `RoInitialize`, `Win32CraftXInputGetState` ...). So a .def line is either `Name` (symbol == export name)
+  or `Name=Win32CraftSymbol`. Do NOT copy the x86 lines (`Name=_Name@N`), and do not write the `Win32Bootstrap@0` alias.
+* All exports are plain AAPCS-VFP (WINAPI/stdcall/cdecl collapse to the one convention; win32_compat.h defines WINAPI empty
+  on ARM). Callee-saved r4-r11, args r0-r3 then stack, result r0 (r0:r1 for 64-bit).
+* 64-bit REGHANDLE / ULONGLONG parameters are passed in an EVEN register pair: no padding code needed, the declared
+  `ULONGLONG` parameter does it:
+    EventRegister(const GUID* r0, PENABLECALLBACK r1, PVOID r2, PREGHANDLE r3) -> ULONG r0
+    EventUnregister(REGHANDLE r0:r1) -> ULONG
+    EventSetInformation(REGHANDLE r0:r1, INT class r2, PVOID data r3, ULONG size [sp]) -> ULONG
+    EventWriteTransfer(REGHANDLE r0:r1, desc r2, activity r3, related [sp], count [sp+4], data [sp+8]) -> ULONG
+    CoCreateInstanceFromApp(CLSID* r0, IUnknown* r1, DWORD ctx r2, PVOID reserved r3, DWORD count [sp], MULTI_QI* [sp+4]) -> HRESULT  (6 params; review edit 900 fixed the ARM stub, which had 5)
+    RoGetApartmentIdentifier(UINT64* r0), RoRegisterForApartmentShutdown(cb r0, UINT64* r1, cookie* r2)
+* The loader imports by NAME; the hint in the exe (e.g. XInputGetState hint 6, Win32Bootstrap hint 0) is only a speed hint.
+* HSTRING_HEADER on 32-bit = 20 bytes (WindowsCreateStringReference(PCWSTR r0, UINT32 r1, HSTRING_HEADER* r2, HSTRING* r3)).
+* Every Windows*/Ro*/error-info export forwards to the genuine combase.dll on ARM (RoGetBufferMarshaler -> wintypes.dll);
+  RoGetActivationFactory first asks Win32CraftActivationDispatcher.
+
+1. REQUIRED  (the patched exe imports exactly these two from win32craft.dll)
+--------------------------------------------------------------------------
+Win32Bootstrap                    ; int Win32Bootstrap(void) in win32_host.c, symbol `Win32Bootstrap`
+XInputGetState=Win32CraftXInputGetState   ; DWORD(DWORD user_index r0, XINPUT_STATE* r1), api_compat.c
+                                  ; (exe import XINPUTUAP.dll!XInputGetState is repointed to win32craft.dll by the patcher)
+
+2. OPTIONAL PARITY SET  (contracts the exe imports; all resolve natively on Win10, so exporting is only a safety net if the
+   patcher also redirects those api-set descriptors; 24 names, every one is defined by api_compat.c)
+--------------------------------------------------------------------------------------------------------------
+; api-ms-win-core-com-l1-1-0
+IIDFromString=Win32CraftIIDFromString
+CoGetContextToken=Win32CraftCoGetContextToken     ; ARM: forwards to real ole32 (fallback: fake token 1)
+CoCreateGuid=Win32CraftCoCreateGuid
+CoCreateFreeThreadedMarshaler=Win32CraftCoCreateFreeThreadedMarshaler
+StringFromGUID2=Win32CraftStringFromGUID2
+CoCreateInstanceFromApp=Win32CraftCoCreateInstanceFromApp
+CoTaskMemFree=Win32CraftCoTaskMemFree
+CoTaskMemAlloc=Win32CraftCoTaskMemAlloc
+; api-ms-win-eventing-provider-l1-1-0
+EventWriteTransfer=Win32CraftEventWriteTransfer
+EventUnregister=Win32CraftEventUnregister
+EventRegister=Win32CraftEventRegister
+EventSetInformation=Win32CraftEventSetInformation
+; api-ms-win-core-winrt-error-l1-1-0 / -1-1
+RoFailFastWithErrorContext
+SetRestrictedErrorInfo
+RoReportUnhandledError
+; api-ms-win-core-winrt-l1-1-0
+RoInitialize
+; api-ms-win-core-winrt-string-l1-1-0
+WindowsCreateString
+WindowsDeleteString
+WindowsIsStringEmpty
+WindowsCompareStringOrdinal
+WindowsDuplicateString
+WindowsCreateStringReference
+WindowsGetStringRawBuffer
+WindowsConcatString
+
+3. RECOMMENDED EXTRAS  (cheap, all defined, needed for fmod option B (descriptor #1 of fmod_ARM.dll -> win32craft.dll:
+   RoGetActivationFactory/RoUninitialize/RoInitialize) and for completing the winrt/winrt-string/winrt-error contracts if
+   an api-set descriptor is ever redirected as a RT 8.1 contingency)
+-----------------------------------------------------------------------------------------------------------------------
+RoGetActivationFactory            ; dispatcher first, then combase; also the value to store in fmod_ARM.dll IAT cell RVA 0xB118C (option B')
+RoUninitialize
+RoActivateInstance
+RoGetApartmentIdentifier
+RoGetBufferMarshaler
+RoGetParameterizedTypeInstanceIID
+RoFreeParameterizedTypeExtra
+RoRegisterActivationFactories
+RoRevokeActivationFactories
+RoRegisterForApartmentShutdown
+RoUnregisterForApartmentShutdown
+GetRestrictedErrorInfo
+RoOriginateError
+RoOriginateErrorW
+RoTransformError
+RoCaptureErrorContext
+RoGetErrorReportingFlags
+RoSetErrorReportingFlags
+RoReportFailedDelegate
+WindowsGetStringLen
+WindowsSubstring
+WindowsSubstringWithSpecifiedLength
+WindowsStringHasEmbeddedNull
+WindowsReplaceString
+WindowsTrimStringStart
+WindowsTrimStringEnd
+WindowsPreallocateStringBuffer
+WindowsPromoteStringBuffer
+WindowsDeleteStringBuffer
+
+4. OPTIONAL, UNUSED ON ARM (defined, harmless; the exe/fmod never import them from win32craft.dll)
+---------------------------------------------------------------------------------------------------
+JsStartDebugging=Win32CraftJsStartDebugging
+LoadPackagedLibrary=Win32CraftLoadPackagedLibrary
+ProcessPendingGameUI
+ShowGameInviteUI
+ShowProfileCardUI
+ShowTitleAchievementsUI              ; the TCUI cells (0x015121FC..) are patched at runtime, no export needed
+
+5. NOT EXPORTED ON ARM  (present in the x86 .def; reason)
+-----------------------------------------------------------
+D3D11CreateDevice, CreateDirect3D11DeviceFromDXGIDevice, CreateDXGIFactory2   ; the ARM exe imports d3d11!D3D11CreateDevice natively and the host
+                                       ; patches that IAT cell (0xC37A50) at runtime; no dxgi import. (Functions still exist in win32_host.c.)
+CreateFile2=Win32CraftCreateFile2, ResolveDelayLoadedAPI, ResolveDelayLoadsFromDll, DelayLoadFailureHook   ; native api sets on 8.1/10, no redirect
+CoInitializeEx/CoUninitialize/StringFromIID/VirtualAllocFromApp/Fls*/all `X=KERNEL32.X` forwarders   ; x86 Win7 api-set placeholders, not imported by the ARM exe
+Win32Bootstrap@0 alias               ; x86 stdcall decoration
+
+Non-exported but cross-TU symbols of api_compat.c that win32_host.c may reference (same DLL, plain extern, NOT in the .def):
+  extern Win32CraftActivationFn Win32CraftActivationDispatcher;     /* data, assigned by iat_hooks (already done in its edit 012) */
+  HRESULT WINAPI Win32CraftNativeRoGetActivationFactory(HSTRING, const GUID *, void **);   /* combase-only, no dispatcher */
+
+Contingency note (Windows RT 8.1, unverified): if the loader reports a missing contract for the API sets in section 2, repoint that
+descriptor to win32craft.dll in the patcher; sections 2+3 cover every function the exe imports from those contracts. The
+KERNEL32-family contracts listed in pe_imports.md "Contingency" are NOT covered by this ARM export list (the x86 .def forwarders
+`Name=KERNEL32.Name` can be re-added line by line if a device reports them missing).

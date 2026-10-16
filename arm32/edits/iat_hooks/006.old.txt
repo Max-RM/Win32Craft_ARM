@@ -1,0 +1,3 @@
+static void WINAPI win32_cxx_throw(void *exception, const void *throw_info)
+{
+    void *frames[24];

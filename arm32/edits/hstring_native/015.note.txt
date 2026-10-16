@@ -1,0 +1,1 @@
+ARM: native. (Not routed through the dispatcher: the fake factories do not all implement ActivateInstance at slot 6; the exe and fmod never import RoActivateInstance.)

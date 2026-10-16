@@ -1,0 +1,1 @@
+Reviewer fix: log (once) the early returns of render_game_target_128.

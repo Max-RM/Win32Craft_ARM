@@ -1,0 +1,42 @@
+#ifdef WIN32CRAFT_ARM32
+/* abi_audit: private FakeKind for the "completed IAsyncOperation<HSTRING> yielding an empty string" fake below. */
+#define ARM32_FAKE_KIND_EMPTY_STRING_ASYNC ((FakeKind)0x32a01)
+/* The x86 host relied on TSO ordering when it published data to other threads.  ARMv7 is weakly ordered, so every
+ * "write data, then set a flag/pointer" pattern in the shim goes through a full barrier (dmb ish). */
+#define ARM32_MEMORY_BARRIER() __sync_synchronize()
+/* ABI assumptions the ARM32 shim relies on (see abi_audit notes): */
+_Static_assert(sizeof(FakeInspectable) == 12, "FakeInspectable layout: vtable, refcount, kind");
+_Static_assert(sizeof(wchar_t) == 2, "WinRT HSTRING / UTF-16 literals need a 16-bit wchar_t");
+_Static_assert(sizeof(LONGLONG) == 8 && sizeof(ULONG_PTR) == 4, "EventRegistrationToken is 64-bit, pointers are 32-bit");
+
+/* fake_query_interface answers every IID it has no special case for with the object itself.  That is only right when the
+ * game really wants the same vtable; log the IIDs so a wrong projection (e.g. IDisplayInformation2, 4DCD0021-FAD1-4B8E-
+ * 8EDF-775887B8BF19, which wants get_RawPixelsPerViewPixel(double*) at slot 6) shows up in the device log. */
+static void arm32_log_default_query_interface(const FakeInspectable *object, REFIID iid)
+{
+    static volatile LONG count;
+    static const GUID known[] = {
+        { 0x00000000, 0x0000, 0x0000, {0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46} }, /* IUnknown */
+        { 0xaf86e2e0, 0xb12d, 0x4c6a, {0x9c, 0x5a, 0xd7, 0xaa, 0x65, 0x10, 0x1e, 0x90} }, /* IInspectable */
+        { 0x94ea2b94, 0xe9cc, 0x49e0, {0xc0, 0xff, 0xee, 0x64, 0xca, 0x8f, 0x5b, 0x90} }, /* IAgileObject */
+        { 0x00000035, 0x0000, 0x0000, {0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46} }  /* IActivationFactory */
+    };
+    char line[200];
+    unsigned index;
+    if (!iid || !object) return;
+    for (index = 0; index < ARRAYSIZE(known); ++index) {
+        if (memcmp(iid, &known[index], sizeof(GUID)) == 0) return;
+    }
+    if (InterlockedIncrement(&count) > 300) return;
+    wsprintfA(line,
+        "ARM32 QI on fake kind=%d object=%p IID=%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X answered with the object itself",
+        (int)object->kind, object, (unsigned long)iid->Data1, (unsigned)iid->Data2,
+        (unsigned)iid->Data3, (unsigned)iid->Data4[0], (unsigned)iid->Data4[1],
+        (unsigned)iid->Data4[2], (unsigned)iid->Data4[3], (unsigned)iid->Data4[4],
+        (unsigned)iid->Data4[5], (unsigned)iid->Data4[6], (unsigned)iid->Data4[7]);
+    log_line(line);
+}
+#endif
+
+static ULONG WINAPI fake_add_ref(FakeInspectable *object)
+{

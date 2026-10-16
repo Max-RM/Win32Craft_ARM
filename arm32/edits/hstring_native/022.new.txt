@@ -1,0 +1,4 @@
+void WINAPI RoRevokeActivationFactories(void *cookie) {
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD_VOID("RoRevokeActivationFactories", (void *), (cookie));
+#endif

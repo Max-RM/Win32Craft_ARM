@@ -1,0 +1,1 @@
+ARM32: log the scissor slot and refuse to hook twice (self-recursion guard); the hook itself is unchanged.

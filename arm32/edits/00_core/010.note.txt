@@ -1,0 +1,1 @@
+ARM32 log_115_main_thread_context (ARM CONTEXT flags 0x200003, Pc/Sp/Lr/R0-R12 + stack scan); x86 kept under #else.

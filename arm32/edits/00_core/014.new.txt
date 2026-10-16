@@ -1,0 +1,9 @@
+#ifdef WIN32CRAFT_ARM32
+/* x86-only register recovery thunk of the 1.1.5 Wine patch; patch_115_xaml_self_references (never run on ARM) still
+ * takes its address, so keep a harmless symbol. */
+static void win32_115_restore_adapter_references(void)
+{
+}
+#else
+__attribute__((naked)) static void win32_115_restore_adapter_references(void)
+{

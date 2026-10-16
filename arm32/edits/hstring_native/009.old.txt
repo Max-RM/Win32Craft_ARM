@@ -1,0 +1,3 @@
+HRESULT WINAPI WindowsTrimStringStart(
+    HSTRING string, HSTRING trim, HSTRING *result)
+{

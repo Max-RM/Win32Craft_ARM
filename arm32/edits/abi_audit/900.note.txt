@@ -1,0 +1,1 @@
+ARM32 reviewer fix: kernel32 for ARM does not export Interlocked{Increment,Decrement,Exchange}; map them to clang atomic builtins from here on (earlier uses are in other units' regions: see report).

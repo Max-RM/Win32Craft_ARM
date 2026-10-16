@@ -1,0 +1,1 @@
+closes #else/#endif of win32_115_restore_adapter_references.

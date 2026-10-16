@@ -1,0 +1,17 @@
+#ifdef WIN32CRAFT_ARM32
+/* ICoreApplication continues past slot 11: 12 GetCurrentView, 13 Run, 14 RunWithActivationFactories, ...  The ARM exe calls
+ * slot 12 (XSAPI 0xa758a8) and slot 13 (CoreApplication::Run 0x596328); the 12-entry x86 table made those reads run off the end of
+ * the array.  24 entries so every NULL hole is filled with the logging E_NOTIMPL stub (arm32_fill_unimplemented_slots_once). */
+static const void *coreapp_vtable[24] = {
+    fake_query_interface, fake_add_ref, fake_release,
+    fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
+    fake_coreapp_id, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+};
+#else
+static const void *coreapp_vtable[12] = {
+    fake_query_interface, fake_add_ref, fake_release,
+    fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
+    fake_coreapp_id, NULL, NULL, NULL, NULL, NULL
+};
+#endif

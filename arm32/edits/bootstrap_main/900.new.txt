@@ -1,0 +1,57 @@
+/* log_115_main_thread_context() logs (log_line -> stdio lock) while the main thread is suspended.  A main thread that was
+ * suspended inside log_line, fprintf or the heap (the D3DCompile / shader hooks log from the main thread during a long first
+ * frame, which is exactly when this watchdog fires) would then deadlock the whole process: the watchdog blocks on the lock and
+ * never reaches ResumeThread.  So: capture the registers with the thread suspended for as short as possible, no logging and
+ * no CRT call in between, resume it, and only then log. */
+static void arm32_boot_snapshot_main_thread(const char *reason)
+{
+    typedef HANDLE (WINAPI *OpenThreadFn)(DWORD, BOOL, DWORD);
+    typedef DWORD (WINAPI *SuspendThreadFn)(HANDLE);
+    typedef BOOL (WINAPI *GetThreadContextFn)(HANDLE, CONTEXT *);
+    typedef DWORD (WINAPI *ResumeThreadFn)(HANDLE);
+    HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+    OpenThreadFn open_thread = kernel32 ? (OpenThreadFn)GetProcAddress(kernel32, "OpenThread") : NULL;
+    SuspendThreadFn suspend_thread = kernel32 ? (SuspendThreadFn)GetProcAddress(kernel32, "SuspendThread") : NULL;
+    GetThreadContextFn get_thread_context = kernel32
+        ? (GetThreadContextFn)GetProcAddress(kernel32, "GetThreadContext") : NULL;
+    ResumeThreadFn resume_thread = kernel32 ? (ResumeThreadFn)GetProcAddress(kernel32, "ResumeThread") : NULL;
+    HANDLE thread;
+    CONTEXT context;
+    BOOL suspended;
+    BOOL have_context = FALSE;
+    char line[192];
+
+    if (!game115_main_thread_id) {
+        log_line("ARM32 thread context: main thread id is unavailable");
+        return;
+    }
+    if (!open_thread || !suspend_thread || !get_thread_context || !resume_thread) {
+        log_line("ARM32 thread context: thread-context APIs unavailable");
+        return;
+    }
+    thread = open_thread(0x0002u | 0x0008u | 0x0040u, FALSE, game115_main_thread_id);
+    if (!thread) {
+        log_line("ARM32 thread context: OpenThread failed");
+        return;
+    }
+    ZeroMemory(&context, sizeof(context));
+    context.ContextFlags = 0x00200003u;   /* CONTEXT_ARM | CONTEXT_CONTROL | CONTEXT_INTEGER */
+    suspended = suspend_thread(thread) != 0xffffffffu;
+    if (suspended) {
+        have_context = get_thread_context(thread, &context);
+        resume_thread(thread);
+    }
+    CloseHandle(thread);
+    if (!suspended) {
+        log_line("ARM32 thread context: SuspendThread failed");
+    } else if (!have_context) {
+        log_line("ARM32 thread context: GetThreadContext failed");
+    } else {
+        wsprintfA(line, "ARM32 main thread context (%s)", reason ? reason : "snapshot");
+        arm32_log_context(line, &context);
+        /* the stalled thread's stack is quiescent, reading it after the resume is fine (IsBadReadPtr guarded) */
+        arm32_log_stack_scan("main thread", context.Sp, 64, 64);
+    }
+}
+
+/* A hang is distinguishable from a crash by the log alone: while the main thread makes no progress (a game call that never

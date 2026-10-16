@@ -1,0 +1,30 @@
+/* ICurrentApp (D52DC065) slots whose argument lists differ from the shared x86 fake_currentapp_get_receipt(object, void **result):
+ *   9  RequestAppPurchaseAsync(bool includeReceipt, IAsyncOperation<HSTRING>**)                  -> r1 = bool, r2 = out
+ *   10 RequestProductPurchaseAsync(HSTRING productId, bool includeReceipt, IAsyncOperation**)    -> r1, r2 = bool, r3 = out
+ *   13 GetProductReceiptAsync(HSTRING productId, IAsyncOperation**)                              -> r1, r2 = out
+ * The ARM exe calls slot 9 (0x575d20: `adds r2,r7,#8; ldr r3,[r3,#0x24]; blx` with the bool still in r1).  With the shared stub the
+ * bool (0/1) was used as the result pointer: E_POINTER, or a store to address 1. */
+static HRESULT WINAPI arm32_currentapp_request_app_purchase(
+    FakeInspectable *object, BYTE include_receipt, void **operation)
+{
+    (void)include_receipt;
+    return fake_currentapp_get_receipt(object, operation);
+}
+
+static HRESULT WINAPI arm32_currentapp_request_product_purchase(
+    FakeInspectable *object, HSTRING product_id, BYTE include_receipt,
+    void **operation)
+{
+    (void)product_id;
+    (void)include_receipt;
+    return fake_currentapp_get_receipt(object, operation);
+}
+
+static HRESULT WINAPI arm32_currentapp_get_product_receipt(
+    FakeInspectable *object, HSTRING product_id, void **operation)
+{
+    (void)product_id;
+    return fake_currentapp_get_receipt(object, operation);
+}
+
+typedef struct Arm32VtableHoles {

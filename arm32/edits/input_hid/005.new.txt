@@ -1,0 +1,7 @@
+            (unsigned long)codepoint, length, (unsigned)sequence_flag);
+        log_line(line);
+        ++logged_text_events;
+    }
+    return TRUE;
+}
+#endif /* WIN32CRAFT_ARM32 (input_hid: queue_keyboard_event, queue_character_event) */

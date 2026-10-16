@@ -1,0 +1,4 @@
+        previous_command = command;
+    }
+    return host_relative_requested;
+}

@@ -1,0 +1,10 @@
+LIBRARY api-ms-win-core-winrt-l1-1-0.dll
+EXPORTS
+RoGetActivationFactory=COMBASE.RoGetActivationFactory
+RoGetApartmentIdentifier=COMBASE.RoGetApartmentIdentifier
+RoInitialize=COMBASE.RoInitialize
+RoRegisterActivationFactories=COMBASE.RoRegisterActivationFactories
+RoRegisterForApartmentShutdown=COMBASE.RoRegisterForApartmentShutdown
+RoRevokeActivationFactories=COMBASE.RoRevokeActivationFactories
+RoUninitialize=COMBASE.RoUninitialize
+RoUnregisterForApartmentShutdown=COMBASE.RoUnregisterForApartmentShutdown

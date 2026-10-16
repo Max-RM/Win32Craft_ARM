@@ -1,0 +1,1 @@
+static void start_115_constructor_watchdog(void);

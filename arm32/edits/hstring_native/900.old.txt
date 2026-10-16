@@ -1,0 +1,4 @@
+HRESULT WINAPI Win32CraftCoCreateInstanceFromApp(
+    const GUID *class_id, void *outer, DWORD context,
+    ULONG query_count, D3CraftMultiQi *queries)
+{

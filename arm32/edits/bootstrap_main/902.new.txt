@@ -1,0 +1,16 @@
+        OutputDebugStringA(line);
+    }
+    if (moved_to_temp && log_ok) {
+        /* log_line() fopen()s win32craft.log once and keeps the FILE: the %TEMP% working directory only mattered for that first
+         * open (done above).  Do not leave the game running with %TEMP% as its working directory. */
+        const wchar_t *restore = exe_dir_ok ? exe_dir : original_cwd;
+
+        if (restore[0] && SetCurrentDirectoryW(restore)) {
+            log_line("working directory restored after opening the log in %TEMP%");
+        } else {
+            log_line("warning: could not restore the working directory after opening the log in %TEMP%");
+        }
+    }
+}
+
+static void arm32_boot_log_os_version(void)

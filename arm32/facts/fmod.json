@@ -1,0 +1,984 @@
+{
+ "area": "fmod",
+ "facts": [
+  {
+   "id": "fmod.dll_identity",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "fmod_ARM.dll: PE32 ARM Thumb-2 DLL, 1118720 bytes, SHA-256 5f92f5ac9317c7a5d61ab6b43a2e799ae90eb7eee5c992c85d0325ba1d09fc38. ImageBase 0x10000000, SizeOfImage 0x153000, entry RVA 0xAEE49, sections .text 0x1000(raw 0x400) .rdata 0xB1000(raw 0xAFA00) .data 0xFC000(raw 0xF9E00, vsize 0x460F4 > rsize 0xBA00 => BSS tail) .pdata 0x143000 .tls 0x14B000 .gfids .giats .rsrc .reloc 0x14F000; OS/subsystem 6.2, Subsystem 2, checksum field 0 (no checksum fix needed), no certificate. 3669 .pdata functions, 1087 exports (all 39 names imported by the exe exist, FMOD 1.09.04 = 0x00010904).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Verify SHA-256 (and size 1118720) before patching. file offset = RVA - 0x1000 + 0x400 inside .text; RVA - 0xB1000 + 0xAFA00 inside .rdata (e.g. import names at 0xF8D30..). The DLL is FMOD low-level 1.09.04 (System::getVersion constant 0x00010904 loaded from literal pool at RVA 0x945C0; the toolkit prints the pool 8 bytes early) - exactly the minimum the game demands (cmp 0x10904, blo=fail at game RVA 0x5A3976).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re info (ARM32_EXE=fmod_ARM.dll) -> machine 0x1c4 base 0x10000000 image 0x153000 entry 0xaee49, sections as listed",
+    "sha256sum fmod_ARM.dll -> 5f92f5ac9317c7a5d61ab6b43a2e799ae90eb7eee5c992c85d0325ba1d09fc38 ; python len -> 1118720",
+    "arm32re bytes 945b8 16 -> pool dword at 0x945c0 = 04 09 01 00 = 0x00010904 (System::getVersion body sub_945a8 stores it through r1)",
+    "game 0x5A3972 ldr r2,[pc] = 0x00010904 ; cmp r3,r2 ; blo -> create fails (SoundSystemFMOD::createSystem)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.dll_import_descriptors",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x000fa330",
+   "summary": "27 import descriptors / 129 functions (directory RVA 0xFA330 size 0x230, file offset 0xF8D30, 20-byte descriptors at file 0xF8D30 + 0x14*i). Table of every DLL-name string file offset, import count and desktop status is in this fact (field table). Only VCRUNTIME140_APP.dll fails on Win10 desktop; at run time only the WinRT Package/ApplicationData activations fail (see fmod.winstore_init). All name strings are NUL-terminated and followed by padding to even size so same-length or shorter in-place edits are safe.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Win10 column = apiset family exists in this machine's Win11 apisetschema.dll with minor >= requested and every imported name (and ordinal) exists in the host DLL export table (x64 System32 used as a names-only proxy; checked with python parsers, 0 missing). RT 8.1 column is knowledge-based and NOT verifiable here (no RT 8.1 files): treat RISK entries as the first things to test; in-place contingency = retarget those api-set names to \"KERNEL32.dll\" (every function listed under them is exported by KERNEL32 on Win8+).",
+   "expected_bytes": null,
+   "evidence": [
+    "python import parser (scratchpad/imps.py) over fmod_ARM.dll -> 27 descriptors, 129 functions, name file offsets as tabulated",
+    "python apiset-schema check (scratchpad/apicheck.py, apisetschema.dll v6, 984 entries) -> every api-ms-* family resolves, missing=[] for all 26 non-VCRUNTIME descriptors, VCRUNTIME140_APP.dll -> not found",
+    "vcruntime140.dll (System32 x64 and D:\\Program Files\\vs22buildtools\\VC\\Redist\\MSVC\\14.44.35112\\onecore\\arm\\...\\vcruntime140.dll): all 11 imported names exported (memcmp __CxxFrameHandler3 memcpy _purecall __C_specific_handler __std_type_info_destroy_list __std_exception_copy __std_exception_destroy memset _CxxThrowException memmove)"
+   ],
+   "confidence": "high",
+   "field_table": [
+    {
+     "descriptor": 0,
+     "dll": "WS2_32.dll",
+     "name_file_offset": "0xf91fa",
+     "name_len": 10,
+     "imports": 21,
+     "win10_arm32_desktop": "ok (standard Winsock ordinals)",
+     "win_rt_8_1": "ok"
+    },
+    {
+     "descriptor": 1,
+     "dll": "api-ms-win-core-winrt-l1-1-0.dll",
+     "name_file_offset": "0xf929c",
+     "name_len": 32,
+     "imports": 3,
+     "win10_arm32_desktop": "ok -> combase (RoGetActivationFactory/RoUninitialize/RoInitialize)",
+     "win_rt_8_1": "ok (Win8 contract); real call works but Package/ApplicationData fail without package identity"
+    },
+    {
+     "descriptor": 2,
+     "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+     "name_file_offset": "0xf92be",
+     "name_len": 39,
+     "imports": 3,
+     "win10_arm32_desktop": "ok -> combase (WindowsCompareStringOrdinal, WindowsCreateStringReference, WindowsGetStringRawBuffer)",
+     "win_rt_8_1": "ok (Win8 contract)"
+    },
+    {
+     "descriptor": 3,
+     "dll": "MMDevAPI.DLL",
+     "name_file_offset": "0xf92e6",
+     "name_len": 12,
+     "imports": 1,
+     "win10_arm32_desktop": "ok (ordinal #17 = ActivateAudioInterfaceAsync, verified on this machine mmdevapi export ordinal 17)",
+     "win_rt_8_1": "ok (Win8+), unverified"
+    },
+    {
+     "descriptor": 4,
+     "dll": "MFPlat.DLL",
+     "name_file_offset": "0xf93a2",
+     "name_len": 10,
+     "imports": 9,
+     "win10_arm32_desktop": "ok (MFCreateAsyncResult MFStartup MFShutdown MFInvokeCallback MFCreateMediaType MFGetSystemTime MFLockSharedWorkQueue MFUnlockWorkQueue MFPutWaitingWorkItem)",
+     "win_rt_8_1": "ok, unverified"
+    },
+    {
+     "descriptor": 5,
+     "dll": "MFReadWrite.dll",
+     "name_file_offset": "0xf93d4",
+     "name_len": 15,
+     "imports": 1,
+     "win10_arm32_desktop": "ok (MFCreateSourceReaderFromByteStream; MF codec only)",
+     "win_rt_8_1": "ok, unverified"
+    },
+    {
+     "descriptor": 6,
+     "dll": "api-ms-win-core-com-l1-1-1.dll",
+     "name_file_offset": "0xf963e",
+     "name_len": 30,
+     "imports": 3,
+     "win10_arm32_desktop": "ok -> combase",
+     "win_rt_8_1": "probably ok (8.1)"
+    },
+    {
+     "descriptor": 7,
+     "dll": "api-ms-win-core-file-l1-2-1.dll",
+     "name_file_offset": "0xf965e",
+     "name_len": 31,
+     "imports": 3,
+     "win10_arm32_desktop": "ok -> kernelbase (ReadFile CreateFile2 SetFilePointerEx)",
+     "win_rt_8_1": "RISK: minor version may be newer than 8.1 (l1-2-0)"
+    },
+    {
+     "descriptor": 8,
+     "dll": "api-ms-win-core-handle-l1-1-0.dll",
+     "name_file_offset": "0xf967e",
+     "name_len": 33,
+     "imports": 1,
+     "win10_arm32_desktop": "ok",
+     "win_rt_8_1": "ok"
+    },
+    {
+     "descriptor": 9,
+     "dll": "api-ms-win-core-errorhandling-l1-1-1.dll",
+     "name_file_offset": "0xf96a0",
+     "name_len": 40,
+     "imports": 2,
+     "win10_arm32_desktop": "ok",
+     "win_rt_8_1": "probably ok (8.1)"
+    },
+    {
+     "descriptor": 10,
+     "dll": "api-ms-win-core-profile-l1-1-0.dll",
+     "name_file_offset": "0xf96ca",
+     "name_len": 34,
+     "imports": 2,
+     "win10_arm32_desktop": "ok",
+     "win_rt_8_1": "ok"
+    },
+    {
+     "descriptor": 11,
+     "dll": "api-ms-win-core-synch-l1-2-0.dll",
+     "name_file_offset": "0xf96ee",
+     "name_len": 32,
+     "imports": 13,
+     "win10_arm32_desktop": "ok",
+     "win_rt_8_1": "probably ok (8.1)"
+    },
+    {
+     "descriptor": 12,
+     "dll": "api-ms-win-core-processthreads-l1-1-2.dll",
+     "name_file_offset": "0xf9710",
+     "name_len": 41,
+     "imports": 5,
+     "win10_arm32_desktop": "ok",
+     "win_rt_8_1": "RISK: l1-1-2 is Win10-era, 8.1 has l1-1-1"
+    },
+    {
+     "descriptor": 13,
+     "dll": "api-ms-win-core-libraryloader-l1-2-0.dll",
+     "name_file_offset": "0xf973a",
+     "name_len": 40,
+     "imports": 3,
+     "win10_arm32_desktop": "ok",
+     "win_rt_8_1": "probably ok (8.1)"
+    },
+    {
+     "descriptor": 14,
+     "dll": "api-ms-win-core-libraryloader-l2-1-0.dll",
+     "name_file_offset": "0xf9764",
+     "name_len": 40,
+     "imports": 1,
+     "win10_arm32_desktop": "ok (LoadPackagedLibrary; present in schema, but only plugin loader uses it)",
+     "win_rt_8_1": "RISK: contract may not exist on 8.1; function never called by the game"
+    },
+    {
+     "descriptor": 15,
+     "dll": "api-ms-win-core-file-l2-1-1.dll",
+     "name_file_offset": "0xf978e",
+     "name_len": 31,
+     "imports": 1,
+     "win10_arm32_desktop": "ok (GetFileInformationByHandleEx)",
+     "win_rt_8_1": "RISK: minor version vs 8.1"
+    },
+    {
+     "descriptor": 16,
+     "dll": "api-ms-win-core-string-l1-1-0.dll",
+     "name_file_offset": "0xf97ae",
+     "name_len": 33,
+     "imports": 2,
+     "win10_arm32_desktop": "ok",
+     "win_rt_8_1": "ok"
+    },
+    {
+     "descriptor": 17,
+     "dll": "VCRUNTIME140_APP.dll",
+     "name_file_offset": "0xf989a",
+     "name_len": 20,
+     "imports": 11,
+     "win10_arm32_desktop": "FAILS: no such file in System32 (verified: not in C:\\Windows\\System32; loader error 0xC0000135 at process start, exe never reaches WinMain)",
+     "win_rt_8_1": "FAILS (same)"
+    },
+    {
+     "descriptor": 18,
+     "dll": "api-ms-win-crt-utility-l1-1-0.dll",
+     "name_file_offset": "0xf9ac8",
+     "name_len": 33,
+     "imports": 1,
+     "win10_arm32_desktop": "ok -> ucrtbase",
+     "win_rt_8_1": "needs UCRT redistributable (not in-box on 8.1) - same dependency as the exe"
+    },
+    {
+     "descriptor": 19,
+     "dll": "api-ms-win-crt-math-l1-1-0.dll",
+     "name_file_offset": "0xf9aea",
+     "name_len": 30,
+     "imports": 14,
+     "win10_arm32_desktop": "ok -> ucrtbase",
+     "win_rt_8_1": "needs UCRT"
+    },
+    {
+     "descriptor": 20,
+     "dll": "api-ms-win-crt-stdio-l1-1-0.dll",
+     "name_file_offset": "0xf9b0a",
+     "name_len": 31,
+     "imports": 7,
+     "win10_arm32_desktop": "ok -> ucrtbase",
+     "win_rt_8_1": "needs UCRT"
+    },
+    {
+     "descriptor": 21,
+     "dll": "api-ms-win-crt-string-l1-1-0.dll",
+     "name_file_offset": "0xf9b2a",
+     "name_len": 32,
+     "imports": 2,
+     "win10_arm32_desktop": "ok -> ucrtbase",
+     "win_rt_8_1": "needs UCRT"
+    },
+    {
+     "descriptor": 22,
+     "dll": "api-ms-win-crt-convert-l1-1-0.dll",
+     "name_file_offset": "0xf9b4c",
+     "name_len": 33,
+     "imports": 2,
+     "win10_arm32_desktop": "ok -> ucrtbase",
+     "win_rt_8_1": "needs UCRT"
+    },
+    {
+     "descriptor": 23,
+     "dll": "api-ms-win-crt-heap-l1-1-0.dll",
+     "name_file_offset": "0xf9b6e",
+     "name_len": 30,
+     "imports": 5,
+     "win10_arm32_desktop": "ok -> ucrtbase",
+     "win_rt_8_1": "needs UCRT"
+    },
+    {
+     "descriptor": 24,
+     "dll": "api-ms-win-crt-runtime-l1-1-0.dll",
+     "name_file_offset": "0xf9b8e",
+     "name_len": 33,
+     "imports": 11,
+     "win10_arm32_desktop": "ok -> ucrtbase",
+     "win_rt_8_1": "needs UCRT"
+    },
+    {
+     "descriptor": 25,
+     "dll": "api-ms-win-core-sysinfo-l1-2-1.dll",
+     "name_file_offset": "0xf9c92",
+     "name_len": 34,
+     "imports": 1,
+     "win10_arm32_desktop": "ok",
+     "win_rt_8_1": "RISK: l1-2-1 may be newer than 8.1 (l1-2-0)"
+    },
+    {
+     "descriptor": 26,
+     "dll": "api-ms-win-core-interlocked-l1-2-0.dll",
+     "name_file_offset": "0xf9cb6",
+     "name_len": 38,
+     "imports": 1,
+     "win10_arm32_desktop": "ok",
+     "win_rt_8_1": "probably ok (8.1)"
+    }
+   ]
+  },
+  {
+   "id": "fmod.vcruntime_rename",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x000fae9a",
+   "summary": "Patch 1 (required): VCRUNTIME140_APP.dll -> VCRUNTIME140.dll. The 21-byte name field (20 chars + NUL) sits at file offset 0xF989A (RVA 0xFAE9A, import descriptor #17 Name field at file 0xF8E84+12=0xF8E90 holds RVA 0xFAE9A); the byte after is another NUL and the next hint/name entry (hint 0x0019 \"qsort\") starts at 0xF98B0.",
+   "arm_signature": "file edit: offset 0xF989A, 21 bytes (see notes)",
+   "x86_to_arm_notes": "old (21 bytes @0xF989A) = 56 43 52 55 4E 54 49 4D 45 31 34 30 5F 41 50 50 2E 64 6C 6C 00 (\"VCRUNTIME140_APP.dll\\0\"); new (21 bytes) = 56 43 52 55 4E 54 49 4D 45 31 34 30 2E 64 6C 6C 00 00 00 00 00 (\"VCRUNTIME140.dll\\0\" + 4 NUL). The string occurs exactly once in the file (python find). Matches the exe patch (exe VCRUNTIME140_APP -> VCRUNTIME140) so exe and fmod share ONE C++ runtime (one __CxxFrameHandler3/_CxxThrowException/type_info list).",
+   "expected_bytes": "564352554e54494d453134305f4150502e646c6c00",
+   "evidence": [
+    "python find(b\"VCRUNTIME140_APP.dll\") -> [0xf989a] only",
+    "bytes at 0xf9896..: 6f6e0000 564352554e54494d453134305f4150502e646c6c 00 00 1900 71736f7274 (\"qsort\")",
+    "import descriptor #17 nameRVA 0xfae9a (python import parser)"
+   ],
+   "confidence": "high",
+   "sig": null
+  },
+  {
+   "id": "fmod.dllcharacteristics_patch",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "Patch 2 (recommended, harmless): clear IMAGE_DLLCHARACTERISTICS_APPCONTAINER in fmod_ARM.dll. DllCharacteristics (u16 at optional-header+0x46 = file offset 0x17E) = 0x1140 (APPCONTAINER 0x1000 | NX_COMPAT 0x100 | DYNAMIC_BASE 0x40); new 0x0140.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "file 0x17E: old 40 11 -> new 40 01 (u16 LE 0x1140 -> 0x0140). Keep DYNAMIC_BASE (image is relocatable; .reloc 0x3AB8 bytes). No GUARD_CF in the flags, so no CFG interaction (LoadConfig dd[10] present at RVA 0xE3D18 size 0x5C but flags do not enable CFG). Checksum field is 0, no signature -> nothing else to fix. Whether an AppContainer-flagged DLL would be refused by the loader in a desktop process is NOT verified here (documented loader checks apply to EXEs); clearing it removes the question.",
+   "expected_bytes": null,
+   "evidence": [
+    "python: u16 at 0x17e = 0x1140; optional-header magic 0x10b, opt=0x138 -> DllCharacteristics at 0x138+0x46",
+    "imports_table/pe_imports: the game exe has the same flag and the patcher clears it (0x9140->0x8140)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.winrt_descriptor_retarget",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x000fa89c",
+   "summary": "Optional (only for option B): retarget import descriptor #1 (api-ms-win-core-winrt-l1-1-0.dll: RoGetActivationFactory, RoUninitialize, RoInitialize; descriptor at file 0xF8D44) to win32craft.dll. Name string at file 0xF929C (RVA 0xFA89C) is 32 chars + NUL + 1 pad = 34 bytes, so \"win32craft.dll\" (14) fits in place. The winrt-string descriptor #2 (file 0xF92BE, 39 chars) must NOT be retargeted (it must stay on real combase HSTRINGs).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "old (34 bytes @0xF929C) = \"api-ms-win-core-winrt-l1-1-0.dll\" + 00 00 ; new = \"win32craft.dll\" (77 69 6E 33 32 63 72 61 66 74 2E 64 6C 6C) + 20 x 00. win32craft.dll must then export by NAME (ARM: undecorated) RoGetActivationFactory, RoUninitialize, RoInitialize with WINAPI(AAPCS) signatures: HRESULT RoGetActivationFactory(HSTRING classId, REFIID iid, void** factory); void RoUninitialize(void); HRESULT RoInitialize(UINT initType). The current repo api_compat.c RoGetActivationFactory is a stub returning REGDB_E_CLASSNOTREG, so this option REQUIRES a new body (fakes for the two classes, real combase for the rest). Not recommended as primary: runtime IAT patch (fmod.winrt_hook_option) achieves the same without export-name coupling or load-order dependence.",
+   "expected_bytes": "6170692d6d732d77696e2d636f72652d77696e72742d6c312d312d302e646c6c0000",
+   "evidence": [
+    "bytes at 0xf929c: \"api-ms-win-core-winrt-l1-1-0.dll\\0\\0api-ms...\" (python)",
+    "win32craft.def already maps RoGetActivationFactory/RoInitialize/RoUninitialize (x86 decorated forms) and api-ms-win-core-winrt-l1-1-0.def forwards them to win32craft"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.dll_iat_cells",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x000b118c",
+   "summary": "fmod_ARM.dll IAT cells that matter (all call sites load the cell with movw/movt+ldr+blx, there are no thunks in the DLL, so patching the cell hooks every caller): RoGetActivationFactory 0xB118C (9 call sites), RoUninitialize 0xB1190, RoInitialize 0xB1194, WindowsCompareStringOrdinal 0xB119C, WindowsCreateStringReference 0xB11A0, WindowsGetStringRawBuffer 0xB11A4, MMDevAPI!#17 (ActivateAudioInterfaceAsync) 0xB1030 (thunk 0xAD7B4), LoadPackagedLibrary 0xB1114 (single user sub_79A20), CreateEventExW 0xB115C, WaitForSingleObjectEx 0xB1160, SetEvent 0xB1168.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Cells are loader-filled (module base + RVA). A runtime hook must VirtualProtect the cell (.rdata, read-only) like arm32_patch_cell does. Call sites of the RoGetActivationFactory cell: 0x786B0 (sub_78690: IApplicationDataStatics), 0x786F0 (sub_786D0: IPackageStatics), 0x7935A (sub_79300: IMediaDeviceStatics), 0x79400 (sub_79300: IDeviceInformationStatics), 0x79B8E (sub_79AF0 shutdown: IMediaDeviceStatics), 0x7A3A4 (sub_7A384: IDeviceInformationStatics), 0x7B3E0 (sub_7B364 render device list: MediaDevice), 0x7BEE2 and 0x7BF86 (sub_7BE70 capture device list: MediaDevice, DeviceInformation).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re impcallers RoGetActivationFactory -> 0x786b0 0x786f0 0x7935a 0x79400 0x79b8e 0x7a3a4 0x7b3e0 0x7bee2 0x7bf86",
+    "arm32re impcallers RoInitialize -> 0x79d4e (sub_79d24); RoUninitialize -> 0x79d60",
+    "arm32re impcallers #17 -> 0x7b992 (sub_7b84c) 0x7bbfc (sub_7baa0) 0x7c446 (sub_7c2e0) 0x7c71e (sub_7c674)",
+    "IAT cells from import parser: FT 0xb118c/0xb1190/0xb1194 in descriptor #1, 0xb1030 in #3"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.init_call_chain",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0006d8d8",
+   "summary": "FMOD::System::init (export ?init@System@FMOD@@QAA?AW4FMOD_RESULT@@HIPAX@Z = sub_6D8D8) -> init body sub_945C4 (system r0, maxchannels r1 (>0xFFF -> error), flags r2, extradriverdata r3; [sys+8]!=0 -> FMOD_ERR_INITIALIZED 0x1B) -> sub_89024 (refcounted winstore OS init on the global state ptr at .data 0x1010 65F8: if counter==0 { sub_78FA0 x3 (OS primitive init) ; sub_79300 ; counter++ } ) -> sub_79300 (WinRT activation). ANY nonzero result from sub_89024 makes sub_945C4 return it immediately (b 0x94E9A) and System::init returns it: with the WinRT failure that is 0x1C = FMOD_ERR_INTERNAL. Release path: System::release (sub_92ABC) -> sub_88FAC (counter-- ; on 0: sub_7F664, sub_705F8, sub_79AF0 shutdown ...).",
+   "arm_signature": "FMOD_RESULT System::init(this r0, int maxchannels r1, unsigned flags r2, void* extradriverdata r3) -> r0",
+   "x86_to_arm_notes": "FMOD_RESULT numbering is FMOD 1.09: 0 OK, 18 FILE_NOTFOUND, 26 INITIALIZATION, 27 INITIALIZED, 28 (0x1C) INTERNAL, 31 INVALID_PARAM, 51 OUTPUT_INIT. System_Create does NOT touch WinRT (FMOD_System_Create at export RVA 0x7E904 never reaches sub_79300), only System::init does; so the game always gets a non-null FMOD::System* and only init fails.",
+   "expected_bytes": "2de9f049 0df1140b 94f70cf8",
+   "evidence": [
+    "arm32re exports \"init@System\" -> 0x6d8d8 (+1 Thumb) ; func 6d8d8: bl 0x971c0 (get impl) then bl 0x945c4 ; cbnz r5 -> error path (checks debug flag [g+0xc]&0x80 then returns r5)",
+    "arm32re func 945c4: 0x945f4 ldrb r4,[r5,#8]; cbz -> else movs r4,#0x1b ; 0x94608 bl 0x89024 ; cmp r4,#0 ; bne.w 0x94e9a (return)",
+    "arm32re func 89024: ldr r3,[r4]; cbnz -> skip ; 3x bl 0x78fa0 ; bl 0x79300 ; cmp r0,#0; bne return ; else ++[r4]",
+    "arm32re callers 79300 -> only 0x8905c (sub_89024); callers 89024 -> only 0x94608 (sub_945c4); callers 945c4 -> only 0x6d902 (sub_6d8d8 = System::init)",
+    "arm32re callers 88fac -> 0x92e78 in sub_92abc; sub_88fac calls sub_79af0 (shutdown) at 0x88fd8"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.winstore_init",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00079300",
+   "summary": "sub_79300 (RVA 0x79300, 1736 bytes, \"FMOD winstore OS/WASAPI-output WinRT initialisation\") does, IN THIS ORDER: (1) RoGetActivationFactory(L\"Windows.Media.Devices.MediaDevice\", IMediaDeviceStatics) then IMediaDeviceStatics::add_DefaultAudioRenderDeviceChanged(handler, &token) (slot 13) - on failure return 0x1C; (2) RoGetActivationFactory(L\"Windows.Devices.Enumeration.DeviceInformation\", IDeviceInformationStatics) ; CreateWatcher(DeviceClass 2=AudioRender) and CreateWatcher(1=AudioCapture) via slot 13 ; for each: add_Added(slot 6), add_Updated(8), add_Removed(10), add_EnumerationCompleted(12) with FMOD free-threaded delegates, Start() (slot 17) and WaitForSingleObjectEx(event, INFINITE) for the EnumerationCompleted handler (SetEvent) - on any failure return 0x1C; stores the two watchers at .data 0x13F794+0x18/+0x1C; (3) Windows.ApplicationModel.Package: IPackageStatics::get_Current (slot 6) -> IPackage::get_InstalledLocation (slot 7) -> QI IStorageItem -> get_Path (slot 12) -> wcsdup -> .data 0x13F794+0 ; (4) Windows.Storage.ApplicationData: IApplicationDataStatics::get_Current (slot 6) -> IApplicationData::get_TemporaryFolder (slot 14) -> +4, get_LocalFolder (slot 12) -> +8, get_RoamingFolder (slot 13) -> +0xC, each via QI IStorageItem + get_Path -> wcsdup. Returns 0 (FMOD_OK) only if all of (1)-(4) succeed; every WinRT failure sets r4=0x1C (FMOD_ERR_INTERNAL).",
+   "arm_signature": "FMOD_RESULT sub_79300(void) -> r0 (0 or 0x1C); callee-saved r4-r11; locals ~0x74 bytes on stack; no args",
+   "x86_to_arm_notes": "NEW vs pe_imports analysis: (a) the Package/ApplicationData part is the LAST step, after both device watchers were created, started and awaited with an INFINITE wait; so even when Package/ApplicationData fail the code has already blocked on two real DeviceWatcher EnumerationCompleted events -> if device enumeration never completes the process HANGS inside System::init (not graceful). (b) On a desktop process without identity the factory activation of Package/ApplicationData may succeed but IPackageStatics::get_Current / IApplicationDataStatics::get_Current return an error (APPMODEL_ERROR_NO_PACKAGE 0x80073D54 is the usual code, knowledge-based); either way the result is 0x1C at 0x7994A / 0x79920. (c) MediaDevice and DeviceInformation are NOT faked by the host and do not need to be: they are normal desktop-activatable classes. (d) The four path strings are only consumed by sub_790BC (FMOD_OS_File_Open prefix translation, see fmod.path_consumer).",
+   "expected_bytes": "2de9f04b 0df1180b 88f7f8fa 9db0 6f46",
+   "evidence": [
+    "arm32re func 79300 (684 lines read): string refs 0x7931c MediaDevice, 0x793c2 DeviceInformation, 0x79652 Package, 0x7971e ApplicationData; RoGetActivationFactory cell loads at 0x7935a 0x79400 and via helpers sub_786d0/sub_78690",
+    "vtable slots decoded from \"ldr r3,[r3,#0x34]\" etc.: 0x793a2 slot 13 (MediaDevice), 0x79448/0x79474 slot 13 (DeviceInformation), 0x79548.. slots 6/8/10/12 on watchers, 0x795dc slot 17 Start, WaitForSingleObjectEx(h, -1) at 0x795f6 and 0x79634, 0x79694 slot 6, 0x796b6 slot 7, 0x796e0 slot 12, 0x7975e slot 6, 0x79782 slot 14, 0x79800 slot 12, 0x79878 slot 13",
+    "slot numbers cross-checked against D:\\Windows Kits\\10\\Include\\10.0.19041.0\\winrt headers (IMediaDeviceStatics add_DefaultAudioRenderDeviceChanged=13, IDeviceInformationStatics CreateWatcherDeviceClass=13, IDeviceWatcher add_Added 6/add_Updated 8/add_Removed 10/add_EnumerationCompleted 12/Start 17/Stop 18, IPackageStatics get_Current 6, IPackage get_InstalledLocation 7, IStorageItem get_Path 12, IApplicationDataStatics get_Current 6, IApplicationData LocalFolder 12/RoamingFolder 13/TemporaryFolder 14)",
+    "handler object created by sub_7881c (EnumerationCompleted) has Invoke = sub_7a018 which calls SetEvent([this+0xc]) (arm32re func 7a018, vtable at 0xde410 slot 3)",
+    "every error branch ends with r4=0x1c: 0x79420 0x79450 0x7947a 0x79670 0x79694->0x7994a 0x7973c ; success path 0x798c6 movs r4,#0; b 0x79918; return at 0x799bc mov r0,r4"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.winrt_iids_and_strings",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x000dd6f4",
+   "summary": "GUIDs and class-name strings in fmod_ARM.dll .rdata used by the WinRT code: IMediaDeviceStatics {AA2D9A40-909F-4BBA-BF8B-0C0D296F14F0} @RVA 0xDD7BC; IDeviceInformationStatics {C17F100E-3A46-4A78-8013-769DC9B97390} @RVA 0xDD870; IPackageStatics {4E534BDF-2960-4878-97A4-9624DEB72F2D} @RVA 0xDD704; IApplicationDataStatics {5612147B-E843-45E3-94D8-06169E3C8E17} @RVA 0xDD860; IStorageItem {4207A996-CA2F-42F7-BDE8-8B10457A7F30} @RVA 0xDD6F4; IAudioClient2 (ActivateAudioInterfaceAsync target) {726778CD-F60A-4EDA-82DE-E47610CD78AA} @RVA 0xDF418; IAudioClient {1CB9AD4C-DBFA-4C32-B178-C2F568A703B2} @RVA 0xDF428. Wide strings: \"Windows.ApplicationModel.Package\" 0xDD718 (len 0x20), \"Windows.Devices.Enumeration.DeviceInformation\" 0xDD760 (len 0x2D), \"Windows.Media.Devices.MediaDevice\" 0xDD7D0 (len 0x21), \"Windows.Storage.ApplicationData\" 0xDD880 (len 0x1F). ASCII prefixes for file open: \"ms-appx://\" 0xDD814, \"ms-appdata:///temp\" 0xDD820, \"ms-appdata:///local\" 0xDD834, \"ms-appdata:///roaming\" 0xDD848.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "All six interface IDs were matched byte-for-byte against the Windows SDK 10.0.19041 winrt headers (MIDL_INTERFACE strings). The host fakes (fake_query_interface default branch) return the same object for any IID, so IID mismatch is not an issue for fakes; real WinRT objects use the real IIDs.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re bytes dd600..dd880 (GUID bytes decoded little-endian)",
+    "grep MIDL_INTERFACE in windows.storage.h (4207a996.., 5612147b..), windows.applicationmodel.h (4e534bdf..), windows.devices.enumeration.h (c17f100e..), windows.media.devices.h (aa2d9a40..)",
+    "arm32re str Windows -w -> 4 class strings with ref counts 1/3/4/1"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.path_consumer",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0013f794",
+   "summary": "The four paths produced by sub_79300 are stored as wcsdup'ed wchar_t* (sub_73210 = FMOD wcsdup via FMOD allocator) in .data at RVA 0x13F794: [0]=Package.InstalledLocation.Path, [4]=ApplicationData.TemporaryFolder.Path, [8]=LocalFolder.Path, [0xC]=RoamingFolder.Path. Their ONLY reader is sub_790BC (FMOD_OS_File_Open, via sub_709FC): paths starting with \"ms-appx://\" (10), \"ms-appdata:///temp\" (18), \"ms-appdata:///local\" (19), \"ms-appdata:///roaming\" (21) are rewritten by prefixing the matching folder path ([0],[4],[8],[0xC]) (sub_73290 = wcsncpy-like, a NULL pointer would crash there); everything else is passed through, converted UTF-8->UTF-16 and opened with CreateFile2. Shutdown (sub_79AF0) frees non-NULL entries via FMOD free (sub_72490) and removes the DefaultAudioRenderDeviceChanged token.",
+   "arm_signature": "wchar_t* g_paths[4] at image+0x13F794 (BSS, zero at start)",
+   "x86_to_arm_notes": "The game installs its own file callbacks with System::setFileSystem (open sub_5A2A7C, close 0x5A2B84, read 0x5A2BA8, seek 0x5A2C24 -> game I/O), so FMOD's own FMOD_OS_File_Open prefix translation is never exercised by the game; a NULL path would only matter if the game passed an \"ms-appx://\" name to the FMOD default file system, which it does not (the game string \"ms-appx:///data/\" is consumed by game code). Hence a binary patch that skips steps (3)/(4) (leaving the four pointers NULL) is functionally safe; B' (host hook) supplies real strings if wanted.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re xref 13f794 -> 0x790f0 0x79114 0x79138 0x7915c (all in sub_790bc) ; 0x79392 (sub_79300 base) ; 0x79b00 (sub_79af0 shutdown) ; no xrefs for +4..+0xC bases (same base register)",
+    "arm32re func 790bc: compares with \"ms-appx://\"(len 0xa), +0xc (len 0x12), +0x20 (len 0x13), +0x34 (len 0x15) then ldr r1,[base,#0/4/8/0xc]; bl 0x73290 ; MultiByteToWideChar(CP_UTF8 0xfde9) ; CreateFile2 ; GetLastError 2/3/0x7b -> 0x12 (FILE_NOTFOUND)",
+    "arm32re func 73210 -> wcsdup using allocator [g+0x74] and file \"fmod_stringw.cpp\" line 0xca",
+    "game setFileSystem call at 0x5A39E8 passes callbacks sub_5a2a7c sub_5a2b84 sub_5a2ba8 sub_5a2c24 (arm32re func 5a398c)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.shutdown_and_threads",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00079af0",
+   "summary": "sub_79AF0 (RVA 0x79AF0) = winstore shutdown: Stop() (slot 18, vtable offset 0x48) + Release for the two watchers (.data +0x1C, +0x18), IMediaDeviceStatics::remove_DefaultAudioRenderDeviceChanged(token at +0x24/+0x28) (slot 14), then frees the 4 path strings. sub_79D24 (RVA 0x79D24) = FMOD thread start trampoline: RoInitialize(1 = RO_INIT_MULTITHREADED); call thread proc; RoUninitialize(). The only users of the RoInitialize/RoUninitialize cells.",
+   "arm_signature": "FMOD_RESULT sub_79af0(void) ; DWORD WINAPI sub_79d24(void* {thread_fn r5 , arg r4})",
+   "x86_to_arm_notes": "If a hook redirects RoInitialize/RoUninitialize it must keep real combase behaviour (FMOD threads are MTA); no change needed for options A/D/B'.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 79af0: slot 0x48 at 0x79b18/0x79b34, slot 0x38 at 0x79bba, frees at 0x79c0a..0x79c5e",
+    "arm32re func 79d24: movs r0,#1 ; RoInitialize cell 0xb1194 ; blx r5 ; RoUninitialize cell 0xb1190"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.output_wasapi",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0007b364",
+   "summary": "FMOD WASAPI (winstore) output plugin: descriptor \"FMOD WASAPI Output\" at RVA 0xDF3F0 (source ..\\..\\winstore\\src\\fmod_output_wasapi.cpp). Device list: sub_7B364 = render list (MediaDevice.GetAudioRenderSelector slot 7 + GetDefaultAudioRenderId(role) slot 10, DeviceInformation.FindAllAsyncAqsFilter slot 10, wait on async via sub_7A598, WindowsCompareStringOrdinal against the default id); sub_7BE70 = capture list. sub_7B84C/sub_7C2E0 = getDriverInfo (WindowsGetStringRawBuffer + WideCharToMultiByte, \" (loopback)\" suffix), sub_7BAA0 = output init: MFStartup, MFLockSharedWorkQueue(L\"Audio\"), MFCreateAsyncResult, ActivateAudioInterfaceAsync(deviceId, IID_IAudioClient2 @0xDF418) + wait, sub_7C674 = record init. All of these use REAL WinRT/MMDevAPI/MF and work in a plain desktop process; none needs package identity.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Needed for basic stereo output: sub_7B364 (default render device resolution) and sub_7BAA0 (ActivateAudioInterfaceAsync + audio client) are on the System::init -> output start path (sub_7C9E0 calls sub_7B364 then sub_7BAA0). Capture/loopback paths are only used if the game records (it does not import record functions). Unverified at run time: ActivateAudioInterfaceAsync completion + MFLockSharedWorkQueue(\"Audio\") on the user's device.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re calls 7b364/7b84c/7baa0/7be70/7c2e0/7c674/7c9e0 (strings, imports, slot loads) ; sub_7c9e0 calls 0x7b364 at 0x7ca3c and 0x7baa0 at 0x7caa4",
+    "str winstore -> fmod_output_wasapi.cpp 0xdf464 (refs 4), fmod_os_misc.cpp 0xde490 (8), fmod_codec_mf.cpp 0xdd6cc (4)",
+    "impcallers #17 (4 sites) ; IID 0xdf418 = {726778CD-F60A-4EDA-82DE-E47610CD78AA} IAudioClient2 (bytes at 0xdf418)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "fmod.patch_skip_package_appdata",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x00079650",
+   "summary": "Option D (recommended primary binary patch): make sub_79300 skip steps (3) and (4) (Package + ApplicationData) and return FMOD_OK. At RVA 0x79650 (file 0x78A50) replace the 6 bytes \"str r3,[r7,#0x58]; movw r1,#0xd718\" by \"movs r4,#0; b.w 0x79960\". 0x79960 is the common cleanup chain (releases the three delegate holders [r7+0x68/0x6C/0x70], the event holder [r7+0x48], the watcher locals [r7+0x34]/[r7+0x30] which were already moved into .data, the two factory pointers [r7+0x38]/[r7+0x3C]) and returns r4. The success path of the original code also ends in this chain (0x798C6 -> 0x79918 -> 0x7994C -> 0x79954 -> 0x79960); jumping directly to 0x79960 skips only the releases of locals [r7+0x40]/[r7+0x50]/[r7+0x54]/[r7+0x58] that were never initialised.",
+   "arm_signature": "file edit @0x78A50: old bb65 4df21871 -> new 0024 00f085b9",
+   "x86_to_arm_notes": "Bytes: old = BB 65 4D F2 18 71 (str r3,[r7,#0x58] ; movw r1,#0xd718); new = 00 24 00 F0 85 B9 (movs r4,#0 ; b.w #0x79960; encoding verified with capstone: \"movs r4, #0\" at 0x79650, \"b.w #0x79960\" at 0x79652). The next original instruction at 0x79656 (movt) becomes unreachable. Effect: MediaDevice handler + both DeviceWatchers are still created/started/awaited and stored (so getNumDrivers/getDriverInfo/output init work exactly as in a packaged run); the four path globals stay NULL (see fmod.path_consumer: unused by the game). r4 MUST be zeroed because at this point it holds a handler pointer (set at 0x79526) and is the return value register copy (mov r0,r4 at 0x799bc). Residual risk: hang if the two EnumerationCompleted events never arrive (applies to every option incl. A).",
+   "expected_bytes": "bb654df21871",
+   "evidence": [
+    "arm32re dis around 0x79650 (see sub_79300 listing): 0x7964e movs r3,#0 ; 0x79650 str r3,[r7,#0x58] ; 0x79652 movw r1,#0xd718 ; 0x79656 movt ; 0x7965a mov r0,r7 ; 0x7965c bl sub_78618",
+    "python capstone on the patched bytes: \"0x79650 movs r4,#0 ; 0x79652 b.w #0x79960\" ; branch target decodes to \"adds.w r0,r7,#0x68 ; bl 0x7a7c4\" (cleanup chain)",
+    "cleanup chain 0x79960..0x799c4 read in the listing: releases 0x68,0x6c,0x70 (sub_7a7c4), sub_78bd0(r7+0x48), release [r7+0x34],[r7+0x30],[r7+0x38],[r7+0x3c] (each cbz-guarded), mov r0,r4",
+    "stores to .data happen before the site: 0x79642 str.w r3,[r8,#0x18] and 0x7964a str.w r3,[r8,#0x1c] (watchers), token stored by add_DefaultAudioRenderDeviceChanged at 0x793a4"
+   ],
+   "confidence": "medium",
+   "verifier_correction": "USE THE RELOC-SAFE 4-BYTE PATCH: file offset 0x78A4E: 00 23 BB 65 -> 00 24 86 E1 (movs r4,#0; b.n 0x79960). The finder 6-byte patch at 0x78A50 straddles a type-7 relocation at RVA 0x79652 and only works because load deltas are multiples of 64 KiB. Full-file sha256 with all three edits (rename, APPCONTAINER clear, reloc-safe skip): cf226ecb83f478a67c6dab205dbd2a5ed0a469ac9fa27f2ed4bda12680d5d1f6. The APPCONTAINER clear is optional (a flagged DLL loaded fine on Win11 x64)."
+  },
+  {
+   "id": "fmod.winrt_hook_option",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": "0x000b118c",
+   "summary": "Option B' (alternative / fallback to D): host hooks fmod_ARM.dll's RoGetActivationFactory IAT cell at runtime: module = GetModuleHandleW(L\"fmod_ARM.dll\"), cell = module + 0xB118C (VirtualProtect RW, verify the old value is a non-null code pointer - on Win10 it is combase!RoGetActivationFactory, compare with GetProcAddress(GetModuleHandleW(L\"combase.dll\"),\"RoGetActivationFactory\") and only LOG a mismatch), store the host function, restore protection. Host function: HRESULT WINAPI fmod_ro_get_activation_factory(HSTRING class_id, REFIID iid, void** factory): read the class name with the NATIVE combase WindowsGetStringRawBuffer; if it equals L\"Windows.ApplicationModel.Package\" or L\"Windows.Storage.ApplicationData\" call the existing win32_get_activation_factory(LPCWSTR, const GUID*, void**) (which returns &package_factory / &appdata_factory); otherwise call the NATIVE combase RoGetActivationFactory. Must run before the first System::init (after install_activation_redirect has initialised package_factory/appdata_factory/package_object/appdata_object/package_folder/data_folder).",
+   "arm_signature": "HRESULT WINAPI fmod_ro_get_activation_factory(HSTRING classId /*r0*/, const IID* iid /*r1*/, void** factory /*r2*/); static BOOL install_arm32_fmod_winrt_hook(void)",
+   "x86_to_arm_notes": "What the host fakes already return, slot by slot (win32_host.c): factory_vtable slot 6 = fake_factory_current (-> package_object / appdata_object by kind) OK; package_vtable[7] = fake_package_installed_location (-> package_folder) OK (FMOD slot 7); default fake_query_interface branch returns the SAME object for IID_IStorageItem OK (FMOD QI at vtable[0]); folder_vtable_01510[12] = fake_folder_path (FMOD slot 12 get_Path) OK; appdata_vtable[12],[13],[14] = fake_appdata_local_folder (FMOD uses 14,12,13) OK. fake_folder_path returns WindowsCreateString(package_path | game_data_path): FMOD reads it with the REAL combase WindowsGetStringRawBuffer, therefore on ARM the host WindowsCreateString (api_compat.c native_hstring_proc gate currently = SizeOfImage 0x02DB1000 only) MUST forward to combase (PORT_RULES #8; extend gate to the ARM patched size 0x01731000). FMOD never calls WindowsDeleteString (leaks the HSTRING; harmless). No other class activation (MediaDevice/DeviceInformation) may go to the fakes. Cost: ~60 lines + gate fix; risk low-medium (needs the gate fix, the hook must precede System::init).",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 2711-2762 (fake_factory_current, fake_package_installed_location, fake_appdata_local_folder, fake_folder_path), 7442-7465 (package_vtable, appdata_vtable), 2303-2395 (fake_query_interface default branch returns object), 7517-7545 (win32_get_activation_factory Package/ApplicationData), 7840-7850 (factory init)",
+    "api_compat.c 150-166 native_hstring_proc gate 0x02db1000, WindowsCreateString 168-",
+    "fmod_ARM.dll never imports WindowsDeleteString (import parser: winrt-string descriptor = CompareStringOrdinal, CreateStringReference, GetStringRawBuffer)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "fmod.null_fmod_option",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "Option C: silent FMOD implemented by the host: win32craft.dll (or a stub fmod_ARM.dll) exports exactly the 39 imported symbols under their ARM-mangled names (table in this JSON: null_impl_table). x86 precedent: win32_host.c 1487-1626 fake_fmod_* (System/Group/Sound/Channel are four static ints used as handles; init returns 0; getVersion 0xFFFFFFFF; isPlaying FALSE; createSound/playSound/getSubSound return the static handles) and 2178+ bridge_fmod_*; the ARM game needs a few more behaviours listed in the table (getFormat type, getSoftwareFormat rate, NULL-tolerant outputs). Two ways to wire it: (i) ship a stub DLL named fmod_ARM.dll exporting the 39 names (no exe patch, but replaces the real DLL), (ii) repoint exe import descriptor #1 (descriptor RVA 0x13269BC, file 0x1325DBC; Name field at file 0x1325DC8 currently RVA 0x013283EA -> \"fmod_ARM.dll\" at file 0x13277EA) to a \"win32craft.dll\" string in the patcher's new section (14 chars do not fit the 13-byte slot) - same mechanism as XINPUTUAP.dll.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Practical: 39 trivial functions, ~250 LOC C. Exports must be created from the exact mangled strings (clang thumbv7-pc-windows-msvc: use a .def \"?name@Class@FMOD@@QAA?AW4FMOD_RESULT@@...@Z=InternalName\" alias or __asm__ labels; FMOD_System_Create is undecorated C). AAPCS details: 64-bit args take an even register pair (skip r1: addFadePoint r2:r3, setDelay r2:r3 + stack), floats in s0-s2, fifth+ args on stack (createSound sound** and playSound channel** at [sp], setFileSystem 4 stack args, set3DListenerAttributes 2 stack args, getDriverInfo 4 stack args). Value over A/D: removes the hard dependency on fmod_ARM.dll loading at process start and the INFINITE-wait hang risk; costs: no audio. Use as fallback if fmod_ARM.dll fails to load (RT 8.1 contracts) or System::init hangs.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 1487-1626 read (fake_fmod_*), 2074-2188 (bridge wrappers), 10885-10961 (resolve_fmod_delay_imports_128 loads real fmod.dll on x86)",
+    "imports_table.json descriptor 1: 39 funcs with iat/thunk RVAs and mangled names",
+    "game call sites analysed: SoundSystemFMOD vf1/vf2/vf3/vf4/vf14/vf20/vf27/vf30/vf34/vf35/vf36 (see fmod.game_*)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "fmod.game_soundsystem_class",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x0136af94",
+   "summary": "Game-side FMOD user: class SoundSystemFMOD (RTTI .?AVSoundSystemFMOD@@, vtable RVA 0x136AF94, base SoundSystemBase vtable 0x1367880), created unconditionally by the SoundEngine constructor sub_53CDA4 (-> sub_5A33C8 at engine+8). Fields: +0x70 byte \"audio active\" flag, +0x74 FMOD::System*, +0x78 master ChannelGroup*, +0x7C \"Sound Channel Group\", +0x80 \"Music Channel Group\", +0x8C map of loaded sounds, +0xAC spinlock byte. Virtual slots used: vf1 0x5A393C = createSystem (bool), vf2 0x5A398C = init (void), vf3 0x5A3A90 = shutdown, vf4 0x5A3890 = selectDriver, vf5 0x5A3AC0 = suspend/resume (mixerSuspend/mixerResume + writes +0x70), vf14 0x5A3BD0 = loadSound, vf20 0x5A4830 = play by name, vf27 0x5A4960 = fade/delay, vf30 0x5A4B1C = update, vf34 0x5A324C = play 3D, vf36 0x5A4CC0 = set listener.",
+   "arm_signature": "vtable of 38 slots; code pointers have bit0 set (Thumb); slot RVAs (even): 0x5A34CC,0x5A393C,0x5A398C,0x5A3A90,0x5A3890,0x5A3AC0,0x5A3B64,0x5A3B00,0x5A3B20,...",
+   "x86_to_arm_notes": "x86 equivalents (SoundSystemFMOD on x86) are not in the supplied sources; semantics from ARM code only. All field offsets are measured on ARM (do not reuse x86 numbers).",
+   "expected_bytes": "2de91048 0df1040b 5df65af4 (vf1 @0x5A393C)",
+   "evidence": [
+    "arm32re rtti SoundSystemFMOD -> vtable 0136af94 ; vtable 136af94 40 listing",
+    "arm32re xref 136af94 -> 0x5a3410 in sub_5a33c8 ; callers 5a33c8 -> 0x53ce30 in sub_53cda4 (SoundEngine ctor, vtable .?AVSoundEngine@@ store at 0x53cdd0)",
+    "field accesses decoded in vf1/vf2/vf3/vf5/vf6/vf12/vf13/vf14/vf20/vf30 (ldr [r,#0x74] / ldrb [r,#0x70] / [r,#0x78]/[0x7c]/[0x80])"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.game_fmod_init_sequence",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x005a398c",
+   "summary": "SoundEngine ctor (sub_53CDA4) calls: ok = soundSystem->vf1() (SoundSystemFMOD::createSystem: FMOD_System_Create(&this->+0x74) via stub sub_5A3880 [b.w to thunk 0x9DD6F0]; then System::getVersion(&v); returns 1 only if v >= 0x00010904, else sets +0x74=0 and returns 0). If ok==0 the engine skips everything (b 0x53D014). If ok: vf4 (selectDriver) is called with the saved preferred-device GUID: when the GUID dword is nonzero it loops getNumDrivers/getDriverInfo/memcmp(GUID)/setDriver/setOutput(0=AUTODETECT); then vf2 (init): System::init(maxchannels=0x20, flags=4 (FMOD_INIT_3D_RIGHTHANDED), extradriverdata=NULL); on ANY nonzero result calls the error logger sub_5A31BC and RETURNS (init failure is silent, +0x70 stays 0). On success: System::setFileSystem(sub_5A2A7C open, sub_5A2B84 close, sub_5A2BA8 read, sub_5A2C24 seek, asyncread NULL, asynccancel NULL, blockalign -1), set3DSettings(1.0, [this+4], 1.0), createChannelGroup(\"Sound Channel Group\")->+0x7C, createChannelGroup(\"Music Channel Group\")->+0x80, getMasterChannelGroup->+0x78, addGroup(master, sound, true, NULL) and addGroup(master, music, true, NULL), then +0x70 = 1.",
+   "arm_signature": "bool SoundSystemFMOD::createSystem(this r0) -> r0 ; void SoundSystemFMOD::init(this r0) ; void selectDriver(this r0, const GUID* preferred r1)",
+   "x86_to_arm_notes": "Return-code handling: createSystem checks FMOD_System_Create result and the version only; init() ignores nothing but also fatal-checks nothing: every call is followed by cbz/cbnz on r0 and an early return, never an assert/throw/abort. sub_5A31BC formats \"%s(%d): FMOD error %d - %s\" into a 0x400 stack buffer through sub_5706A0 (a vsnprintf-like helper) and then DISCARDS it (no log sink in the release build). Contrast: HRESULT failures from WinRT in the game (ARM 0x838CC throw helper) DO throw, but FMOD results never do.",
+   "expected_bytes": "2de91048 0df1040b 85b0 0446",
+   "evidence": [
+    "arm32re func 5a393c / 5a398c / 5a3890 / 5a3880 / 5a31bc / 5a3a90 read in full (game_fmod_init.txt)",
+    "sub_53cda4 0x53cf14: ldr r3,[r5,#8]; ldr r3,[r3,#4]; blx r3 (vf1) ; cmp r0,#0 ; beq 0x53d014 ; then slot 0x10 (vf4) and slot 8 (vf2)",
+    "init args at 0x5a39a0: movs r2,#4 ; movs r1,#0x20 ; movs r3,#0 ; bl thunk init (0x9dd798)",
+    "vf2 failure: cbz r0,0x5a39b8 else movw r2,#0x103 ; bl 0x5a31bc ; return (0x5a39a8..0x5a39b4)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.game_failure_behaviour",
+   "x86_symbol": "n/a (no x86 counterpart; x86 used a real desktop fmod.dll)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": "0x005a3bd0",
+   "summary": "What happens when System::init fails (WinRT failure -> FMOD_ERR_INTERNAL 0x1C): graceful no-audio, NO crash/assert/exception. +0x70 (initialised flag) stays 0 and +0x74 stays a valid System*; every public SoundSystemFMOD method guards on +0x74 and/or +0x70: loadSound (vf14: cbz [+0x74] and ldrb [+0x70] -> return 0), play (vf20: loads sound via map, plays only if +0x74 && +0x70), update (vf30), setMute/setVolume (vf6/vf12/vf13 check +0x78/+0x7C/+0x80 non-NULL + flags), listener/3D ops guard on +0x74. Residual hazards: (1) vf5 (suspend/resume) writes +0x70 = arg unconditionally, so after an app resume the flag can become 1 while FMOD is uninitialised; real FMOD then returns errors (FMOD_ERR_UNINITIALIZED) from every call, which the game ignores - still graceful. (2) vf34 (0x5A324C, 3D play) calls playSound without a flag guard but is only reached with a loaded Sound, which cannot exist when loadSound is guarded. System::init may HANG (not fail) if a DeviceWatcher never signals EnumerationCompleted (INFINITE wait in sub_79300).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "So option A (rename only) yields a running game without audio provided init returns promptly; option C is equivalent to A from the game's point of view but avoids the hang and the fmod_ARM.dll load dependency.",
+   "expected_bytes": null,
+   "evidence": [
+    "vf14 0x5a3bf4..0x5a3c0c: ldr r4,[r6,#0x74]; cmp r4,#0; beq 0x5a41e4 ; ldrb r4,[r0,#0x70]; beq 0x5a41e4 (returns 0)",
+    "vf30 0x5a4b26..0x5a4b2e: ldr r0,[r5,#0x74]; cbz ; ldrb r3,[r5,#0x70]; cbz ; bl update thunk",
+    "vf6/vf12/vf13: ldr r2,[r0,#0x78/0x80/0x7c]; cbz; ldr r3,[r0,#0x74]; cbz; ldrb [r0,#0x70]; cbz",
+    "vf5 0x5a3ace-0x5a3afc: strb.w r5,[r4,#0x70] on all paths",
+    "script scan of 35 SoundSystemFMOD functions for #0x70/#0x74 accesses (game_fmod_all.txt)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.game_audiograph_vs_fmod",
+   "x86_symbol": "win32_host.c fake_audio_graph_settings_create 6844, fake_audio_graph_create_async 6870, fake_audio_graph_result_status 6879 (returns 1=DeviceNotAvailable), 7602-7616 (class redirects, host_is_128||host_is_116)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": "0x00599300",
+   "summary": "AudioGraph vs FMOD: in the ARM 1.2.8 exe there is NO audio-backend selection. RTTI contains only SoundSystemBase and SoundSystemFMOD, and the SoundEngine ctor always builds SoundSystemFMOD. AudioGraph/AudioGraphSettings are used by the AppPlatform_Winrt text-to-speech/narration adapter (sub_59871C, called from AppPlatform_Winrt ctor at 0x581EF6, stored at +0x3B4): it activates Windows.Media.SpeechSynthesis.SpeechSynthesizer and Windows.Media.Audio.AudioGraphSettings (IID {A5D91CC6-C2EB-4A61-A214-1D66D75F83DA} = IAudioGraphSettingsFactory, sub_5992B8, AudioRenderCategory 9 = Speech) and AudioGraph::CreateAsync. The continuation sub_5988CC reads CreateAudioGraphResult::get_Status (slot 6): Status != 0 takes a benign branch (no get_Graph, completion value false) -> the same \"fall back when not Success\" semantics the x86 host relies on (fake DeviceNotAvailable = 1).",
+   "arm_signature": "HRESULT IAudioGraphSettingsFactory::Create(this, AudioRenderCategory category /*r1 = 9*/, IAudioGraphSettings** out /*r2*/) (slot 6) ; IAudioGraphStatics::CreateAsync (slot 6) ; ICreateAudioGraphResult::get_Status (slot 6), get_Graph (slot 7)",
+   "x86_to_arm_notes": "The ARM exe activates AudioGraphSettings through the same vccorlib GetActivationFactoryByPCWSTR wrapper (0xB48F88 -> IAT cell 0xC37BF0) that the host hooks, so the x86 redirects (AudioGraphSettings, AudioGraph) port unchanged semantically; slots are the same MIDL slots (Create=6). The x86 comment \"1.2.8 falls back to its FMOD path\" is true of the ARM exe only in the sense that FMOD is the sole game-audio backend; AudioGraph here only serves TTS. Nothing in AudioGraph depends on FMOD init.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re rtti SoundSystem -> only SoundSystemBase, SoundSystemFMOD ; rtti Audio -> only Concurrency/task/handler template instances for CreateAudioGraphResult etc.",
+    "arm32re strx \"Windows.Media.Audio.AudioGraphSettings\" -w -> 0x5992e4 (sub_5992b8) ; \"Windows.Media.Audio.AudioGraph\" -> 0x59936a (sub_59933c) ; SpeechSynthesizer -> 0x59911c, 0x5991a2 ; callers 59871c -> 0x581ef6 (AppPlatform_Winrt ctor)",
+    "IID constants 0xa5d91cc6,0x4a61c2eb,0x661d14a2,0xda835fd7 = a5d91cc6-c2eb-4a61-a214-1d66d75f83da (windows.media.audio.h IAudioGraphSettingsFactory) ; sub_5992b8 passes r1=9 to sub_57fb2c (Create)",
+    "sub_5988cc: slot 0x18 (get_Status) at 0x59890a ; cbnz r3 -> 0x59899a failure branch (no sub_1046c4 get_Graph) ; sub_1046c4 reads slot 0x1c (get_Graph)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "fmod.x86_fmod_delay_resolver",
+   "x86_symbol": "resolve_fmod_delay_imports_128 / fake_fmod_* / bridge_fmod_* / load_real_fmod / install_native_fmod_bridge",
+   "x86_value": null,
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "x86 resolve_fmod_delay_imports_128 (win32_host.c 10885-10961), the x86 fake_fmod_*/bridge_fmod_*/load_real_fmod/install_native_fmod_bridge machinery (1487-2230) and fmod_output.txt option handling: not used on ARM. fmod_ARM.dll is a NORMAL import (descriptor #1), loader-resolved; there is no delay descriptor named fmod (delay directory = tcui only) and no desktop ARM FMOD exists. The host only needs (a) the DLL patch, (b) optional hook B', (c) optional null implementation C.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Keep the x86 code compiled out of the ARM build; add an ARM diagnostic: GetModuleHandleW(L\"fmod_ARM.dll\") + log base, and log whether System::init succeeded (hook SoundSystemFMOD::init return? not needed - the game ignores it; instead log from the optional hook).",
+   "expected_bytes": null,
+   "evidence": [
+    "pe_imports.md: delay dir = tcui only",
+    "arm32re imports fmod -> 39 cells 0xc37a58..0xc37af0 under fmod_ARM.dll"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fmod.hstring_world",
+   "x86_symbol": "api_compat.c native_hstring_proc gate (*(DWORD*)(image+pe+0x50)==0x02db1000)",
+   "x86_value": "0x02db1000",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "HSTRING world on ARM for FMOD: fmod_ARM.dll imports WindowsCreateStringReference/WindowsGetStringRawBuffer/WindowsCompareStringOrdinal from api-ms-win-core-winrt-string-l1-1-0 (real combase) and consumes HSTRINGs created by real WinRT objects; it must therefore never be given a Win32Craft fake HSTRING. Options A and D never mix worlds. Option B' mixes them (fake_folder_path -> WindowsCreateString) and requires the combase forwarding in api_compat.c (native_hstring_proc) for the ARM image size 0x01731000.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Already decided in PORT_RULES #8 / pe_imports.hstring_world; restated because FMOD is the first concrete consumer of host-created HSTRINGs.",
+   "expected_bytes": null,
+   "evidence": [
+    "api_compat.c 150-166",
+    "fmod_ARM.dll import parser (descriptor #2)"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "PLAN (primary, option D): ship a patched fmod_ARM.dll produced from the pristine one by a new ARM patcher step (e.g. tools/arm32-1.2.8-patcher.py::patch_fmod_arm(source, output)) using the existing checked_write(image, offset, expected, replacement, label) helper from tools/1.2.8-patcher.py. Abort unless SHA-256 == 5f92f5ac9317c7a5d61ab6b43a2e799ae90eb7eee5c992c85d0325ba1d09fc38 and len == 1118720. Three edits (all verified, see file offsets): (1) @0xF989A 21 bytes: \"VCRUNTIME140_APP.dll\\0\" -> \"VCRUNTIME140.dll\\0\\0\\0\\0\\0\" (hex old: 56 43 52 55 4E 54 49 4D 45 31 34 30 5F 41 50 50 2E 64 6C 6C 00; new: 56 43 52 55 4E 54 49 4D 45 31 34 30 2E 64 6C 6C 00 00 00 00 00); (2) @0x17E 2 bytes 40 11 -> 40 01 (clear APPCONTAINER, DllCharacteristics 0x1140 -> 0x0140); (3) @0x78A50 6 bytes BB 65 4D F2 18 71 -> 00 24 00 F0 85 B9 (sub_79300: skip Package/ApplicationData, return FMOD_OK).",
+  "Host side for D: NO new hooks are required. Remove/keep compiled-out resolve_fmod_delay_imports_128 (no fmod delay descriptor on ARM). Add an ARM diagnostic in Win32Bootstrap: HMODULE m = GetModuleHandleW(L\"fmod_ARM.dll\"); log_pointer(\"fmod_ARM.dll base\", m); if NULL log \"fmod_ARM.dll not loaded\" (it is a normal import, so NULL means the exe was started without it). Optionally set a startup log line before the game constructs the SoundEngine so a hang inside System::init (INFINITE wait on DeviceWatcher EnumerationCompleted) is attributable.",
+  "FALLBACK 1 (option B'): add under #ifdef WIN32CRAFT_ARM32 in win32_host.c: static HRESULT WINAPI fmod_ro_get_activation_factory(HSTRING class_id, const GUID *iid, void **factory) and static BOOL install_arm32_fmod_winrt_hook(void), called from install_arm32_iat_hooks (after install_activation_redirect has initialised the fakes). Body: resolve native combase RoGetActivationFactory and WindowsGetStringRawBuffer once (LoadLibraryW(L\"combase.dll\") + GetProcAddress); name = native WindowsGetStringRawBuffer(class_id, &len); if (!wcscmp(name, L\"Windows.ApplicationModel.Package\") || !wcscmp(name, L\"Windows.Storage.ApplicationData\")) return win32_get_activation_factory(name, iid, factory); else return native_RoGetActivationFactory(class_id, iid, factory). Install: BYTE *m = (BYTE*)GetModuleHandleW(L\"fmod_ARM.dll\"); arm32_patch_cell((void**)(m + 0xB118C), NULL /*expected: only log mismatch*/, (void*)fmod_ro_get_activation_factory, &original, \"fmod_ARM RoGetActivationFactory\"). Do NOT apply patch (3) in this variant (leave the original DLL code) - patches (1) and (2) are still required. Also required: api_compat.c native_hstring_proc must forward to combase for SizeOfImage 0x01731000 (PORT_RULES #8) because fake_folder_path hands HSTRINGs to native FMOD code.",
+  "FALLBACK 2 (option C): add a new source (e.g. fmod_null.c, ARM only) exporting the 39 functions of null_impl_table with the listed mangled names (use a .def with \"<mangled>=<c_name>\" entries; FMOD_System_Create undecorated) and four static handle objects (system, master/sound/music groups, sound, channel). Wire by (i) shipping it as fmod_ARM.dll, or (ii) in the exe patcher repoint import descriptor #1: write the new name string \"win32craft.dll\\0\" into the patcher's new section and store its RVA into the descriptor Name field at file offset 0x1325DC8 (old value 0x013283EA, descriptor at file 0x1325DBC / RVA 0x13269BC; old string \"fmod_ARM.dll\" at file 0x13277EA is 12+1 bytes so it cannot be overwritten in place). Behavioural requirements are in the table (NULL-tolerant outputs for getSoftwareFormat/getDSPClock/getFormat/addGroup, getFormat type != 9 and != 0x12, getNumDrivers = 0, getVersion >= 0x10904).",
+  "Contingency for Windows RT 8.1 contract misses (unverified): any api-ms-win-core-* name in the table marked RISK can be retargeted in place to \"KERNEL32.dll\" (strings are >= 30 chars; write name + NULs), e.g. @0xF9710 (processthreads-l1-1-2), @0xF965E (file-l1-2-1), @0xF978E (file-l2-1-1), @0xF9764 (libraryloader-l2-1-0), @0xF9C92 (sysinfo-l1-2-1); do NOT do this for api-ms-win-crt-* (needs UCRT) or the winrt/com contracts.",
+  "Do not retarget the winrt-string descriptor (@0xF92BE) and do not enable option B (descriptor @0xF929C -> \"win32craft.dll\") unless win32craft.dll gains real exports RoGetActivationFactory/RoInitialize/RoUninitialize with the dispatching bodies described in fmod.winrt_descriptor_retarget; the runtime IAT hook (FALLBACK 1) is strictly simpler."
+ ],
+ "open_questions": [
+  "Does DeviceInformation.CreateWatcher(AudioRender/AudioCapture) raise EnumerationCompleted promptly in a plain desktop (unpackaged) process on Windows 10 ARM32 and Windows RT 8.1? A negative answer turns every option except C into a startup hang inside System::init (INFINITE wait at 0x795F6/0x79634). Needs an on-device test; consider an env switch to select option C at runtime.",
+  "Does the loader accept the APPCONTAINER-flagged fmod_ARM.dll in a desktop process? (patch 2 removes the question; not tested.)",
+  "Windows RT 8.1: which of the RISK api-set contracts are missing (processthreads-l1-1-2, file-l1-2-1, file-l2-1-1, libraryloader-l2-1-0, sysinfo-l1-2-1) and is the UCRT redistributable installed? Could not be verified here (no RT files).",
+  "Exact failing HRESULT of the unpackaged Package/ApplicationData calls (assumed 0x80073D54 at get_Current; the class activation itself may succeed) - irrelevant for D (the code is skipped) and for B' (fakes), only affects the description of option A.",
+  "ActivateAudioInterfaceAsync / MFLockSharedWorkQueue(\"Audio\") output start (sub_7BAA0) was decoded structurally but not executed; audible output on the target device is unverified.",
+  "Delegate bodies for Added/Updated/Removed/DefaultAudioRenderDeviceChanged (sub_78710, sub_788A8, sub_78798) were not decoded (they refresh the device list); only the EnumerationCompleted handler (SetEvent) was confirmed.",
+  "Whether any game path ever passes an \"ms-appx://\" or \"ms-appdata:///\" name to FMOD's default file layer (would dereference a NULL path under option D): none found (game uses setFileSystem callbacks) but not exhaustively proven."
+ ],
+ "null_impl_table": [
+  {
+   "iat_rva_in_exe": "0x00c37a58",
+   "thunk_rva_in_exe": "0x009dd78c",
+   "export_name": "?getVersion@System@FMOD@@QAA?AW4FMOD_RESULT@@PAI@Z",
+   "cpp_signature": "FMOD_RESULT System::getVersion(unsigned* version)",
+   "c_signature_aapcs": "int fn(void* self, unsigned* version)",
+   "null_impl": "*version = 0x00010904 (game requires >= 0x10904 else createSystem fails); return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a5c",
+   "thunk_rva_in_exe": "0x009dd798",
+   "export_name": "?init@System@FMOD@@QAA?AW4FMOD_RESULT@@HIPAX@Z",
+   "cpp_signature": "FMOD_RESULT System::init(int maxchannels, unsigned flags, void* extradriverdata)",
+   "c_signature_aapcs": "int fn(void* self, int maxchannels, unsigned flags, void* extra)",
+   "null_impl": "return 0 (game passes 0x20, 4, NULL)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a60",
+   "thunk_rva_in_exe": "0x009dd7a4",
+   "export_name": "?set3DSettings@System@FMOD@@QAA?AW4FMOD_RESULT@@MMM@Z",
+   "cpp_signature": "FMOD_RESULT System::set3DSettings(float doppler, float distance, float rolloff)",
+   "c_signature_aapcs": "int fn(void* self, float a, float b, float c)",
+   "null_impl": "return 0 (floats in s0..s2, hard-float ABI)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a64",
+   "thunk_rva_in_exe": "0x009dd7b0",
+   "export_name": "?createChannelGroup@System@FMOD@@QAA?AW4FMOD_RESULT@@PBDPAPAVChannelGroup@2@@Z",
+   "cpp_signature": "FMOD_RESULT System::createChannelGroup(const char* name, ChannelGroup** group)",
+   "c_signature_aapcs": "int fn(void* self, const char* name, void** group)",
+   "null_impl": "*group = non-NULL static handle (game calls it twice: \"Sound Channel Group\" -> this+0x7C, \"Music Channel Group\" -> this+0x80; use 2 distinct objects); return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a68",
+   "thunk_rva_in_exe": "0x009dd7bc",
+   "export_name": "?getMasterChannelGroup@System@FMOD@@QAA?AW4FMOD_RESULT@@PAPAVChannelGroup@2@@Z",
+   "cpp_signature": "FMOD_RESULT System::getMasterChannelGroup(ChannelGroup** group)",
+   "c_signature_aapcs": "int fn(void* self, void** group)",
+   "null_impl": "*group = non-NULL static master handle (-> this+0x78); return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a6c",
+   "thunk_rva_in_exe": "0x009dd7c8",
+   "export_name": "?addGroup@ChannelGroup@FMOD@@QAA?AW4FMOD_RESULT@@PAV12@_NPAPAVDSPConnection@2@@Z",
+   "cpp_signature": "FMOD_RESULT ChannelGroup::addGroup(ChannelGroup* group, bool propagatedspclock, DSPConnection** connection)",
+   "c_signature_aapcs": "int fn(void* self, void* group, int propagate /*bool in r2*/, void** connection /*r3*/)",
+   "null_impl": "return 0; game passes connection==NULL: write *connection=NULL only if non-NULL"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a70",
+   "thunk_rva_in_exe": "0x009dd7d4",
+   "export_name": "?close@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ",
+   "cpp_signature": "FMOD_RESULT System::close()",
+   "c_signature_aapcs": "int fn(void* self)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a74",
+   "thunk_rva_in_exe": "0x009dd7e0",
+   "export_name": "?release@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ",
+   "cpp_signature": "FMOD_RESULT System::release()",
+   "c_signature_aapcs": "int fn(void* self)",
+   "null_impl": "return 0 (handle is static, never freed)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a78",
+   "thunk_rva_in_exe": "0x009dd7ec",
+   "export_name": "?mixerResume@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ",
+   "cpp_signature": "FMOD_RESULT System::mixerResume()",
+   "c_signature_aapcs": "int fn(void* self)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a7c",
+   "thunk_rva_in_exe": "0x009dd7f8",
+   "export_name": "?mixerSuspend@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ",
+   "cpp_signature": "FMOD_RESULT System::mixerSuspend()",
+   "c_signature_aapcs": "int fn(void* self)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a80",
+   "thunk_rva_in_exe": "0x009dd804",
+   "export_name": "?set3DNumListeners@System@FMOD@@QAA?AW4FMOD_RESULT@@H@Z",
+   "cpp_signature": "FMOD_RESULT System::set3DNumListeners(int n)",
+   "c_signature_aapcs": "int fn(void* self, int n)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a84",
+   "thunk_rva_in_exe": "0x009dd810",
+   "export_name": "?setMute@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@_N@Z",
+   "cpp_signature": "FMOD_RESULT ChannelControl::setMute(bool mute)",
+   "c_signature_aapcs": "int fn(void* self, int mute)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a88",
+   "thunk_rva_in_exe": "0x009dd780",
+   "export_name": "?setOutput@System@FMOD@@QAA?AW4FMOD_RESULT@@W4FMOD_OUTPUTTYPE@@@Z",
+   "cpp_signature": "FMOD_RESULT System::setOutput(FMOD_OUTPUTTYPE output)",
+   "c_signature_aapcs": "int fn(void* self, int output)",
+   "null_impl": "return 0 (game passes 0 = AUTODETECT only when a preferred-device GUID is configured)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a8c",
+   "thunk_rva_in_exe": "0x009dd828",
+   "export_name": "?set3DMinMaxDistance@Sound@FMOD@@QAA?AW4FMOD_RESULT@@MM@Z",
+   "cpp_signature": "FMOD_RESULT Sound::set3DMinMaxDistance(float min, float max)",
+   "c_signature_aapcs": "int fn(void* self, float min, float max)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a90",
+   "thunk_rva_in_exe": "0x009dd834",
+   "export_name": "?release@Sound@FMOD@@QAA?AW4FMOD_RESULT@@XZ",
+   "cpp_signature": "FMOD_RESULT Sound::release()",
+   "c_signature_aapcs": "int fn(void* self)",
+   "null_impl": "return 0 (static handle)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a94",
+   "thunk_rva_in_exe": "0x009dd840",
+   "export_name": "?createSound@System@FMOD@@QAA?AW4FMOD_RESULT@@PBDIPAUFMOD_CREATESOUNDEXINFO@@PAPAVSound@2@@Z",
+   "cpp_signature": "FMOD_RESULT System::createSound(const char* name_or_data, FMOD_MODE mode, FMOD_CREATESOUNDEXINFO* exinfo, Sound** sound)",
+   "c_signature_aapcs": "int fn(void* self, const char* name, unsigned mode, void* exinfo, void** sound /*stack*/)",
+   "null_impl": "*sound = non-NULL static handle; return 0. 5th arg (sound**) is on the STACK ([sp]). Alternative: return FMOD_ERR_FILE_NOTFOUND(18) => game load fails gracefully (vf14 failure branch) and keeps no handle."
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a98",
+   "thunk_rva_in_exe": "0x009dd84c",
+   "export_name": "?stop@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@XZ",
+   "cpp_signature": "FMOD_RESULT ChannelControl::stop()",
+   "c_signature_aapcs": "int fn(void* self)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37a9c",
+   "thunk_rva_in_exe": "0x009dd858",
+   "export_name": "?set3DAttributes@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@PBUFMOD_VECTOR@@00@Z",
+   "cpp_signature": "FMOD_RESULT ChannelControl::set3DAttributes(const FMOD_VECTOR* pos, const FMOD_VECTOR* vel, const FMOD_VECTOR* altpanpos)",
+   "c_signature_aapcs": "int fn(void* self, const void* pos, const void* vel, const void* alt)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37aa0",
+   "thunk_rva_in_exe": "0x009dd864",
+   "export_name": "?getSoftwareFormat@System@FMOD@@QAA?AW4FMOD_RESULT@@PAHPAW4FMOD_SPEAKERMODE@@0@Z",
+   "cpp_signature": "FMOD_RESULT System::getSoftwareFormat(int* samplerate, FMOD_SPEAKERMODE* speakermode, int* numrawspeakers)",
+   "c_signature_aapcs": "int fn(void* self, int* rate, int* mode, int* rawspeakers)",
+   "null_impl": "game passes (&rate, NULL, NULL): NULL-tolerant; write *samplerate = 48000 (and mode 3 = STEREO / raw speakers 2 if non-NULL); used to scale fade/delay in DSP-clock units; return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37aa4",
+   "thunk_rva_in_exe": "0x009dd870",
+   "export_name": "?getDSPClock@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@PA_K0@Z",
+   "cpp_signature": "FMOD_RESULT ChannelControl::getDSPClock(unsigned long long* dspclock, unsigned long long* parentclock)",
+   "c_signature_aapcs": "int fn(void* self, unsigned long long* dspclock, unsigned long long* parentclock)",
+   "null_impl": "game passes dspclock==NULL and parentclock=&local: NULL-tolerant; write *parentclock = 0 (or a counter); return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37aa8",
+   "thunk_rva_in_exe": "0x009dd87c",
+   "export_name": "?addFadePoint@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@_KM@Z",
+   "cpp_signature": "FMOD_RESULT ChannelControl::addFadePoint(unsigned long long dspclock, float volume)",
+   "c_signature_aapcs": "int fn(void* self, unsigned long long clock, float volume)",
+   "null_impl": "return 0 (clock in r2:r3, volume in s0)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37aac",
+   "thunk_rva_in_exe": "0x009dd888",
+   "export_name": "?setDelay@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@_K0_N@Z",
+   "cpp_signature": "FMOD_RESULT ChannelControl::setDelay(unsigned long long dspclock_start, unsigned long long dspclock_end, bool stopchannels)",
+   "c_signature_aapcs": "int fn(void* self, unsigned long long start, unsigned long long end, int stop)",
+   "null_impl": "return 0 (start r2:r3, end [sp], stopchannels [sp+8])"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ab0",
+   "thunk_rva_in_exe": "0x009dd894",
+   "export_name": "?isPlaying@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@PA_N@Z",
+   "cpp_signature": "FMOD_RESULT ChannelControl::isPlaying(bool* isplaying)",
+   "c_signature_aapcs": "int fn(void* self, unsigned char* playing)",
+   "null_impl": "*(unsigned char*)isplaying = 0 (1-byte bool; game then treats the channel as finished, as the x86 fake did); return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ab4",
+   "thunk_rva_in_exe": "0x009dd8a0",
+   "export_name": "?update@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ",
+   "cpp_signature": "FMOD_RESULT System::update()",
+   "c_signature_aapcs": "int fn(void* self)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ab8",
+   "thunk_rva_in_exe": "0x009dd8ac",
+   "export_name": "?set3DListenerAttributes@System@FMOD@@QAA?AW4FMOD_RESULT@@HPBUFMOD_VECTOR@@000@Z",
+   "cpp_signature": "FMOD_RESULT System::set3DListenerAttributes(int listener, const FMOD_VECTOR* pos, const FMOD_VECTOR* vel, const FMOD_VECTOR* forward, const FMOD_VECTOR* up)",
+   "c_signature_aapcs": "int fn(void* self, int l, const void* pos, const void* vel, const void* fwd /*stack*/, const void* up /*stack*/)",
+   "null_impl": "return 0 (forward/up on stack)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37abc",
+   "thunk_rva_in_exe": "0x009dd768",
+   "export_name": "?getDriverInfo@System@FMOD@@QAA?AW4FMOD_RESULT@@HPADHPAUFMOD_GUID@@PAHPAW4FMOD_SPEAKERMODE@@2@Z",
+   "cpp_signature": "FMOD_RESULT System::getDriverInfo(int id, char* name, int namelen, FMOD_GUID* guid, int* systemrate, FMOD_SPEAKERMODE* speakermode, int* speakermodechannels)",
+   "c_signature_aapcs": "int fn(void* self, int id, char* name, int namelen, void* guid, int* rate, int* mode, int* chans)",
+   "null_impl": "never reached when getNumDrivers returns 0; if called: zero-fill outputs that are non-NULL and return 0 (4 args on stack)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ac0",
+   "thunk_rva_in_exe": "0x009dd774",
+   "export_name": "?setDriver@System@FMOD@@QAA?AW4FMOD_RESULT@@H@Z",
+   "cpp_signature": "FMOD_RESULT System::setDriver(int driver)",
+   "c_signature_aapcs": "int fn(void* self, int driver)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ac4",
+   "thunk_rva_in_exe": "0x009dd81c",
+   "export_name": "?createStream@System@FMOD@@QAA?AW4FMOD_RESULT@@PBDIPAUFMOD_CREATESOUNDEXINFO@@PAPAVSound@2@@Z",
+   "cpp_signature": "FMOD_RESULT System::createStream(const char* name_or_data, FMOD_MODE mode, FMOD_CREATESOUNDEXINFO* exinfo, Sound** sound)",
+   "c_signature_aapcs": "int fn(void* self, const char* name, unsigned mode, void* exinfo, void** sound /*stack*/)",
+   "null_impl": "same as createSound"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ac8",
+   "thunk_rva_in_exe": "0x009dd75c",
+   "export_name": "?getNumDrivers@System@FMOD@@QAA?AW4FMOD_RESULT@@PAH@Z",
+   "cpp_signature": "FMOD_RESULT System::getNumDrivers(int* numdrivers)",
+   "c_signature_aapcs": "int fn(void* self, int* n)",
+   "null_impl": "*numdrivers = 0 (selectDriver loop is skipped: ble); return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37acc",
+   "thunk_rva_in_exe": "0x009dd6f0",
+   "export_name": "FMOD_System_Create",
+   "cpp_signature": "FMOD_RESULT FMOD_System_Create(FMOD_SYSTEM** system)  [C, undecorated, one argument]",
+   "c_signature_aapcs": "int fn(void** system)",
+   "null_impl": "*system = non-NULL static handle; return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ad0",
+   "thunk_rva_in_exe": "0x009dd6fc",
+   "export_name": "?getFormat@Sound@FMOD@@QAA?AW4FMOD_RESULT@@PAW4FMOD_SOUND_TYPE@@PAW4FMOD_SOUND_FORMAT@@PAH2@Z",
+   "cpp_signature": "FMOD_RESULT Sound::getFormat(FMOD_SOUND_TYPE* type, FMOD_SOUND_FORMAT* format, int* channels, int* bits)",
+   "c_signature_aapcs": "int fn(void* self, int* type, int* format, int* channels, int* bits /*stack*/)",
+   "null_impl": "game passes (&type, NULL, NULL, NULL): NULL-tolerant; write *type = 15 (FMOD_SOUND_TYPE_WAV). The game REJECTS (releases) the sound when type == 9 (MPEG) or 0x12 (AUDIOQUEUE) (sub_5A3210), so never report those; return 0 (4th arg on stack)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ad4",
+   "thunk_rva_in_exe": "0x009dd750",
+   "export_name": "?setMode@Sound@FMOD@@QAA?AW4FMOD_RESULT@@I@Z",
+   "cpp_signature": "FMOD_RESULT Sound::setMode(FMOD_MODE mode)",
+   "c_signature_aapcs": "int fn(void* self, unsigned mode)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ad8",
+   "thunk_rva_in_exe": "0x009dd6e4",
+   "export_name": "?setFileSystem@System@FMOD@@QAA?AW4FMOD_RESULT@@P6A?AW43@PBDPAIPAPAXPAX@ZP6A?AW43@33@ZP6A?AW43@33I13@ZP6A?AW43@3I3@ZP6A?AW43@PAUFMOD_ASYNCREADINFO@@3@Z9H@Z",
+   "cpp_signature": "FMOD_RESULT System::setFileSystem(userOpen, userClose, userRead, userSeek, userAsyncRead, userAsyncCancel, int blockalign)",
+   "c_signature_aapcs": "int fn(void* self, void* open, void* close, void* read, void* seek /*stack*/, void* aread /*stack*/, void* acancel /*stack*/, int blockalign /*stack*/)",
+   "null_impl": "return 0 and NEVER call the callbacks (game passes sub_5A2A7C, 0x5A2B84, 0x5A2BA8, 0x5A2C24, NULL, NULL, -1; 4 args on stack)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37adc",
+   "thunk_rva_in_exe": "0x009dd708",
+   "export_name": "?playSound@System@FMOD@@QAA?AW4FMOD_RESULT@@PAVSound@2@PAVChannelGroup@2@_NPAPAVChannel@2@@Z",
+   "cpp_signature": "FMOD_RESULT System::playSound(Sound* sound, ChannelGroup* group, bool paused, Channel** channel)",
+   "c_signature_aapcs": "int fn(void* self, void* sound, void* group, int paused, void** channel /*stack*/)",
+   "null_impl": "*channel = non-NULL static channel handle (game dereferences it and calls setVolume/setPitch/setPaused/set3DAttributes/stop/isPlaying on it); return 0; channel** is on the STACK"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ae0",
+   "thunk_rva_in_exe": "0x009dd744",
+   "export_name": "?getSubSound@Sound@FMOD@@QAA?AW4FMOD_RESULT@@HPAPAV12@@Z",
+   "cpp_signature": "FMOD_RESULT Sound::getSubSound(int index, Sound** subsound)",
+   "c_signature_aapcs": "int fn(void* self, int index, void** sub)",
+   "null_impl": "*subsound = static sound handle; return 0 (not reached when getNumSubSounds returns 0)"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ae4",
+   "thunk_rva_in_exe": "0x009dd738",
+   "export_name": "?getNumSubSounds@Sound@FMOD@@QAA?AW4FMOD_RESULT@@PAH@Z",
+   "cpp_signature": "FMOD_RESULT Sound::getNumSubSounds(int* n)",
+   "c_signature_aapcs": "int fn(void* self, int* n)",
+   "null_impl": "*n = 0; return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37ae8",
+   "thunk_rva_in_exe": "0x009dd714",
+   "export_name": "?setVolume@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@M@Z",
+   "cpp_signature": "FMOD_RESULT ChannelControl::setVolume(float volume)",
+   "c_signature_aapcs": "int fn(void* self, float v)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37aec",
+   "thunk_rva_in_exe": "0x009dd72c",
+   "export_name": "?setPaused@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@_N@Z",
+   "cpp_signature": "FMOD_RESULT ChannelControl::setPaused(bool paused)",
+   "c_signature_aapcs": "int fn(void* self, int paused)",
+   "null_impl": "return 0"
+  },
+  {
+   "iat_rva_in_exe": "0x00c37af0",
+   "thunk_rva_in_exe": "0x009dd720",
+   "export_name": "?setPitch@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@M@Z",
+   "cpp_signature": "FMOD_RESULT ChannelControl::setPitch(float pitch)",
+   "c_signature_aapcs": "int fn(void* self, float pitch)",
+   "null_impl": "return 0"
+  }
+ ],
+ "options": {
+  "A": {
+   "what": "patch VCRUNTIME name (+APPCONTAINER) only; real WinRT Package/ApplicationData fail",
+   "result": "System::init returns FMOD_ERR_INTERNAL (28) after the device watchers were already started/awaited; game runs silent; hang risk remains",
+   "effort": "0.5 h",
+   "risk": "low (silent) / hang risk"
+  },
+  "B": {
+   "what": "A + retarget descriptor #1 name (file 0xF929C) to win32craft.dll exporting RoGetActivationFactory/RoInitialize/RoUninitialize",
+   "result": "real audio if fakes + native HSTRING forwarding are right",
+   "effort": "3-4 h",
+   "risk": "medium (export names, HSTRING world, load order)"
+  },
+  "B'": {
+   "what": "A + runtime hook of fmod_ARM.dll IAT cell RVA 0xB118C to a host function dispatching to win32_get_activation_factory for Package/ApplicationData, else native combase",
+   "result": "real audio, real path strings",
+   "effort": "2-3 h",
+   "risk": "low-medium (needs combase HSTRING gate, must precede System::init)"
+  },
+  "C": {
+   "what": "39-function silent FMOD in win32craft.dll or a stub fmod_ARM.dll",
+   "result": "no audio, no WinRT, no hang, no fmod_ARM.dll load dependency",
+   "effort": "3-5 h",
+   "risk": "low"
+  },
+  "D": {
+   "what": "A + 6-byte code patch at file 0x78A50 skipping Package/ApplicationData in sub_79300",
+   "result": "real audio (output via real WinRT device enumeration + ActivateAudioInterfaceAsync), path globals NULL (unused by game)",
+   "effort": "1 h",
+   "risk": "low-medium (hang risk shared with A; NULL path only if ms-appx:// reaches FMOD file layer)"
+  }
+ },
+ "recommendation": "PRIMARY = D (patch (1) VCRUNTIME rename + (2) clear APPCONTAINER + (3) skip Package/ApplicationData); FALLBACK 1 = B' (host IAT hook, requires combase HSTRING forwarding); FALLBACK 2 = C (null FMOD, selectable at runtime if fmod_ARM.dll cannot load or System::init hangs).",
+ "files": [
+  "D:\\repo\\Win32Craft-main\\arm32\\facts\\fmod.json",
+  "D:\\repo\\Win32Craft-main\\arm32\\facts\\fmod.md"
+ ]
+}

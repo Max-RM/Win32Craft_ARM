@@ -1,0 +1,602 @@
+{
+ "area": "winmain",
+ "facts": [
+  {
+   "id": "winmain.entry_chain",
+   "x86_symbol": "x86 CRT entry -> __scrt_common_main_seh -> invoke_main",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x00b49b28",
+   "summary": "ARM PE entry point 0xB49B29 (Thumb) = sub_b49b28: bl __security_init_cookie (0xb49cf8) then b.w __scrt_common_main_seh (0xb49a24). That function runs _initterm_e / _initterm (C++ and C++/CX init), then calls the WinMain forwarder at 0xb49aca and tail-ends with exit(r4).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Same CRT shape as x86 (invoke_main). No ARM-specific behaviour the host must reproduce; Win32Bootstrap runs after all static initialisers exactly like on x86.",
+   "expected_bytes": "2de90048eb4600f0e3f8bde8",
+   "evidence": [
+    "arm32re.py dis b49b28 -> push {fp,lr}; bl 0xb49cf8; pop; b.w 0xb49a24",
+    "arm32re.py func b49cf8 -> loads SecurityCookie VA 0x01737f94 (== LOAD_CONFIG.SecurityCookie), GetSystemTimeAsFileTime/GetCurrentThreadId/... xor mix = __security_init_cookie",
+    "arm32re.py func b49a24 -> _initterm_e(0x0103f4c0,0x0103f4d8), _initterm(0x01037bfc,0x0103f4bc), _get_narrow_winmain_command_line, bl 0xb4a424, exit/_cexit"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.call_site",
+   "x86_symbol": "x86 file offset 0x10293A2: 50 57 68 00 00 40 00 e8 58 0d 00 00 (push eax; push edi; push 0x400000; call)",
+   "x86_value": "file+0x10293a2 (12 bytes)",
+   "kind": "hook_site",
+   "arm_rva": "0x00b49aca",
+   "summary": "THE call to replace. Inside sub_b49a24 (__scrt_common_main_seh): `bl #0xb4a424` (4 bytes, bytes 00 f0 ab fc) at RVA 0xB49ACA = file offset 0xB48ECA (.text raw offset 0x400 - VA 0x1000 => file = rva - 0xC00). Only 4 bytes need to change (BL imm); the argument set-up before it (0xb49ac2..0xb49ac8) and the `mov r4,r0` after it (0xb49ace) stay untouched.",
+   "arm_signature": "WinMain-style call: r0=hInstance(0x400000, relocated), r1=0, r2=char* cmdline, r3=show(0) -> r0=int exit code",
+   "x86_to_arm_notes": "x86 replaced 12 bytes (3 pushes + call) by `call [IAT]` + 6 NOPs because the pushes are part of the sequence. On ARM the arguments are register moves outside the call instruction, so only the BL is replaced: `00 f0 ab fc` -> `ed f0 e9 f9` (bl 0x00c36ea0 trampoline). The patcher must assert the original 4 bytes (checked_write) and also that the next halfword is `04 46` (mov r4,r0).",
+   "expected_bytes": "00f0abfc0446",
+   "evidence": [
+    "arm32re.py dis b49ab8 14 -> 0xb49ac4 ldr r0,[pc]=0x00400000; 0xb49ac6 mov r3,r4; 0xb49ac8 movs r1,#0; 0xb49aca bl #0xb4a424; 0xb49ace mov r4,r0; 0xb49ad0 bl 0x8b980; cbnz; mov r0,r4; bl exit",
+    "arm32re.py bytes b49aca 6 -> 00 f0 ab fc 04 46; Python: file[0xb48eca:0xb48ece]==00f0abfc (winmain_verify.py asserts this)",
+    "capstone: 00f0abfc at VA 0xf49aca decodes to `bl #0xf4a424` (= RVA 0xb4a424, the WinMain forwarder)",
+    "pool at 0xb49b10 = 0x00400000 carries a HIGHLOW reloc (type 3), i.e. it is __ImageBase, not a literal constant (checked in .reloc)",
+    "structural twin of the x86 site: the call is preceded by _get_narrow_winmain_command_line and followed by exit(result)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.replaced_callee_chain",
+   "x86_symbol": "x86: callee = rel32 0xd58 from file+0x10293AE (invoke_main target)",
+   "x86_value": "call rel32 0x0d58",
+   "kind": "function",
+   "arm_rva": "0x00b4a424",
+   "summary": "What the replaced call does: sub_b4a424 (4-byte-frame forwarder: push {fp,lr}; pop; b.w 0xb4a574) -> sub_b4a574 = the C++/CX `main(Platform::Array<String^>^)` wrapper: Platform::Details::GetCmdArguments(&argc), Heap::Allocate(0x30,0x48), builds the Array<String^> (WindowsCreateString/Delete), calls the user main sub_ff6a0 and returns its int. sub_ff6a0 allocates the AppSource/IFrameworkViewSource (vtables, _initterm'd globals) and calls sub_596328 = CoreApplication::Run (RoGetActivationFactory-style GetActivationFactoryByPCWSTR(L\"Windows.ApplicationModel.Core.CoreApplication\", IID_ICoreApplication 0AACF7A4-5E1D-49DF-8034-FB6A68BC5ED1) then vtable slot 13 (offset 0x34) = ICoreApplication::Run(IFrameworkViewSource)). Win32Bootstrap replaces this entire chain: it never returns until WM_QUIT.",
+   "arm_signature": "int callee(HINSTANCE r0, HINSTANCE r1, char* r2, int r3): r0..r3 are NOT read by sub_b4a424/sub_b4a574 (prologue overwrites them)",
+   "x86_to_arm_notes": "Nothing in the chain is needed by the host: the host builds AppMain itself through the game factory and runs its own message loop. Do NOT call 0xb4a424/0xb4a574/0xff6a0 from the host.",
+   "expected_bytes": "2de90048eb46bde8004800f0a1b8",
+   "evidence": [
+    "arm32re.py func b4a424 -> push {fp,lr}; mov fp,sp; pop {fp,lr}; b.w 0xb4a574",
+    "arm32re.py func b4a574 -> bl thunk[vccorlib140_app!?GetCmdArguments@Details@Platform@@YAPAPA_WPAH@Z], Heap::Allocate, WindowsDeleteString thunk, bl 0xff6a0; vtable call [r3,#8] (Release) on the array",
+    "arm32re.py func 596328 -> movw/movt L\"Windows.ApplicationModel.Core.CoreApplication\" (0x011b7808), IID pool 0x0aacf7a4 0x49df5e1d 0x6afb3480 0xd15ebc68, bl 0xb48f88 (thunk to GetActivationFactoryByPCWSTR), `ldr r3,[r3,#0x34]; blx r3`",
+    "arm32re.py strx 'Windows.ApplicationModel.Core.CoreApplication' -w -> 8 users incl. 0x584fe8,0x596220,0x5962bc,0x596356 ...; sub_ff6a0 calls 0x596328 at 0xff866",
+    "ICoreApplication vtable: IInspectable 6 slots + Id,Suspending(add/remove),Resuming(add/remove),Properties,GetCurrentView -> Run is slot 13 = byte offset 0x34"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.callee_args_abi",
+   "x86_symbol": "x86 pushes: eax, edi, 0x400000 (cdecl-style, caller cleans)",
+   "x86_value": "3 stack args",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "ARM args at the call are r0=0x400000 (hInstance via relocated literal at 0xb49b10), r1=0 (hPrevInstance), r2=_get_narrow_winmain_command_line(), r3=0 (result of ICF'd return-0 stub at 0x8b980, show-window mode). Verified that neither sub_b4a424 nor sub_b4a574 reads r0..r3. The replacement Win32Bootstrap takes NO arguments.",
+   "arm_signature": "int Win32Bootstrap(void) -> r0; AAPCS callee-saved r4-r11; sp 8-byte aligned at entry (guaranteed by the original caller)",
+   "x86_to_arm_notes": "x86 replacement left the 3 pushed args on the stack (cdecl cleanup after the call). ARM has no stack arguments here: nothing to clean. Win32Bootstrap must be `int WINAPI Win32Bootstrap(void)`; on ARM WINAPI is plain AAPCS, and the DLL export must be the undecorated name `Win32Bootstrap` (the x86 .def alias `Win32Bootstrap=_Win32Bootstrap@0` does not exist on ARM; the patcher's import hint/name is exactly `Win32Bootstrap`). Win32Bootstrap may freely clobber r0-r3, r12 and LR-saved state per AAPCS; r4-r11 and sp alignment (8 bytes) are preserved by a normal C function.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py dis b4a574 12 -> first reads of r0..r3 are writes (mvn r3,#1 / movs r3,#0 / mov r0,r7); r7=sp frame",
+    "arm32re.py dis b4a424 -> forwarder touches only fp/lr",
+    "tools/1.2.8-patcher.py: replacement `ff 15 <abs> 90*6` => call [Win32Bootstrap]"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.return_path",
+   "x86_symbol": "x86 eax -> exit code via CRT",
+   "x86_value": "eax",
+   "kind": "abi",
+   "arm_rva": "0x00b49ace",
+   "summary": "Return address after the BL is 0xB49ACE (LR = 0xB49ACF with Thumb bit): `mov r4,r0` (0446). Then `bl 0x8b980` (returns 0 = __scrt_is_managed_app-style ICF stub) -> `cbnz r0` not taken -> `mov r0,r4; bl exit` thunk. So Win32Bootstrap's int return value becomes the process exit code and exit() runs atexit handlers/DllMain(DETACH) as on x86.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Win32Bootstrap must RETURN (not ExitProcess) with the WM_QUIT wParam after the loop ends, and return 1/2/3 for its early failures as today. Because the call is a BL from sub_b49a24, LR is already correct; a tail-jump trampoline (bx ip, no push/pop) preserves it, so the DLL returns directly to 0xB49ACE. SEH/EH: sub_b49a24 has .pdata unwind info; the trampoline never sits on the stack, so unwinding through Win32Bootstrap's own .pdata (in the DLL) lands correctly in sub_b49a24.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py dis b49ab8 14 (see call_site)",
+    "emulation (winmain_verify.py, unicorn): after bl+trampoline+stub, r4==stub return value and PC==0xB49AD0, LR==0xB49ACF"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.crt_state_at_call",
+   "x86_symbol": "x86 same: CRT initialised before invoke_main",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": "0x00c3f4d4",
+   "summary": "By the time 0xB49ACA runs, _initterm_e has executed the table 0x00C3F4C4..0x00C3F4D8 (VA 0x0103f4c0..0x0103f4d8): entries sub_b49980, sub_b499fc, sub_b495e4, sub_b48f44 and (last, cell 0xC3F4D4) sub_b48c08 which calls vccorlib Platform::Details::InitializeData(mode=[0x01514df8], file value 0) and registers UninitializeData via an atexit-like helper. So the C++/CX runtime is already initialised (sub_b49cd0 would additionally RoInitialize(1) only if [0x01514e00] were non-zero; its file value is 0). The host's own RoInitialize(RO_INIT_MULTITHREADED) therefore runs on a thread whose apartment state is whatever InitializeData left; the x86 build has the identical CRT sequence, so keep ignoring the HRESULT (S_OK/S_FALSE/RPC_E_CHANGED_MODE) as today.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "No change to the host logic; just keep ignoring the HRESULT. The vccorlib140 desktop DLL that replaces vccorlib140_app must export InitializeData/UninitializeData with the same mangled names (verified: all 63 imported names exist in the ARM redist vccorlib140.dll).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py ptrs c3f4c0 8 -> entries ..., 00f48c09 (sub_b48c08)",
+    "arm32re.py func b48c08 -> [0x01914df8]==3 -> 0; bl thunk[vccorlib140_app!InitializeData]; bl 0xb49598 (atexit-like) with fn sub_b48ccc (UninitializeData)",
+    "arm32re.py bytes 1514df8 4 -> 00 00 00 00",
+    "arm32re.py impcallers InitializeData -> only sub_b48c08"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "winmain.trampoline_pic",
+   "x86_symbol": "x86: `call [IAT Win32Bootstrap]` = ff 15 <abs32> + 6 nops",
+   "x86_value": "ff15<va>909090909090",
+   "kind": "hook_site",
+   "arm_rva": "0x00c36ea0",
+   "summary": "RECOMMENDED. 16-byte position-independent Thumb-2 trampoline in verified-unused .text slack (RVA 0xC36EA0 = file offset 0xC362A0, 0x160 bytes of zeros up to the section end 0xC37000; no .reloc entry, no .pdata entry, no data pointer targets it). Code: `ldr.w ip,[pc,#8]` ; `add ip,pc` ; `ldr.w ip,[ip]` ; `bx ip` ; `.word cell_rva-(tramp_rva+8)` = 0x00AF9594 for IAT cell 0x0173043C. Bytes: df f8 08 c0 | fc 44 | dc f8 00 c0 | 60 47 | 94 95 af 00. Because the literal is a displacement (not an address) it is correct at ANY image base, so no relocation entry is needed and DYNAMIC_BASE may stay set. Entry is 4-byte aligned; r12/ip is the AAPCS intra-procedure scratch register; LR is untouched so Win32Bootstrap returns straight to 0xB49ACE.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "x86 needed an absolute IAT VA inside the instruction (and therefore a fixed base). On ARM the call site becomes `bl 0x00C36EA0` = bytes ed f0 e9 f9 (displacement +971730 bytes, far inside the +-16 MiB BL range). If .d3imp's layout changes, recompute: literal = cell_rva - (0xC36EA0 + 8). The patcher must assert that file[0xC362A0:0xC36400] is all zero before writing.",
+   "expected_bytes": "allzero(16bytes)beforepatching;after:dff808c0fc44dcf800c060479495af00",
+   "evidence": [
+    "keystone assemble at VA 0x01036EA0: `ldr.w ip,[pc,#8]; add ip,pc; ldr.w ip,[ip]; bx ip` -> dff808c0 fc44 dcf800c0 6047",
+    "capstone round-trip at 0x01036EA0: ldr.w ip,[pc,#8] / add ip,pc / ldr.w ip,[ip] / bx ip (winmain_verify.py output)",
+    "unicorn: image at 0x400000 AND at 0x1C3A0000 (ASLR): bl -> trampoline -> fake IAT cell -> stub returns 0x2a -> r4==0x2a, LR==site+5 in both",
+    "zero slack proof: file[0xC3629C:0xC36400] all 0x00 (356 bytes); .reloc page 0xC36000 entries stop at offset 0xE98 (last HIGHLOW literal); .pdata sorted, last begin 0xC36E89 (len 16, ends 0xC36E98); no 32-bit word in .text/.rdata/.data equals a VA in 0x1036E9C..0x1037000 (the 11 near-hits are unrelocated xdata RVAs inside .rdata)",
+    "BL range: +0xED3D2 bytes from site+4 to the slot; llvm-readobj parses the patched file (51 imports incl. win32craft.dll!Win32Bootstrap)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.trampoline_abs_variant",
+   "x86_symbol": "lead suggestion: literal absolute address",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x00c36ea0",
+   "summary": "ALTERNATIVE (works only when the image loads at 0x400000): `ldr.w ip,[pc,#8]; ldr.w ip,[ip]; bx ip; nop; .word 0x01B3043C` = df f8 08 c0 dc f8 00 c0 60 47 00 00 3c 04 b3 01. Verified in emulation at base 0x400000, and shown to FAIL when rebased (literal is not relocated). If DYNAMIC_BASE is cleared AND 0x400000 is busy the loader still relocates the image (relocs are present) and this variant would crash; PIC variant has no such hole.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Use only if a fixed-base design is preferred; then also add a HIGHLOW reloc for the literal (page 0xC36000, offset 0xEAC) or accept the risk.",
+   "expected_bytes": null,
+   "evidence": [
+    "winmain_verify.py --variant abs: base 0x400000 OK; base 0x1C3A0000 FAIL (UC_ERR_READ_UNMAPPED)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.trampoline_new_section_fallback",
+   "x86_symbol": "x86: new section .d3imp",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x01731000",
+   "summary": "FALLBACK if the slack is ever unavailable: append a second section `.d3tr` (VirtualSize 0x10, SizeOfRawData 0x200, RVA 0x01731000, file 0x01681000, characteristics 0x60000020 = CODE|EXEC|READ) after .d3imp, put the same 16 bytes at its start. BL from 0xB49ACA reaches 0x01731000 (+0xBE7532 < 0x1000000). Then SizeOfCode += 0x200 (0xC36200), SizeOfImage = 0x01732000, NumberOfSections = 9, SizeOfInitializedData unchanged by this section. No .pdata entry needed.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Do not simply mark .d3imp executable (W+X section); use a separate RX section. SizeOfImage constant would become 0x01732000.",
+   "expected_bytes": null,
+   "evidence": [
+    "arithmetic checked: 0x1731000-(0xB49ACA+4)=0xBE7532 < 0x1000000; header room: 9 headers end at 0x3A0 < SizeOfHeaders 0x400"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "winmain.bl_range_note",
+   "x86_symbol": "x86 rel32 / indirect via IAT",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Why a trampoline at all: Thumb-2 BL reaches only +-16 MiB and the target is a DLL function whose address is only known to the loader (IAT cell in .d3imp at RVA 0x173043C). A direct `bl` to .d3imp (12.4 MB away) would branch INTO DATA (the IAT cell holds an address, not code). The trampoline (code) loads the cell and `bx`.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Do not try `bl <IAT cell>` or `ldr pc,[cell]` from the call site: the call site has only 4 bytes.",
+   "expected_bytes": null,
+   "evidence": [
+    "distance 0xB49ACA -> 0x173043C = 0xBE696C (< 16 MiB) but the target is data"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.large_address_aware",
+   "x86_symbol": "pe.file_header+18: 0x0102 -> 0x0122",
+   "x86_value": "IMAGE_FILE_LARGE_ADDRESS_AWARE",
+   "kind": "pe",
+   "arm_rva": "0x00000156",
+   "summary": "ARM exe already has Characteristics 0x0122 (EXECUTABLE_IMAGE|LARGE_ADDRESS_AWARE|32BIT_MACHINE) at file offset 0x156. No change; patcher should assert 0x0122. RELOCS_STRIPPED (0x0001) is clear (base relocs present).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "x86 had to set 0x20; ARM already has it. Keep the check as an assertion (not a write).",
+   "expected_bytes": null,
+   "evidence": [
+    "python struct: file[0x156:0x158]=22 01 -> 0x0122",
+    "llvm-readobj --file-headers on patched output: Characteristics 0x122"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.os_subsystem_version",
+   "x86_symbol": "pe.optional+0x2A / +0x32: 2 -> 1 (OS 6.2->6.1, subsystem 6.2->6.1)",
+   "x86_value": "6.1",
+   "kind": "pe",
+   "arm_rva": "0x00000180",
+   "summary": "ARM exe: MajorOSVersion/MinorOSVersion = 6.2 at file 0x180/0x182, MajorSubsystemVersion/Minor = 6.2 at 0x188/0x18A. KEEP 6.2: the x86 patcher lowered it only for Windows 7; the ARM32 desktop targets (Windows RT 8.1 = 6.3, Windows 10 = 10.0) are all newer. Lowering would be wrong/pointless (no 6.1 ARM Windows exists).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Do NOT port the two minor-version writes. Subsystem 2 (GUI) unchanged. There is no embedded manifest (.rsrc only has VS_VERSION_INFO), so GetVersion-style APIs report 6.2 on Win10 - the host's `host_is_windows7` check (GetVersion==6.1) is false on ARM.",
+   "expected_bytes": null,
+   "evidence": [
+    "python struct: opt+0x28 -> (6,2); opt+0x30 -> (6,2); Subsystem=2",
+    ".rsrc 0x2e8 bytes: only VS_VERSION_INFO strings (FileDescription Minecraft, FileVersion 1.2.8.0)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.dll_characteristics",
+   "x86_symbol": "pe.optional+0x46: 0x9140 -> 0x8100",
+   "x86_value": "0x8100",
+   "kind": "pe",
+   "arm_rva": "0x0000019e",
+   "summary": "ARM exe DllCharacteristics = 0x9140 = TERMINAL_SERVER_AWARE(0x8000) | APPCONTAINER(0x1000) | NX_COMPAT(0x100) | DYNAMIC_BASE(0x40) at file offset 0x19E. REQUIRED: clear APPCONTAINER (0x1000) - an AppContainer-flagged exe cannot be started as a normal desktop process. RECOMMENDED value: 0x8140 (keep DYNAMIC_BASE and NX_COMPAT). Do NOT set GUARD_CF (0x4000).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "x86 also cleared DYNAMIC_BASE (0x40) because its machine-code patch embedded the absolute address 0x400000+IAT. The ARM design is base-independent (PIC trampoline, BL is PC-relative, all game movw/movt/literal pools are covered by the 367k base relocs, host uses GetModuleHandle(NULL)+RVA), so DYNAMIC_BASE can stay; keeping it preserves the original, known-loadable header and ARM Windows' relocation expectations. 0x8100 is also legal (relocs are present, so the loader would still rebase if 0x400000 were taken) but then only the PIC trampoline is safe. Decision: write 0x8140; host must never assume ImageBase 0x400000 (use GetModuleHandleW(NULL)).",
+   "expected_bytes": null,
+   "evidence": [
+    "python: opt+0x46 = 0x9140",
+    ".reloc: 3876 blocks, 134901 type-7 (ARM MOV32T) + 232404 type-3 (HIGHLOW) entries; no IMAGE_FILE_RELOCS_STRIPPED",
+    "pool 0xb49b10 (hInstance 0x400000) has a HIGHLOW reloc => game code is ASLR-clean",
+    "dd[10] GuardFlags=0x100 (CF_INSTRUMENTED) but DllCharacteristics has no GUARD_CF and GuardCFFunctionTable==0 -> CFG not enforced; cell 0xC37BF8 holds the empty-function stub (0x83a20)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "winmain.pe.section_table_room",
+   "x86_symbol": "x86: header check `new_header+40 <= SizeOfHeaders`",
+   "x86_value": "SizeOfHeaders 0x400",
+   "kind": "pe",
+   "arm_rva": "0x00000350",
+   "summary": "Section table at 0x238 (7 headers, 0x118 bytes) ends at 0x350; SizeOfHeaders = 0x400; file bytes 0x350..0x3FF are zero (176 bytes = 4 more headers). New `.d3imp` header goes at file 0x350..0x377.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Same algorithm as x86 (checked_write over 40 zero bytes). Header: name `.d3imp\\0\\0`, VirtualSize 0x444, VirtualAddress 0x01730000, SizeOfRawData 0x600, PointerToRawData 0x01680A00, relocs/linenumbers 0, Characteristics 0xC0000040 (INITIALIZED_DATA|READ|WRITE). NumberOfSections (file 0x146) 7 -> 8.",
+   "expected_bytes": null,
+   "evidence": [
+    "python: sections 7, optional header size 0xE0, table end 0x350, zero until 0x400",
+    "llvm-readobj --sections on patched output shows .d3imp VA 0x1730000 raw 0x1680A00 size 0x600"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.new_section_layout",
+   "x86_symbol": "x86 .d3imp: descriptors + names + hints + ILT + IAT",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": "0x01730000",
+   "summary": "New section at RVA 0x01730000 (= align(.reloc end 0x1674000+0xBBE00, 0x1000)), file offset 0x01680A00 (= file size, already 0x200-aligned; the exe has no overlay/signature). Layout: [0x000] 52 import descriptors (50 originals copied verbatim + win32craft + null) = 0x410 bytes; [0x410] `win32craft.dll\\0`; [0x420] hint/name `00 00 Win32Bootstrap 00`; [0x434] ILT {0x01730420,0}; [0x43C] IAT cell {0x01730420,0} (the cell the trampoline reads, RVA 0x0173043C). VirtualSize 0x444, SizeOfRawData 0x600.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Same builder as x86 but without the 4 KERNEL32 compat descriptors and without moving any DLL-name RVA (see pe.import_descriptors). The IAT lives in this RW section; dd[12] (IAT directory 0xC37000,0xBF8) is left unchanged.",
+   "expected_bytes": null,
+   "evidence": [
+    "winmain_verify.py builds exactly this; llvm-readobj --coff-imports lists `win32craft.dll ILT 0x1730434 IAT 0x173043C Symbol Win32Bootstrap (0)` and 51 imports total"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.import_descriptors",
+   "x86_symbol": "x86: relocated dir (27+4+2 descriptors); redirect dxgi/d3d11/api-sets to win32craft.dll; KERNEL32 placeholders",
+   "x86_value": "dd[1] -> new_rva,count*20",
+   "kind": "pe",
+   "arm_rva": "0x000001c0",
+   "summary": "ARM import directory dd[1] = RVA 0x13269A8 size 0x3FC (50 descriptors + null) at file offset 0x1C0 (data dir entry). Patch: dd[1] = (0x01730000, 0x410). Descriptors are copied unchanged, so every ILT/IAT/name RVA stays valid. NO other descriptor needs redirecting on ARM: (a) all api-ms-win-* sets exist on Win8.1/Win10 (x86 redirected them only because Win7 lacks them); (b) there is no dxgi.dll import in the ARM exe; (c) d3d11.dll!D3D11CreateDevice (IAT 0xC37A50) is hooked at runtime by the host IAT-patch (install_d3d11_device_compat) exactly like x86, and D3DCOMPILER_47.dll/WS2_32/IPHLPAPI/XINPUTUAP are real DLLs; (d) KERNEL32 placeholder trick (ResolveDelayLoadedAPI/ResolveDelayLoadsFromDll/DelayLoadFailureHook/CreateFile2) is not needed: ARM imports them from api-ms-win-core-delayload-l1-1-1!ResolveDelayLoadedAPI (IAT 0xC375F8), api-ms-win-core-delayload-l1-1-0!DelayLoadFailureHook (0xC375F0), api-ms-win-core-file-l1-2-0!CreateFile2 (0xC3765C), all native on Win8+. Delay-load directory dd[13] (0x131F20C, tcui l1-1-0 / l1-1-2) unchanged (host overwrites the three IAT cells 0x15121FC/0x1512200/0x1512208).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Port of tools/1.2.8-patcher.py: keep the descriptor-copy + append structure, delete WIN32CRAFT_API_SETS, compat_names, kernel ILT rewriting, the `len(descriptors)!=27/size 0x230` check (ARM: 50 descriptors, size 0x3FC) and the `if dll_name in (...)` redirect. install_create_file2_compat (host) is therefore not needed for Win8+ (CreateFile2 is native); keep only if running on a system lacking it.",
+   "expected_bytes": null,
+   "evidence": [
+    "python: 50 descriptors parsed from 0x13269A8 (names listed in winmain.md); arm32re.py imports delayload / CreateFile2 -> cells above",
+    "arm32re.py imports -> no dxgi.dll in the ARM exe"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.size_of_image",
+   "x86_symbol": "IMAGE_SIZE_128_PATCHED 0x01923000 (host compares *(DWORD*)(image+pe+0x50))",
+   "x86_value": "0x01923000",
+   "kind": "pe",
+   "arm_rva": "0x01731000",
+   "summary": "IMAGE_SIZE_128_ARM_PATCHED = 0x01731000. Original ARM SizeOfImage = 0x01730000 (file 0x190). New = align(0x01730000 + 0x444, 0x1000) = 0x01731000. Stays 0x01731000 for any .d3imp up to 4096 bytes, so adding a few more descriptors later does not change the identifier.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Host: replace `#define IMAGE_SIZE_128_PATCHED 0x01923000` by 0x01731000 for ARM and drop the other IMAGE_SIZE_* branches (0x02db1000, 0x01587000, 0x00d2e000, 0x008cc000, 0x00abf000): none can equal an ARM image, and Win32Bootstrap's `*(DWORD*)(image + *(DWORD*)(image+0x3c) + 0x50)` offsets (e_lfanew@0x3C, OptionalHeader.SizeOfImage = pe+0x50) are valid for ARM PE32 (pe=0x140 -> 0x190). If the .d3tr fallback is used the value becomes 0x01732000.",
+   "expected_bytes": null,
+   "evidence": [
+    "python: pe=0x140, SizeOfImage field at file 0x190 = 0x01730000",
+    "winmain_verify.py asserts new size == 0x01731000",
+    "llvm-readobj --file-headers: SizeOfImage 24317952 (=0x1731000)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.size_of_initialized_data",
+   "x86_symbol": "x86: += raw_size",
+   "x86_value": "old+0x200-aligned size",
+   "kind": "pe",
+   "arm_rva": "0x00000160",
+   "summary": "SizeOfInitializedData (file 0x160): 0x00AF5800 -> 0x00AF5E00 (+0x600 raw size of .d3imp). SizeOfCode (0x15C, 0x00C36000) and SizeOfUninitializedData (0) unchanged because the trampoline lives in existing .text slack. CheckSum (0x198) is 0 and stays 0. TimeDateStamp unchanged. Entry point 0xB49B29 unchanged.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Informational fields only (loader ignores them) but keep consistent as x86 did.",
+   "expected_bytes": null,
+   "evidence": [
+    "python opt fields: SizeOfCode 0xc36000, SizeOfInitData 0xaf5800, Checksum 0"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.load_config",
+   "x86_symbol": "x86 patcher: untouched",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": "0x011859a8",
+   "summary": "LOAD_CONFIG dd[10] = RVA 0x011859A8 size 0x68: SecurityCookie VA 0x01737F94 (RVA 0x1337F94 in .data), SEHandlerTable/Count 0 (no SafeSEH on ARM), GuardCFCheckFunctionPointer VA 0x01037BF8 (cell RVA 0xC37BF8 -> 0x00483A21 = empty function sub_83a20), GuardCFDispatch/FunctionTable/Count 0, GuardFlags 0x100 (CF_INSTRUMENTED only). Leave untouched: the new trampoline/section need no entries (no function table). Because DllCharacteristics lacks GUARD_CF the loader does not enable CFG for the process, so indirect calls compiled as `ldr ip,[__guard_check_icall_fptr]; blx ip` hit the empty stub and calls into host DLL code via patched vtable/IAT cells are not validated.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Do not set GUARD_CF (0x4000) and do not touch LOAD_CONFIG; with CFG active any host function pointer stored in game vtables would fail the bitmap check. Size 0x68 is fine for the loader.",
+   "expected_bytes": null,
+   "evidence": [
+    "python: LOAD_CONFIG parsed at file 0x1184DA8",
+    "arm32re.py ptrs c37bf8 -> 00483a21 (fn sub_83a20: push {fp,lr}; mov fp,sp; pop {fp,pc})",
+    "arm32re.py xref c37bf8 -> referenced from LOAD_CONFIG (0x11859f0)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.tls",
+   "x86_symbol": "x86 patcher: untouched",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": "0x01185a10",
+   "summary": "TLS dd[9] = RVA 0x01185A10 size 0x18: raw data VA 0x01A72000..0x01A72008 (.tls section 0x1672000, vs 9), AddressOfIndex VA 0x01915070 (.data), AddressOfCallbacks VA 0x0103F4E0 (RVA 0xC3F4E0), characteristics 0x300000. Untouched: the new section is appended after .reloc and does not move the TLS template or index. The desktop loader handles it (statically-linked TLS in the EXE is always legal).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "No action. (If a DLL-side `__declspec(thread)` host variable is ever used, the DLL needs its own TLS; unrelated to the exe.)",
+   "expected_bytes": null,
+   "evidence": [
+    "python: TLS dir fields at file 0x1184E10+...",
+    "section .tls rva 0x1672000 vs 9 rs 0x200"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.exception_directory",
+   "x86_symbol": "x86: n/a (SEH is stack-based)",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": "0x015be000",
+   "summary": "Exception dir dd[3] = .pdata RVA 0x015BE000 size 0xB3250 (91722 entries, 8 bytes each, sorted). ARM32 needs NO entry for the 16-byte trampoline: it is a pure tail-jump leaf that never remains on the stack (LR preserved), and RtlVirtualUnwind treats an unregistered PC as a leaf (PC=LR). The call site 0xB49ACA already lies inside sub_b49a24's entry. Do not extend .pdata (would require resizing the directory and keeping it sorted).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "x86 had no equivalent. If a host-written code stub that CALLS (rather than tail-jumps) is ever added, give it a packed .pdata entry; not needed here.",
+   "expected_bytes": null,
+   "evidence": [
+    "python: pdata sorted=True; no entry begins in 0xC36E9C..0xC37000; last entry 0xC36E88 len 16",
+    "winmain.return_path emulation proves LR flow"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.base_relocations",
+   "x86_symbol": "x86 patcher: untouched",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": "0x01674000",
+   "summary": "Base reloc dd[5] = 0x01674000 size 0xBBD28 (raw slack 0xD8 zeros). The patch adds NO relocation: BL is PC-relative, the PIC trampoline literal is a displacement, the import structures use RVAs, the new IAT cell is filled by the loader. (Only the abs-variant trampoline would need a HIGHLOW entry at page 0xC36000 offset 0xEAC; slack exists to append a block if ever required.)",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Section order after patch: .text .rdata .data .pdata .tls .rsrc .reloc(discardable) .d3imp - a non-discardable section after a discardable .reloc is fine for the loader (x86 did the same).",
+   "expected_bytes": null,
+   "evidence": [
+    "python: 3876 reloc blocks; raw slack 216 zero bytes at the end of .reloc raw data"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.pe.other_directories",
+   "x86_symbol": "n/a",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "Untouched: dd[0] export (0x131F2E0, 'Minecraft.Windows.exe', 284 functions), dd[2] resources (version info only, no manifest), dd[6] debug (0x1185950, 3 entries), dd[11] bound imports = 0 (so moving/adding descriptors cannot be invalidated by a stale bound table), dd[12] IAT (0xC37000, 0xBF8), dd[13] delay import (0x131F20C, 0x60), dd[4] security = 0 (no Authenticode signature to break), file length 0x1680A00 == end of .reloc (no overlay).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Nothing to port.",
+   "expected_bytes": null,
+   "evidence": [
+    "python data-directory dump"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.rename.vccorlib",
+   "x86_symbol": "replace_all('vccorlib140_app.DLL' -> 'vccorlib140.DLL', count 1)",
+   "x86_value": "1 occurrence (x86)",
+   "kind": "string",
+   "arm_rva": "0x013298de",
+   "summary": "vccorlib140_app.DLL occurs exactly once (ASCII, case-exact, no UTF-16 copy) at file offset 0x1328CDE (RVA 0x013298de), as the DLL-name string of an import descriptor. Rewrite in place with the shorter vccorlib140.DLL and NUL-pad to the old length (the loader reads a C string).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Descriptor #24 (63 imports, IAT 0xC37AF8). Desktop ARM vccorlib140.dll (VS redist onecore\\arm, machine 0x1C4) exports all 63 imported names (checked: 0 missing). x86 replaced the same string.",
+   "expected_bytes": "7663636f726c69623134305f6170702e444c4c",
+   "evidence": [
+    "python re.finditer over the whole file: exactly 1 match for vccorlib140_app.DLL at 0x1328CDE, 0 case-insensitive extras, 0 UTF-16LE matches",
+    "imports_table.json / descriptor walk: descriptor name RVA 0x013298de"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.rename.msvcp",
+   "x86_symbol": "replace_all('MSVCP140_APP.dll' -> 'MSVCP140.dll', count 1)",
+   "x86_value": "1 occurrence (x86)",
+   "kind": "string",
+   "arm_rva": "0x0132cfc8",
+   "summary": "MSVCP140_APP.dll occurs exactly once (ASCII, case-exact, no UTF-16 copy) at file offset 0x132C3C8 (RVA 0x0132cfc8), as the DLL-name string of an import descriptor. Rewrite in place with the shorter MSVCP140.dll and NUL-pad to the old length (the loader reads a C string).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Descriptor #25 (258 imports, IAT 0xC370D4). Desktop msvcp140.dll (ARM redist) exports all 258 (0 missing).",
+   "expected_bytes": "4d535643503134305f4150502e646c6c",
+   "evidence": [
+    "python re.finditer over the whole file: exactly 1 match for MSVCP140_APP.dll at 0x132C3C8, 0 case-insensitive extras, 0 UTF-16LE matches",
+    "imports_table.json / descriptor walk: descriptor name RVA 0x0132cfc8"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.rename.concrt",
+   "x86_symbol": "replace_all('CONCRT140_APP.dll' -> 'CONCRT140.dll', count 1)",
+   "x86_value": "1 occurrence (x86)",
+   "kind": "string",
+   "arm_rva": "0x0132d90a",
+   "summary": "CONCRT140_APP.dll occurs exactly once (ASCII, case-exact, no UTF-16 copy) at file offset 0x132CD0A (RVA 0x0132d90a), as the DLL-name string of an import descriptor. Rewrite in place with the shorter CONCRT140.dll and NUL-pad to the old length (the loader reads a C string).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Descriptor #26 (43 imports, IAT 0xC37000). Desktop concrt140.dll exports all 43 (0 missing).",
+   "expected_bytes": "434f4e4352543134305f4150502e646c6c",
+   "evidence": [
+    "python re.finditer over the whole file: exactly 1 match for CONCRT140_APP.dll at 0x132CD0A, 0 case-insensitive extras, 0 UTF-16LE matches",
+    "imports_table.json / descriptor walk: descriptor name RVA 0x0132d90a"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.rename.vcruntime",
+   "x86_symbol": "replace_all('VCRUNTIME140_APP.dll' -> 'VCRUNTIME140.dll', count 1)",
+   "x86_value": "1 occurrence (x86)",
+   "kind": "string",
+   "arm_rva": "0x0132da36",
+   "summary": "VCRUNTIME140_APP.dll occurs exactly once (ASCII, case-exact, no UTF-16 copy) at file offset 0x132CE36 (RVA 0x0132da36), as the DLL-name string of an import descriptor. Rewrite in place with the shorter VCRUNTIME140.dll and NUL-pad to the old length (the loader reads a C string).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Descriptor #27 (19 imports incl. _CxxThrowException IAT 0xC374E4). Desktop vcruntime140.dll exports all 19 (0 missing).",
+   "expected_bytes": "564352554e54494d453134305f4150502e646c6c",
+   "evidence": [
+    "python re.finditer over the whole file: exactly 1 match for VCRUNTIME140_APP.dll at 0x132CE36, 0 case-insensitive extras, 0 UTF-16LE matches",
+    "imports_table.json / descriptor walk: descriptor name RVA 0x0132da36"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.rename.fmod",
+   "x86_symbol": "replace_all(b'fmod_X86.dll' -> b'fmod.dll', count 2)",
+   "x86_value": "2 occurrences (x86)",
+   "kind": "string",
+   "arm_rva": "0x013283ea",
+   "summary": "`fmod_ARM.dll` occurs exactly ONCE (file offset 0x13277EA, RVA 0x013283EA, descriptor #1, 39 imports, IAT 0xC37A58) - a regular (non-delay) import; x86 had 2 occurrences because it had a delay-import copy. NO rename is required: the package already ships fmod_ARM.dll next to the exe and the import name matches. Renaming to fmod.dll is optional (same mechanics, NUL pad) only if the shipped file is renamed.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Patcher: drop the `replace_all(fmod_X86.dll, ..., 2)`; if kept use expected_count=1. Note the DLL itself: fmod_ARM.dll (machine 0x1C4, DllCharacteristics 0x1140 = APPCONTAINER|NX|DYNAMIC_BASE) imports VCRUNTIME140_APP.dll (+ api-ms-win-crt-*, MMDevAPI, MFPlat, MFReadWrite, WS2_32): the loader must find VCRUNTIME140_APP.dll (VCLibs framework, not present on a plain desktop) or fmod_ARM.dll needs the same in-place rename of that string (and APPCONTAINER clear, file offset of its DllCharacteristics) - see open_questions.",
+   "expected_bytes": "666d6f645f41524d2e646c6c",
+   "evidence": [
+    "python re.finditer: fmod_ARM.dll x1 at 0x13277ea",
+    "python parse of Minecraft_1.2.8.0_ARM32/fmod_ARM.dll: machine 0x1c4, dllchars 0x1140, 1087 exports, imports include VCRUNTIME140_APP.dll"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.rename.xinputuap_optional",
+   "x86_symbol": "x86 redirected xinputuap.dll to win32craft.dll",
+   "x86_value": "WIN32CRAFT_API_SETS",
+   "kind": "string",
+   "arm_rva": "0x013279ae",
+   "summary": "ARM imports XINPUTUAP.dll!XInputGetState (descriptor #0, IAT 0xC375B0, ASCII at file 0x1326DAE, 13 chars). Present on Windows 10 desktop; absent on Windows RT 8.1. OPTIONAL in-place rename to `XInput1_4.dll` (also 13 chars, Win8+) if the target lacks XInputUap.dll.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "No redirect to win32craft.dll is needed (win32craft.def has no XInput export and ARM does not need one).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports XInput / descriptor walk: #0 XINPUTUAP.dll n=1 name file offset 0x1326dae"
+   ],
+   "confidence": "low"
+  },
+  {
+   "id": "winmain.input_sha256",
+   "x86_symbol": "EXPECTED_SHA256 dd3766af...41f6 (x86 exe)",
+   "x86_value": "dd3766af82b8f62a2a312b6f32c5a09ae898062d8a5c30b399e950d3fa3241f6",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "SHA-256 of the unmodified ARM Minecraft_1.2.8.0_ARM32/Minecraft.Windows.exe (23,595,520 bytes = 0x1680A00): b01d5f1237d2daad8cc076d7218f0788751b55a9576c779ccdba08eef6fcfcf8",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Replace EXPECTED_SHA256 in the ARM patcher with this value; keep the check (refuse any other input).",
+   "expected_bytes": null,
+   "evidence": [
+    "python hashlib.sha256(open(exe,'rb').read()).hexdigest() -> b01d5f1237d2daad8cc076d7218f0788751b55a9576c779ccdba08eef6fcfcf8; size 0x1680A00"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.host.bootstrap_signature",
+   "x86_symbol": "int WINAPI Win32Bootstrap(void); .def `Win32Bootstrap=_Win32Bootstrap@0`",
+   "x86_value": "stdcall @0",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Entry used by the patched exe. ARM: `int Win32Bootstrap(void)` exported by name `Win32Bootstrap` (no decoration). The first thing it does is `GetModuleHandleW(NULL)`, `image_size = *(DWORD*)(image + *(DWORD*)(image+0x3c) + 0x50)`; compare against 0x01731000 only (else return 3).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "In the ARM .def/linker use plain `Win32Bootstrap`. Remove `Win32Bootstrap@0` alias (an @0 import in the PE would not bind). Keep `return 3` for unknown images.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c:14856-14883",
+    "win32craft.def"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.host.image_identification_and_branches",
+   "x86_symbol": "host_is_128 / host_is_115 / 0132 / 0142 / 116 / 01510 dispatch",
+   "x86_value": "IMAGE_SIZE_* constants",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Only the 1.2.8 branch exists on ARM: delete bootstrap_116 (0x02db1000), Win32BootstrapEarly2016 (0x008cc000/0x00abf000), host_is_115, 0.15.10 branches, `patch_win7_device2_queries_to_base`, `install_xbox_tcui_noops` (non-128), install_01510_*, verify_patched_audio_exe, install_native_fmod_bridge, install_file_browser_compat_01510, install_material_task_compat, patch_chat_textbox_compat (returns TRUE immediately unless host_is_115), and the window class/title ternaries (use L\"MCPE128Win32\" / L\"Win32Craft 1.2.8\").",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Set host_is_128 = TRUE after the SizeOfImage check; host_is_windows7 = FALSE (GetVersion is 6.2 on a manifest-less ARM exe, never 6.1).",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c:14872-14883, 14941-15007, 15016-15028; patch_chat_textbox_compat at 12356 has `if (!host_is_115) return TRUE;`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "winmain.host.iat_cells_used_in_bootstrap",
+   "x86_symbol": "RVA_128_CXX_THROW_IAT 0x011d2690, RVA_128_CREATE_FILE2_IAT 0x011d20d4, RVA_128_ACTIVATION_FACTORY_IAT 0x011d2b54, RVA_128_PLATFORM_OBJECT_CTOR_IAT 0x011d2ae4, ALLOCATE2 0x011d2aac, ALLOCATE1 0x011d2aa8, GET_IBOX_ARRAY_VTABLE 0x011d2acc, GET_IBOX_VTABLE 0x011d2b1c, D3D_COMPILE 0x011d20b4, D3D11_CREATE_DEVICE 0x011d2a44",
+   "x86_value": "10 x86 IAT RVAs",
+   "kind": "iat",
+   "arm_rva": "0x00c374e4",
+   "summary": "ARM IAT cells for the ten cells Win32Bootstrap passes to install_* (resolved BY IMPORT NAME, never by x86 arithmetic): CXX_THROW=0x00C374E4 (VCRUNTIME140_APP!_CxxThrowException); CREATE_FILE2=0x00C3765C (api-ms-win-core-file-l1-2-0!CreateFile2); ACTIVATION_FACTORY=0x00C37BF0 (vccorlib140_app!?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z, signature (class_name, GUID&, void**) matches win32_get_activation_factory; the game's CoreApplication lookup at 0x596366 goes through its thunk); PLATFORM_OBJECT_CTOR=0x00C37B90 (??0Object@Platform@@Q$AAA@XZ); PLATFORM_ALLOCATE2=0x00C37B80 (Heap::Allocate(II)); PLATFORM_ALLOCATE1=0x00C37B7C (Heap::Allocate(I)); GET_IBOX_ARRAY_VTABLE=0x00C37B88; GET_IBOX_VTABLE=0x00C37BC8; D3D_COMPILE=0x00C370B4 (D3DCOMPILER_47!D3DCompile); D3D11_CREATE_DEVICE=0x00C37A50 (d3d11!D3D11CreateDevice).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "All ten are plain data cells in .rdata (read-only mapping): keep the VirtualProtect(PAGE_READWRITE) dance. Signatures lose stdcall (`WINAPI` typedefs become AAPCS). The vccorlib shims (object ctor/IBox/allocator zeroing) were written against WINE's vccorlib140 and are probably unnecessary with the real ARM vccorlib140.dll (decide with the imports area; keep as optional hooks). CreateFile2/D3D11CreateDevice Windows-7 shims: CreateFile2 is native on Win8+, D3D11 shim only matters if flags need adjusting (gfx_compat: optional `flags|0x20`). patch_win7_dxgi_device3_query_to_base / patch_win7_discard_views (RVA_128_DXGI_DEVICE3_IID 0x012d8b28): Windows-7-only, not needed on ARM.",
+   "expected_bytes": null,
+   "evidence": [
+    "python descriptor walk / arm32re.py imports: names and cells listed above",
+    "arm32re.py dis b48f88 -> `b.w` thunk[vccorlib140_app!GetActivationFactoryByPCWSTR], called by sub_596328 with (L\"Windows.ApplicationModel.Core.CoreApplication\", &IID_ICoreApplication, &out)",
+    "x86 host: win32_get_activation_factory(LPCWSTR, const GUID*, void**) at win32_host.c:7517; install_vccorlib_compat at 8259",
+    "imports_table.json cross-check for every cell"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "winmain.host.crash_trace_context",
+   "x86_symbol": "install_crash_trace / win32_unhandled_exception: CONTEXT.Eip/Esp/Ebp/Eax..Edi, ebp-chain walk; win32_cxx_throw (RtlCaptureStackBackTrace)",
+   "x86_value": "x86 CONTEXT",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Diagnostics in Win32Bootstrap's prologue use the x86 CONTEXT registers and an EBP frame walk. ARM CONTEXT has Pc, Sp, Lr, R0..R12 (R11 = fp) and the game's frames are NOT a clean fp chain (prologues use `add fp,sp,#N` after multi-register pushes).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Port win32_unhandled_exception to log Pc/Sp/Lr/R0-R12 and use RtlCaptureStackBackTrace (already used in win32_cxx_throw) or RtlVirtualUnwind instead of walking fp; dump the stack words at Sp. SetUnhandledExceptionFilter/AddVectoredExceptionHandler calls are unchanged.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c:387-430 (x86 CONTEXT use); arm32re.py func b49a24 / ff6a0 prologues use `add fp, sp, #N`"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "winmain.host.callees_in_bootstrap",
+   "x86_symbol": "install_*/initialize_*/render_* called from Win32Bootstrap on the 1.2.8 path",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": null,
+   "summary": "Ownership map for the rest of the 1.2.8 bootstrap (not re-derived here): install_xbox_tcui_noops_128 + install_win32_platform_fixes_128 + install_128_zip_resource_overrides + patch_xbox_actions_noop -> platform_fixes.json; install_client_state_hook_128 -> client_state.json; install_mouse_mode_hooks + refresh_relative_mouse_from_client_128 + update_mouse_capture -> input.json; initialize_game_d3d + initialize_game_app_128 + activate_game_app_128 + render_game_target_128 + drain_dispatcher_queue -> gfx_compat/appmain facts; resolve_fmod_delay_imports_128 -> imports_table.json (ARM fmod_ARM.dll is a normal import: nothing to resolve, see rename.fmod). Portable C with no binary constants: Win32CraftParseHostOptions, create_user_data, package_path/GetCurrentDirectoryW, log_line, window_proc, RegisterClassExW/CreateWindowExW, the PeekMessage loop and Sleep(0).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Keep the order of operations in Win32Bootstrap; only the data inside the install_* functions changes.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c:14856-15109 read in full; grep of the called functions' owners in arm32/facts/*.md"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "winmain.host.dllmain",
+   "x86_symbol": "DllMain (reason==0 cleanup of copyright temps)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "DllMain does nothing binary-specific. Keep it free of DisableThreadLibraryCalls and of any host start (the exe calls Win32Bootstrap directly). Process detach path: Win32Bootstrap returns -> exit(r4) -> _cexit -> DLL_PROCESS_DETACH.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Unchanged.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c:15114-15122"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "Patcher (ARM): constants EXPECTED_SHA256=b01d5f1237d2daad8cc076d7218f0788751b55a9576c779ccdba08eef6fcfcf8; file length must be 0x1680A00; asserts: file[0x156:0x158]==22 01, DllCharacteristics@0x19E==0x9140, OS/subsys versions 6.2, 7 sections, SizeOfHeaders 0x400, import dir (0x13269A8,0x3FC) with exactly 50 descriptors, zero bytes at file 0xC362A0..0xC36400.",
+  "Write order (reference implementation: arm32/facts/winmain_verify.py::build): (1) DllCharacteristics 0x9140->0x8140 at 0x19E; (2) in-place renames vccorlib140_app.DLL@0x1328CDE, MSVCP140_APP.dll@0x132C3C8, CONCRT140_APP.dll@0x132CD0A, VCRUNTIME140_APP.dll@0x132CE36 (each exactly 1 occurrence, NUL padded); (3) build .d3imp (vsize 0x444, raw 0x600) at file 0x1680A00 / RVA 0x1730000; (4) header: NumberOfSections 8, SizeOfInitializedData 0xAF5800->0xAF5E00, SizeOfImage 0x1730000->0x1731000, dd[1]=(0x1730000,0x410), section header at file 0x350; (5) trampoline bytes `dff808c0 fc44 dcf800c0 6047 9495af00` at file 0xC362A0 (RVA 0xC36EA0); (6) call site file 0xB48ECA: `00f0abfc` -> `edf0e9f9`.",
+  "Do NOT port: LAA write (already set), OS/subsystem minor 2->1, DYNAMIC_BASE clearing, KERNEL32 ILT placeholders + 4 compat descriptors, api-set/dxgi/d3d11 descriptor redirects, fmod_X86->fmod rename, the 12-byte `ff 15 <abs> 90*6` patch, the `0x10293A2` file offset and 27/0x230 import checks.",
+  "Win32Bootstrap: `extern \"C\" int Win32Bootstrap(void)`, exported undecorated; first statement keeps `GetModuleHandleW(NULL)`; compare SizeOfImage (image+e_lfanew+0x50) to 0x01731000; must return (WM_QUIT wParam) so exit(r4) runs. Do not assume ImageBase==0x400000 (DYNAMIC_BASE stays set).",
+  "Host IAT/vtable patching writes into .rdata cells: always VirtualProtect(PAGE_READWRITE) + restore + FlushInstructionCache, resolving cells by name (see host.iat_cells_used_in_bootstrap).",
+  "Delete from the ARM host: all non-1.2.8 branches, Windows-7 shims, x86 CONTEXT-based crash dump (rewrite for ARM CONTEXT), `thiscall/fastcall/stdcall` typedefs (plain AAPCS)."
+ ],
+ "open_questions": [
+  "Target OS runtime requirements are outside the PE patch: the exe imports api-ms-win-crt-* (UCRT) and api-ms-win-core-* sets; Windows 10 ARM32 has them inbox, Windows RT 8.1 does not ship UCRT.",
+  "fmod_ARM.dll imports VCRUNTIME140_APP.dll and has DllCharacteristics 0x1140 (APPCONTAINER). Unknown whether the loader accepts an APPCONTAINER-flagged DLL in a desktop process and whether VCRUNTIME140_APP.dll resolves (VCLibs). Safest: patch fmod_ARM.dll too (clear 0x1000 at its optional-header DllCharacteristics, rename the VCRUNTIME140_APP.dll import string in place) - not verified on hardware.",
+  "No ARM hardware/emulator was available: the patched exe was validated structurally (llvm-readobj), the new bytes by capstone and unicorn emulation, but not loaded by a real Windows ARM loader.",
+  "XINPUTUAP.dll availability on the target (optional rename to XInput1_4.dll).",
+  "Whether the vccorlib compat shims (Platform::Object ctor / IBox vtable / allocator zeroing) are still needed with the genuine ARM vccorlib140.dll (they were written for Wine on x86)."
+ ]
+}

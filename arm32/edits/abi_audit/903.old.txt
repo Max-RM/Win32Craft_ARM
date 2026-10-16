@@ -1,0 +1,2 @@
+    if (lstrcmpW(class_name, L"Windows.UI.ViewManagement.ApplicationView") == 0 &&
+        memcmp(iid, &application_view_statics3_iid, sizeof(GUID)) == 0) {

@@ -1,0 +1,1 @@
+static HRESULT WINAPI fake_core_window_event_state_116(

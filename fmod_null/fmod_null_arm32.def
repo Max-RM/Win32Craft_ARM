@@ -1,0 +1,45 @@
+; fmod_null_arm32.def - exports of the silent fmod_ARM.dll replacement (Minecraft 1.2.8 ARM32).
+; Left side = the exact C++-mangled name the game imports (byte for byte; the loader matches by name),
+; right side = the C function in fmod_null.c.  On ARM, C symbols are undecorated.
+; Keep in sync with arm32/facts/imports_table.json (fmod_null_test.py checks the built DLL against it).
+LIBRARY fmod_ARM.dll
+EXPORTS
+    ?getVersion@System@FMOD@@QAA?AW4FMOD_RESULT@@PAI@Z=fmod_System_getVersion
+    ?init@System@FMOD@@QAA?AW4FMOD_RESULT@@HIPAX@Z=fmod_System_init
+    ?set3DSettings@System@FMOD@@QAA?AW4FMOD_RESULT@@MMM@Z=fmod_System_set3DSettings
+    ?createChannelGroup@System@FMOD@@QAA?AW4FMOD_RESULT@@PBDPAPAVChannelGroup@2@@Z=fmod_System_createChannelGroup
+    ?getMasterChannelGroup@System@FMOD@@QAA?AW4FMOD_RESULT@@PAPAVChannelGroup@2@@Z=fmod_System_getMasterChannelGroup
+    ?addGroup@ChannelGroup@FMOD@@QAA?AW4FMOD_RESULT@@PAV12@_NPAPAVDSPConnection@2@@Z=fmod_ChannelGroup_addGroup
+    ?close@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ=fmod_System_close
+    ?release@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ=fmod_System_release
+    ?mixerResume@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ=fmod_System_mixerResume
+    ?mixerSuspend@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ=fmod_System_mixerSuspend
+    ?set3DNumListeners@System@FMOD@@QAA?AW4FMOD_RESULT@@H@Z=fmod_System_set3DNumListeners
+    ?setMute@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@_N@Z=fmod_ChannelControl_setMute
+    ?setOutput@System@FMOD@@QAA?AW4FMOD_RESULT@@W4FMOD_OUTPUTTYPE@@@Z=fmod_System_setOutput
+    ?set3DMinMaxDistance@Sound@FMOD@@QAA?AW4FMOD_RESULT@@MM@Z=fmod_Sound_set3DMinMaxDistance
+    ?release@Sound@FMOD@@QAA?AW4FMOD_RESULT@@XZ=fmod_Sound_release
+    ?createSound@System@FMOD@@QAA?AW4FMOD_RESULT@@PBDIPAUFMOD_CREATESOUNDEXINFO@@PAPAVSound@2@@Z=fmod_System_createSound
+    ?stop@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@XZ=fmod_ChannelControl_stop
+    ?set3DAttributes@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@PBUFMOD_VECTOR@@00@Z=fmod_ChannelControl_set3DAttributes
+    ?getSoftwareFormat@System@FMOD@@QAA?AW4FMOD_RESULT@@PAHPAW4FMOD_SPEAKERMODE@@0@Z=fmod_System_getSoftwareFormat
+    ?getDSPClock@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@PA_K0@Z=fmod_ChannelControl_getDSPClock
+    ?addFadePoint@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@_KM@Z=fmod_ChannelControl_addFadePoint
+    ?setDelay@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@_K0_N@Z=fmod_ChannelControl_setDelay
+    ?isPlaying@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@PA_N@Z=fmod_ChannelControl_isPlaying
+    ?update@System@FMOD@@QAA?AW4FMOD_RESULT@@XZ=fmod_System_update
+    ?set3DListenerAttributes@System@FMOD@@QAA?AW4FMOD_RESULT@@HPBUFMOD_VECTOR@@000@Z=fmod_System_set3DListenerAttributes
+    ?getDriverInfo@System@FMOD@@QAA?AW4FMOD_RESULT@@HPADHPAUFMOD_GUID@@PAHPAW4FMOD_SPEAKERMODE@@2@Z=fmod_System_getDriverInfo
+    ?setDriver@System@FMOD@@QAA?AW4FMOD_RESULT@@H@Z=fmod_System_setDriver
+    ?createStream@System@FMOD@@QAA?AW4FMOD_RESULT@@PBDIPAUFMOD_CREATESOUNDEXINFO@@PAPAVSound@2@@Z=fmod_System_createStream
+    ?getNumDrivers@System@FMOD@@QAA?AW4FMOD_RESULT@@PAH@Z=fmod_System_getNumDrivers
+    FMOD_System_Create=fmod_FMOD_System_Create
+    ?getFormat@Sound@FMOD@@QAA?AW4FMOD_RESULT@@PAW4FMOD_SOUND_TYPE@@PAW4FMOD_SOUND_FORMAT@@PAH2@Z=fmod_Sound_getFormat
+    ?setMode@Sound@FMOD@@QAA?AW4FMOD_RESULT@@I@Z=fmod_Sound_setMode
+    ?setFileSystem@System@FMOD@@QAA?AW4FMOD_RESULT@@P6A?AW43@PBDPAIPAPAXPAX@ZP6A?AW43@33@ZP6A?AW43@33I13@ZP6A?AW43@3I3@ZP6A?AW43@PAUFMOD_ASYNCREADINFO@@3@Z9H@Z=fmod_System_setFileSystem
+    ?playSound@System@FMOD@@QAA?AW4FMOD_RESULT@@PAVSound@2@PAVChannelGroup@2@_NPAPAVChannel@2@@Z=fmod_System_playSound
+    ?getSubSound@Sound@FMOD@@QAA?AW4FMOD_RESULT@@HPAPAV12@@Z=fmod_Sound_getSubSound
+    ?getNumSubSounds@Sound@FMOD@@QAA?AW4FMOD_RESULT@@PAH@Z=fmod_Sound_getNumSubSounds
+    ?setVolume@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@M@Z=fmod_ChannelControl_setVolume
+    ?setPaused@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@_N@Z=fmod_ChannelControl_setPaused
+    ?setPitch@ChannelControl@FMOD@@QAA?AW4FMOD_RESULT@@M@Z=fmod_ChannelControl_setPitch

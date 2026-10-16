@@ -1,0 +1,2 @@
+BOOL WINAPI RoOriginateErrorW(HRESULT error, UINT32 length, LPCWSTR message)
+{

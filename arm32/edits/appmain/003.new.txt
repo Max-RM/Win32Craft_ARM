@@ -1,0 +1,283 @@
+#ifdef WIN32CRAFT_ARM32
+/* ======================================================================================================
+ * ARM32 AppMain bring-up (unit appmain; facts appmain.*, input.controller_input_handler, gfx_device.renderer_dsv).
+ *
+ *   AppMain (0x28 bytes): +0 vtable, +4 restart flag, +8 StartupCtx*, +0xc Agile<CoreWindow>, +0x1c AppPlatform_Winrt*,
+ *   +0x20 MinecraftGame*, +0x24 helper.  There is NO frame-enable byte (AppMain+0x10 is Agile storage: never write it).
+ *   AppMain::vf1 (restart_game) destroys and recreates MinecraftGame, so the game pointer is re-read from
+ *   AppMain+0x20 every time and never cached.
+ * ====================================================================================================== */
+#define ARM32_AM_PLATFORM_OFFSET 0x1cu          /* facts appmain.layout */
+#define ARM32_AM_GAME_OFFSET 0x20u
+#define ARM32_AM_SIZE 0x28u                     /* sizeof(AppMain), facts appmain.size_check_0x24 */
+#define ARM32_AM_PLATFORM_PROBE 0x3b8u          /* covers +0x330/+0x334 and the +0x3b4 InputAdapter* */
+#define ARM32_AM_GAME_VTABLE_PROBE 0x64u        /* slots 0..24; the real vtable has 29 slots (0x74 bytes) */
+/* AppPlatform_Winrt vtable 0x013695a4 (facts appmain.app_visibility): slot 27 = onActivated 0x583cf8,
+ * slot 21 = setVisibleFlag 0x621620 (== AppView::OnVisibilityChanged(visible=true) inlined) */
+#define ARM32_AM_PLATFORM_ON_ACTIVATED_SLOT 27
+#define ARM32_AM_PLATFORM_SET_VISIBLE_SLOT 21
+#define ARM32_AM_PLATFORM_ON_ACTIVATED_RVA 0x00583cf8u
+#define ARM32_AM_PLATFORM_SET_VISIBLE_RVA 0x00621620u
+/* MinecraftGame vtable 0x0133bacc (facts appmain.game_vf23_setSize / game_vf24_windowSizeChanged) */
+#define ARM32_AM_GAME_SET_SIZE_SLOT 23
+#define ARM32_AM_GAME_WINDOW_SIZE_CHANGED_SLOT 24
+#define ARM32_AM_HID_HANDLER_OFFSET 0x10u       /* HIDController+0x10 = InputAdapter* (facts input.controller_input_handler) */
+
+/* An ARM code pointer stored in data must equal image+rva+1 (Thumb bit set). */
+static BOOL arm32_appmain_code_cell_is(const void *actual, BYTE *image, DWORD rva, const char *what)
+{
+    char line[200];
+    const void *expected = ARM_CODE(image, rva);
+    if (actual == expected) return TRUE;
+    wsprintfA(line, "ARM32 AppMain: %s is %p, expected image+0x%08lx+1 = %p", what, actual, (unsigned long)rva,
+              expected);
+    log_line(line);
+    return FALSE;
+}
+
+static BOOL initialize_game_app_128(BYTE *image)
+{
+    /* facts appmain.startup_ctx: StartupCtx is 0x20 bytes {int mode; byte flag; std::string at +8 (SSO buffer +8,
+     * size +0x18, capacity +0x1c)}.  AppMain keeps the POINTER (AppMain+8) and re-reads it on restart, so it is static;
+     * it is 8-byte aligned because the game's string::assign may use ldrd/strd. */
+    static DWORD startup_context[0x40 / sizeof(DWORD)] __attribute__((aligned(8)));
+    /* factory argument 3 is a pointer to a CoreWindow*; the holder itself is only dereferenced once but keep it static */
+    static void *activation_argument;
+    void *holder_result;
+    void *platform;
+    void *game;
+    char line[256];
+
+    if (!image) {
+        log_line("Minecraft 1.2.8 AppMain: game image base is NULL");
+        return FALSE;
+    }
+    /* sanity: the code we are about to call must be the ARM 1.2.8 bytes recorded in the facts */
+    if (!arm32_check_bytes(image + ARM_APPMAIN_CREATE_APP_MAIN, ARM_APPMAIN_CREATE_APP_MAIN_EXPECTED,
+                           sizeof(ARM_APPMAIN_CREATE_APP_MAIN_EXPECTED), "AppMain factory 0x597b4c") ||
+        !arm32_check_bytes(image + ARM_APPMAIN_APP_MAIN_FRAME, ARM_APPMAIN_APP_MAIN_FRAME_EXPECTED,
+                           sizeof(ARM_APPMAIN_APP_MAIN_FRAME_EXPECTED), "AppMain::update_frame 0x57d3a8")) {
+        log_line("Minecraft 1.2.8 AppMain: game code bytes do not match the ARM32 facts; not starting");
+        return FALSE;
+    }
+
+    ZeroMemory(startup_context, sizeof(startup_context));
+    startup_context[0x1c / sizeof(DWORD)] = 0xf;    /* empty SSO std::string: size 0 (+0x18), capacity 0xF (+0x1c) */
+    activation_argument = &win32_core_window;
+    game_app_main = NULL;
+    wsprintfA(line, "Minecraft 1.2.8 AppMain startup ctx %p holder %p CoreWindow %p; calling factory %p",
+              (void *)startup_context, (void *)&activation_argument, activation_argument,
+              ARM_CODE(image, ARM_APPMAIN_CREATE_APP_MAIN));
+    log_line(line);
+    /* AppMain** f(AppMain** result r0, StartupCtx* r1, CoreWindow** holder r2) -> r0; constructs AppPlatform_Winrt and
+     * MinecraftGame, runs AppMain::init (waits for the platform worker thread) and sizes the game from the fake
+     * CoreWindow.Bounds * DisplayInformation.LogicalDpi/96 */
+    holder_result = call_game_create_app_main_128(
+        image + ARM_APPMAIN_CREATE_APP_MAIN, &game_app_main,
+        startup_context, &activation_argument);
+    log_pointer("Minecraft 1.2.8 AppMain holder result", holder_result);
+    log_pointer("Minecraft 1.2.8 AppMain", game_app_main);
+    if (!game_app_main || IsBadReadPtr(game_app_main, ARM32_AM_SIZE)) {
+        log_line("Minecraft 1.2.8 AppMain construction failed");
+        return FALSE;
+    }
+    if (holder_result != (void *)&game_app_main) {
+        log_line("Minecraft 1.2.8 AppMain: factory did not return its result pointer (continuing)");
+    }
+    if (*(void **)game_app_main != (void *)(image + ARM_APPMAIN_APPMAIN_VTABLE)) {
+        wsprintfA(line, "Minecraft 1.2.8 AppMain vtable is %p, expected %p (continuing)",
+                  *(void **)game_app_main, (void *)(image + ARM_APPMAIN_APPMAIN_VTABLE));
+        log_line(line);
+    }
+    platform = *(void **)((BYTE *)game_app_main + ARM32_AM_PLATFORM_OFFSET);
+    game = *(void **)((BYTE *)game_app_main + ARM32_AM_GAME_OFFSET);
+    log_pointer("Minecraft 1.2.8 AppPlatform", platform);
+    log_pointer("Minecraft 1.2.8 MinecraftGame", game);
+    if (!platform || !game) {
+        log_line("Minecraft 1.2.8 AppMain: AppPlatform or MinecraftGame missing after AppMain::init");
+        return FALSE;
+    }
+    if (!IsBadReadPtr(platform, ARM32_AM_PLATFORM_PROBE)) {
+        /* what AppMain::init derived from the fake CoreWindow/DisplayInformation (facts appmain.platform_dpi_scale):
+         * LogicalDpi 96 must give scale 1.0 and the size must be the client rect */
+        wsprintfA(line, "Minecraft 1.2.8 AppMain init: platform size %dx%d, dpi scale x%d y%d (per mille), "
+                  "state %lu, AppMain+4 restart=%u",
+                  *(int *)((BYTE *)platform + ARM_APPMAIN_PLATFORM_SCREEN_WIDTH),
+                  *(int *)((BYTE *)platform + ARM_APPMAIN_PLATFORM_SCREEN_HEIGHT),
+                  (int)(*(float *)((BYTE *)platform + ARM_APPMAIN_PLATFORM_DPI_SCALE) * 1000.0f),
+                  (int)(*(float *)((BYTE *)platform + ARM_APPMAIN_PLATFORM_DPI_SCALE + 4) * 1000.0f),
+                  (unsigned long)*(DWORD *)((BYTE *)platform + 0x3b0),
+                  (unsigned)*((BYTE *)game_app_main + 4));
+        log_line(line);
+    }
+    return TRUE;
+}
+
+static BOOL activate_game_app_128(HWND window)
+{
+    typedef void (*PlatformOnActivatedFn)(void *);
+    typedef void (*PlatformSetVisibleFn)(void *, int);
+    typedef void (*GameSetSizeFn)(void *, int, int, float);
+    typedef void (*GameWindowSizeChangedFn128)(void *, int, int);
+    BYTE *image = game_image;
+    void *platform;
+    void *game;
+    void **platform_vtable;
+    void **game_vtable;
+    RECT client;
+    int width;
+    int height;
+    char line[256];
+
+    if (!game_app_main || !image || !GetClientRect(window, &client) ||
+        IsBadReadPtr(game_app_main, ARM32_AM_SIZE)) return FALSE;
+    platform = *(void **)((BYTE *)game_app_main + ARM32_AM_PLATFORM_OFFSET);
+    game = *(void **)((BYTE *)game_app_main + ARM32_AM_GAME_OFFSET);
+    if (!platform || !game || IsBadReadPtr(game, sizeof(void *)) ||
+        IsBadReadPtr(platform, ARM32_AM_PLATFORM_PROBE)) return FALSE;
+    width = client.right - client.left;
+    height = client.bottom - client.top;
+
+    /* (a) visibility == AppView::OnVisibilityChanged(visible=TRUE), inlined on ARM (facts appmain.app_visibility):
+     *     p = AppMain->platform; vt = *p; vt[27](p) (state 2 -> 1); vt[21](p, 1) (platform+9 = visible).
+     *     The cells hold Thumb pointers already, so they are called as plain functions. */
+    platform_vtable = *(void ***)platform;
+    if (!platform_vtable || IsBadReadPtr(platform_vtable, (ARM32_AM_PLATFORM_ON_ACTIVATED_SLOT + 1) * sizeof(void *))) {
+        log_pointer("Minecraft 1.2.8 AppPlatform vtable unreadable", platform_vtable);
+        return FALSE;
+    }
+    if (!arm32_appmain_code_cell_is(platform_vtable[ARM32_AM_PLATFORM_ON_ACTIVATED_SLOT], image,
+                                    ARM32_AM_PLATFORM_ON_ACTIVATED_RVA, "AppPlatform vtable[27] onActivated") ||
+        !arm32_appmain_code_cell_is(platform_vtable[ARM32_AM_PLATFORM_SET_VISIBLE_SLOT], image,
+                                    ARM32_AM_PLATFORM_SET_VISIBLE_RVA, "AppPlatform vtable[21] setVisibleFlag")) {
+        return FALSE;
+    }
+    ((PlatformOnActivatedFn)platform_vtable[ARM32_AM_PLATFORM_ON_ACTIVATED_SLOT])(platform);
+    ((PlatformSetVisibleFn)platform_vtable[ARM32_AM_PLATFORM_SET_VISIBLE_SLOT])(platform, 1);
+    wsprintfA(line, "Minecraft 1.2.8 AppPlatform made visible: state %lu, visible byte %u",
+              (unsigned long)*(DWORD *)((BYTE *)platform + 0x3b0), (unsigned)*((BYTE *)platform + 9));
+    log_line(line);
+
+    /* (b) size: platform+0x330/+0x334 then game vtable[23] setSize(game, w, h, float 0.0f in s0) and vtable[24]
+     *     windowSizeChanged(game, w, h).  Raw client size (strategy A of facts appmain.onWindowSizeChanged): AppMain::init
+     *     already did the same from CoreWindow.Bounds.  The game pointer is re-read: vf1 restart recreates it. */
+    *(int *)((BYTE *)platform + ARM_APPMAIN_PLATFORM_SCREEN_WIDTH) = width;
+    *(int *)((BYTE *)platform + ARM_APPMAIN_PLATFORM_SCREEN_HEIGHT) = height;
+    game = *(void **)((BYTE *)game_app_main + ARM32_AM_GAME_OFFSET);
+    if (game && !IsBadReadPtr(game, sizeof(void *)) && !IsBadReadPtr(*(void ***)game, ARM32_AM_GAME_VTABLE_PROBE)) {
+        game_vtable = *(void ***)game;
+        if (arm32_appmain_code_cell_is(game_vtable[ARM32_AM_GAME_SET_SIZE_SLOT], image,
+                                       ARM_APPMAIN_GAME_VF23_SETSIZE, "MinecraftGame vtable[23] setSize") &&
+            arm32_appmain_code_cell_is(game_vtable[ARM32_AM_GAME_WINDOW_SIZE_CHANGED_SLOT], image,
+                                       ARM_APPMAIN_GAME_VF24_WINDOWSIZECHANGED,
+                                       "MinecraftGame vtable[24] windowSizeChanged")) {
+            ((GameSetSizeFn)game_vtable[ARM32_AM_GAME_SET_SIZE_SLOT])(game, width, height, 0.0f);
+            ((GameWindowSizeChangedFn128)game_vtable[ARM32_AM_GAME_WINDOW_SIZE_CHANGED_SLOT])(game, width, height);
+            wsprintfA(line, "Minecraft 1.2.8 game resized to %dx%d", width, height);
+            log_line(line);
+        } else {
+            log_line("Minecraft 1.2.8 explicit resize skipped (game vtable differs from the facts); AppMain::init size kept");
+        }
+    } else {
+        log_pointer("Minecraft 1.2.8 MinecraftGame vtable unreadable, resize skipped", game);
+    }
+
+    /* (c) input: controller = AppPlatform+0x3b4 -> InputAdapter, +4 -> HIDController; its +0x10 is the InputAdapter that
+     *     enqueueInput takes as `this`.  ARM sizeof(InputAdapter) is 0x170 (x86 probed 0x1d0). */
+    {
+        BYTE *controller = get_hid_controller(platform);
+        void *input_handler = (controller && !IsBadReadPtr(controller + ARM32_AM_HID_HANDLER_OFFSET, sizeof(void *)))
+            ? *(void **)(controller + ARM32_AM_HID_HANDLER_OFFSET) : NULL;
+        input_events_enabled = controller && input_handler &&
+            !IsBadReadPtr(input_handler, ARM_APPMAIN_HID_INPUT_HANDLER_PROBE_0X1D0);
+        wsprintfA(line, "Minecraft 1.2.8 HID controller %p, input handler %p, input events %s",
+                  (void *)controller, input_handler, input_events_enabled ? "enabled" : "DISABLED");
+        log_line(line);
+    }
+    log_line("Minecraft 1.2.8 HWND application activated");
+    return TRUE;
+}
+
+/* One host frame == the body of AppView::Run's loop (facts appmain.app_main_frame): AppMain::update_frame(AppMain*)
+ * -> platform tick, HID update (polls CoreWindow::GetAsyncKeyState), main-thread task queue, MinecraftGame::update
+ * (vtable[22]), optional restart_game when AppMain+4 is set, and finally returns MinecraftGame::vf26 = the byte at
+ * MinecraftGame+9 ("quit requested", set by MinecraftGame::vf25 requestQuit).  AppView::Run leaves its loop when this is
+ * non-zero; the host maps that to WM_CLOSE.
+ *
+ * Returns nonzero when the game asked to quit.  The caller (main loop in Win32Bootstrap) must stop calling the frame
+ * once it sees a nonzero result: leave the loop and return, or just keep pumping messages until WM_QUIT (the WM_CLOSE this
+ * function posts, once, ends in DestroyWindow -> PostQuitMessage via window_proc).
+ *
+ * The game presents itself through the hooked swap chain (AppPlatform_Winrt::vf32 -> Display::present -> win32_present,
+ * which bumps game_present_success_count); the host Present below is only the fallback of the x86 host.  The game's
+ * pre-frame work in AppView::Run (CoreDispatcher::ProcessEvents) is done by the main loop's drain_dispatcher_queue(). */
+static int render_game_target_128(void)
+{
+    typedef unsigned (*Game128FrameFn)(void *);
+    static unsigned frame_count;
+    static BOOL quit_posted;
+    static BOOL platform_flag_logged;
+    Game128FrameFn frame;
+    ID3D11DepthStencilView *depth_target;
+    LONG presents_before;
+    HRESULT result;
+    RECT client;
+    D3D11_VIEWPORT viewport;
+    unsigned frame_result;
+    char line[256];
+
+    if (!game_app_main || !game_image || !game_renderer || !game_context || !game_target ||
+        !game_swap_chain) return 0;
+    if (!game_window || !GetClientRect(game_window, &client)) return 0;   /* window already destroyed (WM_CLOSE in flight) */
+    ZeroMemory(&viewport, sizeof(viewport));
+    viewport.Width = (float)(client.right - client.left);
+    viewport.Height = (float)(client.bottom - client.top);
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+    /* renderer+0x120 = depth-stencil view, renderer+0x118 colour view (== game_target); facts appmain.render_dsv_offset */
+    depth_target = *(ID3D11DepthStencilView **)(
+        (BYTE *)game_renderer + ARM_APPMAIN_RENDER_DSV_OFFSET);
+    ID3D11DeviceContext_RSSetViewports(game_context, 1, &viewport);
+    ID3D11DeviceContext_OMSetRenderTargets(
+        game_context, 1, &game_target, depth_target);
+    frame = (Game128FrameFn)ARM_CODE(game_image, ARM_APPMAIN_APP_MAIN_FRAME);
+    presents_before = game_present_success_count;
+    frame_result = frame(game_app_main);
+    if (frame_result & 0xffu) {
+        /* MinecraftGame+9 != 0: the game requested quit (e.g. through requestQuit); AppView::Run would exit here */
+        if (!quit_posted) {
+            quit_posted = TRUE;
+            wsprintfA(line, "Minecraft 1.2.8 frame %u returned quit (MinecraftGame+9 set); posting WM_CLOSE",
+                      frame_count);
+            log_line(line);
+            PostMessageW(game_window, WM_CLOSE, 0, 0);
+        }
+        ++frame_count;
+        return 1;
+    }
+    if (game_present_success_count == presents_before) {
+        result = IDXGISwapChain_Present(game_swap_chain, 0, 0);
+        if (!frame_count || FAILED(result))
+            log_hresult("Minecraft 1.2.8 host fallback Present", result);
+    }
+    if (!platform_flag_logged) {
+        /* AppView::Run additionally reacts to AppPlatform+8 (set after a ClientInstance was removed): game+0x2f0 ?
+         * per-client sub_1314cc(game,1,0) : AppMain::vf1 restart.  The x86 host does not emulate it either; only report. */
+        void *platform = current_app_platform();
+        if (platform && !IsBadReadPtr((BYTE *)platform + 8, 1) && *((BYTE *)platform + 8)) {
+            void *game = *(void **)((BYTE *)game_app_main + ARM32_AM_GAME_OFFSET);
+            platform_flag_logged = TRUE;
+            wsprintfA(line, "Minecraft 1.2.8 AppPlatform+8 became set after frame %u (AppView::Run would restart/"
+                      "refresh clients; not emulated): game+0x2f0=%u AppMain+4=%u", frame_count,
+                      (game && !IsBadReadPtr((BYTE *)game + 0x2f0, 1)) ? (unsigned)*((BYTE *)game + 0x2f0) : 0xffu,
+                      (unsigned)*((BYTE *)game_app_main + 4));
+            log_line(line);
+        }
+    }
+    ++frame_count;
+    return 0;
+}
+#else
+static BOOL initialize_game_app_128(BYTE *image)
+{
+    static BYTE startup_context[0x40];

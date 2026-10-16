@@ -1,0 +1,536 @@
+{
+ "area": "touch_game",
+ "facts": [
+  {
+   "id": "touch_game.inputmode_enum",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": "0x005ab74c",
+   "summary": "InputMode enum: 0 Undefined, 1 Mouse, 2 Touch, 3 GamePad, 4 MotionController. InputMode_toString (0x5ab74c) is used only for the 'Switching input mode from X to Y' log and for the per-mode option keys.",
+   "arm_signature": "int InputMode; 0 Undefined, 1 Mouse, 2 Touch, 3 GamePad, 4 MotionController",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "2de90048eb46421e032a1bd8",
+   "evidence": [
+    "arm32re.py func 5ab74c -> `subs r2,r0,#1; cmp r2,#3; bhi default; tbb` then strings 'Mouse'(0xdbb660) 'Touch'(0xdbb650) 'GamePad'(0xdbb658) 'MotionController'(0xdbb684); default 'Undefined'(0x118ffe0)",
+    "mapper slot 4 (getInputMode) stubs: 0x0ad200 `movs r0,#1` (MouseMapper), 0x2044e0 `movs r0,#2` (TouchMapper), 0x2d0ca0 `movs r0,#3` (GamePadMapper + GameControllerMapper), 0x3b8da0 `movs r0,#4` (MotionControllerMapper), 0x08b980 `movs r0,#0` (KeyboardMapper, GazeGestureVoiceMapper, DeviceButtonMapper, BehaviorActionMapper)",
+    "UI variable setter 0x329368 @0x329564/0x329594/0x3295c4: `cmp r6,#3 -> $game_pad`, `cmp r6,#1 -> $mouse`, `cmp r6,#2 -> $touch` (r6 = InputHandler::getInputMode)",
+    "AppPlatform_Winrt::getDefaultInputMode 0x62212c returns 2 / 3 / 1"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.default_mode_chain",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0062212c",
+   "summary": "AppPlatform::getDefaultInputMode (AppPlatform_Winrt vtable slot 154, cell 0x0136980c). deviceType = vf116 (slot 116, 0x583aa0 returns this+0x3a8). Result: deviceType 1 -> Touch(2); deviceType 2 or 3 -> GamePad(3); anything else (0 = Windows.Desktop) -> Mouse(1). It is the INITIAL InputMode only (the InputHandler ctor registers the primary client with it); events change it afterwards.",
+   "arm_signature": "int __fastcall-less AAPCS: int getDefaultInputMode(AppPlatform* r0) -> r0 (1 Mouse, 2 Touch, 3 GamePad); calls vtable[116]",
+   "x86_to_arm_notes": "Host currently yields Mouse. DeviceFamily 'Windows.Mobile' would give Touch but also flips deviceType-dependent game logic ($is_windows_10_mobile, StatusBar/PhoneContract paths in AppView, vf39 can_quit stays true only for != Xbox); PORT_RESULTS.md already warns about it. Preferred lever = patch the slot-154 cell (see plan_initial_mode_patch).",
+   "expected_bytes": "2de90048eb4603461b68d3f8",
+   "evidence": [
+    "arm32re.py func 62212c: `ldr r3,[r0]; ldr r3,[r3,#0x1d0]; blx; cmp r0,#1; beq ->movs r0,#2; subs r3,r0,#2; cmp r3,#1; bhi ->movs r0,#1; else movs r0,#3`",
+    "vtable dump: AppPlatform_Winrt (0x13695a4) slot 154 cell 0x136980c = 0x00a2212d (rva 0x62212c); slot 116 cell 0x1369774 = 0x00983aa1 (rva 0x583aa0 = `ldr.w r0,[r0,#0x3a8]`)",
+    "AppPlatform_Winrt::ctor 0x581610 @0x581726..0x5817b4: WindowsCompareStringOrdinal(DeviceFamily, L\"Windows.Xbox\") equal -> [this+0x3a8]=2; else compare L\"Windows.Mobile\" equal -> [this+0x3a8]=1 (sb); else 0. DeviceFamily comes from sub_58466c (AnalyticsInfo.VersionInfo.DeviceFamily, strings 'Windows.System.Profile.AnalyticsInfo' 0xdb7608)",
+    "callers of slot 154 (`ldr.w r3,[r3,#0x268]` + blx): sub_38ba44 @0x38bb2a (InputHandler creation), sub_38be30 @0x38bf52 (adds another client, then sub_5ad0b8 registerClient), telemetry sub_5f5610/sub_61ba58 ('DefaultInputMode' strings 0xdbf258)",
+    "host win32_host.c fake_analytics_device_family (line ~8559) returns L\"Windows.Desktop\" and logs 'AnalyticsVersionInfo.DeviceFamily returned Windows.Desktop' -> deviceType 0 -> default mode Mouse"
+   ],
+   "confidence": "high",
+   "cell_rva": "0x0136980c",
+   "expected_cell_value": "0x00a2212d",
+   "expected_cell_value_note": "value in the loaded image = ImageBase + target RVA + 1 (Thumb bit); the file stores the preferred-base value 0x00400000 + rva + 1 and the loader relocates it"
+  },
+  {
+   "id": "touch_game.device_type_getter",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00583aa0",
+   "summary": "AppPlatform_Winrt::getDeviceType (vtable slot 116, cell 0x01369774): returns the byte/int stored at this+0x3a8 by the ctor from AnalyticsInfo DeviceFamily (0 Desktop, 1 Windows.Mobile, 2 Windows.Xbox).",
+   "arm_signature": "int getDeviceType(AppPlatform* r0)",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "2de90048eb46d0f8a803bde8",
+   "evidence": [
+    "arm32re.py func 583aa0: `ldr.w r0,[r0,#0x3a8]; pop {fp,pc}`",
+    "writers of +0x3a8: ctor 0x581610 @0x581768 (Xbox -> 2), @0x5817ae (Mobile -> sb=1), @0x5817b4 (else r8=0)",
+    "readers: vf154 0x62212c, vf41 supportsTouch 0x621390, vf39 0x6212f4 (`deviceType != 2` can_quit), vf49 0x621410, UI variable setter 0x329368 @0x329464"
+   ],
+   "confidence": "high",
+   "cell_rva": "0x01369774",
+   "expected_cell_value": "0x00983aa1",
+   "expected_cell_value_note": "value in the loaded image = ImageBase + target RVA + 1 (Thumb bit); the file stores the preferred-base value 0x00400000 + rva + 1 and the loader relocates it"
+  },
+  {
+   "id": "touch_game.platform_queries",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Every AppPlatform query that feeds touch/mouse/keyboard UI decisions, with the value the ARM host produces today. There is NO query for the presence of a mouse, keyboard or touch digitizer anywhere in the exe.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "So the user's hypothesis 'the app thinks a mouse and keyboard are already attached' is not how the game works: nothing is detected. The game is purely event driven after the initial default.",
+   "expected_bytes": null,
+   "evidence": [
+    "slot 154 getDefaultInputMode 0x62212c -> 1 (Mouse) with DeviceFamily Windows.Desktop",
+    "slot 116 getDeviceType 0x583aa0 -> 0 (Desktop) from the fake AnalyticsInfo",
+    "slot 41 (cell 0x1369648) supportsTouch 0x621390 -> true unless deviceType is 2 or 3 -> true; feeds $touch_supported (sub_287fbc @0x288176 via SettingsScreenController::vf19 0x287e3c) -> Settings 'Touch' tab is shown (settings_screen.json:122 `ignored: ($is_holographic or not $touch_supported)`)",
+    "slots 42/43 (0xad200 `return 1`) -> $keyboard_and_mouse_supported / $gamepad_supported are constant true (SettingsScreenController::vf19 passes vf42,vf43,vf41 as stack args of sub_287fbc)",
+    "slot 39 0x6212f4 `deviceType != 2` (can_quit) -> true",
+    "byte AppPlatform+0x210 = 'oculus_launched' launch argument (GameArguments::vf1 0x1246b4 @0x124814); AppPlatform base ctor 0x61ffc0 sets it to 0; InputHandler+0xf8 copies it and, if non-zero, FREEZES the input mode (see mode_lock_flag) -> 0 on our host",
+    "imports of the exe contain no GetSystemMetrics / GetPointerDevices / RawInput; the only WinRT input classes are CoreWindow events, Windows.Devices.Input.MouseDevice (relative-move events only, never delivered by our host), PointerVisualizationSettings; no KeyboardCapabilities/MouseCapabilities/TouchCapabilities strings (arm32re.py str Capabilities -> none)",
+    "the host fake CoreWindow::GetAsyncKeyState (slot 20, win32_host.c fake_core_window_key_state) always returns 0, so the per-frame poll sub_626570 never emits mouse button items"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.input_handler_tick",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x005abb44",
+   "summary": "InputHandler::tick(this, r1, ClientInstance& r2, r3, [sp]=byte): the ONLY place that changes the current InputMode. For every InputDeviceMapper in this+0x108..0x10c it calls vtable[3] (tick) with (mapper, this->[+0x100] r1, r3 as r2); if it returns non-zero it calls vtable[4] (getInputMode) and a non-zero result becomes the candidate (later mappers in the vector override earlier ones within the same tick). Then: if candidate != 0 && candidate != node.mode && InputHandler+0xf8 == 0, it logs 'Switching input mode from <old> to <new> @ InputHandler::tick' (source path string F:\\DarwinWork\\20\\s\\handheld\\project\\VS2015\\systems\\Input\\Inp...), stores node.mode (node+0xc) = candidate and invokes every std::function<void(InputMode, ClientInstance&)> in the listener vector at this+0 (stride 0x28, std::function at +0x24, called as f(&mode, r2)).",
+   "arm_signature": "void InputHandler::tick(InputHandler* r0, void* r1, ClientInstance* r2, uintptr_t r3, [sp] bool b); callee-saved r4-r11; push {r4-r11,lr} prologue",
+   "x86_to_arm_notes": "The host never calls it; it only needs to feed the global Mouse / Multitouch queues through EnqueueInput.",
+   "expected_bytes": "2de9f04f0df11c0b55f656f3",
+   "evidence": [
+    "arm32re.py func 5abb44 @0x5abb62 `ldrd r5,r8,[r0,#0x108]`; loop @0x5abb72..0x5abb9a: `ldr r4,[r5],#4; ldr r1,[sb,#0x100]; mov r2,sl; ldr r4,[r4]; ldr r4,[r4,#0xc]; blx r4; cmp r0,#0; beq; ldr r3,[r5,#-4]; ldr r3,[r3]; ldr r3,[r3,#0x10]; blx r3; cmp r0,#0; beq; mov r6,r0`",
+    "@0x5abbb6..0x5abbcc: `cmp r6,#0; beq skip; ldr r3,[r8,#0xc]; cmp r6,r3; beq skip; ldrb.w r3,[sb,#0xf8]; cmp r3,#0; bne skip`; @0x5abc9c..0x5abca8 logs then `str.w r6,[r8,#0xc]`",
+    "@0x5abcac..0x5abcca: `ldrd r4,r5,[sb]` listener loop `ldr r3,[r4,#0x24]; (r3 null -> std::_Xbad_function_call) ; ldr r3,[r3]; ldr r3,[r3,#8] (_Do_call); blx` with r1=&mode (r7+0x54) and r2=[r7+4]",
+    "listener (std::function) lambda_7310c8f6... vtable 0x135c748 slot 2 = 0x393434: `ldr r1,[r1]; mov r0,r2; b.w 0x1160cc` = ClientInstance::onInputModeChanged(ClientInstance&, InputMode)",
+    "only caller: MinecraftInputHandler::tick sub_38c0ac @0x38c0c2 (called every frame from sub_12f4d8 -> MinecraftGame::update path)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.input_handler_layout",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "InputHandler object (operator new 0x140, ctor 0x5ab79c, created by MinecraftInputHandler::setupMappers 0x38ba44, stored at MinecraftInputHandler+8; also reachable as *( *(ClientInstance+0x40) + 4 )).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": null,
+   "evidence": [
+    "+0x000 begin / +0x004 end of vector<InputModeListener> (stride 0x28, std::function at +0x24) - tick @0x5abcac",
+    "+0x0f8 byte: input-mode LOCK (ctor stack arg0), +0x0f9 byte (stack arg1); both copied from AppPlatform+0x210 by sub_38ba44 (two `ldrb.w r3,[r3,#0x210]` @0x38baf6/0x38bb0e) - ctor 0x5ab79c @0x5ab814..0x5ab824",
+    "+0x100 pointer: event/button queue object passed to every mapper->tick as r1; +0x104 unique_ptr; +0x108/+0x10c/+0x110 vector<unique_ptr<InputDeviceMapper>> (sub_2f7c18 = push_back, begin at +0, end at +4)",
+    "+0x114/+0x118 ctor args r1/r2; +0x11c unordered_map<int clientId, ClientState> (lookup sub_5ae0d8; ClientState first dword at node+0xc = current InputMode); +0x13c primary client id (0)",
+    "sizeof = 0x140 (sub_391334 `mov.w r0,#0x140; bl operator_new; memset 0x140`; dtor size 0x38bb6c `mov.w r1,#0x140`)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.get_input_mode",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x005ad050",
+   "summary": "InputHandler::getInputMode(this r0, clientId r1) -> int* r0 (pointer to the client's current InputMode, i.e. node+0xc) or NULL when the id is -1/unknown. Callers read `p ? *p : 0`.",
+   "arm_signature": "int* getInputMode(InputHandler* r0, int clientId r1) -> r0; plain AAPCS (the `push {r0,r1}` is just a vararg-style spill)",
+   "x86_to_arm_notes": "Host diagnostic recipe: client = the ClientInstance* the host already captures from the ClientInstance::vf3 hook; X = *(void**)(client+0x40) (X[0]==client, X[1]==InputHandler*); game = *(void**)(client+0x18); opts = *(void**)(game+0x138); id = ((int(*)(void*,void*))(image+0x51b860+1))(opts, client); p = ((int*(*)(void*,int))(image+0x5ad050+1))(X[1], id); mode = p ? *p : 0.",
+   "expected_bytes": "03b42de910480df1040b54f6",
+   "evidence": [
+    "arm32re.py func 5ad050: `push {r0,r1}...; cmp.w r1,#-1; bne; (id==-1 -> movs r0,#0); add.w r0,r4,#0x11c; bl 0x123e88 (find); ldr.w r3,[r4,#0x120]; cmp r2,r3; beq -> r0=0; else add.w r0,r2,#0xc`",
+    "40+ callers (arm32re.py callers 5ad050), all with the same shape: clientId = sub_51b860(*( *(game)+0x138 ), clientInstance) then getInputMode([[client+0x40]+4], clientId) - e.g. sub_115fa0 @0x115fd6, sub_11d340 @0x11d3b4, sub_128f00 @0x128f74, sub_329368 @0x3293a2, sub_3784b0 @0x3784d8"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.sub_51b860_client_id",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0051b860",
+   "summary": "Maps a ClientInstance* to the input/controller client id used as key of InputHandler's map: walks the list at (obj+0x30) comparing node+0x14 to r1 and returns node+0x10, else -1.",
+   "arm_signature": "int clientIdFor(void* r0 = *(MinecraftGame+0x138), void* r1 = ClientInstance*) -> r0 (-1 if unknown)",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "2de930480df1080be5f6c8f4",
+   "evidence": [
+    "arm32re.py func 51b860: `ldr r4,[r0,#0x30]; ldr r2,[r4]; (loop) ldr r3,[r2,#0x14]; cmp r3,r5; beq -> ldr r0,[r2,#0x10]; ... mvn r0,#0`",
+    "call shape in sub_115fa0 @0x115fc6..0x115fce: `ldr r1,[r4]` (r4=[client+0x40], [r4]=client) `ldr r3,[r1,#0x18]; ldr r0,[r3,#0x138]; bl 0x51b860`"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "touch_game.register_client",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x005ad0b8",
+   "summary": "InputHandler::registerClient(this, clientId r1, initialMode r2): creates the ClientState node (node+0xc = initialMode). The InputHandler ctor calls it for the primary client with the default mode (from AppPlatform vf154); sub_38be30 calls it for additional clients.",
+   "arm_signature": "void registerClient(InputHandler* r0, int clientId r1, int initialMode r2)",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "2de9b0480df10c0b93b06f46",
+   "evidence": [
+    "arm32re.py func 5ad0b8: `str r5=r2 -> [r4,#0xc]` (@0x5ad146) after building the node via sub_5ae0d8/sub_5ad154",
+    "callers: InputHandler::ctor @0x5ab8f4 (`ldr.w r1,[r6,#0x13c]; mov r2,sb(=ctor r3=defaultMode)`), sub_38be30 @0x38bf72"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.mapper_set_and_order",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0038ba44",
+   "summary": "MinecraftInputHandler::setupMappers (called once from MinecraftGame::vf27 @0x12b130 with r0 = *(MinecraftGame+0xe8)). Creates the InputHandler (default mode = AppPlatform vf154 stored in a local, 5th/6th stack args = AppPlatform+0x210) and appends the device mappers in this order: [GazeGestureVoiceMapper, KeyboardMapper, MouseMapper, GamePadMapper, TouchMapper (ONLY if !X->vf10(), X = *(ClientInstance+0x34), the same isHolographic() query that feeds $is_holographic), MotionControllerMapper, DeviceButtonMapper, BehaviorActionMapper]. Because tick() lets later mappers override earlier ones, Touch beats Mouse and GamePad when both report in the same tick; Motion controllers beat Touch.",
+   "arm_signature": "void setupMappers(MinecraftInputHandler* r0)",
+   "x86_to_arm_notes": "Medium because the identity of X (ClientInstance+0x34) is not decoded, only its vf10 meaning. Runtime check recommended: scan InputHandler+0x108..+0x10c and log which mapper vtables are present (plan_diagnostics).",
+   "expected_bytes": "2de9f04f0df11c0b75f4d6fb",
+   "evidence": [
+    "arm32re.py dis 38bc4c..38be00: pushes via sub_2f7c18 (vector push_back) after the factory calls sub_3913e4 (xref of vtable 0xdbb5a8 GazeGestureVoiceMapper), sub_39146c->sub_5af2f0 (0xdbb940 KeyboardMapper), sub_3913ac->sub_5afa54 (0xdbb970 MouseMapper; its raw pointer is also kept at MinecraftInputHandler+0x18), sub_3914a4 (0xdbb52c GamePadMapper), sub_3914e8->sub_5b1f28 (0xdbba20 TouchMapper), sub_391520 (0xdbba70 MotionControllerMapper), sub_391564->sub_5a6900 (0xdbb578 DeviceButtonMapper), sub_39159c->sub_3754f4 (0x135b798 BehaviorActionMapper)",
+    "@0x38bd2a..0x38bd36: `ldr r3,[r5,#4]; ldr r3,[r3,#0x34]; mov r0,r3; ldr r3,[r3]; ldr r3,[r3,#0x28]; blx r3; cbnz r0,skip_touch`",
+    "sub_329368 @0x329a9c..0x329aa6: `$is_holographic` = the same `X->vtbl[0x28]()` ([[ctx+8]+0x34]), and settings_screen.json:122 hides the Touch settings tab on `$is_holographic` -> vf10 = isHolographic; false on a normal desktop session",
+    "TouchMapper vtable 0xdbba20 (rodata) xref only from its ctor sub_5b1f28 @0x5b1f60 <- sub_3914e8 <- this function"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "touch_game.touch_mapper",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbba20",
+   "summary": "TouchMapper (RTTI .?AVTouchMapper@@, const vtable in .rdata, object 0x50 bytes). vf1 0x5b201c buildControls(layout), vf2 0x5b23f8 reset, vf3 0x5b21ac tick, vf4 0x2044e0 getInputMode()=2, vf6 0x5b242c render(ctx) (calls control->vf1(ctx) for every TouchControl), vf7 0x5b2454 setScreenSize. tick returns 1 while any of the 12 multitouch pointers is DOWN or was RELEASED since the last reset, else 0; it also turns the pointers into UI pointer events and drives the TouchControls (move arrows, jump, sneak, fly, pause, chat, turn/interact, gui_passthrough areas).",
+   "arm_signature": "InputDeviceMapper vtable: [3] bool tick(this, queue r1, r3 r2); [4] int getInputMode(); [6] void render(ctx r1)",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "991f9b001d209b00f9239b00ad219b00e144600011b49a002d249b00",
+   "evidence": [
+    "vtable dump 0xdbba20: [0]=0x5b1f98 [1]=0x5b201c [2]=0x5b23f8 [3]=0x5b21ac [4]=0x2044e0 [5]=0x5ab410 [6]=0x5b242c [7]=0x5b2454 (raw values minus ImageBase, Thumb bit stripped; the .rdata vtables store raw VAs)",
+    "tick prologue 0x5b21f6 `bl 0x5b01b4` (sub_5b01b4 rebuilds two lists: pointers with Pointer+0x11 (button 1 state) != 0 -> list at 0x17573c4 / count 0x19155b4, and pointers that are down OR have the release flag [0x19159bc+i] -> list at 0x17573f4 / count 0x19159b8); then `ldr.w r8,[r6]` (count) `cmp.w r8,#0; ble skip` and the loop sets the return value ([sp+0x38]) = 1; epilogue @0x5b23ea `ldr r0,[sp,#0x38]`",
+    "the release flags [0x19159bc+slot] are set by Multitouch::feed on finger-up and cleared ONLY by TouchMapper::vf2 reset (sub_5b0218, reached through virtual mapper->vtable[2] calls such as sub_128f00 @0x128fca / sub_11d340 @0x11d376, i.e. scene/focus changes), so tick() can keep returning 1 for a while after the last finger was lifted",
+    "controls: RTTI TouchControl 0xdbb9f8, TouchGlyphButtonControl 0xdbba0c (draws glyph buttons ':touch_forward:' ':touch_left:' ':touch_back:' ':touch_right:' ':touch_jump:' ':touch_sneak:'), TouchTextButtonControl 0xdbb9bc, TouchTurnInteractControl 0xdbb9d0, TouchGuiPassthroughControl 0xdbb9e4; areas are named 'binding.area.*' (move_up, jump, sneak, turn_interact, gui_passthrough, ...) resolved by ClientBindingFactory::vf4 0x3763c4 to RectangleArea members",
+    "NO JSON file of the pack defines these buttons (grep of resource_packs/vanilla/ui: no 'touch'/'binding.area'); hud_screen.json only has the pocket hotbar variants. The touch HUD is native and appears only through TouchMapper::render (touch_hud_render_gate)"
+   ],
+   "confidence": "high",
+   "vtable_rva": "0x00dbba20",
+   "tick_rva": "0x005b21ac",
+   "tick_expected_bytes": "2de9f04f0df11c0b4ff622f0",
+   "render_rva": "0x005b242c",
+   "render_expected_bytes": "2de978480df1100bc36a0e46",
+   "note": "expected_bytes = first 7 raw vtable dwords (stored VAs, preferred base 0x400000 + rva + 1)"
+  },
+  {
+   "id": "touch_game.mouse_mapper",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbb970",
+   "summary": "MouseMapper (vtable 0xdbb970 in .rdata): vf3 0x5afc2c tick consumes the global Mouse event queue (Pointer object at 0x1978880, events stride 0x14 at +0x18..+0x1c) and returns 1 if it processed any event; vf4 0xad200 returns 1 (Mouse). Every MouseItem (type 0: moves, buttons, wheel) therefore re-selects Mouse mode.",
+   "arm_signature": "[3] bool tick(this, r1, r2); [4] int getInputMode()=1",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "cdfa9a0029fb9a0079009b002dfc9a0001d24a00a9009b00213a4800",
+   "evidence": [
+    "arm32re.py func 5afc2c: loop `ldr r2,[r4,#0x1c]; ldr r3,[r4,#0x18]; ... smull /20 ...; cmp r0,r3; bge end`, `movs r7,#1; str r7,[sp,#0x10]` when an event is handled; result [sp+0x10]",
+    "processHIDItem 0x582ff8 case 0 calls sub_5af968 with r0 = 0x1978880 (the Mouse pointer object = element -1 of the Multitouch array 0x19788a8 - 0x28)"
+   ],
+   "confidence": "high",
+   "vtable_rva": "0x00dbb970",
+   "tick_rva": "0x005afc2c",
+   "tick_expected_bytes": "2de9f04f0df11c0b2ded048b"
+  },
+  {
+   "id": "touch_game.keyboard_gamepad_motion_mappers",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbb940",
+   "summary": "KeyboardMapper (0xdbb940) getInputMode = 0 (Undefined): key/char events NEVER switch the input mode. GamePadMapper (0xdbb52c) / GameControllerMapper (0xdbb5ec) getInputMode = 3 (XInput via XINPUTUAP.dll!XInputGetState is the only gamepad import), MotionControllerMapper (0xdbba70) = 4, GazeGestureVoice/DeviceButton/BehaviorAction = 0.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "5d55770059f39a0001f49a0011f49a0081b9480011b49a00213a4800",
+   "evidence": [
+    "vtable dumps: Keyboard [4]=0x8b980 (`movs r0,#0`), GamePad [4]=0x2d0ca0 (3), Motion [4]=0x3b8da0 (4), Gaze/DeviceButton [4]=0x8b980; BehaviorAction 0x135b798 [3]=[4]=0x8b980",
+    "imports: only XINPUTUAP.dll!XInputGetState (arm32re.py imports XInput); stock keyboard events are KeyCodeItem (type 2) / TextItem (type 3) -> Keyboard::feed 0x95614 / sub_5811a0, no mapper reports a mode for them"
+   ],
+   "confidence": "high",
+   "vtable_rva": "0x00dbb940",
+   "keyboard_tick_rva": "0x005af410",
+   "keyboard_tick_expected_bytes": "2de9f04f0df11c0b51f6f0f6",
+   "gamepad_vtable_rva": "0x00dbb52c",
+   "gamepad_tick_rva": "0x005a9d18",
+   "gamepad_tick_expected_bytes": "2de9f04f0df11c0b57f66cf2",
+   "motion_vtable_rva": "0x00dbba70"
+  },
+  {
+   "id": "touch_game.hid_item_dispatch",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00582ff8",
+   "summary": "AppPlatform_Winrt::processHIDItem: pops ONE HIDItem from the InputAdapter queue (sub_587314) and dispatches on the type byte at item+4 (tbb, 5 cases): 0 MouseItem -> Pointer::feed(0x1978880,...) [0x5af968]; 1 MultitouchItem -> Multitouch::feed [0x5b00ec]; 2 KeyCodeItem -> Keyboard::feed [0x95614]; 3 TextItem -> sub_5811a0; 4 CaretLocationItem -> sub_c7b4c. Returns 1 if an item was processed (called in a loop from the per-frame platform tick sub_582cec).",
+   "arm_signature": "bool processHIDItem(AppPlatform_Winrt* r0) -> r0",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "2de9b0480df10c0b7ef6fcf0",
+   "evidence": [
+    "arm32re.py func 582ff8: `ldrsb.w r2,[r4,#4]; cmp r2,#4; bhi; tbb [pc,r2]` table bytes 03 2d 3b 40 49 -> targets 0x58303c (mouse), 0x583090 (multitouch), 0x5830ac (key), 0x5830b6 (text), 0x5830c8 (caret)",
+    "case 1 @0x583090: `ldrsb r3,[r4,#0xe]; ldrsh r2,[r4,#8]; ldrsb r1,[r4,#0xd]; ldrsb r0,[r4,#0xc]; str r3,[sp]; ldrsh r3,[r4,#0xa]; bl 0x5b00ec`",
+    "item vtables: MouseItem 0x136dde0, HIDItem 0x136dde8, KeyCodeItem 0x136ddf0, MultitouchItem 0x136ddf8, CaretLocationItem 0x136de00, TextItem 0x136de08 (each only has a deleting dtor)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.make_multitouch_item",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0062a174",
+   "summary": "make_unique<MultitouchItem> factory (item = operator new(0x10); vtable 0x136ddf8; type byte +4 = 1). ABI: r0 = void** out (receives the item, returns out), r1 = const int* buttonId (32-bit read, stored as byte at +0xc), r2 = const int* data (32-bit read, stored as byte at +0xd), r3 = const short* x (16-bit read, stored at +8), [sp+0] = const short* y (16-bit, stored at +0xa), [sp+4] = const BYTE* pointerSlot (8-bit, stored at +0xe). Hand the result to EnqueueInput (0x587294) exactly like the mouse item: pass the ADDRESS of a pointer slot variable; the callee moves the item out and zeroes the slot.",
+   "arm_signature": "void** make_MultitouchItem(void** out r0, const int* buttonId r1, const int* data r2, const short* x r3, const short* y [sp], const unsigned char* pointerSlot [sp+4]) -> r0=out",
+   "x86_to_arm_notes": "Same pattern as ARM_INPUT_MAKE_MOUSE_EVENT (0x62a128) but with 6 arguments (two on the stack) and a 0x10-byte item whose type byte is 1. Validate `*(BYTE*)(item+4) == 1` after the call.",
+   "expected_bytes": "2de9f04b0df1180b81461020",
+   "evidence": [
+    "arm32re.py func 62a174: `movs r0,#0x10; bl operator_new; ldr r4,[sp,#0x24]; ldr r2,[r8]; movs r3,#1; ldrb r1,[r4]; ldr r4,[sp,#0x20]; ldrh r5,[r4]; ldrh r4,[r6]; ldr r6,[r7]; strb r3,[r0,#4]; strh r4,[r0,#8]; strh r5,[r0,#0xa]; str r3(vtable),[r0]; strb r2,[r0,#0xc]; strb r6,[r0,#0xd]; strb r1,[r0,#0xe]`",
+    "stock callers pass the same shape: onPointerPressed @0x62504c..0x625054 (r1=&a(=1) r2=&b(=1) r3=&x([r7+0x28]) [sp]=&y([r7+0x2a]) [sp+4]=&slot([r7+0x21])), x/y are the two shorts produced by sub_627f28; moved @0x6251ba passes a=b=0",
+    "consumer processHIDItem case 1 (hid_item_dispatch) maps +0xc -> buttonId, +0xd -> data, +8 -> x, +0xa -> y, +0xe -> pointerId"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.multitouch_feed",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x005b00ec",
+   "summary": "Multitouch::feed(buttonId r0, data r1, x r2, y r3, pointerId [sp]) - pointerId is clamped to 0..11 (>=12 -> 11, <0 -> unchanged negative path index 0..). Appends an event to the global queue (0x1971e24), updates the Pointer object of slot pointerId (0x19788a8 + slot*0x28) through Pointer::feed 0x5af968 and, for buttonId > 0, sets the per-slot flags: data==1 (down) -> [0x19159bc+0xc+slot]=1, [+0x18+slot]=1, [+0x24+slot]=0; data==0 (up) -> [0x19159bc+slot]=1, [+0x30+slot]=1 (released flag read by sub_5b01b4). Semantics: (buttonId 1, data 1) = finger down, (0,0) = finger move, (1,0) = finger up.",
+   "arm_signature": "void Multitouch::feed(int buttonId r0, int data r1, short x r2, short y r3, int pointerId [sp])",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "2de9f04b0df1180b8ab0129c",
+   "evidence": [
+    "arm32re.py func 5b00ec: clamps `cmp r4,#0; blt; cmp r4,#0xc; movge r4,#0xb`, `add.w r2,r3,r3,lsl #2; add.w r0,r3,r2,lsl #3` (slot*0x28), `bl 0x5af968`, then `cmp r6,#0; ble end; cmp r5,#1; bne -> cbnz r5,end; (up) strb 1,[r4+0x19159bc]; strb 1,[+0x30]`; down: strb 1,[r4+0x19159c8], strb 1,[r4+0x19159d4], strb 0,[r4+0x19159e0]",
+    "stock handlers: onPointerPressed (0x624a64) touch -> make_MultitouchItem(a=1,b=1), onPointerMoved (0x625084) touch -> (0,0), onPointerReleased (0x625398) touch -> (1,0) [labels set by arm32re names, re-verified: constants `movs r3,#1; strd r3,r3,[r7]` @0x625036, zeros @0x625198, @0x6258xx]"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.pointer_slot_alloc",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00627af0",
+   "summary": "HIDController::allocPointerSlot(pointerId): stock PointerPressed maps the WinRT PointerId (UINT) to the LOWEST unused small slot index (0,1,2,...) in the std::map at HIDController+0x3c (value byte at node+0x14); Moved/Released look the slot up (sub_62a530), Released erases the entry (sub_613de0 + iterator helpers). The slot index is what goes into MultitouchItem+0xe (0..11 meaningful).",
+   "arm_signature": "int allocPointerSlot(HIDController* r0, unsigned pointerId r1) -> r0 slot",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "03b42de93c480df1100bc56b",
+   "evidence": [
+    "arm32re.py func 627af0: loop `ldrsb r3,[r1,#0x14]; cmp r3,r4; beq next r4++` over the map nodes, then insert via sub_62a530 and `strb r4,[r3,#0x14]`; returns r4",
+    "onPointerPressed @0x624aa8..0x624ab0 `bl 0x627af0; strb.w r0,[r7,#0x21]` (slot passed as [sp+4] to make_MultitouchItem)",
+    "onPointerReleased @0x6253ec..0x6253f4 `bl 0x62a530; ldrb r3,[r3,#0x14]` and @0x625a10 `bl 0x613de0` (erase)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.stock_pointer_handlers",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00624a64",
+   "summary": "Stock WinRT pointer handlers registered by HIDController::registerPointerHandlers 0x62420c on CoreWindow slots 46 (PointerPressed, onPointerPressed 0x624a64), 44 (PointerMoved, onPointerMoved 0x625084), 48 (PointerReleased, onPointerReleased 0x625398); wheel is 0x625a50 (slot 52). They fetch PointerPoint = args->CurrentPoint (args vtable[6]), PointerId = point->vtable[9], device = point->vtable[6] then device->vtable[6] = PointerDeviceType: 2 (Mouse) -> mouse branch (MouseItem), 0 (Touch) -> touch branch (MultitouchItem, no MouseItem at all), 1 (Pen) -> ignored. Position = point->vtable[7] (Windows.Foundation.Point {float X; float Y;} written through r1), converted by sub_627f28 (x*adapter[+0xa0], y*adapter[+0xa4], both initialised to 1.0f by the InputAdapter ctor) to two int16.",
+   "arm_signature": "void onPointerPressed(HIDController* r0, void* sender r1, PointerEventArgs* r2) (also Moved/Released)",
+   "x86_to_arm_notes": "Option A (recommended) bypasses these handlers and builds the item itself; option B reuses them but depends on three fake WinRT objects and on HIDController+0x2c/+0x2d/+0x25/+0xa0 state. Option A has no dependency on WinRT object layouts.",
+   "expected_bytes": "2de9f04f0df11c0bdcf5c6f3",
+   "evidence": [
+    "arm32re.py func 624a64: `bl 0x10471c` (generic property getter: `ldr r3,[r0]; ldr r3,[r3,#0x18]` = vtable slot 6, AddRef+Release pair, returns the hat) -> r6; `ldr r3,[r6]; ldr r3,[r3,#0x24]` (slot 9 PointerId) @0x624a9c; device type @0x624ad2 `ldr r3,[r0] ... [r3,#0x18]` into [r7+0x24], `cmp r3,#2 bne 0x624fd8` (non-mouse) / `cmp r3,#0 bne end` @0x624fd8 (touch only)",
+    "position @0x624fe6..0x62501c: `ldr r3,[r3,#0x1c]` (slot 7) twice, `vldr s1,[r7,#0x14]; vldr s0,[r7,#8]; bl 0x627f28`",
+    "sub_627f28 @0x627f8e..0x627fae: `vldr s0,[r4,#0xa0]; vldr s1,[r4,#0xa4]; vmul; vcvt.s32.f32; strh` with r4=[HIDController+0x10]=adapter; InputAdapter ctor 0x586b00 @0x586b6a..0x586b82 stores literal 0x586c14 = 1.0f into +0xa0 and +0xa4",
+    "the host already stores the three delegates: win32_host.c core_pointer_add_pressed/moved/released_116 (ICoreWindow slots 46/44/48) keep `core_window_pointer_pressed/moved/released_handler_116` in the ARM build, so 'option B' = Invoke(handler vtable[3])(handler, sender, fakeArgs) is possible; needs fake PointerEventArgs{[1] AddRef,[2] Release,[6] get_CurrentPoint(void**)}, PointerPoint{[1],[2],[6] get_PointerDevice(void**),[7] get_Position(Point*),[9] get_PointerId(UINT*)}, PointerDevice{[1],[2],[6] get_PointerDeviceType(int*)}"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.touch_hud_render_gate",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x003783ac",
+   "summary": "renderInputMapperControls(inputHandlerOwner r0, ctx r1): builds a MinecraftInputRenderContext on the stack and, for every mapper whose getInputMode() equals the CURRENT mode of this client (InputHandler::getInputMode), calls mapper->vtable[6](render). Only TouchMapper has a non-empty render, so the on-screen touch controls are drawn if and only if current InputMode == 2 (Touch). The call site is the UI frame renderer sub_4743f8 @0x4749aa and requires: ClientInstance+0x5c != 0 (a player/level exists), the top scene is not showing a menu (sub_11b574, UIScene vf41 is_showing_menu), an option byte is clear (sub_3f49a0, option 0xa2/0xa4 - probably gfx_hidehud / VR variant), and ClientInstance+0x40 != 0.",
+   "arm_signature": "void renderInputMapperControls(ClientInputHandlerHolder* r0, MinecraftUIRenderContext* r1)",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "2de9f0490df1140b88f422ff",
+   "evidence": [
+    "arm32re.py func 3783ac @0x378430..0x37845c: `getInputMode -> r5`; loop `ldr r3,[r4],#4; ldr r3,[r3]; ldr r3,[r3,#0x10] (vf4); blx; cmp r5,r0; bne next; ldr r3,[r4,#-4]; ldr r3,[r3]; ldr r3,[r3,#0x18] (vf6); blx` with r1=&MinecraftInputRenderContext (vtable 0x175bc74)",
+    "TouchMapper::vf6 0x5b242c: `ldrd r4,r5,[layout,#0xc]` loop `ldr r3,[r3,#4]` (control vf1 render); other mappers' vf6 = 0x83a20 (empty)",
+    "caller sub_4743f8 @0x47498a..0x4749aa: `ldr r3,[r0,#0x5c]; cbz; bl 0x11b574; cbnz; bl 0x11b7e8; bl 0x3f49a0; cbnz; ldr r0,[r3,#0x40]; cbz; add r1,sp,#0x10; bl 0x3783ac`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.on_input_mode_changed",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001160cc",
+   "summary": "ClientInstance::onInputModeChanged(ClientInstance& r0, InputMode r1): the listener invoked by InputHandler::tick. Re-applies the per-mode options (option ids 0x8c,0x8d,0x8e,0x8f,0x91 via sub_3f4564 + sub_61d3ec), and for mode Touch(2) RELEASES the mouse grab (MinecraftGame::releaseMouse sub_1353d4 -> AppPlatform vtable[19] requestAbsoluteMouse -> the host's absolute-mouse hook 0x58e8f0); for mode Mouse(1) it grabs again when the scene wants it (sub_11d66c -> sub_11d3f4 -> vtable[18]).",
+   "arm_signature": "void onInputModeChanged(ClientInstance* r0, InputMode r1)",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "03b42de9f0480df1100bebf6",
+   "evidence": [
+    "arm32re.py func 1160cc @0x116170..0x1161ba: `cmp r3,#1 ... cmp r3,#2; bne; (mode 1 && !sub_11d66c) or mode 2 -> ...; bl 0x1353d4` ; `cmp r3,#1; bne; bl 0x11d66c; cbz; bl 0x11d3f4`",
+    "sub_1353d4 (MinecraftGame::releaseMouse) @0x13543c/0x135452 calls AppPlatform vtable slot 19 (+0x4c) = requestAbsoluteMouse (facts input.json mouse_hook_alt_platform_vfuncs: slots 18 relative / 19 absolute / 22 toggle); sub_135390 (grabMouse) calls slot 18",
+    "std::function listener 0x393434 -> 0x1160cc (see input_handler_tick)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "touch_game.ui_variables_from_mode",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00329368",
+   "summary": "UI engine global-variable setter: $mouse = (mode==1), $touch = (mode==2), $game_pad = (mode==3) with mode = getInputMode(client); also $pocket_screen / $desktop_screen (from option 0x2c = gfx_ui_profile via sub_3f4564 / ClientInstance X->vf10/vf18), $is_holographic (X->vf10), $touch_supported etc. (sub_287fbc for the settings screen). The JSON pack only uses $touch for scrollbars / inventory / recipe-book layout; it has NO touch HUD, so the on-screen game buttons are not controlled by JSON.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "2de9f04f0df11c0bd7f444ff",
+   "evidence": [
+    "arm32re.py dis 329508..3295e4: `cmp r6,#3 ... $game_pad`, `cmp r6,#1 ... $mouse`, `cmp r6,#2 ... $touch` after `sub_5ad050` @0x3293a2",
+    "grep of resource_packs/vanilla/ui: `$touch` appears in inventory_screen.json:149, ui_common.json:2202/2224/2725/2844/2863/3477, resource_packs_screen.json:1327; `how_to_play_common.json` uses #touch_being_used (ScreenController::setInputMode 0x1fad80 stores this+0x24c; binding lambda 0x1fb460 compares ==2)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.settings_and_options",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": null,
+   "summary": "There is NO user setting that turns the touch controls on. Input mode is automatic (touch events -> Touch). Settings > Controls shows a 'Touch' tab (settings_screen.json:121, hidden when $is_holographic or not $touch_supported) that only TUNES touch play: Touch Sensitivity (touch_sensitivity), Invert Y (touch_invert_y_axis), Auto Jump (touch_autojump), Vibration (touch_vibration), Toggle Crouch (touch_toggle_crouch), Split Controls = options.usetouchpad (option key ctrl_usetouchjoypad, plain BoolOption created by sub_3f5d70 @0x3f5d90 with display string 'options.usetouchpad'; en_US.lang: 'Split Controls'). The per-mode options are InputModeFloatOption/InputModeBoolOption objects (vtables 0x136d558 / 0x136d51c, factories sub_3fc008/3fcbbc and sub_3fc0dc/3fc1b0): ctrl_sensitivity2 (float), ctrl_invertmouse, feedback_vibration, ctrl_autojump, ctrl_togglecrouch (bool) with one value per InputMode, persisted under the key format \"%s_%s\" = <key>_<Mouse|Touch|GamePad|MotionController> (0x11bfc28, InputModeBoolOption::vf2 0x61ed30). Other relevant plain options: ctrl_islefthanded, ctrl_swapjumpandsneak, gfx_dpadscale, gfx_ui_profile (UI profile Classic/Pocket -> $desktop_screen/$pocket_screen), gfx_guiscale_offset, gfx_safe_zone. 'button.simulate_touch' (sub_38eb7c @0x38f804) is only a key binding whose handler calls AppPlatform vtable[22] toggleMouseMode; it does NOT change the input mode.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Host-written default options.txt (win32_host.c create_user_data ARM block) contains the plain keys ctrl_autojump/ctrl_invertmouse/feedback_vibration/ctrl_usetouchjoypad etc.; the per-mode suffixed keys are not written, so the per-mode defaults of the game apply (no change needed for touch).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py strx ctrl_usetouchjoypad -> sub_3f5d70+0x20; strx options.usetouchpad -> +0x2e; en_US.lang:4036 options.usetouchpad=Split Controls",
+    "controls_section.json:518-640 (touch section) + ControlsSettingsScreenController::vf33 0x1ca680: the same option ids are registered once per input mode: `movs r1,#0x8d; movs r2,#3` for controller_invert_y_axis @0x1ca932, `r1=#0x8d; r2=#2` for touch_invert_y_axis @0x1caacc, `0x8e` autojump, `0x8f` vibration, `0x91` toggle crouch (r1 = option id, r2 = InputMode)",
+    "InputModeBoolOption::vf2 0x61ed30 builds the key with sprintf-like sub_6c8268(\"%s_%s\", base, modeName)",
+    "lambda for button.simulate_touch: vtable 0x135c374 slot2 0x393f20 -> `ldr r3,[r3,#0x58]` = AppPlatform slot 22 (toggleMouseMode, facts input.json)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "touch_game.mode_lock_flag",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "InputHandler+0xf8 (and +0xf9) are copied from AppPlatform+0x210, which is the 'oculus_launched' command-line argument flag (GameArguments::vf1 0x1246b4 @0x124814 writes it only when that argument is present; the AppPlatform base ctor 0x61ffc0 @0x620146 initialises it to 0). When non-zero InputHandler::tick never switches the mode. It is 0 on our host (no activation arguments), so the mode is not frozen.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": null,
+   "evidence": [
+    "tick @0x5abbc6 `ldrb.w r3,[sb,#0xf8]; cmp r3,#0; bne.w 0x5abcdc`",
+    "InputHandler ctor @0x5ab814..0x5ab824 stores the two stack args into +0xf8/+0xf9",
+    "sub_38ba44 @0x38baf6/0x38bb0e loads both from `[platform,#0x210]`",
+    "AppPlatform base ctor 0x61ffc0 @0x620146 `strb.w r6(=0),[r4,#0x210]`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.host_cause",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": null,
+   "summary": "Why the touch HUD never appears on the ARM32 host (proof from code): (1) win32_host.c window_proc handles WM_MOUSEMOVE/WM_*BUTTON* only; there is no WM_POINTER*/WM_TOUCH/RegisterTouchWindow/GetMessageExtraInfo handling, and no reference to the MultitouchItem factory 0x62a174 (win32_host_arm32.h only has ARM_INPUT_MAKE_MOUSE_EVENT 0x62a128/ARM_INPUT_ENQUEUE_INPUT); queue_mouse_event builds and validates only type-0 items (`*((BYTE*)event + 4) != 0` -> 'mouse event factory returned an invalid event'). Windows therefore promotes every touch to emulated mouse messages (menus work 'by touch' exactly like that) and the game only ever receives MouseItems -> MouseMapper active -> InputMode stays Mouse and TouchMapper::render is never called. (2) The initial mode is Mouse because the fake AnalyticsInfo DeviceFamily is 'Windows.Desktop' (win32_host.c fake_analytics_device_family), which is also what stock Windows 10 tablets report, so stock tablets also start in Mouse mode and rely on rule (1) of the game (touch pointer events) to switch. (3) NOT causes: there is no hardware-presence query to fake; the fake MouseDevice (fake_mouse_device_current/add_moved) is only used for relative-move delegates that the host never fires on ARM; the fake CoreWindow::GetAsyncKeyState returns 0; the lock flag AppPlatform+0x210 is 0; supportsTouch is true; the TouchMapper is created on a non-holographic session.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c window_proc (lines ~19560-19800): cases WM_KEYDOWN.. WM_MOUSEMOVE, WM_LBUTTONDOWN/UP, WM_RBUTTONDOWN/UP, WM_MBUTTONDOWN/UP, WM_MOUSEWHEEL; grep -n 'WM_POINTER|WM_TOUCH|RegisterTouchWindow|GetMessageExtraInfo|EnableMouseInPointer' win32_host.c -> no matches",
+    "queue_mouse_event (ARM) win32_host.c ~18900-18950 validates item type 0 and uses ARM_INPUT_MAKE_MOUSE_EVENT only; grep -n 'MULTITOUCH|62a174' win32_host.c win32_host_arm32.h -> none",
+    "game side: touch_hud_render_gate + input_handler_tick + stock_pointer_handlers (no other producer of Multitouch items)",
+    "fake_core_window_key_state returns 0 (win32_host.c ~5927)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.plan_touch_events",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Verified call plan to deliver touch to the game (option A). For every touch contact keep a host map Windows pointerId -> slot (lowest free 0..11, same policy as 0x627af0). Down: make_MultitouchItem(a=1,b=1,x,y,slot). Move: (0,0,x,y,slot) (only while in contact). Up/cancel: (1,0,x,y,slot) then free the slot. x,y = client pixels scaled to the swap-chain buffer exactly like the mouse path (arm32_scale_pointer_to_buffer), clamped to int16. Enqueue with arm32_enqueue_input(input_handler, item) (EnqueueInput 0x587294, &slot semantics). Do NOT also send MouseItems for the same contact.",
+   "arm_signature": "queue_touch_event(int buttonId, int data, int x, int y, int slot): int a=buttonId,b=data; short sx=x,sy=y; BYTE pid=slot; void* item=NULL; ((void**(*)(void**,const int*,const int*,const short*,const short*,const BYTE*))(image+0x62a174+1))(&item,&a,&b,&sx,&sy,&pid); check *(BYTE*)((BYTE*)item+4)==1; arm32_enqueue_input(handler,item)",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": null,
+   "evidence": [
+    "order of operations proven by stock handlers: Pressed (a=1,b=1), Moved (0,0), Released (1,0) + slot lifetime (pointer_slot_alloc)",
+    "mode switch happens in the next InputHandler::tick: TouchMapper::tick sees the pointer flags set by Multitouch::feed and returns 1 -> mode 2 -> ClientInstance::onInputModeChanged + UI listeners ($touch, #touch_being_used) -> touch HUD drawn by renderInputMapperControls",
+    "window_proc recipe (not executed here): WM_POINTERDOWN 0x0246 / WM_POINTERUPDATE 0x0245 / WM_POINTERUP 0x0247 / WM_POINTERCAPTURECHANGED 0x024C (user32, Windows 8+ incl. RT 8.1): id = GET_POINTERID_WPARAM(wParam); GetPointerType(id,&t); if t == PT_TOUCH (2): GetPointerInfo -> ptPixelLocation -> ScreenToClient; pointerFlags & POINTER_FLAG_DOWN(0x10000)/UPDATE(0x20000)/UP(0x40000)/CANCELED(0x8000); return 0 WITHOUT DefWindowProc so Windows does not synthesise WM_MOUSE*/WM_LBUTTON* for it; for PT_MOUSE/PT_PEN fall through to DefWindowProcW so the existing mouse path keeps working. Resolve the user32 entry points with GetProcAddress and fall back to RegisterTouchWindow/WM_TOUCH or to the GetMessageExtraInfo() & 0xFFFFFF00 == 0xFF515700 (touch/pen promoted mouse) filter on WM_MOUSEMOVE/WM_*BUTTON* when they are missing."
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.plan_back_to_mouse",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Switching back to Mouse needs no host work: any MouseItem (action 0 move, 1/2/3 buttons, 4 wheel - i.e. the existing queue_mouse_event path for REAL mouse/pen messages) makes MouseMapper::tick return 1 and, if no touch is down/just released in the same tick (Touch is later in the mapper vector and wins ties), the mode becomes Mouse and ClientInstance::onInputModeChanged re-grabs the mouse when the scene wants it. Keyboard events never switch modes (KeyboardMapper mode = 0). Host rules: (a) drop touch/pen-promoted mouse messages so that a finger does not flip the game back to Mouse a frame after the touch ended (WM_POINTER handling returning 0 does that; fallback = GetMessageExtraInfo signature filter); (b) do not synthesise mouse items on a timer; (c) host mouse-capture helpers (center_mouse_cursor/SetCursorPos) must not emit relative MouseItems unless a real mouse moved.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": null,
+   "evidence": [
+    "MouseMapper::tick returns 1 on any queued mouse event; Keyboard/Gaze/DeviceButton/BehaviorAction getInputMode = 0 (keyboard_gamepad_motion_mappers)",
+    "caveat: TouchMapper::tick keeps returning 1 while a stale release flag is set (cleared only by the mapper reset vtable[2], run on scene/focus changes), so on a hybrid device the flip back to Mouse can be delayed until the next reset; this is stock behaviour",
+    "mapper order [Gaze, Keyboard, Mouse, GamePad, Touch, Motion, DeviceButton, Behavior] (mapper_set_and_order): later mapper wins within a tick"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_game.plan_initial_mode_patch",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x0062212c",
+   "summary": "Optional: start in Touch mode on touch-only machines. Replace the AppPlatform_Winrt vtable cell 0x0136980c (slot 154) with a host function `int hook(void* self)` returning 2 when GetSystemMetrics(SM_MOUSEPRESENT)==0 and the digitizer is ready (SM_DIGITIZER & NID_READY(0x80) and (NID_INTEGRATED_TOUCH 0x1|NID_EXTERNAL_TOUCH 0x2)), else call the original (image+0x62212c+1). Must be installed before MinecraftGame::vf27 reaches 0x38ba44 (before the first frame, same time as the other vtable-cell hooks). Verify *cell == image+0x62212c+1 first and write with PAGE_READWRITE like the other cell patches. It only sets the INITIAL mode; real events keep overriding it, so it cannot lock the game in Touch mode.",
+   "arm_signature": "int hook(void* self) -> 2 (Touch)",
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": "2de90048eb4603461b68d3f8",
+   "evidence": [
+    "slot 154 is read in sub_38ba44 @0x38bb2a (`ldr.w r3,[r3,#0x268]; blx r3` -> default mode local -> InputHandler ctor r3) and sub_38be30 @0x38bf52",
+    "plain data cell in .data (writable); other hooks of this port use the same technique (facts input.json mouse hooks)"
+   ],
+   "confidence": "high",
+   "cell_rva": "0x0136980c",
+   "expected_cell_value": "0x00a2212d",
+   "expected_cell_value_note": "value in the loaded image = ImageBase + target RVA + 1 (Thumb bit); the file stores the preferred-base value 0x00400000 + rva + 1 and the loader relocates it"
+  },
+  {
+   "id": "touch_game.plan_diagnostics",
+   "x86_symbol": "none (new area: the x86 host has no touch path)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Logging recipe so the user can report what happened. (1) After the ClientInstance is captured by the vf3 hook: log the mapper list: ih = *(void***)( *(BYTE**)(client+0x40) + 4 ); begin = *(void***)((BYTE*)ih+0x108), end = *(void***)((BYTE*)ih+0x10c); for each element m: vtable = *(void**)m; compare with image+{0xDBBA20 TouchMapper, 0xDBB970 MouseMapper, 0xDBB940 KeyboardMapper, 0xDBB52C GamePadMapper, 0xDBBA70 MotionControllerMapper, 0xDBB5A8 GazeGestureVoiceMapper, 0xDBB578 DeviceButtonMapper, 0x135B798 BehaviorActionMapper}; log 'input mappers: Gaze,Keyboard,Mouse,GamePad,Touch,...' and a loud 'TouchMapper MISSING' line if absent. (2) Once per frame (cheap) read the current mode with the get_input_mode recipe and log every change 'input mode Mouse -> Touch'. (3) Log each touch contact (first 20 events + every down/up): pointerId, slot, x, y, buffer-scaled x,y and the message source (WM_POINTER vs WM_TOUCH vs filtered-mouse). (4) Log the hooks 'absolute'/'relative' mouse requests that already exist - entering Touch triggers one absolute request. (5) Log AnalyticsInfo DeviceFamily (already logged) and GetSystemMetrics(SM_MOUSEPRESENT/SM_DIGITIZER/SM_MAXIMUMTOUCHES) at startup.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "no x86 counterpart",
+   "expected_bytes": null,
+   "evidence": [
+    "all offsets used are the verified ones in input_handler_layout / get_input_mode / mapper_set_and_order",
+    "SM_ constants: SM_MOUSEPRESENT 19, SM_DIGITIZER 94, SM_MAXIMUMTOUCHES 95"
+   ],
+   "confidence": "medium"
+  }
+ ],
+ "port_instructions": [
+  "ROOT CAUSE: the host only injects MouseItems (type 0). The game switches its InputMode in InputHandler::tick (0x5abb44) from the mappers that report device activity; only MultitouchItems (type 1, factory 0x62a174, Multitouch::feed 0x5b00ec) make TouchMapper (0xdbba20) report and select InputMode::Touch (2); the on-screen touch controls are drawn by TouchMapper::vf6 (0x5b242c) and only while the current mode is Touch (renderInputMapperControls 0x3783ac). There is no game setting and no presence query to fix.",
+  "1) Add to win32_host_arm32.h (via gen_constants / facts json): ARM_INPUT_MAKE_MULTITOUCH_EVENT 0x0062a174 with expected bytes 2de9f04b0df1180b81461020 (first 12 bytes), ARM_INPUT_MULTITOUCH_ITEM_TYPE 1, ARM_INPUT_MULTITOUCH_ITEM_SIZE 0x10, ARM_INPUT_MULTITOUCH_VTABLE 0x0136ddf8 (data cell, expected file value 0x00a23bcd).",
+  "2) Add static BOOL queue_touch_event(int buttonId, int data, int x, int y, int slot) under #ifdef WIN32CRAFT_ARM32 next to queue_mouse_event: reuse arm32_input_target() and arm32_scale_pointer_to_buffer(); clamp to int16; build locals int a,b; short sx,sy; BYTE pid; call the factory as plain AAPCS with 6 args (r0=&item, r1=&a, r2=&b, r3=&sx, stack: &sy, &pid); require *(BYTE*)(item+4)==1; arm32_enqueue_input(). Log the first 12 events like queue_mouse_event does.",
+  "3) window_proc (ARM only): handle WM_POINTERDOWN/UPDATE/UP/CAPTURECHANGED for PT_TOUCH as described in plan_touch_events (slot table of 12 entries, lowest-free allocation, release all slots on WM_KILLFOCUS/WM_CAPTURECHANGED, return 0 for touch, DefWindowProcW for other pointer types). Use GetProcAddress for GetPointerType/GetPointerInfo so the DLL still loads on systems without them. Fallback for missing pointer API: RegisterTouchWindow(hwnd,0)+WM_TOUCH (GetTouchInputInfo: dwID, x/y in 1/100 px screen coords, TOUCHEVENTF_DOWN 0x2/MOVE 0x1/UP 0x4) or the extra-info filter below.",
+  "4) In WM_MOUSEMOVE/WM_LBUTTON*/WM_RBUTTON*/WM_MBUTTON*/WM_MOUSEWHEEL (ARM only): `if ((GetMessageExtraInfo() & 0xFFFFFF00) == 0xFF515700) return 0;` (MI_WP_SIGNATURE: touch/pen generated) so promoted mouse never reaches the game; keep real mouse messages unchanged (they switch back to Mouse mode automatically).",
+  "5) Keep DeviceFamily 'Windows.Desktop' (a 'Windows.Mobile' family changes unrelated game behaviour). Optionally hook the slot-154 cell (plan_initial_mode_patch) so touch-only machines start in Touch mode.",
+  "6) Do not make the host depend on the game having entered Touch mode: touch contacts must be delivered regardless of the current mode (the first contact is what switches it). Do not send MouseItems for touch contacts.",
+  "7) Add the diagnostics of plan_diagnostics (mapper list, mode transitions, touch event log) so one device log answers: was a TouchMapper created, did touches arrive as pointers, did the mode flip to Touch, did something flip it back to Mouse.",
+  "8) Risks to test on device: (a) first tap while in the main menu: the menu is rebuilt for $touch; (b) on-screen text entry without a hardware keyboard still needs the Windows touch keyboard (MinecraftKeyboardManager::show uses the fake InputPane) - separate topic; (c) mouse-capture helpers must not fight the touch drag; (d) 12 simultaneous contacts maximum (slots 0..11)."
+ ],
+ "open_questions": [
+  "Identity of the object at ClientInstance+0x34 (X) whose vtable slot 10 is isHolographic(): not decoded. TouchMapper creation depends on it being false; evidence that it is false on a normal desktop session is the $is_holographic UI variable and the Touch tab in settings_screen.json, but nothing was executed. plan_diagnostics logs the mapper list to settle it on device.",
+  "Exact content of ClientState beyond the first dword (current InputMode at node+0xc) and the meaning of InputHandler+0x100/+0x104 objects: not needed by the host.",
+  "TouchMapper::tick was not decoded in full (control hit-testing, UI pointer event generation); the touch controls' on-screen rectangles come from 'binding.area.*' RectangleAreas computed natively (ClientBindingFactory::vf4 0x3763c4, lambdas returning members at +0x2c...); a wrong HUD size/safe-zone would be a separate issue after the controls appear.",
+  "Per-mode option persistence key format \"%s_%s\" (<key>_<ModeName>) is inferred from InputModeBoolOption::vf2; the exact options.txt names for the touch toggles were not checked against a real options.txt written by the game on a device.",
+  "Windows RT 8.1: GetPointerType/GetPointerInfo/WM_POINTER availability for plain Win32 windows on RT 8.1 follows MSDN (Windows 8+) but was not run; the WM_TOUCH/extra-info fallbacks exist for that reason.",
+  "Pen contacts are ignored by the stock handlers (device type 1); the plan lets pen fall through to the mouse path, which is a deliberate simplification.",
+  "Option B (invoking the stored CoreWindow pointer delegates with fake WinRT objects) was only specified, not verified: the delegate Invoke signature (vtable[3](self, sender, args)) is the usual C++/CX TypedEventHandler layout but the HIDController lambda thunk was not disassembled."
+ ]
+}

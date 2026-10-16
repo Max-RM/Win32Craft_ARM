@@ -1,0 +1,41 @@
+LIBRARY win32craft.dll
+EXPORTS
+; ---- required: the patched ARM32 exe imports exactly these two ----
+Win32Bootstrap
+XInputGetState=Win32CraftXInputGetState
+; ---- optional parity set (api-set contracts the exe imports; only used if the patcher is run with --redirect-api-sets) ----
+IIDFromString=Win32CraftIIDFromString
+CoGetContextToken=Win32CraftCoGetContextToken
+CoCreateGuid=Win32CraftCoCreateGuid
+CoCreateFreeThreadedMarshaler=Win32CraftCoCreateFreeThreadedMarshaler
+StringFromGUID2=Win32CraftStringFromGUID2
+CoCreateInstanceFromApp=Win32CraftCoCreateInstanceFromApp
+CoTaskMemFree=Win32CraftCoTaskMemFree
+CoTaskMemAlloc=Win32CraftCoTaskMemAlloc
+EventWriteTransfer=Win32CraftEventWriteTransfer
+EventUnregister=Win32CraftEventUnregister
+EventRegister=Win32CraftEventRegister
+EventSetInformation=Win32CraftEventSetInformation
+RoFailFastWithErrorContext
+SetRestrictedErrorInfo
+RoReportUnhandledError
+RoInitialize
+WindowsCreateString
+WindowsDeleteString
+WindowsIsStringEmpty
+WindowsCompareStringOrdinal
+WindowsDuplicateString
+WindowsCreateStringReference
+WindowsGetStringRawBuffer
+WindowsConcatString
+; ---- extras: needed if fmod_ARM.dll's WinRT descriptor is ever repointed here (fmod option B') ----
+RoGetActivationFactory
+RoUninitialize
+RoActivateInstance
+RoGetApartmentIdentifier
+RoGetBufferMarshaler
+RoGetParameterizedTypeInstanceIID
+RoFreeParameterizedTypeExtra
+RoRegisterActivationFactories
+RoRevokeActivationFactories
+RoRegisterForApartmentShutdown

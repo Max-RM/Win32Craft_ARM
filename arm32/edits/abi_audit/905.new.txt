@@ -1,0 +1,7 @@
+    /* 0 = idle, 1 = one thread filling, 2 = every table complete.  A second activating thread must not return (and then call a
+     * still-NULL slot) before the first one has finished. */
+    if (__atomic_load_n(&done, __ATOMIC_ACQUIRE) == 2) return;
+    if (__sync_val_compare_and_swap(&done, 0, 1) != 0) {
+        while (__atomic_load_n(&done, __ATOMIC_ACQUIRE) != 2) Sleep(0);
+        return;
+    }

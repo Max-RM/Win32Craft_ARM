@@ -1,0 +1,1 @@
+ARM32: install_vccorlib_compat is a refusing no-op (never hook GetIBoxVtable/GetIBoxArrayVtable on ARM).

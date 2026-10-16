@@ -1,0 +1,3 @@
+#ifndef WIN32CRAFT_ARM32
+int WINAPI Win32BootstrapEarly2016(void);
+#endif

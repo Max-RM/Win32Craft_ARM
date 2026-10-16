@@ -1,0 +1,17 @@
+    /* The factory dereferences *holder as the CoreWindow and QIs/AddRefs it: the fakes are set up by
+     * install_activation_redirect (install_arm32_iat_hooks), which must have run before this point. */
+    if (!win32_core_window.vtable) {
+        log_line("Minecraft 1.2.8 AppMain: the fake CoreWindow is not initialised (install_activation_redirect has not "
+                 "run); not starting");
+        return FALSE;
+    }
+    {
+        /* AppMain::init / the game's present path use the GameOwner that initialize_game_d3d publishes in this global
+         * (facts gfx_device.owner_global); log it so a missing owner shows up before the factory call hangs/crashes */
+        void **owner_cell = (void **)ARM_DATA(image, ARM_GFX_DEVICE_OWNER_GLOBAL);
+        void *owner_value = IsBadReadPtr(owner_cell, sizeof(void *)) ? NULL : *owner_cell;
+        log_pointer("Minecraft 1.2.8 GameOwner global before AppMain construction", owner_value);
+        if (!owner_value) log_line("warning: GameOwner global is NULL; initialize_game_d3d did not publish the owner");
+    }
+    ZeroMemory(startup_context, sizeof(startup_context));
+    startup_context[0x1c / sizeof(DWORD)] = 0xf;    /* empty SSO std::string: size 0 (+0x18), capacity 0xF (+0x1c) */

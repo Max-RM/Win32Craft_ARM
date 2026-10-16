@@ -1,0 +1,1 @@
+ARM32: private FakeKind, memory barrier macro and ABI static asserts used by the later abi_audit edits.

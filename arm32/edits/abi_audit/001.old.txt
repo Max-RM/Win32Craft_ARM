@@ -1,0 +1,2 @@
+static ULONG WINAPI fake_add_ref(FakeInspectable *object)
+{

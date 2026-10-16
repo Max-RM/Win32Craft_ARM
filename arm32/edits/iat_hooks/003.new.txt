@@ -1,0 +1,15 @@
+    slot = (D3DSetScissorRectsFn *)&context->lpVtbl[45];
+#ifdef WIN32CRAFT_ARM32
+    /* facts gfx_compat.scissor_hook: vtable slot 45 and 4-byte slots are the same on ARM32, hook kept as is; only add
+     * logging and never chain the hook to itself when the context is hooked twice. */
+    if (IsBadReadPtr(slot, sizeof(*slot))) {
+        log_line("ARM32 scissor fix: RSSetScissorRects vtable slot is unreadable");
+        return FALSE;
+    }
+    log_pointer("ARM32 scissor fix: RSSetScissorRects vtable slot", (const void *)slot);
+    log_pointer("ARM32 scissor fix: RSSetScissorRects original", (const void *)*slot);
+    if ((const void *)*slot == (const void *)win32_set_scissor_rects) {
+        log_line("ARM32 scissor fix: already installed");
+        return TRUE;
+    }
+#endif

@@ -1,0 +1,5 @@
+LIBRARY api-ms-win-core-file-l1-2-1.dll
+EXPORTS
+CreateFile2=KERNEL32.CreateFile2
+ReadFile=KERNEL32.ReadFile
+SetFilePointerEx=KERNEL32.SetFilePointerEx

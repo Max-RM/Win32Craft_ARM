@@ -1,0 +1,4 @@
+    return FALSE;
+}
+
+static BOOL initialize_game_app(BYTE *image)

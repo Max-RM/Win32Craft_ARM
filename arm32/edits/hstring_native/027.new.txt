@@ -1,0 +1,5 @@
+BOOL WINAPI RoOriginateError(HRESULT error, HSTRING message)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(BOOL, "RoOriginateError", (HRESULT, HSTRING), (error, message));
+#endif

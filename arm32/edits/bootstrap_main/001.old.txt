@@ -1,0 +1,1 @@
+#define IMAGE_SIZE_128_PATCHED               0x01923000

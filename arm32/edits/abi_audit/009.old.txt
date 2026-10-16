@@ -1,0 +1,3 @@
+    if (selected) set_host_ipv4_text(selected);
+    local_ipv4_resolved = TRUE;
+}

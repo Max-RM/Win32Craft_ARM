@@ -1,0 +1,1 @@
+/* A hang is distinguishable from a crash by the log alone: while the main thread makes no progress (a game call that never

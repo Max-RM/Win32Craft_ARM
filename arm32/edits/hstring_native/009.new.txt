@@ -1,0 +1,6 @@
+HRESULT WINAPI WindowsTrimStringStart(
+    HSTRING string, HSTRING trim, HSTRING *result)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "WindowsTrimStringStart", (HSTRING, HSTRING, HSTRING *), (string, trim, result));
+#endif

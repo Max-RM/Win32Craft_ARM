@@ -1,0 +1,56 @@
+#ifdef WIN32CRAFT_ARM32
+/*
+ * ARM32: win32_host_116.inl is not compiled, but its functions are still referenced from shared code and from the
+ * fake CoreWindow ICoreWindow vtable (win32_core_window_vtable).  That vtable is the LIVE CoreWindow of the 1.2.8 path:
+ * the game's HID constructor calls add_CharacterReceived/KeyDown/KeyUp/PointerMoved/Pressed/Released/WheelChanged
+ * (slots 28/34/36/44/46/48/52) and put_PointerCursor(0) (slot 15) - see facts appmain.corewindow_slots_used.  A failing
+ * HRESULT there would be rethrown by C++/CX as Platform::COMException, so the event adders keep the x86 1.2.8
+ * behaviour (AddRef + remember the handler + token 1, via fake_core_window_event_add_116) and the cursor accessors
+ * succeed without side effects.  The remaining 1.16-only helpers are inert.
+ */
+static HRESULT WINAPI core_pointer_add_moved_116(void *object, void *handler, LONGLONG *token)
+{ (void)object; return fake_core_window_event_add_116(&core_window_pointer_moved_handler_116, handler, token, "CoreWindow.PointerMoved handler"); }
+static HRESULT WINAPI core_pointer_add_entered_116(void *object, void *handler, LONGLONG *token)
+{ (void)object; return fake_core_window_event_add_116(&core_window_pointer_entered_handler_116, handler, token, "CoreWindow.PointerEntered handler"); }
+static HRESULT WINAPI core_pointer_add_pressed_116(void *object, void *handler, LONGLONG *token)
+{ (void)object; return fake_core_window_event_add_116(&core_window_pointer_pressed_handler_116, handler, token, "CoreWindow.PointerPressed handler"); }
+static HRESULT WINAPI core_pointer_add_released_116(void *object, void *handler, LONGLONG *token)
+{ (void)object; return fake_core_window_event_add_116(&core_window_pointer_released_handler_116, handler, token, "CoreWindow.PointerReleased handler"); }
+static HRESULT WINAPI core_pointer_add_wheel_116(void *object, void *handler, LONGLONG *token)
+{ (void)object; return fake_core_window_event_add_116(&core_window_pointer_wheel_handler_116, handler, token, "CoreWindow.PointerWheelChanged handler"); }
+static HRESULT WINAPI core_character_add_116(void *object, void *handler, LONGLONG *token)
+{ (void)object; return fake_core_window_event_add_116(&core_window_character_handler_116, handler, token, "CoreWindow.CharacterReceived handler"); }
+static HRESULT WINAPI core_key_down_add_116(void *object, void *handler, LONGLONG *token)
+{ (void)object; return fake_core_window_event_add_116(&core_window_key_down_handler_116, handler, token, "CoreWindow.KeyDown handler"); }
+static HRESULT WINAPI core_key_up_add_116(void *object, void *handler, LONGLONG *token)
+{ (void)object; return fake_core_window_event_add_116(&core_window_key_up_handler_116, handler, token, "CoreWindow.KeyUp handler"); }
+static HRESULT WINAPI core_size_add_116(void *object, void *handler, LONGLONG *token)
+{ (void)object; return fake_core_window_event_add_116(&core_window_size_handler_116, handler, token, "CoreWindow.SizeChanged handler"); }
+
+static HRESULT WINAPI core_window_pointer_cursor_get_116(void *object, void **result)
+{
+    (void)object;
+    if (!result) return E_POINTER;
+    *result = NULL;
+    return S_OK;
+}
+
+static HRESULT WINAPI core_window_pointer_cursor_put_116(FakeInspectable *object, void *value)
+{
+    char line[96];
+    (void)object;
+    wsprintfA(line, "CoreWindow.PointerCursor put %p ignored", value);
+    log_line(line);
+    return S_OK;
+}
+
+static BOOL activation_116(LPCWSTR class_name, const GUID *iid, void **result)
+{ (void)class_name; (void)iid; (void)result; return FALSE; }
+static void refresh_scene_mouse_116(void)
+{
+}
+static void install_clear_view_116(ID3D11DeviceContext *context)
+{ (void)context; }
+#endif
+
+static HRESULT WINAPI fake_core_window_event_state_116(

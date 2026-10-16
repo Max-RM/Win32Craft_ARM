@@ -1,0 +1,5 @@
+    resume_thread(thread);
+    CloseHandle(thread);
+}
+
+static DWORD WINAPI win32_115_constructor_watchdog_thread(void *parameter)

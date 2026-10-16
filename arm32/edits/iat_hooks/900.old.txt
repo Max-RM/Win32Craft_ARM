@@ -1,0 +1,2 @@
+    if (original_out) *original_out = original;
+    if (!arm32_patch_cell(cell, original, arm32_iat_thumb_pointer(hook), NULL, what)) {

@@ -1,0 +1,3 @@
+    log_line("HWND renderer targets, viewport, UI and HID size synchronized");
+    return TRUE;
+}

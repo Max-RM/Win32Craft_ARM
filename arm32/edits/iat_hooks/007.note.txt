@@ -1,0 +1,1 @@
+closes #else/#endif of the hook block (win32_cxx_throw .. win32_d3d11_create_device).

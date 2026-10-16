@@ -1,0 +1,5 @@
+HRESULT WINAPI RoGetActivationFactory(HSTRING name, const GUID *iid, void **factory)
+{
+#ifdef WIN32CRAFT_ARM32
+    return arm32_ro_get_activation_factory(name, iid, factory, TRUE);
+#endif

@@ -1,0 +1,5 @@
+static const void *coreapp_vtable[12] = {
+    fake_query_interface, fake_add_ref, fake_release,
+    fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
+    fake_coreapp_id, NULL, NULL, NULL, NULL, NULL
+};

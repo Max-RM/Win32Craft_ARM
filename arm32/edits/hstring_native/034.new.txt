@@ -1,0 +1,5 @@
+HRESULT WINAPI RoReportFailedDelegate(void *delegate, void *error)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "RoReportFailedDelegate", (void *, void *), (delegate, error));
+#endif

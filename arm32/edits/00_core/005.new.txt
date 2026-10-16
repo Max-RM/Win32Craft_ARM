@@ -1,0 +1,91 @@
+#else /* WIN32CRAFT_ARM32 */
+/*
+ * ARM32 (Thumb-2, AAPCS-VFP) has no thiscall/fastcall and needs no naked bridges: every game function is an
+ * ordinary C call.  The prototypes below are the x86 ones so the existing callers compile unchanged; each bridge ORs
+ * bit 0 into `function` (callers pass image+RVA or a vtable cell without/with the Thumb bit) and widens the x86
+ * BYTE/WORD argument pointers into the 32-/16-bit locals the ARM factories actually load (facts appmain.*, input.*).
+ */
+#define ARM32_THUMB_FUNCTION(function) ((void *)((ULONG_PTR)(function) | 1u))
+
+/* 1.1.5 AppMainXaml: not part of the 1.2.8 ARM path */
+static void *call_game_create_app_main_xaml(
+    GameCreateAppMainXamlFn function,
+    void **result, void *startup_context,
+    void **core_window, void **xaml_panel, void **pointer_source)
+{
+    (void)function; (void)result; (void)startup_context;
+    (void)core_window; (void)xaml_panel; (void)pointer_source;
+    log_line("ARM32: call_game_create_app_main_xaml is not available (1.1.5 path)");
+    return NULL;
+}
+
+/* facts appmain.create_app_main: AppMain** f(AppMain** result (r0), StartupCtx* (r1), CoreWindow** holder (r2))
+ * -> r0 (== result), no stack arguments.  The return value is the x86 "holder result" (== result). */
+static void *call_game_create_app_main_128(
+    void *function, void **result, void *startup_context,
+    void **activation_argument)
+{
+    typedef void **(*AppMainFactoryFn)(void **, void *, void **);
+    return ((AppMainFactoryFn)ARM32_THUMB_FUNCTION(function))(
+        result, startup_context, activation_argument);
+}
+
+/* facts input.make_mouse_event: void** f(void** out (r0), const int* action (r1), const int* pressed (r2),
+ * const int* payload (r3), const short* x ([sp+0]), const short* y ([sp+4])) -> r0.  The factory loads action,
+ * pressed and payload with 32-bit LDR and x,y with LDRH; `pressed` carries the signed wheel delta byte. */
+static void **call_game_make_mouse_event(
+    void *function, void **output, const BYTE *action, const BYTE *pressed,
+    const DWORD *payload, const WORD *x, const WORD *y)
+{
+    typedef void **(*MouseFactoryFn)(
+        void **, const int *, const int *, const int *, const short *, const short *);
+    int action32 = (int)*action;
+    int pressed32 = (int)(signed char)*pressed;
+    int payload32 = (int)*payload;
+    short x16 = (short)*x;
+    short y16 = (short)*y;
+    return ((MouseFactoryFn)ARM32_THUMB_FUNCTION(function))(
+        output, &action32, &pressed32, &payload32, &x16, &y16);
+}
+
+/* 0.15.10 text factory (C string + flag): not part of the 1.2.8 ARM path */
+static void **call_game_make_text_event(
+    void *function, void **output, const char *utf8, const BYTE *flag)
+{
+    (void)function; (void)output; (void)utf8; (void)flag;
+    log_line("ARM32: call_game_make_text_event is not available (0.15.10 path)");
+    return NULL;
+}
+
+/* facts input.make_text_event: void** f(void** out (r0), const MsvcSmallString* text (r1),
+ * const BYTE* primary_flag (r2), const BYTE* sequence_flag (r3)) -> r0; no stack arguments */
+static void **call_game_make_text_event_115(
+    void *function, void **output, const void *text,
+    const BYTE *primary_flag, const BYTE *sequence_flag)
+{
+    typedef void **(*TextFactoryFn)(void **, const void *, const BYTE *, const BYTE *);
+    return ((TextFactoryFn)ARM32_THUMB_FUNCTION(function))(
+        output, text, primary_flag, sequence_flag);
+}
+
+/* facts input.make_key_event: void** f(void** out (r0), const int* key (r1: low byte used),
+ * const int* state (r2)) -> r0; the key is loaded with a 32-bit LDR so it is widened here */
+static void **call_game_make_key_event_115(
+    void *function, void **output, const BYTE *key, const DWORD *state)
+{
+    typedef void **(*KeyFactoryFn)(void **, const int *, const int *);
+    int key32 = (int)*key;
+    int state32 = (int)*state;
+    return ((KeyFactoryFn)ARM32_THUMB_FUNCTION(function))(output, &key32, &state32);
+}
+
+/* facts appmain.game_vf23_setSize: void MinecraftGame::setSize(this (r0), int w (r1), int h (r2),
+ * float scale (s0)) (hard-float: the third value is NOT in r3).  x86 `mode` 0 == 0.0f. */
+static void call_game_resize(
+    void *function, void *game, int width, int height, int mode)
+{
+    typedef void (*SetSizeFn)(void *, int, int, float);
+    ((SetSizeFn)ARM32_THUMB_FUNCTION(function))(game, width, height, (float)mode);
+}
+#endif /* WIN32CRAFT_ARM32 */
+typedef void (STDMETHODCALLTYPE *D3DSetScissorRectsFn)(

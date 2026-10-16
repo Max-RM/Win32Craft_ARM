@@ -1,0 +1,1 @@
+ARM replacements (same C prototypes) for the x86 naked bridges; closes the #ifndef opened by the previous edit.

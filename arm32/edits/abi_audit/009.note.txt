@@ -1,0 +1,1 @@
+ARM32: thread-safe, barrier-protected wrapper around the one-shot resolver (2/2).

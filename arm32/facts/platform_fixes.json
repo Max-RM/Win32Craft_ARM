@@ -1,0 +1,594 @@
+{
+ "area": "platform_fixes",
+ "facts": [
+  {
+   "id": "platform_fixes.pick_file_fn",
+   "x86_symbol": "RVA_128_PICK_FILE",
+   "x86_value": "0x007d72e0",
+   "kind": "function",
+   "arm_rva": "0x005830f8",
+   "summary": "AppPlatform_Winrt::pickFile (vtable slot 35). Stores the completion callback at adapter+0xA8 (adapter = this+0x3B4) and queues the WinRT FileOpenPicker (.png) lambda on the UI dispatcher. The x86 host replaces this whole method by win32_pick_custom_skin_128.",
+   "arm_signature": "void AppPlatform_Winrt::pickFile(AppPlatform_Winrt* this /*r0*/, Callback* cb /*r1*/); no stack args; return value unused; callee-saved r4-r11",
+   "x86_to_arm_notes": "x86 thiscall (ECX=this, 1 stack arg, retn 4) becomes plain AAPCS (r0=this, r1=callback). The replacement must be an ordinary C function `void pick(void *platform, void *callback)` - drop __attribute__((thiscall)). The original is NOT called by the host (it is fully replaced). Original is reached only via the vtable (no direct bl callers, xref = single data pointer), so patching the vtable cell (see pick_file_vtable_cell) is sufficient and avoids writing code.",
+   "expected_bytes": "2de98048 0df1040b 8db0 6f46 6ff00103",
+   "evidence": [
+    "arm32re func 5830f8 -> ldr.w r0,[r0,#0x3b4]; str.w r1,[r0,#0xa8]; builds _Func_impl<lambda_befcafe...> on stack; bl 0x589590 (dispatch); EH frame (mvn r3,#1 / strd) - same shape as x86 'push -1; push handler' prologue",
+    "arm32re xref 5830f8 -> only dataptr 0x01369630 (AppPlatform_Winrt vtable slot 35); callers 5830f8 -> none",
+    "lambda_befcafe vf2 (0x58e5d0 chain -> sub_5875ac) creates a FileOpenPicker (L\"Windows.Storage.Pickers.FileOpenPicker\" via sub_589b78) and adds filter L\".png\" (WindowsCreateStringReference at 0x58760c)",
+    "arm32re rtti AppPlatform_Winrt -> vtable 0x013695a4; ctor sub_581610 (named AppPlatform_Winrt::ctor) writes this+0x3b4 field"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.pick_file_vtable_cell",
+   "x86_symbol": "(new) vtable slot of pickFile",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x01369630",
+   "summary": "Data cell AppPlatform_Winrt vtable (0x013695A4) + 35*4 holding the pickFile pointer. Value in the file image = VA 0x009830F9 (ImageBase 0x400000 + RVA 0x5830F8, bit0 = Thumb); at runtime = real_base + 0x5830F8 + 1.",
+   "arm_signature": "void* cell (pointer with Thumb bit)",
+   "x86_to_arm_notes": "Recommended ARM hook strategy: overwrite this cell (VirtualProtect PAGE_READWRITE -> store `(void*)win32_pick_custom_skin_128` which already has bit0 set for a Thumb function -> restore protection). Validate before patching that *cell == (real_base + 0x5830F8 + 1). The .data page is writable data, so no PAGE_EXECUTE_READWRITE is required (RWX may be refused on Windows RT). No FlushInstructionCache is functionally needed for a data cell but is harmless. x86 slot RVAs were IAT-like data cells too, but the x86 host patched function bytes instead; on ARM prefer the cell.",
+   "expected_bytes": "f9 30 98 00 (file bytes = 0x009830F9, relocated at load)",
+   "evidence": [
+    "arm32re ptrs 01369630 -> 009830f9 fn AppPlatform_Winrt::pickFile",
+    "arm32re vtable 013695a4 -> slot [35] +0x8c = 0x009830f9",
+    "AppPlatformWindows vtable (0x013A8DBC) slot 35 is _purecall, AppPlatform_Winrt ctor sub_581610 calls AppPlatformWindows ctor sub_955b7c then installs the AppPlatform_Winrt vtable => the live object uses vtable 0x013695A4"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.pick_file_hook_site_bytes",
+   "x86_symbol": "picker_expected[10] = 55 8b ec 6a ff 68 f8 cf 4c 01",
+   "x86_value": "x86 push ebp;mov ebp,esp;push -1;push SEH",
+   "kind": "hook_site",
+   "arm_rva": "0x005830f8",
+   "summary": "x86 prologue sanity bytes of RVA_128_PICK_FILE. ARM replacement: first 12 bytes of AppPlatform_Winrt::pickFile.",
+   "arm_signature": "memcmp(real_base+0x5830F8, expected, 12)",
+   "x86_to_arm_notes": "Replace the 10-byte x86 expected array by the 12 ARM bytes {2d e9 80 48 0d f1 04 0b 8d b0 6f 46}. If the vtable-cell strategy is used the memcmp is optional (the cell value comparison is the real check), but keep it as a version sanity check. The x86 5-byte `E9 rel32` write_relative_jump is NOT needed on ARM. If code patching is ever preferred: overwrite 8 bytes with `df f8 00 f0 <abs32|1>` (ldr.w pc,[pc,#0] + literal), needs RWX; function is 80 bytes so there is room.",
+   "expected_bytes": "2d e9 80 48 0d f1 04 0b 8d b0 6f 46",
+   "evidence": [
+    "arm32re bytes 5830f8 16 -> 2d e9 80 48 0d f1 04 0b 8d b0 6f 46 6f f0 01 03 (push.w {r7,fp,lr}; add.w fp,sp,#4; sub sp,#0x34; mov r7,sp; mvn r3,#1)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.platform_adapter_offset",
+   "x86_symbol": "outer platform + 0x3b4 (adapter)",
+   "x86_value": "0x3b4",
+   "kind": "offset",
+   "arm_rva": "0x3b4",
+   "summary": "Offset of the adapter pointer inside the AppPlatform_Winrt object (outer platform). UNCHANGED from x86.",
+   "arm_signature": "void* adapter = *(void**)((BYTE*)platform + 0x3b4)",
+   "x86_to_arm_notes": "Same value on ARM. Pointer sized fields: 4 bytes on both. Keep IsBadReadPtr guards (the call is still safe).",
+   "expected_bytes": null,
+   "evidence": [
+    "AppPlatform_Winrt::pickFile: ldr.w r0,[r0,#0x3b4] (0x583114)",
+    "AppPlatform_Winrt::ctor sub_581610: add.w r6,r4,#0x3b4 ; str.w r8,[r6] (initialised to null) at 0x5816ae/0x5816c2",
+    "AppPlatform_Winrt dtor-like sub_582174 reads [r4,#0x3b4] at 0x582220"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.adapter_callback_offset",
+   "x86_symbol": "adapter + 0xa8 (completion callback)",
+   "x86_value": "0xa8",
+   "kind": "offset",
+   "arm_rva": "0xa8",
+   "summary": "Offset inside the adapter where pickFile stores the completion callback object; success/cancel lambdas read it back. UNCHANGED from x86.",
+   "arm_signature": "*(void**)((BYTE*)adapter + 0xa8) = callback",
+   "x86_to_arm_notes": "Same value on ARM. The host must still store the callback there (observable state) before invoking it itself.",
+   "expected_bytes": null,
+   "evidence": [
+    "pickFile: str.w r1,[r0,#0xa8] (0x583120) after r0 = adapter",
+    "cancel lambda vf2 0x58e608: ldr r3,[r0,#4]; ldr.w r3,[r3,#0xa8]; ldr r3,[r3]; ldr r3,[r3,#8]; blx r3",
+    "success lambda sub_58776c 0x587780: ldr.w r3,[r0,#0xa8]  (r0 = adapter)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.callback_invoke_slot",
+   "x86_symbol": "callback->vtable[2] (invoke_custom_skin_callback)",
+   "x86_value": "vtable+8",
+   "kind": "abi",
+   "arm_rva": "0x8",
+   "summary": "The completion object is invoked as callback->vtable[2](callback) with no extra args (byte offset 8). UNCHANGED from x86.",
+   "arm_signature": "void invoke(void* callback /*r0*/): ((void(*)(void*))(*(void***)callback)[2])(callback)",
+   "x86_to_arm_notes": "Same slot index (2) on ARM. Plain AAPCS call (r0 = callback), no thiscall attribute. Keep null checks. Function pointers read from game vtables already have bit0 set; cast and call directly (BLX).",
+   "expected_bytes": null,
+   "evidence": [
+    "0x58e608 (cancel lambda): ldr r3,[r3,#0xa8]; mov r0,r3; ldr r3,[r3]; ldr r3,[r3,#8]; blx r3",
+    "0x58778e..0x58783a (success lambda): same vtable+8 style invocation of the callback"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.pick_file_platform_1b0",
+   "x86_symbol": "*(platform+0x1b0) = callback (0.15.10 win32_pick_custom_skin)",
+   "x86_value": "0x1b0",
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "NOT USED on the 1.2.8 path. win32_pick_custom_skin_128 calls win32_pick_custom_skin(NULL, callback) so the 0x1b0 store is skipped.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "No ARM equivalent needed: when porting win32_pick_custom_skin keep the `platform` parameter NULL (or drop that store). win32_pick_custom_skin_115 / 0x278 / 0xa8-at-adapter variants for 1.1.5 and the 0.15.10 constants 0x00600110/0x00601310/0x005ff810/0x005ff980 are irrelevant.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 13651-13664: only +0x3b4 and +0xa8 are used by the 128 wrapper"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.platform_fixes_128_scope",
+   "x86_symbol": "install_win32_platform_fixes_128 (only picker)",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "On 1.2.8 the host installs ONLY the custom-skin picker hook. The 1.1.5/0.15.10 hooks (fullscreen command, show/hide text keyboard, help URL, achievements/invite no-ops) are NOT installed for 1.2.8 and need no ARM counterpart.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Port exactly one hook (pickFile). Do not hunt ARM equivalents of showKeyboard/hideKeyboard/fullscreen/openHelpUrl for this area. (If the ARM game crashes on InputPane use that is a separate WinRT-fake/imports issue, see open_questions.)",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 13941-13955 install_win32_platform_fixes_128 contains one memcmp + one write_relative_jump",
+    "grep: win32_open_help_url, win32_show_achievements_noop, win32_show_game_invite_noop have no 128 call sites; win32_set_fullscreen_mode only called from host window code (4493/4502) and 1.1.5/0.15.10 hooks"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.zip_get_contents_fn",
+   "x86_symbol": "RVA_128_ZIP_GET_CONTENTS",
+   "x86_value": "0x0090bf40",
+   "kind": "function",
+   "arm_rva": "0x0064e6b8",
+   "summary": "ZipPackAccessStrategy::vf11 = PackAccessStrategy::getAsset(path, outString, trustedOnly): reads a file from the zip pack into a std::string. Same function sits in slot 11 of both ZipPackAccessStrategy and ZipPackAccessStrategyOwningFileAcccess vtables.",
+   "arm_signature": "BOOL getAsset(void* this /*r0*/, const GameString* path /*r1*/, GameString* out /*r2*/, BOOL requireValidPack /*r3*/) -> r0 (0/1); no stack args",
+   "x86_to_arm_notes": "x86 thiscall (ECX=this + 3 stack args, retn 0xC) becomes AAPCS r0..r3, same argument order. Hook prototype: `BOOL hook(void *self, const GameString *path, GameString *out, BOOL require_valid)` without __attribute__((thiscall)). Call the original through the pointer read from the slot (already has Thumb bit set); do not rebuild it as base+RVA without |1. `require_valid` (r3) = x86 4th arg (ARM callers pass 0 for .lang loading).",
+   "expected_bytes": "2de9f04f 0df11c0b b2f59cf5 adf58a6d",
+   "evidence": [
+    "arm32re func 64e6b8: r1->r8 path (reads [r8,#0x14] cap, [r8] data, [r8,#0x10] len), r2->r5 output string cleared (str #0,[r5,#0x10]; strb 0,[r2]) and later appended to; r3 tested -> vtable[8] (+0x20) check",
+    "arm32re vtable 0136e56c / 0136e5bc -> slot [11] +0x2c = 0x00a4e6b9 in BOTH Zip vtables (identical pointer, as x86 checks for both slots)",
+    "caller sub_5eab30 (lang loader, builds \"texts/\"+lang+\".lang\" via strings 0x011bf054/0x011bf0ac): ldr r4,[r6]; ldr r4,[r4,#0x2c]; r1=path, r2=&out (r7+0xf0), r3=0; blx r4",
+    "sibling DirectoryPackAccessStrategy::vf11 (0x6314bc) has the identical signature (r1 path, r2 out moved from FS read, r3 flag->vtable[8])"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.zip_plain_slot_cell",
+   "x86_symbol": "RVA_128_ZIP_GET_CONTENTS_SLOT",
+   "x86_value": "0x0157bad4",
+   "kind": "vtable_slot",
+   "arm_rva": "0x0136e598",
+   "summary": "Slot 11 of ZipPackAccessStrategy vtable (0x0136E56C + 0x2C). Contains the getAsset pointer to be replaced.",
+   "arm_signature": "void* cell",
+   "x86_to_arm_notes": "x86 slot cells were at fixed RVAs 0x50 apart (vtable stride 0x50); on ARM the plain vtable is 0x0136E56C, owning 0x0136E5BC (stride also 0x50, but order is reversed: plain comes first). File value 0x00A4E6B9 (VA incl. Thumb bit); runtime value = real_base + 0x64E6B8 + 1. patch_128_zip_slot: accept if *slot == orig(real_base+0x64E6B8+1) or == hook, VirtualProtect PAGE_READWRITE, store hook (Thumb bit set), restore.",
+   "expected_bytes": "b9 e6 a4 00",
+   "evidence": [
+    "arm32re ptrs 136e598 1 -> 00a4e6b9 fn ZipPackAccessStrategy::getAsset_slot11",
+    "vtable 0136e56c is .?AVZipPackAccessStrategy@@ (rtti) slot [11]"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.zip_owning_slot_cell",
+   "x86_symbol": "RVA_128_ZIP_OWNING_GET_CONTENTS_SLOT",
+   "x86_value": "0x0157ba84",
+   "kind": "vtable_slot",
+   "arm_rva": "0x0136e5e8",
+   "summary": "Slot 11 of ZipPackAccessStrategyOwningFileAcccess vtable (0x0136E5BC + 0x2C).",
+   "arm_signature": "void* cell",
+   "x86_to_arm_notes": "Same treatment as zip_plain_slot_cell. Both cells hold the same original pointer, so the single `original` function pointer is shared by both patches (as in x86).",
+   "expected_bytes": "b9 e6 a4 00",
+   "evidence": [
+    "arm32re ptrs 136e5e8 1 -> 00a4e6b9",
+    "vtable 0136e5bc is .?AVZipPackAccessStrategyOwningFileAcccess@@ slot [11]"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.directory_get_contents_slot",
+   "x86_symbol": "(new; x86 host does not hook this)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x0136df2c",
+   "summary": "ADDITIONAL hook site recommended for ARM: slot 11 of DirectoryPackAccessStrategy (vtable 0x0136DF00 + 0x2C) -> function 0x006314BC. The shipped ARM package (Minecraft_1.2.8.0_ARM32/data) has loose files (resource_packs/vanilla/texts/*.lang, ui/start_screen.json) and NO .zip files, so loose vanilla packs are read through the directory strategy, not the zip ones. The same lang/start_screen rewriter applies unchanged.",
+   "arm_signature": "BOOL getAsset(void* this /*r0*/, const GameString* path /*r1*/, GameString* out /*r2*/, BOOL requireValidPack /*r3*/) -> r0",
+   "x86_to_arm_notes": "Install the same win32_128_zip_get_contents wrapper (same signature) on this cell with a second `original` pointer (or one shared pointer only if both originals were identical - they are NOT: zip=0x64E6B8, dir=0x6314BC; keep two separate originals or dispatch by this-vtable). Path passed is relative (e.g. \"texts/en_US.lang\", \"ui/start_screen.json\"), compatible with resource_path_has_suffix. Output string is move-assigned by the callee (24-byte copy), so reading output->length/data after return is valid.",
+   "expected_bytes": "2de9f048 0df1100b adf58a6d 6f46",
+   "evidence": [
+    "arm32re vtable 0136df00 -> [11] +0x2c = 0x00a314bd fn DirectoryPackAccessStrategy::vf11",
+    "arm32re func 6314bc: r1 path (r6), r2 out (r4), r3 flag -> ldr r3,[r5]; ldr r3,[r3,#0x20]; blx; result moved into [r4] (24-byte string move) ; returns (size!=0)",
+    "data dir listing: no *.zip under Minecraft_1.2.8.0_ARM32; vanilla/texts/en_US.lang and vanilla/ui/start_screen.json are plain files",
+    "factory sub_634344 chooses between directory (sub_6346d4/634734) and zip (sub_6347ac/63484c); InPackagePackSource::vf4 also references \".zip\" (0x63e288) so BOTH strategies may occur - hook all three"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "platform_fixes.directory_encrypted_get_contents_slot",
+   "x86_symbol": "(not hooked on x86)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x0136e004",
+   "summary": "DirectoryPackWithEncryptionAccessStrategy slot 11 (vtable 0x0136DFD8 + 0x2C) -> 0x006323F0. Used for encrypted store/marketplace packs, not for vanilla lang/start_screen. NOT required; listed only so nobody mistakes it for the vanilla path.",
+   "arm_signature": "same as getAsset",
+   "x86_to_arm_notes": "Do not hook (vanilla pack is not encrypted).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re vtable 0136dfd8 -> [11] = 0x00a323f1 DirectoryPackWithEncryptionAccessStrategy::vf11"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "platform_fixes.zip_hook_abi_thiscall",
+   "x86_symbol": "Game128ZipGetContentsFn = BOOL(thiscall*)(void*, const GameStringX86*, GameStringX86*, BOOL)",
+   "x86_value": "thiscall",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "x86 thiscall typedefs (Game128ZipGetContentsFn, Game128StringAssignFn, win32_128_zip_get_contents) -> plain C function pointers on ARM.",
+   "arm_signature": "typedef BOOL (*Game128GetAssetFn)(void*, const GameString*, GameString*, BOOL); typedef GameString* (*Game128StringAssignFn)(GameString*, const char*, size_t);",
+   "x86_to_arm_notes": "Remove every __attribute__((thiscall)); AAPCS (r0=this) matches C++ member ABI for these non-sret, non-float signatures. Function pointers must carry the Thumb bit (compile as Thumb; casts from slot contents keep it).",
+   "expected_bytes": null,
+   "evidence": [
+    "ARM getAsset prologue uses r0 (this) r1 r2 r3 only; no stack args read (args beyond r3 do not exist)",
+    "std::string::assign prologue reads r0 (this), r1 (ptr), r2 (len)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.string_assign_fn",
+   "x86_symbol": "RVA_128_STRING_ASSIGN",
+   "x86_value": "0x00085f20",
+   "kind": "function",
+   "arm_rva": "0x00084048",
+   "summary": "std::string::assign(const char* ptr, size_t n) instance used by the host to replace the contents of the game's output string. Returns this.",
+   "arm_signature": "std::string* assign(std::string* this /*r0*/, const char* ptr /*r1*/, size_t n /*r2*/) -> r0=this; no stack args",
+   "x86_to_arm_notes": "thiscall(ECX, 2 stack args, retn 8) -> AAPCS r0,r1,r2. The game's own allocator/CRT is used inside (sub_b4929c/sub_b495b0), so the host must only ever shrink/replace via this function (never free the buffer itself).",
+   "expected_bytes": "2de97848 0df1100b 0446 1546",
+   "evidence": [
+    "arm32re func 84048: _Inside(ptr) test (cmp r0,r6 ... [r4,#0x10]) -> sub_841b8 (assign(str,off,n)); n==0 -> size=0,[0]=0; grow via sub_84114 if cap<n; memcpy thunk 0xb4a0e8; str n,[r4,#0x10]; strb 0,[r3,r5]; returns r0=r4",
+    "arm32re callers 84048 -> 21860 call sites (most common string helper); e.g. sub_2a4a44 uses assign(\"button.signin\",0xd)",
+    "layout: cap at +0x14 compared with #0x10, size +0x10, data ptr at +0 (std::string, MSVC14.10 ARM)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.std_string_layout",
+   "x86_symbol": "GameStringX86 {union{char small[16]; char* heap;}; DWORD length; DWORD capacity;} (24 bytes)",
+   "x86_value": "0x18 bytes",
+   "kind": "offset",
+   "arm_rva": "0x0",
+   "summary": "MSVC std::string layout is IDENTICAL on ARM32: inline buffer/heap pointer at +0x00 (16 bytes), size at +0x10, capacity at +0x14; data is inline when capacity < 16, else *(char**)(str+0). sizeof = 0x18.",
+   "arm_signature": "struct GameString { union { char small[16]; char* heap; } storage; uint32_t length; uint32_t capacity; };",
+   "x86_to_arm_notes": "Struct and game_string_data() are unchanged (use uint32_t instead of DWORD if DWORD is not pointer-size independent - fine either way, 4 bytes). Both 4-byte aligned.",
+   "expected_bytes": null,
+   "evidence": [
+    "ARM getAsset 0x64e6d4..0x64e6e2: ldr r4,[r5,#0x14]; cmp r4,#0x10; blo -> r2=r5 (inline) else r2=[r5]; str 0,[r5,#0x10]",
+    "std::string::assign 0x84054: ldr r2,[r4,#0x14]; cmp r2,#0x10; blo -> inline; stores size at [r4,#0x10]",
+    "empty-string init in many functions: str 0,[sp,#size]; movs r3,#0xf; str r3,[sp,#cap]; strb 0,[sp] (cap=0xf, size=0)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.zip_pack_struct_fields",
+   "x86_symbol": "(no host access)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "The host does not read or write any field of the zip / directory pack-access objects (`self` is only forwarded). Fields seen in ARM code for reference only: +0x1c std::string (pack path), +0x34 int (encryption state==1 used by vf8), +0x38 std::string root (size +0x48, cap +0x4c), +0x4c, +0x50 file/zip handle object, +0x54/+0x55 flag bytes.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "No struct definition is needed in the ARM host for the zip/pack source; keep `void *self`.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 8510-8561: self is only passed to original_128_zip_get_contents"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.lang_override_data",
+   "x86_symbol": "\"menu.copyright=\" / \"development_version=\" lines, .lang suffix",
+   "x86_value": null,
+   "kind": "string",
+   "arm_rva": null,
+   "summary": "Host-side text rewriting of .lang contents (replace/append two keys). Data-driven, no game code dependency. UNCHANGED for ARM: the ARM package's vanilla/texts/en_US.lang (UTF-8 BOM) has menu.copyright=©Mojang AB at line 3605 and no development_version= line (host appends it, as on x86).",
+   "arm_signature": "n/a (portable C: lang_apply_line_override, resource_path_has_suffix, COPYRIGHT_/DEVELOPMENT_OVERRIDE_LINE_A)",
+   "x86_to_arm_notes": "Copy lang_apply_line_override / resource_path_has_suffix / game_string_data verbatim. Uses IsBadReadPtr/HeapAlloc/HeapFree which exist in ARM Win32. The path is matched by suffix \".lang\" case-insensitive; ARM loader builds \"texts/<lang>.lang\" and also tries \"Texts/<lang>.lang\".",
+   "expected_bytes": null,
+   "evidence": [
+    "grep Minecraft_1.2.8.0_ARM32/data/resource_packs/vanilla/texts/en_US.lang: menu.copyright= present, development_version= absent",
+    "arm32re strx .lang -> sub_5eab30 (lang loader) + sub_64310c; strings \"texts/\"(0x11bf054) \"Texts/\"(0x11bf05c)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.start_screen_json_data",
+   "x86_symbol": "start_screen_force_development_control (JSON text patch)",
+   "x86_value": null,
+   "kind": "string",
+   "arm_rva": null,
+   "summary": "Host-side JSON rewrite of ui/start_screen.json: control \"development_version\" text -> literal, bindings -> [], instance \"development_version@start.development_version\" -> {ignored:false,text,bindings:[]}. Pure data transformation, UNCHANGED.",
+   "arm_signature": "n/a (portable C)",
+   "x86_to_arm_notes": "Copy verbatim. The ARM data file has the same structure: definition \"development_version\" with text \"#development_version\" + bindings, and instance \"development_version@start.development_version\" with \"ignored\": \"$is_publish\" in text_panel (start_screen.json lines 56-70, 99-101). Applies to path suffix start_screen.json.",
+   "expected_bytes": null,
+   "evidence": [
+    "Minecraft_1.2.8.0_ARM32/data/resource_packs/vanilla/ui/start_screen.json lines 56-70 and 99-101",
+    "arm32re str development_version -> '#development_version' at 0x00da3404 (binding name in exe)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.write_relative_jump",
+   "x86_symbol": "write_relative_jump (E9 rel32)",
+   "x86_value": "5-byte x86 jmp",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "x86 code-patch primitive. NOT needed on ARM for this area (use vtable/data-cell patching).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "If ever needed: Thumb-2 `ldr.w pc,[pc,#0]` + 4-byte literal (bytes df f8 00 f0 + target|1), 8 bytes, requires executable write access.",
+   "expected_bytes": null,
+   "evidence": [
+    "design note"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.protection_note",
+   "x86_symbol": "VirtualProtect(PAGE_EXECUTE_READWRITE / PAGE_READWRITE)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "x86 host used PAGE_EXECUTE_READWRITE for code/string patches and PAGE_READWRITE for slot cells.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "On ARM prefer PAGE_READWRITE for every patch in this area (vtable cells in .data, string bytes in .rdata, TCUI IAT cells in .data); none of the targets is code. Windows RT / dynamic-code policy may reject RWX.",
+   "expected_bytes": null,
+   "evidence": [
+    "all patch targets: 0x1369630/0x136e598/0x136e5e8/0x136df2c (.data), 0xd99e28/0xda345c (.rdata), 0x15121fc.. (.data)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "platform_fixes.xbox_signin_event_str",
+   "x86_symbol": "patches_128[0] = {0x012b64b4, 'b' -> '!'} (button.signin)",
+   "x86_value": "0x012b64b4",
+   "kind": "string",
+   "arm_rva": "0x00d99e28",
+   "summary": "ASCII event-key literal \"button.signin\" (shared by all ScreenController registrations). Host overwrites its first byte 'b' (0x62) with '!' (0x21) so JSON button presses never resolve an action.",
+   "arm_signature": "1-byte write: *(BYTE*)(real_base+0x00D99E28) = 0x21; expected old byte 0x62",
+   "x86_to_arm_notes": "Patch a data byte, expected 0x62 -> 0x21. .rdata is read-only: VirtualProtect(PAGE_READWRITE) around the write. Two registration sites (0x2047c2, 0x2a4b24) both pass r1=this literal with length 0xd to std::string::assign then register a std::function<ViewRequest(UIPropertyBag*)> via sub_34dbac, so renaming kills both. Must be applied before the game registers handlers (i.e. before the AppMain/controller construction).",
+   "expected_bytes": "62 75 74 74 6f 6e 2e 73 69 67 6e 69 6e 00",
+   "evidence": [
+    "arm32re str button.signin -> 0x00d99e28 refs=2 (sub_2044ec+0x2d6 @0x2047c2, sub_2a4a44+0xe0 @0x2a4b24)",
+    "arm32re dis 2a4b00: r1=\"button.signin\", r2=0xd, bl std::string::assign; then bl sub_1bab8c (id from string) ; bl sub_34dbac(controller,id,_Func_impl<lambda,ViewRequest,UIPropertyBag*>) = event-handler registration",
+    "arm32re bytes d99e28 -> 'button.signin\\0' with a 0x00 terminator and a different string following at d99e38"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.xbox_xbl_signin_event_str",
+   "x86_symbol": "patches_128[1] = {0x012bfbcc, 'b' -> '!'} (button.xbl_signin)",
+   "x86_value": "0x012bfbcc",
+   "kind": "string",
+   "arm_rva": "0x00da345c",
+   "summary": "ASCII event-key literal \"button.xbl_signin\"; same single-byte rename.",
+   "arm_signature": "1-byte write: *(BYTE*)(real_base+0x00DA345C) = 0x21; expected old byte 0x62",
+   "x86_to_arm_notes": "As above. Three registration sites (0x29a038, 0x2d2f84, 0x2d646c) all register ViewRequest handlers with the literal (length 0x11).",
+   "expected_bytes": "62 75 74 74 6f 6e 2e 78 62 6c 5f 73 69 67 6e 69 6e 00",
+   "evidence": [
+    "arm32re str button.xbl_signin -> 0x00da345c refs=3 (sub_299e08+0x230, sub_2d2f4c+0x38, sub_2d63d4+0x98)",
+    "arm32re dis 2d6470: assign(r0=stack str, r1=literal, r2=0x11) -> sub_1bab8c -> sub_34dbac registration (same shape as button.signin)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.xbox_actions_return_handled_01510_115",
+   "x86_symbol": "return_handled[8], expected_01510_*/expected_115_* (mov eax,8; ret 4)",
+   "x86_value": "x86 code patch",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "0.15.10 / 1.1.5 variants of patch_xbox_actions_noop (x86 code bytes B8 08 00 00 00 C2 04 00 at several lambda sites). NOT used on 1.2.8.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Do not port. The 1.2.8 path uses only the two string byte patches above (patches_128).",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 12340-12347: patches = host_is_128 ? patches_128 : ..."
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.apply_runtime_patches",
+   "x86_symbol": "apply_runtime_patches / RuntimeBytePatch",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Generic patcher: memcmp(expected) then VirtualProtect, copy, restore, FlushInstructionCache. For 1.2.8 it is used only with the two 1-byte string patches.",
+   "arm_signature": "BOOL apply(BYTE* image, const RuntimeBytePatch*, SIZE_T count)",
+   "x86_to_arm_notes": "Keep as is but use PAGE_READWRITE (see protection_note) because targets are data. RuntimeBytePatch {rva, expected, replacement, size, failure} ports unchanged.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 12226-12256"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.chat_textbox_compat",
+   "x86_symbol": "patch_chat_textbox_compat",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Returns TRUE immediately unless host_is_115 (3 x86 code patches at 0x007b1021/0x007b10df/0x007b112c). NOT used on 1.2.8.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Nothing to port.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 12414: `if (!host_is_115) return TRUE;`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.tcui_cell_show_profile",
+   "x86_symbol": "slots[1] = RVA_128_TCUI_SHOW_PROFILE_IAT",
+   "x86_value": "0x01724400",
+   "kind": "iat",
+   "arm_rva": "0x015121fc",
+   "summary": "Delay-import IAT cell for api-ms-win-gaming-tcui-l1-1-0.dll!ShowProfileCardUI. Host stores win32_show_profile_card_noop (returns E_NOTIMPL).",
+   "arm_signature": "HRESULT WINAPI ShowProfileCardUI(HSTRING targetXuid /*r0*/, void* callback /*r1*/, void* context /*r2*/) -> r0",
+   "x86_to_arm_notes": "x86 slot order was [0]=ProcessPending [1]=ShowProfile [2]=null [3]=ForUser; ARM order differs: 0x015121FC ShowProfileCardUI, 0x01512200 ProcessPendingGameUI, 0x01512204 null (descriptor terminator, do NOT write), 0x01512208 ShowProfileCardUIForUser. Resolve by name. Do not blindly index slots[0],[1],[3] as x86 did. Real order of ARM args is (xuid, callbackFn, context); the x86 noop's names for params 2/3 were swapped but are unused. Return E_NOTIMPL (0x80004001) so the stock wrapper (sub_a3e014) takes the non-pending path (it only treats S_OK/0x8000000A E_PENDING as pending). File value of the cell = delay-load stub VA 0x00F4A2CD (Thumb).",
+   "expected_bytes": "cd a2 f4 00 (file bytes of cell = 0x00F4A2CD)",
+   "evidence": [
+    "arm32re imports TCUI -> 015121fc ShowProfileCardUI; impcallers ShowProfileCard -> sub_a3e014 @0xa3e0be",
+    "sub_a3e014: r0=xuid HSTRING, r1=&fn(0x00e3e679), r2=&ctx; after call `cmp r4,#0; bge ok; r3=0x8000000A; cmp r4,r3; bne fail`",
+    "thunk 0xb4a2dc: movw/movt ip,#0x15121fc ; ldr.w pc,[ip] -> calls go through the cell"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.tcui_cell_process_pending",
+   "x86_symbol": "slots[0] = RVA_128_TCUI_PROCESS_PENDING_IAT",
+   "x86_value": "0x017243fc",
+   "kind": "iat",
+   "arm_rva": "0x01512200",
+   "summary": "Delay-import IAT cell for ProcessPendingGameUI(BOOL wait). Host stores win32_process_pending_game_ui_noop (returns S_OK).",
+   "arm_signature": "HRESULT WINAPI ProcessPendingGameUI(BOOL wait /*r0*/) -> r0",
+   "x86_to_arm_notes": "Order differs from x86 (see tcui_cell_show_profile). Caller passes r0=1.",
+   "expected_bytes": "e9 a2 f4 00 (file bytes of cell = 0x00F4A2E9)",
+   "evidence": [
+    "arm32re imports -> 01512200 ProcessPendingGameUI; impcallers -> sub_a3e014 @0xa3e0d4 (movs r0,#1; bl thunk)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.tcui_cell_show_profile_user",
+   "x86_symbol": "slots[3] = RVA_128_TCUI_SHOW_PROFILE_USER_IAT",
+   "x86_value": "0x01724408",
+   "kind": "iat",
+   "arm_rva": "0x01512208",
+   "summary": "Delay-import IAT cell for api-ms-win-gaming-tcui-l1-1-2.dll!ShowProfileCardUIForUser. Host stores win32_show_profile_card_for_user_noop (E_NOTIMPL).",
+   "arm_signature": "HRESULT WINAPI ShowProfileCardUIForUser(void* user /*r0*/, HSTRING xuid /*r1*/, void* callback /*r2*/, void* context /*r3*/) -> r0",
+   "x86_to_arm_notes": "Different DLL/delay descriptor from the other two (…-1-2.dll). 4 register args on ARM, no stack args. Cell between (0x01512204) is the null terminator of the l1-1-0 table - leave untouched (x86 also left slot[2]). File value of the cell = stub VA 0x00F4A32D.",
+   "expected_bytes": "2d a3 f4 00 (0x00F4A32D)",
+   "evidence": [
+    "arm32re imports -> 01512208 (delay) ForUser; sub_a3e014 @0xa3e0aa: r0=[this+0x18], r1=xuid, r2=fn, r3=&ctx",
+    "arm32re ptrs 01512200 8 -> [01512204]=0"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.tcui_vprotect_range",
+   "x86_symbol": "VirtualProtect(slots, 4*sizeof(void*)) around RVA_128_TCUI_PROCESS_PENDING_IAT",
+   "x86_value": "0x017243fc..0x01724408",
+   "kind": "iat",
+   "arm_rva": "0x015121fc",
+   "summary": "The x86 host unprotects 4 pointer cells starting at the first TCUI cell. ARM range: 0x015121FC..0x0151220B (4 cells, in .data).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Because ShowProfile < ProcessPending on ARM, the contiguous 4-cell block starts at the same base 0x015121FC but the meaning of cell index 0/1 is swapped: [0]=ShowProfile, [1]=ProcessPending, [2]=null, [3]=ForUser. Write only cells 0,1,3 with the matching noop.",
+   "expected_bytes": null,
+   "evidence": [
+    "ptrs 015121fc 4 -> 00f4a2cd 00f4a2e9 00000000 00f4a32d"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.unused_debug_font_consts",
+   "x86_symbol": "RVA_128_DEBUG_SCREEN_RENDERER_VTABLE/DEBUG_SCREEN_RENDER/HUD_DEBUG_RENDERER_VTABLE/HUD_DEBUG_RENDER/DEBUG_SCREEN_OPTION_INIT/FONT_VTABLE/FONT_DRAW/FONT_GET_TEXT_WIDTH/COLOR_WHITE/DEVELOPMENT_VERSION_GETTER",
+   "x86_value": "0x0154b14c,0x001b4800,0x0154b500,0x0016cb10,0x0056c230,0x0154c6f8,0x001ff320,0x00200260,0x01548468,0x00414df0",
+   "kind": "data",
+   "arm_rva": null,
+   "summary": "Grep over win32_host.c: these ten macros appear ONLY in their #define lines (160-169). No code on the 1.2.8 path (or any path) reads them. NOT needed on ARM.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Do not find ARM equivalents. Drop the macros.",
+   "expected_bytes": null,
+   "evidence": [
+    "Grep RVA_128_(DEBUG|FONT|COLOR_WHITE|DEVELOPMENT_VERSION|HUD) -> only lines 160-169 (definitions)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.unused_app_platform_device_resources_globals",
+   "x86_symbol": "RVA_APP_PLATFORM_GLOBAL (0x00c009f4) / RVA_DEVICE_RESOURCES_GLOBAL (0x00b63e48)",
+   "x86_value": "0.15.10 constants",
+   "kind": "data",
+   "arm_rva": null,
+   "summary": "Unprefixed 0.15.10 constants used only by activate_game_app (12440) and initialize_game_app (11639), neither of which runs on 1.2.8 (initialize_game_app_128/activate_game_app_128 are used). There is no RVA_128_ equivalent and 1.2.8 reads the platform via game_app_main+0x1c. NOT needed on ARM.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Nothing to port in this area (AppMain layout belongs to the appmain area).",
+   "expected_bytes": null,
+   "evidence": [
+    "grep RVA_APP_PLATFORM_GLOBAL -> line 40 (define), 12440 (activate_game_app); RVA_DEVICE_RESOURCES_GLOBAL -> 37, 11639 (initialize_game_app); dispatch at 15039-15044 selects *_128 functions"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.win7_only_patches",
+   "x86_symbol": "patch_win7_discard_views (RVA_128_DISCARD_WINDOW_VIEWS 0x007d68e0, byte 0xC3), patch_win7_dxgi_device3_query_to_base (RVA_128_DXGI_DEVICE3_IID)",
+   "x86_value": "x86 code byte patch",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Both patches run only when host_is_windows7. Not applicable to an ARM32 desktop target (Windows RT 8.1 / Win10 ARM). Belongs to the gfx area if anyone needs a Win7-like fallback.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Not needed.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 9894 and 9926: early return when !host_is_windows7"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.copyright_exports_01510",
+   "x86_symbol": "Win32CraftPrepareCopyrightLang*/StartScreenJson* exports + win32_01510_fopen hooks",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": null,
+   "summary": "0.15.10 temp-file CRT hooks (fopen/_wfopen wrappers and exported Win32CraftPrepare*). NOT used on 1.2.8, which uses the in-memory getAsset hook instead. The shared text-transformers (lang_apply_line_override, start_screen_force_development_control) ARE reused.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Do not port the fopen/temp-file machinery (copyright_write_override_file, start_screen_write_override_file, copyright_remember_temp, Win32CraftCleanupCopyrightTemps).",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 9484-9490 only inside install_01510_copyright_override (non-128 branch at 14996-14997)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "platform_fixes.custom_skin_options_keys",
+   "x86_symbol": "options.txt keys game_skintypefull / game_lastcustomskinnew, values Standard_Custom / custom.png, files games/com.mojang/minecraftpe/{custom.png,options.txt}",
+   "x86_value": null,
+   "kind": "string",
+   "arm_rva": null,
+   "summary": "Host-side effect of the picker: copy chosen PNG to <data>/games/com.mojang/minecraftpe/custom.png (and <data>/custom.png) and rewrite two options.txt lines. These are game-facing names; verified present in the ARM exe.",
+   "arm_signature": "n/a (portable file code: update_custom_skin_options, copy_valid_png)",
+   "x86_to_arm_notes": "Unchanged. Keys exist in the ARM exe: game_skintypefull @0x00dacd8c (option ctor sub_3f538c), game_lastcustomskinnew @0x00dacd64 (sub_3f5474), custom.png @0x00d8e300, options.txt @0x00db4a68 (sub_45c38), skin geometry names Standard_ @0x00daef44 + Custom @0x00daef70 (sub_41672c references Standard_ prefix; Custom suffix string also present). Option file format `key:value` is unchanged.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re strx game_skintypefull / game_lastcustomskinnew / custom.png / options.txt / Standard_ / Custom"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "platform_fixes.fake_winrt_class_redirects_128",
+   "x86_symbol": "host_is_128 branches at 2334/2367/7552-7795 (CoreWindow QI log, IAsyncInfo QI, CoreTextServicesManager, ResourceContext, ResourceManager, SpeechSynthesizer, AudioGraph*)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": null,
+   "summary": "These host_is_128 checks only select which fake WinRT factories/interfaces are returned; they do not mutate or call game code. Belong to the imports/winrt-fakes area, not platform_fixes.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Out of scope here.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c 2334-2367, 7552-7795"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "Picker: delete write_relative_jump use. In install_win32_platform_fixes_128: base=(BYTE*)image; cell=(void**)(image+0x01369630); expected=(void*)(image+0x005830F8+1); if (*cell != expected) fail; VirtualProtect(cell,4,PAGE_READWRITE,&old); *cell=(void*)win32_pick_custom_skin_128; VirtualProtect(cell,4,old,&tmp); FlushInstructionCache(GetCurrentProcess(),cell,4). Optionally memcmp(image+0x005830F8, {2d e9 80 48 0d f1 04 0b 8d b0 6f 46}, 12) first.",
+  "win32_pick_custom_skin_128 becomes `static void win32_pick_custom_skin_128(void *platform, void *callback)` (AAPCS, no thiscall). Keep body: adapter=*(void**)((BYTE*)platform+0x3b4); *(void**)((BYTE*)adapter+0xa8)=callback; then win32_pick_custom_skin(NULL, callback). Offsets 0x3b4 and 0xa8 are unchanged. invoke_custom_skin_callback: ((void(*)(void*))(*(void***)cb)[2])(cb) (vtable slot 2, plain call).",
+  "ZIP/Directory resource overrides: change typedefs to plain C (no thiscall). Hook = `BOOL win32_128_get_asset(void *self, const GameString *path, GameString *out, BOOL trusted)`. Install by patching cells: 0x0136E598 (ZipPackAccessStrategy[11]), 0x0136E5E8 (ZipPackAccessStrategyOwningFileAcccess[11]) both holding original real_base+0x64E6B8+1, and ADD 0x0136DF2C (DirectoryPackAccessStrategy[11]) holding real_base+0x6314BC+1 (needs its own original pointer; wrapper must call the right one - use two thin wrappers or compare *(void***)self against the vtable address). Read `original` from the cell itself (already Thumb-tagged) after validating it equals the expected function, then store the hook. Accept `*slot == hook` as already-patched like patch_128_zip_slot.",
+  "STRING_ASSIGN: game_image+0x00084048 (Thumb: pass (image+0x84048)|1 if constructing a pointer from RVA). assign(output, buf, len) returns output. GameString layout unchanged (inline<16, len@+0x10, cap@+0x14).",
+  "Text rewriters (lang_apply_line_override, start_screen_force_development_control and helpers, resource_path_has_suffix, game_string_data, COPYRIGHT/DEVELOPMENT macros) port verbatim; drop the 0.15.10 temp-file functions and fopen hooks.",
+  "Xbox sign-in: replace patches_128 rvas by {0x00D99E28,'b'->'!'} (button.signin) and {0x00DA345C,'b'->'!'} (button.xbl_signin), expected byte 0x62; use PAGE_READWRITE (not RWX). Apply before the game constructs its screens/controllers.",
+  "TCUI: use cells by NAME not x86 index: *(void**)(image+0x015121FC)=win32_show_profile_card_noop; *(void**)(image+0x01512200)=win32_process_pending_game_ui_noop; *(void**)(image+0x01512208)=win32_show_profile_card_for_user_noop; never touch 0x01512204 (null terminator). Prototypes: ProcessPendingGameUI(BOOL), ShowProfileCardUI(HSTRING,void*,void*), ShowProfileCardUIForUser(void*,HSTRING,void*,void*) all returning HRESULT (E_NOTIMPL for the two ShowProfile*, S_OK for ProcessPending). VirtualProtect range 0x015121FC, 16 bytes.",
+  "Do NOT port: write_relative_jump for 1.2.8, show/hide text keyboard, fullscreen command, help URL, achievements/invite no-ops, patch_chat_textbox_compat, win7 patches, 0.15.10 xbox byte patches, unused RVA_128_DEBUG/FONT/COLOR/DEV_VERSION constants."
+ ],
+ "open_questions": [
+  "Which strategy serves the vanilla pack in a real ARM deployment? The package on disk has loose files, so DirectoryPackAccessStrategy::getAsset (0x6314BC) is expected to serve lang/start_screen; the zip hooks parity with x86 are kept but may never fire. Confirm at runtime by logging which hook runs for texts/en_US.lang.",
+  "Not verified dynamically: that ui/start_screen.json is loaded through the same slot-11 getAsset (lang loading via slot 11 is confirmed statically at sub_5eab30; UI JSON loader sub_129d0c/_ui_defs path was not traced to its slot-11 call).",
+  "x86 1.2.8 does not hook showKeyboard/hideKeyboard/fullscreen; if the ARM build needs InputPane/fullscreen shims they must be derived in the imports/winrt area (AppPlatform_Winrt vtable is 0x013695A4; slot 35 = pickFile).",
+  "The exact x86 slot index of RVA_128_ZIP_GET_CONTENTS_SLOT was inferred (index 11) from signature/semantics on ARM, since the x86 binary is unavailable; vtable stride 0x50 (19 slots + COL) is consistent with the x86 cells being 0x50 apart.",
+  "Callback `callback` object type for pickFile (vtable[2]) was identified only by call shape (adapter+0xa8 then vtable+8); class name unknown."
+ ]
+}

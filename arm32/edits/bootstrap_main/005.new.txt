@@ -1,0 +1,612 @@
+#ifdef WIN32CRAFT_ARM32
+/* ======================================================================================================
+ * ARM32 Win32Bootstrap (unit bootstrap_main) - the 1.2.8 ARM32 path only.  Facts: winmain.*, pe_imports.*,
+ * appmain.app_main_frame, fl91.*; contract: arm32/PORT_RULES.md.
+ *
+ * Entry: the patched exe's __scrt_common_main_seh `bl sub_b4a424` (RVA 0xB49ACA) is redirected through a PIC trampoline
+ * (RVA 0xC36EA0) to this export.  r0-r3 are not read; the return value becomes exit(r4).
+ *
+ * Return codes (0 or the WM_QUIT wParam = normal exit; every other value is a startup failure whose reason is the last
+ * "ARM32 bootstrap FAILED" line of win32craft.log):
+ *    3  SizeOfImage != IMAGE_SIZE_128_ARM_PATCHED   4  not a PE32 / ARMNT (0x01C4) image   10 install_arm32_iat_hooks
+ *   11  install_arm32_platform_fixes   12 install_arm32_input_hooks   13 RegisterClassExW   14 CreateWindowExW
+ *   15  initialize_game_d3d   16 initialize_game_app_128   17 activate_game_app_128
+ * (install_client_state_hook_128 is only needed for mouse capture / text focus: its failure is logged, the run continues.)
+ * ====================================================================================================== */
+#define ARM32_BOOT_BAD_IMAGE_SIZE          3
+#define ARM32_BOOT_BAD_PE_HEADER           4
+#define ARM32_BOOT_IAT_HOOKS_FAILED       10
+#define ARM32_BOOT_PLATFORM_FIXES_FAILED  11
+#define ARM32_BOOT_INPUT_HOOKS_FAILED     12
+#define ARM32_BOOT_REGISTER_CLASS_FAILED  13
+#define ARM32_BOOT_CREATE_WINDOW_FAILED   14
+#define ARM32_BOOT_D3D_FAILED             15
+#define ARM32_BOOT_APPMAIN_FAILED         16
+#define ARM32_BOOT_ACTIVATE_FAILED        17
+#define ARM32_PE_MACHINE_ARMNT            0x01c4u
+#define ARM32_PE32_MAGIC                  0x010bu
+#define ARM32_BOOT_OPEN_ALWAYS            4U
+
+/* Win32 calls the shared compat header does not declare (identical to the SDK prototypes) */
+extern DWORD WINAPI GetTickCount(void);
+extern DWORD WINAPI GetModuleFileNameW(HMODULE, LPWSTR, DWORD);
+extern BOOL WINAPI SetCurrentDirectoryW(LPCWSTR);
+extern BOOL WINAPI SetEnvironmentVariableA(LPCSTR, LPCSTR);
+
+/* contract entry points defined by the other ARM units (PORT_RULES "Cross-unit contract"); render_game_target_128 returns
+ * int (nonzero = the game asked to quit) once the appmain unit is applied */
+static BOOL install_arm32_iat_hooks(BYTE *image);
+static BOOL install_arm32_platform_fixes(BYTE *image);
+static BOOL install_arm32_input_hooks(BYTE *image);
+
+static const char *volatile arm32_boot_step_name = "not started";
+static volatile LONG arm32_boot_progress;       /* bumped on every step change and every main-loop pass */
+static volatile LONG arm32_boot_loop_passes;
+static volatile LONG arm32_boot_frames_started;
+static volatile LONG arm32_boot_frames_done;
+static volatile LONG arm32_boot_watchdog_stop;
+static DWORD arm32_boot_start_tick;
+
+static void arm32_boot_narrow(char *out, SIZE_T out_size, const wchar_t *text)
+{
+    SIZE_T index = 0;
+
+    if (!out || !out_size) return;
+    while (text && text[index] && index + 1 < out_size) {
+        out[index] = text[index] < 0x80 ? (char)text[index] : '?';
+        ++index;
+    }
+    out[index] = 0;
+}
+
+static void arm32_boot_step(const char *name)
+{
+    char line[160];
+
+    arm32_boot_step_name = name;
+    InterlockedIncrement(&arm32_boot_progress);
+    wsprintfA(line, "ARM32 bootstrap step: %s", name);
+    log_line(line);
+}
+
+/* logs the failure, stops the watchdog and returns `code` for `return arm32_boot_fail(...)` */
+static int arm32_boot_fail(int code, const char *what)
+{
+    char line[400];
+
+    wsprintfA(line, "ARM32 bootstrap FAILED at step '%s': %s -> Win32Bootstrap returns %d",
+              arm32_boot_step_name, what, code);
+    log_line(line);
+    arm32_boot_watchdog_stop = 1;
+    return code;
+}
+
+/* A hang is distinguishable from a crash by the log alone: while the main thread makes no progress (a game call that never
+ * returns) this thread reports it every 5/10/20/40/80... seconds and snapshots the main thread (Pc/Lr/Sp, game RVAs) three
+ * times; while it progresses it writes a heartbeat every 30 s.  It only reads volatile counters. */
+static DWORD WINAPI arm32_boot_watchdog_thread(void *parameter)
+{
+    LONG last_progress = -1;
+    LONG last_frames = 0;
+    DWORD last_change = GetTickCount();
+    DWORD last_heartbeat = last_change;
+    DWORD next_report = 5000;
+    unsigned dumps = 0;
+    BOOL stall_reported = FALSE;
+    char line[360];
+
+    (void)parameter;
+    while (!arm32_boot_watchdog_stop) {
+        LONG progress;
+        DWORD now;
+        DWORD stalled;
+
+        Sleep(500);
+        if (arm32_boot_watchdog_stop) break;
+        now = GetTickCount();
+        progress = arm32_boot_progress;
+        if (progress != last_progress) {
+            if (stall_reported) {
+                wsprintfA(line, "ARM32 watchdog: main thread is progressing again after %lu s (step '%s')",
+                          (unsigned long)((now - last_change) / 1000u), arm32_boot_step_name);
+                log_line(line);
+            }
+            last_progress = progress;
+            last_change = now;
+            next_report = 5000;
+            stall_reported = FALSE;
+        } else if (now - last_change >= next_report) {
+            stalled = now - last_change;
+            stall_reported = TRUE;
+            wsprintfA(line, "ARM32 watchdog: NO PROGRESS for %lu s in step '%s' (loop passes=%ld frames started=%ld done=%ld)%s",
+                      (unsigned long)(stalled / 1000u), arm32_boot_step_name, (long)arm32_boot_loop_passes,
+                      (long)arm32_boot_frames_started, (long)arm32_boot_frames_done,
+                      arm32_boot_frames_started != arm32_boot_frames_done
+                          ? " - a game frame call has not returned" : "");
+            log_line(line);
+            if ((dumps == 0 && stalled >= 10000u) || (dumps == 1 && stalled >= 80000u) ||
+                (dumps == 2 && stalled >= 320000u)) {
+                ++dumps;
+                log_115_main_thread_context("bootstrap watchdog: stalled main thread");
+            }
+            next_report = next_report < 80000u ? next_report * 2u : next_report + 80000u;
+        }
+        if (now - last_heartbeat >= 30000u) {
+            LONG frames = arm32_boot_frames_done;
+
+            wsprintfA(line, "ARM32 heartbeat: up %lu s, step '%s', loop passes=%ld, frames done=%ld (+%ld in the last 30 s)",
+                      (unsigned long)((now - arm32_boot_start_tick) / 1000u), arm32_boot_step_name,
+                      (long)arm32_boot_loop_passes, (long)frames, (long)(frames - last_frames));
+            log_line(line);
+            last_frames = frames;
+            last_heartbeat = now;
+        }
+    }
+    return 0;
+}
+
+static void arm32_boot_start_watchdog(void)
+{
+    typedef HANDLE (WINAPI *CreateThreadFn)(
+        void *, SIZE_T, DWORD (WINAPI *)(void *), void *, DWORD, DWORD *);
+    HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+    CreateThreadFn create_thread = kernel32
+        ? (CreateThreadFn)GetProcAddress(kernel32, "CreateThread") : NULL;
+    HANDLE thread;
+
+    if (!create_thread) {
+        log_line("ARM32 watchdog: CreateThread is unavailable, no stall reports");
+        return;
+    }
+    thread = create_thread(NULL, 0, arm32_boot_watchdog_thread, NULL, 0, NULL);
+    if (!thread) {
+        log_line("ARM32 watchdog: CreateThread failed, no stall reports");
+        return;
+    }
+    CloseHandle(thread);
+    log_line("ARM32 watchdog started (stall reports from 5 s, heartbeat every 30 s)");
+}
+
+static BOOL arm32_boot_log_file_writable(DWORD *error_out)
+{
+    HANDLE file = CreateFileW(L"win32craft.log", GENERIC_WRITE,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+                              ARM32_BOOT_OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (file == INVALID_HANDLE_VALUE) {
+        *error_out = GetLastError();
+        return FALSE;
+    }
+    CloseHandle(file);
+    *error_out = 0;
+    return TRUE;
+}
+
+/* The only feedback channel is win32craft.log, and log_line() writes it only when WIN32CRAFT_DEBUG exists in the
+ * environment (checked once, on the first log_line call).  So, before anything logs: enable logging by default, make
+ * package_path the exe directory (data/ and resources.pri live next to the exe; the x86 host used the working directory),
+ * make sure the log can actually be created in the working directory and fall back to %TEMP% when it cannot. */
+static void arm32_boot_setup_paths_and_log(void)
+{
+    wchar_t original_cwd[MAX_PATH];
+    wchar_t exe_dir[MAX_PATH];
+    wchar_t temp_dir[MAX_PATH];
+    wchar_t current[MAX_PATH];
+    char narrow[MAX_PATH];
+    char line[2 * MAX_PATH + 160];
+    BOOL debug_forced = FALSE;
+    BOOL exe_dir_ok = FALSE;
+    BOOL moved_to_exe_dir = FALSE;
+    BOOL move_to_exe_dir_failed = FALSE;
+    BOOL moved_to_temp = FALSE;
+    BOOL log_ok;
+    DWORD probe_error = 0;
+    DWORD length;
+    DWORD temp_length;
+
+    if (!GetEnvironmentVariableA("WIN32CRAFT_DEBUG", NULL, 0)) {
+        debug_forced = SetEnvironmentVariableA("WIN32CRAFT_DEBUG", "1") != 0;
+    }
+    original_cwd[0] = 0;
+    if (!GetCurrentDirectoryW(MAX_PATH, original_cwd)) original_cwd[0] = 0;
+    length = GetModuleFileNameW(NULL, exe_dir, MAX_PATH);
+    if (length && length < MAX_PATH) {
+        while (length && exe_dir[length - 1] != L'\\' && exe_dir[length - 1] != L'/') --length;
+        if (length == 3 && exe_dir[1] == L':') {
+            exe_dir[3] = 0;                 /* "C:\" keeps its slash: "C:" would mean the current directory of drive C */
+            exe_dir_ok = TRUE;
+        } else if (length > 1) {
+            exe_dir[length - 1] = 0;
+            exe_dir_ok = TRUE;
+        }
+    }
+    if (exe_dir_ok) {
+        lstrcpyW(package_path, exe_dir);
+        if (!host_argument_equals(original_cwd, exe_dir)) {
+            if (SetCurrentDirectoryW(exe_dir)) moved_to_exe_dir = TRUE;
+            else move_to_exe_dir_failed = TRUE;
+        }
+    } else if (original_cwd[0]) {
+        lstrcpyW(package_path, original_cwd);
+    } else {
+        lstrcpyW(package_path, L".");
+    }
+    log_ok = arm32_boot_log_file_writable(&probe_error);
+    if (!log_ok) {
+        temp_length = GetTempPathW(MAX_PATH, temp_dir);
+        if (temp_length && temp_length < MAX_PATH && SetCurrentDirectoryW(temp_dir)) {
+            moved_to_temp = TRUE;
+            log_ok = arm32_boot_log_file_writable(&probe_error);
+        }
+    }
+
+    /* first log_line() call of the process happens below */
+    wsprintfA(line, "Win32Craft 1.2.8 ARM32 Win32Bootstrap entered (host build %s %s)", __DATE__, __TIME__);
+    log_line(line);
+    if (debug_forced) log_line("WIN32CRAFT_DEBUG was not set: logging enabled by default on ARM32");
+    arm32_boot_narrow(narrow, sizeof(narrow), original_cwd);
+    wsprintfA(line, "working directory at start: %s", narrow);
+    log_line(line);
+    if (exe_dir_ok) {
+        arm32_boot_narrow(narrow, sizeof(narrow), exe_dir);
+        wsprintfA(line, "exe directory (package_path): %s%s", narrow,
+                  moved_to_exe_dir ? " - working directory changed to it"
+                                   : (move_to_exe_dir_failed ? " - SetCurrentDirectoryW failed, working directory kept"
+                                                             : ""));
+    } else {
+        arm32_boot_narrow(narrow, sizeof(narrow), package_path);
+        wsprintfA(line, "exe directory unavailable, package_path = working directory: %s", narrow);
+    }
+    log_line(line);
+    if (moved_to_temp) log_line("win32craft.log is not writable in the exe directory: working directory moved to %TEMP%");
+    if (GetCurrentDirectoryW(MAX_PATH, current)) {
+        arm32_boot_narrow(narrow, sizeof(narrow), current);
+        wsprintfA(line, "log file: %s\\win32craft.log (%s)", narrow,
+                  log_ok ? "writable" : "NOT WRITABLE - this log will be lost");
+        log_line(line);
+    }
+    if (!log_ok) {
+        wsprintfA(line, "win32craft.log cannot be created, GetLastError=%lu", (unsigned long)probe_error);
+        log_line(line);
+        OutputDebugStringA(line);
+    }
+}
+
+static void arm32_boot_log_os_version(void)
+{
+    typedef LONG (WINAPI *RtlGetVersionFn)(void *);
+    struct {
+        DWORD size;
+        DWORD major;
+        DWORD minor;
+        DWORD build;
+        DWORD platform;
+        wchar_t service_pack[128];
+    } info;
+    HMODULE ntdll = GetModuleHandleW(L"ntdll.dll");
+    RtlGetVersionFn function = ntdll ? (RtlGetVersionFn)GetProcAddress(ntdll, "RtlGetVersion") : NULL;
+    char line[160];
+
+    ZeroMemory(&info, sizeof(info));
+    info.size = sizeof(info);
+    if (function && function(&info) >= 0) {
+        wsprintfA(line, "Windows version (RtlGetVersion): %lu.%lu build %lu", (unsigned long)info.major,
+                  (unsigned long)info.minor, (unsigned long)info.build);
+    } else {
+        wsprintfA(line, "Windows version: RtlGetVersion unavailable");
+    }
+    log_line(line);
+}
+
+/* facts winmain.host.bootstrap_signature / winmain.pe.*: PE machine 0x1C4 and SizeOfImage == IMAGE_SIZE_128_ARM_PATCHED.
+ * Returns 0 when the image is the patched 1.2.8 ARM32 exe, otherwise the code Win32Bootstrap must return. */
+static int arm32_boot_identify_image(BYTE *image)
+{
+    const BYTE *pe;
+    DWORD pe_offset;
+    WORD machine;
+    WORD sections;
+    WORD magic;
+    WORD dll_characteristics;
+    DWORD size_of_image;
+    DWORD entry_point;
+    DWORD preferred_base;
+    DWORD timestamp;
+    char line[320];
+
+    if (!image || IsBadReadPtr(image, 0x40) || image[0] != 'M' || image[1] != 'Z') {
+        log_pointer("image identification: no MZ header at the exe module base", image);
+        return ARM32_BOOT_BAD_PE_HEADER;
+    }
+    pe_offset = *(const DWORD *)(image + 0x3c);
+    if (pe_offset < 0x40 || pe_offset > 0x1000 || IsBadReadPtr(image + pe_offset, 0x100) ||
+        *(const DWORD *)(image + pe_offset) != 0x00004550u) {
+        wsprintfA(line, "image identification: e_lfanew=%08lx does not point to a PE signature",
+                  (unsigned long)pe_offset);
+        log_line(line);
+        return ARM32_BOOT_BAD_PE_HEADER;
+    }
+    pe = image + pe_offset;
+    machine = *(const WORD *)(pe + 4);
+    sections = *(const WORD *)(pe + 6);
+    timestamp = *(const DWORD *)(pe + 8);
+    magic = *(const WORD *)(pe + 0x18);
+    entry_point = *(const DWORD *)(pe + 0x28);
+    preferred_base = *(const DWORD *)(pe + 0x34);
+    size_of_image = *(const DWORD *)(pe + 0x50);
+    dll_characteristics = *(const WORD *)(pe + 0x5e);
+    wsprintfA(line, "game image: base=%p preferred=%08lx machine=%04x magic=%04x sections=%u SizeOfImage=%08lx entry=%08lx "
+                    "DllCharacteristics=%04x timestamp=%08lx",
+              (void *)image, (unsigned long)preferred_base, (unsigned)machine, (unsigned)magic, (unsigned)sections,
+              (unsigned long)size_of_image, (unsigned long)entry_point, (unsigned)dll_characteristics,
+              (unsigned long)timestamp);
+    log_line(line);
+    if (machine != ARM32_PE_MACHINE_ARMNT || magic != ARM32_PE32_MAGIC) {
+        wsprintfA(line, "image identification FAILED: PE machine %04x / magic %04x, expected %04x (ARMNT) / %04x (PE32): "
+                        "this win32craft.dll build is only for the ARM32 Minecraft 1.2.8 exe",
+                  (unsigned)machine, (unsigned)magic, (unsigned)ARM32_PE_MACHINE_ARMNT, (unsigned)ARM32_PE32_MAGIC);
+        log_line(line);
+        return ARM32_BOOT_BAD_PE_HEADER;
+    }
+    if (size_of_image != IMAGE_SIZE_128_ARM_PATCHED) {
+        wsprintfA(line, "image identification FAILED: SizeOfImage %08lx, expected %08lx (patched ARM32 1.2.8 exe).%s",
+                  (unsigned long)size_of_image, (unsigned long)IMAGE_SIZE_128_ARM_PATCHED,
+                  size_of_image == IMAGE_SIZE_128_ARM_STOCK
+                      ? " 0x01730000 is the stock exe: the ARM patcher was not applied."
+                      : (size_of_image == IMAGE_SIZE_128_ARM_FALLBACK_SECTION
+                             ? " 0x01732000 is the patcher's .d3tr fallback layout: add it to the gate."
+                             : " Unknown Minecraft build."));
+        log_line(line);
+        return ARM32_BOOT_BAD_IMAGE_SIZE;
+    }
+    if (dll_characteristics & 0x1000u) {
+        log_line("warning: DllCharacteristics still has IMAGE_DLLCHARACTERISTICS_APPCONTAINER (patcher step missing)");
+    }
+    if (sections != 8) {
+        wsprintfA(line, "warning: %u sections, the patched exe has 8 (7 + .d3imp)", (unsigned)sections);
+        log_line(line);
+    }
+    if ((DWORD)(ULONG_PTR)image != preferred_base) {
+        wsprintfA(line, "image was rebased: %p instead of %08lx (all host RVAs are image-relative, nothing to do)",
+                  (void *)image, (unsigned long)preferred_base);
+        log_line(line);
+    }
+    log_line("image identification: patched Minecraft 1.2.8 ARM32 exe (machine 0x01C4, SizeOfImage 0x01731000)");
+    return 0;
+}
+
+/* one log line at the first frames, then every 600th frame and at a few fixed counts (frame 1 is usually by far the
+ * slowest: shader compilation, pack loading) */
+static void arm32_boot_note_frame(LONG frame, DWORD loop_start, DWORD frame_ms)
+{
+    static LONG next_periodic = 600;
+    static LONG slow_logged;
+    BOOL milestone = frame <= 3 || frame == 5 || frame == 10 || frame == 30 || frame == 60 || frame == 120 ||
+                     frame == 300 || frame >= next_periodic;
+    char line[200];
+
+    if (frame >= next_periodic) next_periodic += 600;
+    if (milestone) {
+        wsprintfA(line, "frame %ld complete: %lu ms since the loop started, this frame took %lu ms", (long)frame,
+                  (unsigned long)(GetTickCount() - loop_start), (unsigned long)frame_ms);
+        log_line(line);
+    } else if (frame_ms >= 1000u && slow_logged < 20) {
+        ++slow_logged;
+        wsprintfA(line, "slow frame %ld: %lu ms", (long)frame, (unsigned long)frame_ms);
+        log_line(line);
+    }
+}
+
+/* One game frame.  appmain contract: `static int render_game_target_128(void)`, nonzero = the game asked to quit.  Until the
+ * appmain unit replaces the pristine `static void` definition the call is treated as "never quits", so this unit also
+ * compiles (and is validated) on its own; with appmain applied the int result is used. */
+#define ARM32_BOOT_RENDER_FRAME()     __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(render_game_target_128()), void),                           (render_game_target_128(), 0), render_game_target_128())
+
+/* PeekMessage pump + game frame, until WM_QUIT.  Returns the WM_QUIT wParam (0 for a normal window close / game quit). */
+static int arm32_boot_run_loop(HWND window)
+{
+    MSG message;
+    DWORD loop_start = GetTickCount();
+    BOOL quit_requested = FALSE;
+    char line[200];
+
+    log_line("Win32 message/frame loop entered");
+    arm32_boot_step("main loop");
+    for (;;) {
+        while (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE)) {
+            if (message.message == WM_QUIT) {
+                wsprintfA(line, "message loop ended (WM_QUIT, wParam=%d) after %ld frames, %lu ms",
+                          (int)message.wParam, (long)arm32_boot_frames_done,
+                          (unsigned long)(GetTickCount() - loop_start));
+                log_line(line);
+                return (int)message.wParam;
+            }
+            TranslateMessage(&message);
+            DispatchMessageW(&message);
+        }
+        drain_dispatcher_queue();
+        refresh_relative_mouse_from_client_128();
+        update_mouse_capture(window);
+        if (!quit_requested) {
+            LONG frame = InterlockedIncrement(&arm32_boot_frames_started);
+            DWORD frame_start = GetTickCount();
+            int quit;
+
+            if (frame <= 3) {
+                wsprintfA(line, "frame %ld: entering render_game_target_128", (long)frame);
+                log_line(line);
+            }
+            quit = ARM32_BOOT_RENDER_FRAME();
+            InterlockedIncrement(&arm32_boot_frames_done);
+            arm32_boot_note_frame(frame, loop_start, GetTickCount() - frame_start);
+            if (quit) {
+                /* appmain facts: AppMain::update_frame returned MinecraftGame+9 (quit requested).  The frame function
+                 * also posts WM_CLOSE once; WM_QUIT makes the exit independent of the window state. */
+                quit_requested = TRUE;
+                wsprintfA(line, "game requested quit after frame %ld: posting WM_QUIT", (long)frame);
+                log_line(line);
+                PostQuitMessage(0);
+            }
+        }
+        InterlockedIncrement(&arm32_boot_loop_passes);
+        InterlockedIncrement(&arm32_boot_progress);
+        /* Yield without adding a 1 ms software frame cap. */
+        Sleep(0);
+    }
+}
+
+int WINAPI Win32Bootstrap(void)
+{
+    WNDCLASSEXW klass;
+    HWND window;
+    HINSTANCE instance = GetModuleHandleW(NULL);
+    BYTE *image = (BYTE *)instance;
+    HRESULT ro_result;
+    RECT client;
+    int code;
+    char line[320];
+
+    game_image = image;
+    game_window = NULL;
+    arm32_boot_start_tick = GetTickCount();
+    game115_main_thread_id = GetCurrentThreadId();   /* log_115_main_thread_context() (watchdog) snapshots this thread */
+    arm32_boot_setup_paths_and_log();
+    arm32_boot_log_os_version();
+    arm32_boot_start_watchdog();
+
+    arm32_boot_step("identify image");
+    code = arm32_boot_identify_image(image);
+    if (code) return arm32_boot_fail(code, "image identification");
+
+    host_is_128 = TRUE;
+    host_is_115 = FALSE;
+    host_is_116 = FALSE;
+    host_is_windows7 = FALSE;   /* GetVersion is never 6.1 for the 6.2 ARM exe; no Windows 7 branch is used on ARM */
+    log_line("host flags: host_is_128=1 host_is_115=0 host_is_116=0 host_is_windows7=0");
+
+    arm32_boot_step("host options");
+    Win32CraftParseHostOptions();
+    arm32_boot_step("crash trace");
+    install_crash_trace();
+    log_line("crash trace installed (unhandled + vectored exception handlers)");
+
+    arm32_boot_step("RoInitialize");
+    ro_result = RoInitialize(RO_INIT_MULTITHREADED);
+    log_hresult("RoInitialize(RO_INIT_MULTITHREADED) [native combase]", ro_result);
+    if (FAILED(ro_result) && ro_result != (HRESULT)0x80010106) {
+        log_line("warning: RoInitialize failed - real WinRT activations of the game will fail");
+    }
+
+    arm32_boot_step("user data");
+    create_user_data();
+    if (!game_data_path[0]) {
+        /* SHGetFolderPathW(CSIDL_APPDATA) failed (logged by create_user_data): keep the game away from an empty path */
+        lstrcpyW(game_data_path, package_path);
+        lstrcatW(game_data_path, L"\\MinecraftPE");
+        CreateDirectoryW(game_data_path, NULL);
+        log_line("warning: user data folder fallback next to the exe");
+    }
+    arm32_boot_narrow(line, sizeof(line), game_data_path);
+    {
+        char text[2 * MAX_PATH + 64];
+        wsprintfA(text, "game data root (fake ApplicationData.LocalFolder): %s", line);
+        log_line(text);
+        arm32_boot_narrow(line, sizeof(line), package_path);
+        wsprintfA(text, "package root (fake Package.InstalledLocation): %s", line);
+        log_line(text);
+    }
+
+    arm32_boot_step("IAT hooks");
+    if (!install_arm32_iat_hooks(image)) {
+        return arm32_boot_fail(ARM32_BOOT_IAT_HOOKS_FAILED, "install_arm32_iat_hooks returned FALSE (mandatory hook missing)");
+    }
+    log_line("IAT hooks installed");
+    arm32_boot_step("platform fixes");
+    if (!install_arm32_platform_fixes(image)) {
+        return arm32_boot_fail(ARM32_BOOT_PLATFORM_FIXES_FAILED, "install_arm32_platform_fixes returned FALSE");
+    }
+    log_line("platform fixes installed");
+    arm32_boot_step("input hooks");
+    if (!install_arm32_input_hooks(image)) {
+        return arm32_boot_fail(ARM32_BOOT_INPUT_HOOKS_FAILED, "install_arm32_input_hooks returned FALSE");
+    }
+    log_line("input hooks installed");
+    arm32_boot_step("client-state hook");
+    if (!install_client_state_hook_128(image)) {
+        log_line("Minecraft 1.2.8 client-state hook validation failed: continuing without it "
+                 "(mouse capture / text-input focus detection will not work)");
+    } else {
+        log_line("client-state hook installed");
+    }
+    log_line("Win32Craft 1.2.8 ARM32 mode active");
+
+    arm32_boot_step("window class");
+    ZeroMemory(&klass, sizeof(klass));
+    klass.cbSize = sizeof(klass);
+    klass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    klass.lpfnWndProc = window_proc;
+    klass.hInstance = instance;
+    klass.hCursor = LoadCursorW(NULL, MAKEINTRESOURCEW(32512));
+    klass.hbrBackground = (HBRUSH)(ULONG_PTR)(COLOR_WINDOWTEXT + 1);
+    klass.lpszClassName = L"MCPE128Win32";
+    if (!RegisterClassExW(&klass) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
+        wsprintfA(line, "RegisterClassExW failed, GetLastError=%lu", (unsigned long)GetLastError());
+        return arm32_boot_fail(ARM32_BOOT_REGISTER_CLASS_FAILED, line);
+    }
+    arm32_boot_step("create window");
+    window = CreateWindowExW(
+        0, klass.lpszClassName, L"Win32Craft 1.2.8",
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+        CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720,
+        NULL, NULL, instance, NULL);
+    if (!window) {
+        wsprintfA(line, "CreateWindowExW failed, GetLastError=%lu", (unsigned long)GetLastError());
+        return arm32_boot_fail(ARM32_BOOT_CREATE_WINDOW_FAILED, line);
+    }
+    game_window = window;
+    initial_menu_cursor_guard = TRUE;
+    if (GetClientRect(window, &client)) {
+        wsprintfA(line, "HWND created: %p, client area %ldx%ld", (void *)window,
+                  (long)(client.right - client.left), (long)(client.bottom - client.top));
+    } else {
+        wsprintfA(line, "HWND created: %p", (void *)window);
+    }
+    log_line(line);
+
+    arm32_boot_step("initialize_game_d3d");
+    if (!initialize_game_d3d(window)) {
+        log_line("Minecraft 1.2.8 D3D bootstrap failed");
+        return arm32_boot_fail(ARM32_BOOT_D3D_FAILED, "initialize_game_d3d returned FALSE");
+    }
+    log_line("Minecraft 1.2.8 D3D bootstrap ok");
+    arm32_boot_step("initialize_game_app_128");
+    if (!initialize_game_app_128(image)) {
+        log_line("Minecraft 1.2.8 AppMain bootstrap failed");
+        return arm32_boot_fail(ARM32_BOOT_APPMAIN_FAILED, "initialize_game_app_128 returned FALSE");
+    }
+    log_line("Minecraft 1.2.8 AppMain bootstrap ok");
+    arm32_boot_step("activate_game_app_128");
+    if (!activate_game_app_128(window)) {
+        log_line("Minecraft 1.2.8 activation bootstrap failed");
+        return arm32_boot_fail(ARM32_BOOT_ACTIVATE_FAILED, "activate_game_app_128 returned FALSE");
+    }
+    log_line("Minecraft 1.2.8 activation bootstrap ok");
+
+    /* initial mouse mode exactly like x86: the startup listeners leave one stale relative request although the first
+     * visible screen is the main menu */
+    host_relative_requested = FALSE;
+    mouse_clip_dirty = TRUE;
+    set_game_relative_actual(FALSE);
+    update_mouse_capture(window);
+    log_line("Minecraft 1.2.8 D3D/AppMain bootstrap ready");
+
+    code = arm32_boot_run_loop(window);
+    arm32_boot_watchdog_stop = 1;
+    wsprintfA(line, "Win32Bootstrap returning %d", code);
+    log_line(line);
+    return code;
+}
+#else
+int WINAPI Win32Bootstrap(void)
+{
+    WNDCLASSEXW klass;

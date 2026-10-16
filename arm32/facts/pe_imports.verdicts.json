@@ -1,0 +1,219 @@
+{
+ "area": "pe_imports",
+ "verdicts": [
+  {
+   "id": "pe_imports.import_directory",
+   "verdict": "CONFIRMED",
+   "note": "Own PE parser: DataDirectory[1] = 0x013269a8 size 0x3fc = 51*20 (50 descriptors + terminator). 716 imports; every (dll,name)->IAT cell in imports_table.json matches my parse (set equality, 0 diffs); all 186 thunk_rva entries decode to movw/movt/ldr.w pc,[ip] of the stated cell."
+  },
+  {
+   "id": "pe_imports.iat_directory",
+   "verdict": "CONFIRMED",
+   "note": "DataDirectory[12] = 0xc37000 size 0xbf8 reproduced; guard cell 0xC37BF8 sits right after it."
+  },
+  {
+   "id": "pe_imports.delay_directory",
+   "verdict": "CONFIRMED",
+   "note": "DataDirectory[13] = 0x131f20c size 0x60; descriptors at 0x131f20c (tcui-l1-1-0, IAT 0x15121fc, 2 cells) and 0x131f22c (tcui-l1-1-2, IAT 0x1512208, 1 cell), attributes=1; x86 reads optional+0xc8/0xcc = DataDirectory[13] on PE32, same on ARM."
+  },
+  {
+   "id": "pe_imports.pe_header_flags",
+   "verdict": "CONFIRMED",
+   "note": "Read tools/1.2.8-patcher.py: 0x0102->0x0122, OS/subsys minor 2->1, DllChars 0x9140->0x8100. ARM header: Characteristics already 0x0122, OS 6.2, subsystem 6.2 (GUI), DllCharacteristics 0x9140; clearing only APPCONTAINER (->0x8140) is consistent with the finder plan."
+  },
+  {
+   "id": "pe_imports.patcher_new_section",
+   "verdict": "CONFIRMED",
+   "note": "Recomputed: last section .reloc VA 0x1674000 + max(vsize 0xBBD28, rsize 0xBBE00) -> aligned 0x1730000; file size 0x1680a00 (0x200-aligned) = new raw offset; section-table slot at 0x350 is zero and 0x378 <= SizeOfHeaders 0x400; new descriptor count 50+0+2=52 (x86 formula len+compat+2); new SizeOfImage 0x1731000."
+  },
+  {
+   "id": "pe_imports.dll_renames",
+   "verdict": "CONFIRMED",
+   "note": "Raw byte search of the exe: each of vccorlib140_app.DLL/MSVCP140_APP.dll/CONCRT140_APP.dll/VCRUNTIME140_APP.dll occurs exactly once (0x1328cde, 0x132c3c8, 0x132cd0a, 0x132ce36); no other *_APP.dll string anywhere. fmod_ARM.dll contains VCRUNTIME140_APP.dll once at 0xf989a."
+  },
+  {
+   "id": "pe_imports.fmod_dll_name",
+   "verdict": "CONFIRMED",
+   "note": "x86 patcher expects 2 occurrences of fmod_X86.dll (source). ARM exe has fmod_ARM.dll once at file 0x13277ea (normal import), no fmod_X86; no rename needed. fmod_ARM.dll is import #2 with 39 cells 0xc37a58..0xc37af0."
+  },
+  {
+   "id": "pe_imports.kernel32_placeholders",
+   "verdict": "CONFIRMED",
+   "note": "Patcher source read; the ARM exe has NO KERNEL32/KERNELBASE descriptor; ResolveDelayLoadedAPI is imported from api-ms-win-core-delayload-l1-1-1 (cell 0xc375f8), DelayLoadFailureHook from -l1-1-0 (0xc375f0), CreateFile2 from file-l1-2-0 (0xc3765c); ResolveDelayLoadsFromDll not imported."
+  },
+  {
+   "id": "pe_imports.api_set_redirect_set",
+   "verdict": "CONFIRMED",
+   "note": "All 7 WIN32CRAFT_API_SETS names are present as descriptors in the ARM exe (XINPUTUAP 1, com-l1-1-0 8, winrt-error-l1-1-0 2, -1-1 1, winrt-l1-1-0 1, winrt-string 8, eventing 4 = 25 funcs); dxgi.dll absent, d3d11.dll only D3D11CreateDevice. Independent resolve test on this Win11 machine (ctypes LoadLibraryEx + GetProcAddress for all non-runtime imports) found 0 missing names, so only XINPUTUAP is a design-required redirect; others optional."
+  },
+  {
+   "id": "pe_imports.d3d11_dxgi_redirect",
+   "verdict": "CONFIRMED",
+   "note": "Patcher: dxgi.dll/d3d11.dll descriptors repointed to win32craft.dll; .def exports D3D11CreateDevice, CreateDirect3D11DeviceFromDXGIDevice, CreateDXGIFactory2. ARM exe imports no dxgi and system d3d11 exports D3D11CreateDevice, so the redirect is dropped."
+  },
+  {
+   "id": "pe_imports.cxx_throw_iat",
+   "verdict": "CONFIRMED",
+   "note": "VCRUNTIME140_APP!_CxxThrowException cell 0xc374e4 (my parse); thunk 0xB4A100 bytes match; my own BL scan finds 2908 callers; no raw VA/movw-movt reference to the cell outside the thunk; desktop vcruntime140 exports it as ordinal 2. x86 hook signature is void(void*,const void*) and tail-calls the original."
+  },
+  {
+   "id": "pe_imports.create_file2_iat",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0xc3765c (api-ms-win-core-file-l1-2-0!CreateFile2); the only user is sub_98957c at 0x9895c4 loading the cell via movw/movt+ldr (no thunk); 5th arg [sp] = 0 so extended parameters are NULL. x86 hook dropped (native on Win8+)."
+  },
+  {
+   "id": "pe_imports.activation_factory_iat",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0xc37bf0 = GetActivationFactoryByPCWSTR; thunk 0xB49100, wrapper 0xB48F88 (bytes match); my BL scan finds exactly 102 bl sites to the wrapper and 0 direct to the thunk; sampled caller 0x56e908 passes L-string r0, 16-byte GUID {35,0,C0,46000000} r1, out r2 and throws on <0. Desktop vccorlib140 exports it at RVA 0x22C31. Signature maps 1:1 to x86 GameActivationFn."
+  },
+  {
+   "id": "pe_imports.platform_object_ctor_iat",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0xc37b90 (??0Object@Platform@@Q$AAA@XZ), thunk 0xB49028, 24 callers (my BL scan 24). Sampled caller sub_580838 calls ctor then stores all vtables itself. Desktop ARM vccorlib140 export 0x1BEF1 is a real body (str vtable,[r0])."
+  },
+  {
+   "id": "pe_imports.platform_allocate1_iat",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0xc37b7c = ?Allocate@Heap@Details@Platform@@SAPAXI@Z (1 arg), thunk 0xB48FF8 (bytes match). x86 order Allocate1 (0x11d2aa8) then Allocate2 (+4) is reproduced on ARM (0xc37b7c, 0xc37b80). Desktop export 0x1B701 tail-jumps to the real allocator."
+  },
+  {
+   "id": "pe_imports.platform_allocate2_iat",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0xc37b80 = SAPAXII@Z (2 args), thunk 0xB49004, 114 bl sites. Desktop body (0x1B741) allocates alloc_size+0x18 and writes the control block plus a back pointer at obj+object_size, which confirms the x86 comment (zero only object_size bytes). Zeroing hook is unnecessary on real vccorlib."
+  },
+  {
+   "id": "pe_imports.get_ibox_array_vtable_iat",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0xc37b88 = GetIBoxArrayVtable, thunk 0xB49010 (bytes match), 4 callers. Desktop export 0x66B1 returns a constant (ldr r0,[pc]); it does NOT return object[1]."
+  },
+  {
+   "id": "pe_imports.get_ibox_vtable_iat",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0xc37bc8 = GetIBoxVtable, thunk 0xB49088, 4 callers. Caller sub_580838 does: store CustomBox vtables at [obj..], r0=GetIBoxVtable(obj), str r0,[obj,#4]. Desktop export 0x4711 returns a constant. NOTE: the x86 hook (return object[1]) would replace that native vtable with the object's own CustomBox vtable, so it is not merely defensive: do NOT install it on ARM."
+  },
+  {
+   "id": "pe_imports.vccorlib_hooks_necessity",
+   "verdict": "CONFIRMED",
+   "note": "Names, cells and contiguity reproduced (b7c,b80,b88,b90,bc8 + bf0). Conclusion 'optional/off' is right, but the wording 'defensive zeroing only' hides that the two IBox hooks and the Object-ctor no-op change behaviour on native vccorlib (IBox vtable result is written back to obj+4 by generated code; native ctor writes the Object vtable to [r0], which generated code then overwrites). Recommend: install none of the five on ARM; if a compat flag is kept, only the Allocate zeroing is harmless."
+  },
+  {
+   "id": "pe_imports.d3d_compile_iat",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0xc370b4 (D3DPreprocess 0xc370b0, D3DReflect 0xc370b8), thunk 0xA3B944; single bl at 0x5be4ba; disassembly shows 7 stack stores [sp..sp+0x18] (include [sp], 'main' [sp+4], target [sp+8], flags 0x8000 [sp+0xc], f2 [sp+0x10], code [sp+0x14], errors [sp+0x18]) = x86 order. The game passes its own non-null ID3DInclude at [sp], so the x86 include-proxy path is exercised."
+  },
+  {
+   "id": "pe_imports.d3d11_create_device_iat",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0xc37a50, thunk 0xA3B968, caller 0x5bc3a0: stack args at [sp]=levels,[sp+4]=count,[sp+8]=7 (SDK),[sp+0xc]=ppDevice,[sp+0x10]=pFeatureLevel,[sp+0x14]=ppContext = 10 args total. x86 hook also ORs BGRA (0x20), which the finder notes as still needed."
+  },
+  {
+   "id": "pe_imports.tcui_show_profile_iat",
+   "verdict": "CONFIRMED",
+   "note": "Delay cell 0x15121fc = ShowProfileCardUI (descriptor tcui-l1-1-0 INT order Show, Process); initial value 0x00f4a2cd; reloc type 3 present; thunk 0xB4A2DC bytes match. x86 const 0x1724400 = base+4 = slots[1], so ARM slots[0] (swap) is right."
+  },
+  {
+   "id": "pe_imports.tcui_process_pending_iat",
+   "verdict": "CONFIRMED",
+   "note": "Delay cell 0x1512200 = ProcessPendingGameUI (slots[1] on ARM; x86 const 0x17243fc was slots[0]); initial 0x00f4a2e9; thunk 0xB4A2F8."
+  },
+  {
+   "id": "pe_imports.tcui_show_profile_user_iat",
+   "verdict": "CONFIRMED",
+   "note": "Delay cell 0x1512208 = ShowProfileCardUIForUser (tcui-l1-1-2), initial 0x00f4a32d, thunk 0xB4A33C; slot 0x1512204 is zero without reloc (terminator)."
+  },
+  {
+   "id": "pe_imports.tcui_cell_layout",
+   "verdict": "CONFIRMED",
+   "note": "Memory dump: 0x15121fc=0xf4a2cd, 0x1512200=0xf4a2e9, 0x1512204=0, 0x1512208=0xf4a32d; one 16-byte protect span is right; x86 wrote slots[0]=process,[1]=show,[3]=forUser which maps to ARM [1],[0],[3]."
+  },
+  {
+   "id": "pe_imports.tcui_noop_abi",
+   "verdict": "CONFIRMED",
+   "note": "Only caller (chat_xbox wrapper 0xa3e014): ForUser(user r0, hstring r1, ctx r2, cb r3), Show(hstring r0, ctx r1, cb r2), ProcessPending(1). Result handling: r4>=0 or r4==0x8000000A (E_PENDING) -> ProcessPending(1) then event wait(INFINITE); otherwise skip. So E_NOTIMPL from the Show/ForUser no-ops avoids the infinite wait, exactly as in the x86 comment."
+  },
+  {
+   "id": "pe_imports.resolve_fmod_delay_imports",
+   "verdict": "CONFIRMED",
+   "note": "fmod_ARM.dll is a regular import (39 cells at 0xc37a58, count verified, all 39 mangled names exported by fmod_ARM.dll; 1087 exports). The only delay descriptors are the two TCUI ones, so the x86 function (searches a delay descriptor named fmod.dll) must not be called on ARM."
+  },
+  {
+   "id": "pe_imports.fmod_iat_cells",
+   "verdict": "CONFIRMED",
+   "note": "First cell 0xc37a58 (?getVersion@System@FMOD), 39 cells to 0xc37af0, FMOD_System_Create at 0xc37acc; vccorlib block begins at 0xc37af8."
+  },
+  {
+   "id": "pe_imports.delay_load_plumbing",
+   "verdict": "CONFIRMED",
+   "note": "sub_b4a3f0 (pdata start, 16 bytes match): r0=0x400000 (pool), r1=desc, r2=*[VA 0x10fbb48]=0, r3=pool 0xf4a611 (DelayLoadFailureHook thunk), [sp]=cell, [sp+4]=*[VA 0x10fbb44]=0; lazy stubs/descriptors as stated; the only delay thunks are the 3 TCUI ones. Stubs not required once cells are pre-patched. (Note: cells are reloc-covered so loader base fixups run before the host overwrites them.)"
+  },
+  {
+   "id": "pe_imports.winmain_call_site",
+   "verdict": "CONFIRMED",
+   "note": "Site 0xb49aca = bl 0xb4a424 (bytes 00f0abfc, file 0xB48ECA) in __scrt_common_main_seh (pdata start 0xb49a24), preceded by r0=0x400000 (pool), r1=0, r2=_get_narrow_winmain_command_line, r3; result moved to r4 at 0xb49ace; only caller of 0xb4a424. NOTE on the RoInitialize remark: __scrt_initialize_winrt (0xb49cd0) is gated by [VA 0x1914e00], which is 0 in the file and never written (only one reader), so IT does not call RoInitialize. The MTA init that makes the host's RoInitialize return S_FALSE really comes from _initterm_e table entries sub_b48f44 (sets mode [0x1514df8]=2) then vccorlib InitializeData(2) -> RoInitialize(1) (desktop vccorlib 0x220C1 maps mode!=1 to MTA). End effect identical."
+  },
+  {
+   "id": "pe_imports.win32bootstrap_abi",
+   "verdict": "CONFIRMED",
+   "note": "Read Win32Bootstrap (win32_host.c:14856): pe_offset=*(image+0x3c), image_size=*(pe_offset+0x50) (=optional+0x38 SizeOfImage), GetVersion 6.1 test. On ARM SizeOfImage must be the new 0x01731000 which the gate has to learn."
+  },
+  {
+   "id": "pe_imports.win7_dxgi_device3_iid",
+   "verdict": "CONFIRMED",
+   "note": "patch_win7_dxgi_device3_query_to_base returns TRUE immediately unless host_is_windows7 -> inert on ARM."
+  },
+  {
+   "id": "pe_imports.win7_discard_views",
+   "verdict": "CONFIRMED",
+   "note": "patch_win7_discard_views returns TRUE at the top unless host_is_windows7 -> inert on ARM."
+  },
+  {
+   "id": "pe_imports.exports_required",
+   "verdict": "CONFIRMED",
+   "note": "win32craft.def has 130 export entries (132 lines incl. LIBRARY/EXPORTS). Required for ARM: Win32Bootstrap + XInputGetState (Win32CraftXInputGetState tries xinput1_4/1_3/9_1_0). All 22 'optional parity' names are in the .def. My comparison of exe imports from generic kernel contracts against .def reproduces the finder's 13-name contingency list exactly."
+  },
+  {
+   "id": "pe_imports.hstring_world",
+   "verdict": "CONFIRMED",
+   "note": "api_compat.c:150-162 gate is SizeOfImage==0x02db1000; non-matching images use the fake magic HSTRING and WindowsGetStringRawBuffer returns L\"\" for foreign handles. win32_host.c itself calls WindowsCreateString/WindowsGetStringRawBuffer ~20 times to hand HSTRINGs to the exe, so on ARM the forwarding to combase is needed in every configuration, not only when imports are redirected. Desktop ARM vccorlib140 imports api-ms-win-core-winrt-string/winrt/com/winrt-error (real contracts)."
+  },
+  {
+   "id": "pe_imports.desktop_crt_compare",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced with llvm-readobj --coff-exports (256/1493/291/71 exports) and my own import parse: 63/258/43/19 imports, 0 missing in all four. Minor inaccuracy in the md: the desktop vccorlib140.dll also imports OLEAUT32.dll (not only low api-sets + crt); harmless system DLL. msvcp140/concrt140 additionally import threadpool-l1-2-0 and rtlsupport-l1-1-0 contracts."
+  },
+  {
+   "id": "pe_imports.fmod_arm_dll_load",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced: 27 descriptors/129 funcs; sha256 5f92f5ac; only VCRUNTIME140_APP.dll unresolved (11 names all exported by desktop vcruntime140), name at file 0xf989a; DllCharacteristics 0x1140 at file 0x17E; func 0x79300 refs Package (0x79652) and ApplicationData (0x7971e) strings, failure path movlt r4,#0x1c; chain bl 0x79300 at 0x8905c (bne error) <- bl 0x89024 at 0x94608. APPCONTAINER-DLL load and package-identity failure remain untestable here (medium is right)."
+  },
+  {
+   "id": "pe_imports.native_api_set_availability",
+   "verdict": "CONFIRMED",
+   "note": "Win10+ half reproduced independently (ctypes on this Win11: every non-_APP/non-fmod import resolves, incl. XINPUTUAP). Windows RT 8.1 half is knowledge-based and cannot be verified locally; manifest MinVersion 10.0.10000.0 confirmed. fmod_ARM.dll additionally needs processthreads-l1-1-2, com-l1-1-1, file-l1-2-1, file-l2-1-1, errorhandling-l1-1-1, sysinfo-l1-2-1, interlocked-l1-2-0 which are Win10-era versions (8.1 availability unverified)."
+  },
+  {
+   "id": "pe_imports.activation_class_set",
+   "verdict": "CONFIRMED",
+   "note": "Independent BL scan of all 102 wrapper call sites with my own movw/movt decoder + manual resolution of the 4 sites outside my window: same 67 distinct names, same per-class counts. Parsed x86 lstrcmpW list (win32_host.c:7517-7836): 32 names, 27 requested by ARM, exactly the finder's faked list; 5 x86-only names (ResourceManager, Gamepad, ThreadPool, Xaml.Application, Xaml.Window) not requested."
+  },
+  {
+   "id": "pe_imports.reloc_aslr_rule",
+   "verdict": "CONFIRMED",
+   "note": ".reloc at 0x1674000 size 0xbbd28 (dir 5); x86 patcher clears DYNAMIC_BASE for its absolute patch; on ARM DYNAMIC_BASE and relocs must stay (relocs present, no RELOCS_STRIPPED)."
+  },
+  {
+   "id": "pe_imports.exe_exports_irrelevant",
+   "verdict": "CONFIRMED",
+   "note": "Export directory 0x131f2e0 size 0x76c8 holds 284 cpprest exports; unrelated to imports/patching."
+  }
+ ],
+ "missing": [
+  "fmod_ARM.dll patch details: DllCharacteristics (APPCONTAINER 0x1000) is at file offset 0x17E (value 0x1140 -> 0x0140) if the optional clear is wanted; the VCRUNTIME140_APP.dll string offset 0xf989a is correct. No fact gives the 0x17E offset.",
+  "RoInitialize provenance: the exe never calls RoInitialize itself at runtime (CRT __scrt_initialize_winrt is dead via flag [0x1514e00]=0); the MTA comes from vccorlib InitializeData(2) in the _initterm_e table before WinMain. If the patch site were ever moved earlier than the initterm run, the host's RoInitialize would be the first (S_OK, not S_FALSE).",
+  "Hooking of vccorlib IBox cells on ARM would be harmful (native returns a constant vtable; generated code stores it to obj+4) - port_instructions[4] says 'if kept keep the span' without this warning.",
+  "Exe-side shims that the host's HSTRING export set must satisfy are listed, but the HSTRING SizeOfImage gate in api_compat.c (0x02db1000) and the Win32Bootstrap gate (IMAGE_SIZE_128_PATCHED) are the two places that must both learn 0x01731000; only the Bootstrap one has an explicit instruction.",
+  "Bootstrap callees patch_xbox_actions_noop and patch_chat_textbox_compat have no pe_imports fact (they are covered in chat_xbox.json / platform_fixes.json); install_crash_trace x86 CONTEXT usage is covered in winmain.json / chat_xbox.json.",
+  "No fact for fmod_ARM.dll's own api-ms-win-core-winrt-l1-1-0/-string imports (RoGetActivationFactory, RoInitialize, RoUninitialize, WindowsCompareStringOrdinal, WindowsCreateStringReference, WindowsGetStringRawBuffer) as a patch/redirect candidate with the .def (the .def exports RoGetActivationFactory only as a REGDB_E_CLASSNOTREG stub); only mentioned in an open question.",
+  "D3DPreprocess (0xc370b0, caller 0x5be19e) is not hooked on x86; no fact states that the ARM game passes the same include object to D3DPreprocess as the x86 build (finder asserts it)."
+ ]
+}

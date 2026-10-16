@@ -1,0 +1,3 @@
+static HRESULT WINAPI win32_get_activation_factory(
+    LPCWSTR class_name, const GUID *iid, void **result)
+{

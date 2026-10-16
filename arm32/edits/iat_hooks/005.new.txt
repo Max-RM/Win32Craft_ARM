@@ -1,0 +1,16 @@
+    protected_size = last_rva - first_rva + sizeof(void *);
+#ifdef WIN32CRAFT_ARM32
+    /* facts pe_imports.vccorlib_hooks_necessity (+ verdict): the desktop ARM vccorlib140.dll implements all five imports.
+     * The two IBox hooks would REPLACE the native vtable result that generated code stores to obj+4 and the Object ctor
+     * no-op skips a native vtable store, so none of them may be installed on ARM.  This function is not called there. */
+    (void)slot;
+    (void)allocate2_slot;
+    (void)allocate1_slot;
+    (void)array_slot;
+    (void)box_slot;
+    (void)old_protection;
+    (void)ignored;
+    (void)protected_size;
+    log_line("ARM32: install_vccorlib_compat refused (native vccorlib140 serves all five imports)");
+    return FALSE;
+#endif

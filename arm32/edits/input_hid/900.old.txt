@@ -1,0 +1,3 @@
+    if (installed) return TRUE;
+    if (!image) return FALSE;
+    sites[0].name = "relative mouse hook";

@@ -1,0 +1,2 @@
+__attribute__((naked)) static void win32_115_restore_adapter_references(void)
+{

@@ -1,0 +1,7 @@
+LIBRARY api-ms-win-core-processthreads-l1-1-2.dll
+EXPORTS
+CreateThread=KERNEL32.CreateThread
+GetCurrentProcessId=KERNEL32.GetCurrentProcessId
+GetCurrentThreadId=KERNEL32.GetCurrentThreadId
+IsProcessorFeaturePresent=KERNEL32.IsProcessorFeaturePresent
+SetThreadPriority=KERNEL32.SetThreadPriority

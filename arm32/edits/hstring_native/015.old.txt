@@ -1,0 +1,2 @@
+HRESULT WINAPI RoActivateInstance(HSTRING name, void **instance)
+{

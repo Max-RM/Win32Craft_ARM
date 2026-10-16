@@ -1,0 +1,3 @@
+    wsprintfA(line, "ARM32 WinRT fakes: %u NULL vtable slots now log and return E_NOTIMPL", filled);
+    log_line(line);
+}

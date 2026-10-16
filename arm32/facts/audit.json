@@ -1,0 +1,120 @@
+{
+ "gaps": [
+  {
+   "where": "facts/appmain.json: appmain.global_app_platform, appmain.global_dx_device_resources (verdict CORRECTED)",
+   "what": "[CORRECTED, not applied to JSON] arm_rva still holds the wrong values 0x01597ea8 and 0x0159adbc. Verifier-corrected values are 0x015b7ea8 (g_platform, written from AppMain+0x1c) and 0x015badbc (DX device resources). Both numbers were VA-0x420000 instead of VA-0x400000. Fold the corrections into the fact files so a consumer reading only the JSON does not use dead addresses. appmain.global_app_platform is also the global that update_frame/restart_game use to reach the main-thread task queue (platform vtable[89]).",
+   "suggestedArea": "appmain"
+  },
+  {
+   "where": "facts/input.json: input.text_focus_flag (verdict CORRECTED); host use at win32_host.c:12989 refresh_relative_mouse_from_client_128",
+   "what": "[CORRECTED, not applied to JSON] fact note still names the ARM MinecraftKeyboardManager vtable as 0x0135d010 (.?AVKeyboardManager@@, abstract base, all slots _purecall). Correct constant for the literal image+0x01569eac is 0x0135cfcc (matches client_state.keyboardmanager_vtable). Using 0x135d010 leaves text_input_active permanently FALSE (no chat or text entry). Update the fact text and arm_rva.",
+   "suggestedArea": "input"
+  },
+  {
+   "where": "facts/winmain.json: winmain.host.crash_trace_context, winmain.host.callees_in_bootstrap (verdict UNVERIFIABLE); win32_host.c:387-430 win32_unhandled_exception, 432-450 install_crash_trace, 11133-11205 win32_vectored_exception, 9588-9603 win32_cxx_throw",
+   "what": "[UNVERIFIABLE x2, still open] Both are host-side claims nobody signed off. Concrete ARM rewrite spec is missing: win32_unhandled_exception and win32_vectored_exception use CONTEXT.Eip/Esp/Ebp/Eax/Ebx/Ecx/Edx/Esi/Edi, an EBP-chain walk (frame[1] return, frame[0] link) and a DWORD stack scan from Esp (11192-11203); they do not compile for ARM32 (Pc/Sp/Lr/R0-R12). Game-range literals game_image+0x00c00000 at 11187 and 11198 should become [image+0x1000, image+0xC36E9C). The FMOD guard-page/Wine 0x80000001 branch (11146-11160, fmod_real_module) is dead on ARM. The chat_xbox verdict adds that win32_cxx_throw (the _CxxThrowException IAT hook, about 2900 callers via thunk 0xB4A100) must be a normal compiled function with valid .pdata unwind info (no naked asm) so C++ EH can unwind through it; this is not recorded in any port_instruction.",
+   "suggestedArea": "winmain"
+  },
+  {
+   "where": "win32_host.c:176 IMAGE_SIZE_128_PATCHED, 14870-14883 Win32Bootstrap gate; api_compat.c native_hstring_proc gate 0x02db1000; facts chat_xbox.image_size_gate, winmain.pe.size_of_image, pe_imports.patcher_new_section",
+   "what": "[inconsistency] Three different numbers for the image-size gate: chat_xbox.image_size_gate.arm_rva=0x01730000 (stock SizeOfImage, not the patched size), winmain.pe.size_of_image=0x01731000 (patched; becomes 0x01732000 if the .d3tr fallback section is used), pe_imports.patcher_new_section 0x01731000 only valid while .d3imp <= 0xFFF bytes. api_compat.c's HSTRING gate (SizeOfImage==0x02db1000) also has to learn the ARM value; only the Win32Bootstrap gate has an explicit instruction (pe_imports verdict). Need one authoritative constant and a checklist of every consumer (Bootstrap, native_hstring_proc, and the unrelated 0x02db1000 bootstrap_116 branch from win32_host_116.inl at 14854-14872 which should be removed).",
+   "suggestedArea": "winmain"
+  },
+  {
+   "where": "PE patch plan, .text section header (VirtualSize 0xC35E9C) vs trampoline at RVA 0xC36EA0 (winmain.trampoline_pic)",
+   "what": "[missing PE edit] winmain verifier: .text VirtualSize should be raised to 0xC35EB0 so the 12-byte trampoline at RVA 0xC36EA0 lies inside the declared section (loader maps it anyway, disassemblers/verifiers do not). Not in winmain.port_instructions[2] write order.",
+   "suggestedArea": "winmain"
+  },
+  {
+   "where": "win32_host.c:10885-10961 resolve_fmod_delay_imports_128 (called at 14978); x86 patcher rename fmod_X86.dll -> fmod.dll; fmod_ARM.dll (regular import in ARM exe)",
+   "what": "[unresolved runtime dependency, no audio plan] x86 swapped the UWP FMOD for a desktop fmod.dll resolved by the host. The ARM exe imports fmod_ARM.dll (a UWP build, DllCharacteristics 0x1140 APPCONTAINER, imports VCRUNTIME140_APP.dll). pe_imports open question: its output init (fn 0x79300) needs Windows.ApplicationModel.Package/Windows.Storage.ApplicationData and fails without package identity (FMOD_ERR_INTERNAL), and it uses real HSTRING class names through its own RoGetActivationFactory import. No fix chosen (patch fmod_ARM.dll vs fake those factories for its imports). Concrete patch values exist only in verdicts: VCRUNTIME140_APP.dll string at file 0xF989A (pe_imports port #12 gives it only as decimal 1022106), DllCharacteristics at file 0x17E (0x1140->0x0140, optional) which no fact states.",
+   "suggestedArea": "pe_imports"
+  },
+  {
+   "where": "win32_host.c:13792-13806 install_xbox_tcui_noops_128; ARM delay-import cells 0x015121FC/0x01512200/0x01512208 (initial values are delay-load lazy stubs, e.g. 0xB4A2CD)",
+   "what": "[unargued timing] Host overwrites .data delay-IAT cells with its no-ops; verdict says nobody argued the overwrite happens before the first delay-load call, nor that the exe's delay helper (ResolveDelayLoadedAPI/DelayLoadFailureHook imports; delayload-l1-1-1 availability on RT 8.1 unverified) cannot re-resolve and overwrite the cells later. Also the no-op prototypes (13760-13790) depend on ARM arg lists (ProcessPendingGameUI(BOOL), ShowProfileCardUI(HSTRING,void*,void*), ShowProfileCardUIForUser(void*,HSTRING,void*,void*)), only stated in port instructions.",
+   "suggestedArea": "winmain"
+  },
+  {
+   "where": "win32_host.c:8207-8309 install_vccorlib_compat + win32_get_ibox_vtable (8218-8226, returns ((void**)object)[1]) + win32_platform_allocate1/2 (8228-8257); unconditional call at 14920-14936",
+   "what": "[trap not in port_instructions] pe_imports.port[5] says make install_vccorlib_compat optional ('if kept keep the span') but omits the verifier warning: on ARM the native desktop vccorlib140 returns a constant vtable which generated code stores to obj+4, so hooking GetIBoxVtable/GetIBoxArrayVtable (cells 0xC37BC8/0xC37B88) with the x86 shim returning object[1] would be harmful. Allocate1/2 zeroing shims are Wine workarounds (0xC37B7C/0xC37B80), vccorlib allocator body not traced to HEAP_ZERO_MEMORY (open Q). Bootstrap must drop the call, or keep only a defensive, ARM-verified subset.",
+   "suggestedArea": "pe_imports"
+  },
+  {
+   "where": "win32_host.c:15086-15108 main loop, 11945-11978 render_game_target_128; game AppView::Run 0x5952d0 (pre-frame work, post-frame 0x5953a4-0x5953da)",
+   "what": "[unresolved behavior gap] host loop replicates only update_frame 0x57d3a8. AppView::Run additionally per iteration: pre-frame walks the game+0xd0 ClientInstance map and runs CoreDispatcher ProcessEvents (sub_574c48, dispatcher vtable[0x1c]); post-frame gates on platform+8 (via 0x112590 or global 0x15b7ea8): if platform+8!=0 then game+0x2f0!=0 -> sub_1314cc(game,1,0) (per-ClientInstance sub_1186f8(ci,1,0)) and game+0x1bc=AppMain, else AppMain vtable[1] restart_game. x86 0.15.10/1.1.5 hosts set platform+8=TRUE, the x86 1.2.8 host does not; no fact says who sets platform+8 on ARM or whether skipping the block matters. AppMain+4 restart flag setter also unidentified (restart recreates MinecraftGame -> cached game pointers stale). Needs an owner (xref writers of AppPlatform_Winrt+8, meaning of game+0x2f0/sub_1314cc).",
+   "suggestedArea": "appmain"
+  },
+  {
+   "where": "win32_host.c:11906-11943 activate_game_app_128 and 14135-14154 resize_game_window (write platform+0x330/+0x334 only); ARM AppPlatform_Winrt::vf143 0x583b94, MinecraftGame::update vf22 -> sub_12dee0 -> sub_134d40",
+   "what": "[cross-area gap] ARM device re-init copies owner+0x94/+0x98 into platform+0x330/+0x334, so the platform size silently reverts unless owner+0x94/+0x98 equal the client size. appmain open Q3 asks gfx to keep them in sync; gfx_device verdict: writers of owner+0x94/+0x98 never located. gfx_device.port[8] only mentions renderer+0xe8/+0xec. No fact or instruction covers owner+0x94/+0x98 (host initialize_game_d3d 11390-11410 / resize path would have to write them).",
+   "suggestedArea": "gfx_device"
+  },
+  {
+   "where": "win32_host.c:9960-10044 win32_present/install_swap_chain_present_hook (slot 8), 11571-11576, 11972-11976, 14125; ARM GameOwner::releaseDevice 0x5bf7ac, Display::present helper 0x5bf134",
+   "what": "[no fact] Present result handling: only DXGI_ERROR_DEVICE_REMOVED/RESET (mapped to gfx errors 2/3 via 0x5bf134) make the game call releaseDevice, which Releases owner device (+0xc0) and the renderer swap chain (+0x104) and zeroes +0xb8; the host win32_present hook must not forward those blindly or the game tears down host-owned objects. The slot 22 (Present1) hook is only in gfx_device.port[6] with no fact (selector [*(u8**)(0x15B86B0)+0x30], open Q whether it can become 0, QI IDXGISwapChain1 for renderer+0x104, mask ALLOW_TEARING 0x200). InitDevice's IDXGIAdapter3::SetVideoMemoryReservation (null-guarded) is not in facts.",
+   "suggestedArea": "gfx_device"
+  },
+  {
+   "where": "win32_host.c:11956-11968 render_game_target_128 per-frame RSSetViewports/OMSetRenderTargets; renderer+0x128..0x13f viewport, renderer+0xe8/+0xec embedded display size",
+   "what": "[incomplete fact] gfx_device verdict: renderer viewport and embedded display w/h are never populated on the host path and readers were not exhaustively checked (only 0x5b7000..0x5c1000 scanned), so the host's per-frame viewport/RT binding is still required but only the +0x120 dsv offset has a fact.",
+   "suggestedArea": "gfx_device"
+  },
+  {
+   "where": "win32_host.c:1260-1330 win32_set_scissor_rects/install_scissor_fix; ARM Renderer::setScissorRect 0x5bb560, global screen object 0x015B86B0 (+0x14 W, +0x18 H), renderer+0xE4 object, MinecraftGame::windowSizeChanged 0x12F8F0",
+   "what": "[unresolved] Whether the -599..-47 scissor offset bug reproduces on ARM depends on what the host publishes in the screen-size object (0x015B86B0) and renderer+0xE4, which MinecraftGame::windowSizeChanged writes; no fact lists windowSizeChanged (or those objects' owner) as a dependency of the scissor hook. gfx_compat says keep the fix as-is and verify at runtime.",
+   "suggestedArea": "gfx_compat"
+  },
+  {
+   "where": "win32_host.c:9623-9693 win32_d3d_compile; ARM IAT cell 0x00C370B0 (D3DPreprocess, caller 0x5BE19E)",
+   "what": "[observability gap] ARM game calls D3DPreprocess first (unpatched output only used as shader-cache key); its failures are silent (stage aborted at 0x5BE1A2, D3DCompile never called) so win32_d3d_compile logging cannot see include/preprocess errors. gfx_compat verifier recommends a logging-only hook of cell 0xC370B0 (7 args: src r0,size r1,name r2,defines r3,include [sp],ppText [sp+4],ppErrors [sp+8]); not in port_instructions. Also the shader disk cache (ofstream path built at 0x5BE6C8-0x5BE700) is untraced: needs host file-path fixes or every launch recompiles.",
+   "suggestedArea": "gfx_compat"
+  },
+  {
+   "where": "win32_host.c:12924-12944 win32_client_render_128/install_client_state_hook_128 (abort at 14974-14977), 12975-13025 refresh_relative_mouse_from_client_128; ARM ClientInstance vtable slot 3 = 0x11a280",
+   "what": "[unresolved] caller and frequency of ClientInstance slot 3 on ARM are unknown (no direct bl, no indirect 'ldr rX,[rY,#0xc]; blx' site found), yet client_instance_128 is only ever captured by this hook, text-focus detection needs the game to call MinecraftKeyboardManager::show() (sets keyboard byte5 bit1 only if vf6/vf9 gates pass), and Bootstrap returns 1 if the cell check fails. x86 hook forwards two stack args, ARM body reads r2/r3 (r1 unused): origin of that mismatch unexplained (port[3] forwards r0-r3 verbatim). An alternative source of the ClientInstance pointer via the MinecraftGame+0xd0 map (seen by the appmain verifier in AppView::Run) was not evaluated; verify with the 'live render client' log.",
+   "suggestedArea": "client_state"
+  },
+  {
+   "where": "win32_host.c:8510-8589 win32_128_zip_get_contents/patch_128_zip_slot/install_128_zip_resource_overrides",
+   "what": "[partially resolved] (a) direct bl callers of ZipPackAccessStrategy::getAsset 0x64E6B8 at 0x9389a and 0x93ba6 bypass the vtable-cell swap (chat_xbox verdict, not in catalog_vtable_cells); (b) DirectoryPackAccessStrategy[11] (0x136DF2C, original 0x6314BC) must be hooked with its own original (port[3] says add it) but the DirectoryPackWithEncryption cell 0x136E004 (original 0x6323F0) is left unhooked without proof; the x86 single global original_128_zip_get_contents must become three originals; ResourcePackStack vf1 0x64c608/vf2 0x64c430 call strategy[11] with r3=0; (c) not shown that ui/start_screen.json goes through slot 11 (loader sub_129d0c untraced); (d) which strategy serves the vanilla pack on a real ARM deployment (loose files -> directory strategy) is unconfirmed; the cell check '*slot != image+RVA' must compare against RVA|1.",
+   "suggestedArea": "platform_fixes"
+  },
+  {
+   "where": "win32_host.c:11207-11305 create_user_data, 2744-2762 fake_appdata_local_folder/fake_folder_path, 3663-3683 fake_build_local_storage_path, 14912 package_path=GetCurrentDirectoryW, 13197 update_custom_skin_options",
+   "what": "[no fact] default options.txt written by the host (keys at 11213-11252) was not validated against ARM 1.2.8: a raw string search finds none of game_flatworldlayers, game_limitworldsize, ctrl_usetouchscreen, ctrl_keyboardlayout, ctrl_gamePadMap, gfx_renderdistance_new, gfx_animatetextures, gfx_hidegui, dev_disablefilesystem (harmless) but old_game_version_major/minor/patch=0/15/10 are stale for 1.2.8 and may drive upgrade logic. Also unverified for ARM: the data roots (package_path must be the ARM package dir containing data/ and resources.pri; game_data_path=%APPDATA%\\MinecraftPE\\games\\com.mojang\\minecraftpe) that the faked Package.InstalledLocation/ApplicationData.LocalFolder hand to the ARM exe.",
+   "suggestedArea": "platform_fixes"
+  },
+  {
+   "where": "win32_host.c:7517-7835 win32_get_activation_factory, 2303-2411 fake_query_interface, 2427-2480 fake_speech_query_interface, 2549-2700 fake_resource_query_interface, fixed-size vtables e.g. win32_core_dispatcher_vtable[10] (5128), mouse_device_vtable[8] (5138)",
+   "what": "[coverage gap: fake WinRT interface surface] pe_imports.activation_class_set only lists class names (67 activated by ARM exe; 27 faked, 40 not, 5 faked-but-unused). Nothing records, per faked class, which IIDs and vtable slots the ARM code calls on the fake objects (Package, ApplicationData+IApplicationData2, CoreApplication, CurrentApp+consumables, ApiInformation, ApplicationLanguages, GeographicRegion, AnalyticsInfo, HardwareIdentification, MemoryManager, NetworkInformation/ConnectionProfile2/HostNames, DataReader, CryptographicBuffer, SpeechSynthesizer, AudioGraph/AudioGraphSettings, DisplayInformation, ApplicationView/IApplicationView3, FileOpenPicker, Launcher, CoreTextServicesManager, ResourceContext). Spot check with arm32re: IIDs 903c9ce5 (IApplicationView3), 41f752ef (ResourceContext statics2), 7d526ecc, ce9f7c76, 00000036, e2045145, 9e65cd69 are present in the exe; Data1 of 2fa22f4b, 98be9d6c, 20cf492c, a7c5ecb2, a0e23871, b127d6a4 was not found as a literal-pool constant (may be movw/movt-built), so the host's special-cased ResourceContext/speech IID branches are unverified on ARM. Fake vtables are fixed-size arrays: any slot the ARM exe calls beyond them is a crash. Only CoreWindow (58 slots, medium), dispatcher slots 7/8, IMouseDevice slot 6 and IDisplayInformation 11/12/13 are mentioned, and only in verdict notes or port_instructions.",
+   "suggestedArea": "winrt_fakes (new area)"
+  },
+  {
+   "where": "win32_host.c:13836-13865 win32_show_text_keyboard/hide (not installed on 1.2.8), 13941-13955 install_win32_platform_fixes_128; ARM AppPlatform_Winrt vf11/vf12 (cells 0x013695D0/0x013695D4, lambdas 0x586CC4/0x586F8C), InputPane::GetForCurrentView sub_57f824",
+   "what": "[unproven, no fallback spec] x86 1.2.8 host installs no show/hide keyboard hook and no InputPane fake (class absent from the 7517-7835 list); chat_xbox open Q: not proven on ARM that the thrown HRESULT from InputPane::GetForCurrentView (callers 0x57e316, 0x586d76, 0x586fa6, 0x5951b8) is swallowed by the CoreDispatcher delegate wrapper, so focusing a text box may crash. If a hook is needed, ARM equivalents of the arguments (text, max_length, multiline, secure, position) and of the 'keyboard visible' byte (x86 wrote self+9) are not derived.",
+   "suggestedArea": "chat_xbox"
+  },
+  {
+   "where": "win32_host.c:14353-14418 queue_keyboard_event, 14423-14517 queue_character_event, 12742-12801 and 13040-13052 (+0x28/+0xa0 writes), 4899-4945 drain_dispatcher_queue",
+   "what": "[input verifier residuals] (1) stock onKeyUp 0x625d64 enqueues KeyCodeItem only when controller[0xc9+key] is set, host always enqueues (hid_key_held_table fact lacks this; the win32_key_down[] autorepeat filter keeps it equivalent); (2) stock command consumer 0x626806 requires controller byte +0x25==0 before acting on command 1, not in any fact; host never touches +0x25; (3) TextItem consumer (drain of adapter vector at +0x38) never located, 'per-seq string array at controller+0x1f4 unnecessary' is evidenced only by x86 working; (4) 0x62a128 is only positionally matched to RVA_128_MOUSE_EVENT_FACTORY among 4 sibling factories (0x62a174, 0x62a1bc, 0x62a208); (5) HIDController::update polls CoreWindow::GetAsyncKeyState for VK 1,2,0x12,0x20 each frame and the fake returns 0: effect vs injected MouseItems unconfirmed; (6) initial_menu_cursor_guard (12737-12746, 15037) depends on whether the three mouse-lambda _Do_call bodies run synchronously or only when drain_dispatcher_queue (15095) executes them: unresolved.",
+   "suggestedArea": "input"
+  },
+  {
+   "where": "win32_host.c:14775-14803 WM_LBUTTONUP exit-confirm rectangle (x 35-65%, y 54-65% for 1.2.8), 14660-14663 VK_T chat heuristic, 14637-14640 ESC handling",
+   "what": "[unvalidated game-content dependency, low] 1.2.8 main-menu exit-confirmation hit rectangle and the 'T opens chat' / ESC heuristics depend on the game's UI JSON layout and key bindings in the ARM package data, not on binary constants; no fact states they were checked against Minecraft_1.2.8.0_ARM32/data (x86 values were taken from the x86 package).",
+   "suggestedArea": "input"
+  },
+  {
+   "where": "win32_host.c:11906-11943 activate_game_app_128 (visibility call), facts appmain.app_visibility (medium), appmain.corewindow_slots_used (medium)",
+   "what": "[medium-confidence facts needing confirmation] x86 RVA_128_APP_VISIBILITY(AppMain*,BYTE) has no stand-alone ARM twin; the ARM plan (platform vt[27](p); vt[21](p,1)) is derived from inlined AppView::OnVisibilityChanged 0x5956cc and equivalence with the x86 function body (any AppMain/AppView state it wrote) cannot be proven. CoreWindow fake slot usage (58 slots) is medium as well.",
+   "suggestedArea": "appmain"
+  },
+  {
+   "where": "win32_host.c:14893-14981 Win32Bootstrap, facts winmain.rename.xinputuap_optional (low), pe_imports api-set redirect decision",
+   "what": "[decision pending] x86 patcher redirected 7 api-set DLLs (xinputuap, core-com, winrt-error x2, winrt, winrt-string, eventing-provider) to win32craft.dll so the host's own Ro*/Windows*/Co*/Event*/XInputGetState served the game on every OS; ARM facts argue only XINPUTUAP.dll must be redirected. Winmain verifier: needs an explicit decision between (a) no redirect (real combase HSTRINGs everywhere, host fakes must use the same real WindowsCreateString) and (b) x86 parity (requires native_hstring_proc forwarding to combase). Also whether those api sets exist on Windows RT 8.1 (winrt-error-l1-1-1, delayload-l1-1-1, datetime-l1-1-1, sysinfo-l1-2-0) is unverified (only a Win11 schema available) and the UCRT is absent on RT 8.1.",
+   "suggestedArea": "pe_imports"
+  }
+ ],
+ "coverageNote": "Scanned win32_host.c along every function reachable with host_is_128 (Win32Bootstrap 14856-15109 and callees: initialize_game_d3d, initialize/activate/render_game_app_128, resize_game_window, queue_* input path, get_hid_controller/mouse hooks, client-state hook, zip overrides, tcui/xbox patches, platform fixes, D3D/IAT hooks, crash trace, dispatcher, create_user_data). Every RVA_128_* macro and every inline RVA literal reachable on the 1.2.8 path (0x010296d1, 0x0015a080, 0x01569eac, 0x015684b8, 0x012b64b4, 0x012bfbcc, owner/renderer offsets, 0x00c00000 bounds, 0x02db1000 gate) is covered by a fact; RVA_128_DEBUG_*/FONT_*/COLOR_WHITE/DEVELOPMENT_VERSION_GETTER/D3D_CONTEXT_IID/D3D_ANNOTATION_IID are confirmed unused on the 1.2.8 path. All object-field offsets (+0x1c/+0x20, +0x330/+0x334, +0x3b4, adapter+4/+0xa8, controller +0x10/+0x28/+0xa0/+0xc9/+0x1f0, client +4/+0x18/+0x28/+0x44/+0x2c0/+0x378, owner +0x6c/+0xac/+0xc0/+0xd0, renderer +0x104/+0x110/+0x114/+0x118/+0x120/+0x124, keyboard+5, SceneStack stride 8), vtable slot indexes (23/24, 41/42, ClientInstance slot 3, zip slot 11, callback vtable[2], D3D slots 8/22/45), event/struct sizes (0x24, 0x64, 0x14, 0x10, 0x378, 0x1d0, display 0x20, GameStringX86 0x18, startup_context 0x40) and every call into game code (create_app_main, frame, setSize/windowSizeChanged, owner ctor/init_device/init_targets/release_targets/operator new, enqueue/mouse/key/text/map_virtual_key factories, string assign, zip original, original IAT functions) have a fact; I found no uncovered RVA, offset, byte pattern or calling-convention dependency in game-binary-facing code beyond the items listed. Spot checks with arm32re confirmed the vtable/IAT cells for ClientInstance slot 3 (0x133a764), mouse lambdas (0x1369c30/c14/c68), zip/directory getAsset (0x136e598/5e8/df2c), pickFile (0x1369630) and TCUI delay cells (0x15121fc). The remaining gaps are therefore mostly (1) verifier-corrected values not folded back into the JSON, (2) UNVERIFIABLE/medium facts, (3) open runtime-behavior questions recorded only in verdict 'missing' lists or open_questions, and (4) the uncovered fake-WinRT surface, create_user_data defaults and UI-layout heuristics. No fact was REFUTED; 3 CORRECTED (2 appmain, 1 input), 2 UNVERIFIABLE (winmain). Several verdict 'missing' items were already resolved by port_instructions (owner+0xb8=0x9100, r0-r3 hook forwarding, three zip originals, Win7 patches dropped) and are not repeated."
+}

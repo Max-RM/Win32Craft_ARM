@@ -1,0 +1,3 @@
+static BOOL fake_kind_is_async(FakeKind kind)
+{
+    switch (kind) {

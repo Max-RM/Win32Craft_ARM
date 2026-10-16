@@ -1,0 +1,2 @@
+static BOOL install_create_file2_compat(BYTE *image, SIZE_T create_file2_rva)
+{

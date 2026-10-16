@@ -1,0 +1,509 @@
+{
+ "area": "chat_xbox",
+ "facts": [
+  {
+   "id": "chat_xbox.string_button_signin",
+   "x86_symbol": "patches_128[0]: RVA 0x012b64b4 (win32_host.c:12335); byte 'b' -> '!'",
+   "x86_value": "0x012b64b4",
+   "kind": "string",
+   "arm_rva": "0x00D99E28",
+   "summary": "ASCII literal \"button.signin\" (13 chars + NUL) in .rdata: the UI event name registered by ItemDetailScreenController and StoreBaseScreenController. There is exactly ONE copy in the image. Patch the first byte 0x62 'b' -> 0x21 '!' so the registered event name becomes \"!utton.signin\" and the JSON button 'button.signin' resolves to a different (handler-less) event id.",
+   "arm_signature": "write 1 byte at image+0x00D99E28: expected 0x62, replacement 0x21. Data patch, no code.",
+   "x86_to_arm_notes": "Same semantics as x86. Differences: (1) address; (2) page protection: the literal is in read-only .rdata, so VirtualProtect(addr,1,PAGE_READWRITE) then restore; do NOT request PAGE_EXECUTE_READWRITE (x86 apply_runtime_patches did, which is unnecessary for data and may be refused on Windows RT code-integrity); (3) FlushInstructionCache not needed (data); (4) the registration code passes a hard-coded length 13 (movs r2,#0xd) to std::string::assign, so the length is unaffected by changing the first character; (5) first-char replacement keeps the string NUL-terminated at the same length, nothing else reads it.",
+   "expected_bytes": "62 75 74 74 6f 6e 2e 73 69 67 6e 69 6e 00 00 00 (\"button.signin\\0\\0\\0\")",
+   "evidence": [
+    "arm32re.py str button.signin -i -> single hit 00d99e28 refs=2",
+    "arm32re.py strx button.signin -> mov32 at 002047c2 (in 0x2044ec) and 002a4b24 (in 0x2a4a44) only",
+    "python scan of the whole mapped image for the ASCII bytes 'button.signin' (substring) -> exactly one occurrence (0xd99e28); no UTF-16 copy; no raw absolute pointer to it in the file (all references are movw/movt pairs)",
+    "arm32re.py bytes d99e28 16 -> 62 75 74 74 6f 6e 2e 73 69 67 6e 69 6e 00 00 00",
+    "both registration sites are: movw/movt r1=literal; movs r2,#0xd; bl std::string::assign_ptr_len(0x84048); bl ui:string_to_event_id(0x1bab8c); bl ui:ScreenController::registerEventHandler(0x34dbac)",
+    "x86 comment (win32_host.c:12330-12333): 'shares each event-name string between all of its controller registrations. Rename only the two Xbox sign-in keys' -> same structure on ARM"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.string_button_xbl_signin",
+   "x86_symbol": "patches_128[1]: RVA 0x012bfbcc (win32_host.c:12337); byte 'b' -> '!'",
+   "x86_value": "0x012bfbcc",
+   "kind": "string",
+   "arm_rva": "0x00DA345C",
+   "summary": "ASCII literal \"button.xbl_signin\" (17 chars + NUL) in .rdata: UI event name registered by StartMenuScreenController, XblFirstLaunchScreenController and XblOptionalSigninScreenController (3 registrations, one shared literal, one copy in the image).",
+   "arm_signature": "write 1 byte at image+0x00DA345C: expected 0x62, replacement 0x21.",
+   "x86_to_arm_notes": "Same notes as chat_xbox.string_button_signin (PAGE_READWRITE only, length 17 hard-coded at all 3 sites: movs r2,#0x11).",
+   "expected_bytes": "62 75 74 74 6f 6e 2e 78 62 6c 5f 73 69 67 6e 69 6e 00 00 00",
+   "evidence": [
+    "arm32re.py strx button.xbl_signin -> mov32 at 0029a038 (0x299e08), 002d2f84 (0x2d2f4c), 002d646c (0x2d63d4); refs=3",
+    "whole-image substring scan: exactly one occurrence of the text (0xda345c); the only other string containing 'xbl_signin' is the unrelated '$device_must_be_removed_for_xbl_signin' / '$requires_xbl_signin_to_play' (variable names, not event names)",
+    "arm32re.py bytes da345c 24 -> 62 75 74 74 6f 6e 2e 78 62 6c 5f 73 69 67 6e 69 6e 00",
+    "call shape at each of the 3 sites verified: ... movs r2,#0x11; bl 0x84048; bl 0x1bab8c; ... registerEventHandler"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.signin_registration_sites",
+   "x86_symbol": "(implicit) every controller registration that uses the two shared strings",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x002044EC",
+   "summary": "The complete list of ARM code that registers the two patched event names (each is a ScreenController ctor helper that calls string_to_event_id + registerEventHandler): button.signin <- ItemDetailScreenController (fn 0x2044ec, str ref 0x2047c2, called from ctor 0x203f90) and StoreBaseScreenController (fn 0x2a4a44, ref 0x2a4b24, called from 0x2a47b0); button.xbl_signin <- StartMenuScreenController (fn 0x299e08, ref 0x29a038, called from 0x299964), XblFirstLaunchScreenController (fn 0x2d2f4c, ref 0x2d2f84, from 0x2d2e90), XblOptionalSigninScreenController (fn 0x2d63d4, ref 0x2d646c, from 0x2d61c4).",
+   "arm_signature": "n/a (informational: nothing to hook, the two string patches disable all five)",
+   "x86_to_arm_notes": "x86 0.15.10/1.1.5 patched the handler lambdas; 1.2.8 x86 patches only the shared strings. The ARM structure is identical (5 registrations, 2 literals), so the 2-byte patch pair is sufficient and no per-lambda patch is needed. All 5 handler lambdas call ScreenController::xblSignIn (fn 0x21b848) which is what the patch avoids.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py callers on each registration fn -> single caller each, inside a ctor whose vtable is .?AVItemDetailScreenController@@, .?AVStoreBaseScreenController@@, .?AVStartMenuScreenController@@, .?AVXblFirstLaunchScreenController@@, .?AVXblOptionalSigninScreenController@@",
+    "lambda do_call bodies: button.signin -> 0x2a4d48 (StoreBase), 0x204a2c (ItemDetail); button.xbl_signin -> 0x29a410 (StartMenu, via thunk 0x29b3c0), 0x2d3018 (XblFirstLaunch, via 0x2d33b4), XblOptionalSignin -> 0x2d64cc; all of them call 0x21b848",
+    "arm32re.py callers 21b848 -> 16 callers (see other_signin_callers)",
+    "names recorded with arm32re.py name for all registration functions and lambda bodies"
+   ],
+   "confidence": "high",
+   "arm_rva_list": "0x002044EC, 0x002A4A44, 0x00299E08, 0x002D2F4C, 0x002D63D4"
+  },
+  {
+   "id": "chat_xbox.event_id_interning",
+   "x86_symbol": "(implicit) 'JSON button presses cannot resolve an action at all' after renaming the key",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x001BAB8C",
+   "summary": "ui:string_to_event_id(controller* r0, std::string* r1) -> r0: looks up the name in a map at controller+0x80 (ldr r4,[r0,#0x80]), and if absent inserts a new u16 id (counter at map+0x20) then looks up again. Registration calls it with the literal, so after the patch the handler is registered under the id of \"!utton.signin\" while the JSON/UI layer still asks for the id of \"button.signin\".",
+   "arm_signature": "unsigned short/int string_to_event_id(void* controller /*r0*/, const std::string* name /*r1*/) -> r0 (id); AAPCS",
+   "x86_to_arm_notes": "Informational: explains why the first-character patch is enough (no string compare against the literal elsewhere). 641 callers of this function exist; only 5 use the two Xbox literals.",
+   "expected_bytes": "2d e9 30 48 0d f1 08 0b 46 f6 32 fb",
+   "evidence": [
+    "arm32re.py func 1bab8c -> find-or-insert in map at [r0+0x80] using sub_e0c08 / sub_5a6800 / sub_5a66f0 (insert path)",
+    "arm32re.py callers 1bab8c -> 641 call sites; the 5 Xbox registrations are among the callers of 0x34dbac (registerEventHandler)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "chat_xbox.string_patch_mechanism",
+   "x86_symbol": "apply_runtime_patches / RuntimeBytePatch (win32_host.c:12226-12256)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "x86 mechanism: memcmp(site, expected, size); VirtualProtect(site, size, PAGE_EXECUTE_READWRITE); CopyMemory; restore protection; FlushInstructionCache. Only two callers exist: patch_xbox_actions_noop (12347) and patch_chat_textbox_compat (12415; 1.1.5 only).",
+   "arm_signature": "bool apply_patch(BYTE* image, rva, expected, replacement, size)",
+   "x86_to_arm_notes": "ARM: keep the memcmp-then-copy structure but (a) use PAGE_READWRITE for the two string bytes (they are in .rdata, not code); (b) there is no 1.2.8 patch that modifies Thumb code in this area, so PAGE_EXECUTE_READWRITE and FlushInstructionCache(code) are not required for chat_xbox; (c) apply BEFORE any game code runs (the registrations execute during controller construction); (d) failure policy: x86 returns FALSE and logs but the bootstrap ignores the result (win32_host.c:14959) - keep non-fatal.",
+   "expected_bytes": null,
+   "evidence": [
+    "grep apply_runtime_patches -> definition 12234, call sites 12347 and 12415 only",
+    "grep patch_xbox_actions_noop -> called at 14959 (128 branch) and 14969 (other versions); patch_chat_textbox_compat -> 14971 unconditionally but returns TRUE immediately unless host_is_115 (12414)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.other_xbox_strings_unchanged",
+   "x86_symbol": "(audit) other Xbox-looking strings: menu_xbox_signin_button, xbox_signin, button.save_to_xbl, remix_export.XBL_signin, #show_signin_button, #signingin_*",
+   "x86_value": "n/a",
+   "kind": "string",
+   "arm_rva": null,
+   "summary": "No other string must change to match the x86 behaviour. Audit of every 'signin/xbl/xbox' literal: 'menu_xbox_signin_button' (0xda3444) is a UI-element-name returned by a binding getter (fn 0x29bd6c; selects it instead of 'menu_how_to_play_button'), 'xbox_signin' (0xd97204, used at 0x1dea08) is a screen/layout name passed to a helper, 'button.save_to_xbl' (0xd95e5c, registration fn 0x1cd44c, lambda 0x1cd518) is an event name that x86 1.2.8 does NOT patch, '#show_signin_button'/'#signingin_text'/'#signingin_visible' are property bindings. Event names starting with 'button.' that mention xbl/xbox: only button.signin, button.xbl_signin, button.save_to_xbl, button.report_xbox, button.feed_report_xbox, button.comment_feed_report_xbox.",
+   "arm_signature": "n/a - keep parity with x86 (only the two strings). Optional hardening (NOT in x86): also rename 'button.save_to_xbl' at 0xd95e5c (expected 0x62 -> 0x21) if the save-to-Xbox button can be reached on the host.",
+   "x86_to_arm_notes": "x86 1.2.8 leaves save_to_xbl alone (only 1.1.5 patched it). The ARM save_to_xbl lambda (0x1cd518) starts a sign-in only when the user-manager check (0x30ac00) returns 0, otherwise does other work, so it is no different from the x86 build.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py str signin -i / str button. -i filtered for xbl|xbox -> the full list above",
+    "arm32re.py strx for each: references and containing functions listed above",
+    "disassembly of 0x29bd6c (name-returning binding), 0x1cd44c/0x1cd518 (save_to_xbl)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "chat_xbox.other_signin_callers",
+   "x86_symbol": "(audit) functions that can start an Xbox sign-in without using the two patched event names",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x0021B848",
+   "summary": "ScreenController-level sign-in starter ScreenController::xblSignIn(std::function<void(SignInResult)>) (probable name): 16 direct callers: 0x1cd518 (save_to_xbl), 0x1da548, 0x1f3014, 0x1f4258, 0x204a2c (button.signin ItemDetail), 0x20b124, lambda vf2 of lambda_525cd9... (0x245cba), RealmsShareLauncherController::vf1 (0x25a7e0), 0x26e03c, 0x299c20, 0x29a410 (button.xbl_signin StartMenu), 0x2a4d48 (button.signin StoreBase), 0x2a5390, 0x2d1a68, 0x2d3018 (XblFirstLaunch), 0x2d64cc (XblOptionalSignin). It forwards to the Social user-manager object at controller+0x240 (fn 0x30aa2c).",
+   "arm_signature": "void xblSignIn(void* controller /*r0*/, std::function<void(SignInResult)>* cb /*r1*/)",
+   "x86_to_arm_notes": "x86 1.2.8 does not neutralise the other 11 callers (incl. save_to_xbl) either; behaviour parity is kept by patching only the two strings. If the porter wants a stronger guard than x86, the single choke point is fn 0x21b848 (entry bytes 2d e9 b0 48 0d f1 0c 0b) -> replace by 'bx lr' (70 47) or hook via a data cell; not required for parity.",
+   "expected_bytes": "2d e9 b0 48 0d f1 0c 0b e5 f5 d4 fc",
+   "evidence": [
+    "arm32re.py callers 21b848 -> 16 sites (listed)",
+    "arm32re.py func 21b848 -> builds SignInResult callback holder, ldr.w r0,[r4,#0x240], bl 0x30aa2c"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "chat_xbox.signin_noop_fallback_thumb",
+   "x86_symbol": "return_handled = { mov eax,8; ret 4 } used for 0.15.10/1.1.5 (win32_host.c:12275-12278) - NOT used on 1.2.8",
+   "x86_value": "b8 08 00 00 00 c2 04 00",
+   "kind": "hook_site",
+   "arm_rva": "0x002A4D48",
+   "summary": "Only needed if the porter later decides to keep the Xbox buttons and no-op the action instead of renaming the events. Equivalent of return_handled on ARM = 'movs r0,#8 ; bx lr' = 08 20 70 47 at the lambda bodies. The 'normal handled' result 8 is confirmed on ARM by the XblFirstLaunch do_call (0x2d33b4: if byte [ctrl+0x290] != 0 -> movs r0,#8 ; return).",
+   "arm_signature": "uint32 lambda_body(void* closure /*r0*/) -> r0 = ViewRequest result (8)",
+   "x86_to_arm_notes": "NOT NEEDED for 1.2.8 parity (x86 1.2.8 uses the string rename). ARM replacement bytes (assembled with keystone Thumb, disassembled back with capstone: movs r0,#8 / bx lr): 08 20 70 47. Expected entry bytes: 0x2a4d48 and 0x204a2c = 2d e9 90 48 0d f1 08 0b; 0x29a410 = 2d e9 b0 48 0d f1 0c 0b; 0x2d33b4 = 2d e9 00 48 eb 46 50 f8 (this one is only the do_call thunk-with-flag; patch its target 0x2d3018 instead). The XblOptionalSignin lambda body was not isolated (it is built through a stack std::function by 0x2d6b38). Prefer the string patch.",
+   "expected_bytes": "2d e9 90 48 0d f1 08 0b (0x2a4d48 and 0x204a2c)",
+   "evidence": [
+    "capstone: 08 20 70 47 -> movs r0,#8 ; bx lr (verified)",
+    "arm32re.py dis 2d33b4 -> 'movs r0,#8' on the flag path; other lambdas end with 'movs r0,#0' after calling xblSignIn (0x2a4dec / 0x204ad0)"
+   ],
+   "confidence": "low",
+   "arm_rva_list": "0x002A4D48, 0x00204A2C, 0x0029A410, 0x002D33B4"
+  },
+  {
+   "id": "chat_xbox.tcui_cell_show_profile",
+   "x86_symbol": "RVA_128_TCUI_SHOW_PROFILE_IAT 0x01724400 (slots[1]) win32_host.c:13800",
+   "x86_value": "0x01724400",
+   "kind": "iat",
+   "arm_rva": "0x015121FC",
+   "summary": "Delay-load IAT cell of api-ms-win-gaming-tcui-l1-1-0.dll!ShowProfileCardUI (lives in .data, writable, initial value = lazy stub 0x00F4A2CD i.e. RVA 0xB4A2CC|1). ARM puts ShowProfileCardUI FIRST (x86 had ProcessPendingGameUI first).",
+   "arm_signature": "HRESULT ShowProfileCardUI(HSTRING targetUserXuid /*r0*/, void* completionRoutine /*r1*/, void* context /*r2*/) -> r0 (HRESULT)",
+   "x86_to_arm_notes": "Write win32_show_profile_card_noop (returning E_NOTIMPL 0x80004001) into cell 0x015121FC. NB the real/ARM argument order is (HSTRING, callback, context); the x86 noop named the last two (context, callback) - harmless since both are ignored. The cell must receive a Thumb function pointer (bit0 set; compilers do this for function addresses); the game reaches it through thunk 0xB4A2DC: movw/movt ip=cell ; ldr.w pc,[ip].",
+   "expected_bytes": "cell value before patch: raw dword 0x00F4A2CD (RVA 0xB4A2CC lazy stub, Thumb)",
+   "evidence": [
+    "arm32re.py imports tcui -> 015121fc ShowProfileCardUI (delay)",
+    "arm32re.py ptrs 15121fc 4 -> 00f4a2cd lazy_stub, 00f4a2e9 lazy_stub, 00000000, 00f4a32d lazy_stub",
+    "arm32re.py dis b4a2dc -> movw ip,#0x21fc ; movt ip,#0x191 ; ldr.w pc,[ip]",
+    "arm32re.py impcallers ProfileCard -> sole caller 0xa3e0be in xbox:ShowProfileCard wrapper (0xa3e014): r0=HSTRING r5, r1=callback fn 0xa3e678, r2=&local+0x30"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.tcui_cell_process_pending",
+   "x86_symbol": "RVA_128_TCUI_PROCESS_PENDING_IAT 0x017243fc (slots[0]) win32_host.c:13799",
+   "x86_value": "0x017243fc",
+   "kind": "iat",
+   "arm_rva": "0x01512200",
+   "summary": "Delay-load IAT cell of api-ms-win-gaming-tcui-l1-1-0.dll!ProcessPendingGameUI (second cell on ARM; initial lazy stub 0x00F4A2E9 = RVA 0xB4A2E8|1).",
+   "arm_signature": "HRESULT ProcessPendingGameUI(BOOL waitForCompletion /*r0*/) -> r0",
+   "x86_to_arm_notes": "Write win32_process_pending_game_ui_noop (returns S_OK) into 0x01512200. ARM order is ShowProfile(+0), ProcessPending(+4), null(+8), ForUser(+0xC); x86 was ProcessPending(+0), ShowProfile(+4), null(+8), ForUser(+0xC): do NOT index with the x86 slots[0]/slots[1] assignment, assign by import name. With the ShowProfile noop returning E_NOTIMPL the wrapper never calls ProcessPendingGameUI (see tcui_wrapper_semantics) so this noop is purely defensive, as on x86.",
+   "expected_bytes": "cell value before patch: raw dword 0x00F4A2E9",
+   "evidence": [
+    "arm32re.py imports ProcessPending -> 01512200 (delay)",
+    "arm32re.py impcallers ProcessPending -> sole caller 0xa3e0d4 (wrapper 0xa3e014): movs r0,#1 ; bl thunk 0xb4a2f8",
+    "arm32re.py dis b4a2f8 -> cell 0x1912200 (VA)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.tcui_cell_show_profile_for_user",
+   "x86_symbol": "RVA_128_TCUI_SHOW_PROFILE_USER_IAT 0x01724408 (slots[3]) win32_host.c:13801",
+   "x86_value": "0x01724408",
+   "kind": "iat",
+   "arm_rva": "0x01512208",
+   "summary": "Delay-load IAT cell of api-ms-win-gaming-tcui-l1-1-2.dll!ShowProfileCardUIForUser (second delay descriptor; initial lazy stub 0x00F4A32D = RVA 0xB4A32C|1).",
+   "arm_signature": "HRESULT ShowProfileCardUIForUser(void* user /*r0*/, HSTRING xuid /*r1*/, void* completion /*r2*/, void* context /*r3*/) -> r0",
+   "x86_to_arm_notes": "Write win32_show_profile_card_for_user_noop (E_NOTIMPL) into 0x01512208 (offset +0xC from the first cell, same as x86's slots[3]).",
+   "expected_bytes": "cell value before patch: raw dword 0x00F4A32D",
+   "evidence": [
+    "arm32re.py imports ProfileCard -> 01512208 ShowProfileCardUIForUser (delay)",
+    "wrapper 0xa3e014 calls thunk 0xb4a33c at 0xa3e0aa with r0=[this+0x18] user, r1=xuid, r2=0xa3e678 callback, r3=&local+0x30 context"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.tcui_null_cell",
+   "x86_symbol": "slots[2] (RVA 0x01724404) deliberately untouched (win32_host.c:13797-13802)",
+   "x86_value": "0x01724404",
+   "kind": "data",
+   "arm_rva": "0x01512204",
+   "summary": "The dword at 0x01512204 is 0 = terminator of the first delay IAT (tcui-l1-1-0 has 2 functions); 0x0151220C is the terminator of the second. Leave untouched.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "x86 protected 4 slots (16 bytes) for one VirtualProtect and skipped slots[2]; keep that (VirtualProtect(0x015121FC, 16, PAGE_READWRITE) is fine, .data is already RW).",
+   "expected_bytes": "00 00 00 00",
+   "evidence": [
+    "arm32re.py ptrs 15121f0 10 -> 0x01512204 = 00000000, 0x0151220c = 00000000"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.tcui_wrapper_semantics",
+   "x86_symbol": "win32_show_profile_card_noop comment (win32_host.c:13774-13778): 'Returning success would make the stock wrapper wait forever ... E_NOTIMPL takes its ordinary non-pending path'",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x00A3E014",
+   "summary": "The ONLY game code that calls the three TCUI imports: xbox:ShowProfileCard wrapper (len 312). Logic: r0=struct{std::wstring xuid; void* user @+0x18}, r1=sret result struct. Creates a Concurrency::event, converts the xuid wstring to an HSTRING (sub_57ce08), and if [this+0x18]!=0 and helper sub_a3e5fc returns non-zero calls ShowProfileCardUIForUser, else ShowProfileCardUI. Then: hr=r0; if (hr>=0 || hr==0x8000000A /*E_PENDING*/) { hr2=ProcessPendingGameUI(1); if (hr2>=0) event.wait(-1); hr=result field } else skip. E_NOTIMPL (0x80004001) is negative and != E_PENDING, so ARM takes the same non-pending path as x86: no wait, result struct filled with the failure HRESULT.",
+   "arm_signature": "void* wrapper(void* in /*r0*/, void* sret /*r1*/) -> r0=sret; MSVC ARM puts the result pointer in r1 here",
+   "x86_to_arm_notes": "Unchanged semantics: E_NOTIMPL for both Show* noops is still the correct return. Caller chain: 0xa3e014 <- 0xa3c580 (call 0xa3c590) <- 0xa3cc30 (call 0xa3cc3a); 0xa3cc30 and its three siblings (0xa3cc44, 0xa3cc58, 0xa3cc6c) have NO inbound references in the image (no bl/b, no movw/movt, no data pointer with or without Thumb bit), so the profile-card path appears to be statically unreachable in this exe; the IAT no-ops are defensive only.",
+   "expected_bytes": "2d e9 f0 49 0d f1 14 0b c3 f5 ee d8",
+   "evidence": [
+    "arm32re.py impcallers ShowProfileCard/ProcessPending -> all three imports are called only from 0xa3e0aa/0xa3e0be/0xa3e0d4 (inside 0xa3e014)",
+    "arm32re.py dis a3e0c4.. -> cmp r4,#0 ; bge ; r3=0x80000000 ; adds r3,#0xa ; cmp r4,r3 ; bne -> skip ProcessPending/wait",
+    "arm32re.py callers a3e014 -> a3c580; callers a3c580 -> a3cc30; callers/xref a3cc30 -> none; raw 32-bit scan for (0x400000+rva) and |1 of 0xa3cc30/0xa3c580/0xa3e014 -> no hit",
+    "only 3 delay imports exist in the whole exe (arm32re.py imports '' | grep delay): the three TCUI functions"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.tcui_unused_noops",
+   "x86_symbol": "win32_show_achievements_noop / win32_invite_player (win32_host.c:13740-13758)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Defined but never installed on the 1.2.8 path (install_xbox_tcui_noops_128 patches only 3 cells). The ARM exe has no delay import for achievements/invite TCUI functions, so they stay unnecessary.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Do not port them.",
+   "expected_bytes": null,
+   "evidence": [
+    "grep: no reference to the two functions other than their definitions; ARM delay imports = only ShowProfileCardUI, ProcessPendingGameUI, ShowProfileCardUIForUser"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.chat_textbox_compat",
+   "x86_symbol": "patch_chat_textbox_compat (win32_host.c:12356-12421), called at 14971; patches_115 at RVA 0x007b1021 (20 B), 0x007b10df (28 B), 0x007b112c (24 B)",
+   "x86_value": "0x007b1021 / 0x007b10df / 0x007b112c (Minecraft 1.1.5 ONLY)",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "NOT EXECUTED on 1.2.8 (function returns TRUE at line 12414 unless host_is_115) and NOT NEEDED on ARM. On 1.1.5 x86 it inserts 'test esi,esi ; jz skip' null guards before three C++/CX COM vtable calls on a XAML TextBox interface pointer held in ESI ([esi]->vtbl[+0x1c] put_Text, [eax+0x90], [eax+0x34]) because the HWND host has no XAML TextBox, so the pointer is null and the following 'hr<0 -> throw' helper would crash. ARM 1.2.8 has no XAML at all: there is no TextBox, so there is no null interface to guard.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "ARM equivalent: none (no bytes to patch). Do not port patch_chat_textbox_compat and do not call it. Chat/text input on 1.2.8 goes through the engine's own text control fed by HIDController::queueTextItem (see input area), with the OS side provided by CoreTextServicesManager/CoreTextEditContext (fake factory in the host; GetForCurrentView at ARM fn 0x628248 called from HIDController::ctor 0x623c74) and CoreWindow key/character events. The keyboard show/hide (InputPane) is a separate dispatcher-lambda path (fact chat_xbox.inputpane_show_hide).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py str 'Windows.UI.Xaml' -w / ASCII, 'Xaml.Controls' -w, 'TextBox' -w/ASCII, 'ITextBox' -w -> NO hits",
+    "arm32re.py str 'Windows.UI' -w -> 46 hits, ALL Core*/ViewManagement/Text.Core/Input names: CoreWindow, DispatchedHandler, ApplicationView, InputPane, StatusBar, ApplicationViewScaling, SystemNavigationManager, PointerVisualizationSettings, CoreTextServicesManager/EditContext, CoreCursor - no Xaml.* class is ever activated",
+    "arm32re.py str Xaml -> only vccorlib interop RTTI (IBindableVector...Interop@Xaml) with refs=0 (compiler-generated, unused)",
+    "x86 host: patch_chat_textbox_compat starts with 'if (!host_is_115) return TRUE;' (12414); 1.2.8 instead has fake CoreTextServicesManager (win32_host.c:7552) - the ARM game requests exactly that class (arm32re.py xref dc06a0 -> 0x628274 in 0x628248)",
+    "arm32re.py func 628248 -> GetActivationFactoryByPCWSTR(L\"Windows.UI.Text.Core.CoreTextServicesManager\", IID {1520A388-E2CF-4D65-AEB9-B32D86FE39B9}, &out) via vccorlib cell 0xC37BF0 (same call the x86 activation hook intercepts)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.chat_text_input_path_arm",
+   "x86_symbol": "(support) 1.2.8 text input dependencies the host must keep providing",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x00628248",
+   "summary": "CoreTextServicesManager::GetForCurrentView helper (probable) used by input:HIDController::ctor (0x623c74): activation factory request for Windows.UI.Text.Core.CoreTextServicesManager (IID 1520A388-E2CF-4D65-AEB9-B32D86FE39B9). HIDController also holds CoreTextEditContext event delegates (TypedEventHandler<CoreTextEditContext,...> strings 0xdbfd3e..0xdc0588).",
+   "arm_signature": "void* getForCurrentView(void** out /*r0*/) (probable)",
+   "x86_to_arm_notes": "No byte patch. The host must keep redirecting the activation factory for this class (x86 core_text_factory, win32_host.c:5152-5262). The IID literal on ARM is built from 4 literal-pool dwords (0x1520a388, 0x4d65e2cf, 0x2db3b9ae, 0xb939fe86); x86's fake factory ignores the IID so no change.",
+   "expected_bytes": "2d e9 90 48 0d f1 08 0b d8 f5 d4 f7",
+   "evidence": [
+    "arm32re.py xref dc06a0 -> 00628274 in sub_628248; callers 628248 -> 00623dbc in input:HIDController::ctor",
+    "arm32re.py func 628248 literal pool values pool[006282c8..bc]"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "chat_xbox.inputpane_show_hide",
+   "x86_symbol": "AppPlatform::showKeyboard/hideKeyboard hooks win32_show_text_keyboard/win32_hide_text_keyboard (win32_host.c:13843-13865) - installed for 0.15.10 and (115 variants) for 1.1.5, NOT installed for 1.2.8",
+   "x86_value": "n/a on 1.2.8",
+   "kind": "function",
+   "arm_rva": "0x005829AC",
+   "summary": "On ARM the game's keyboard show/hide go AppPlatform_Winrt::vf11 / vf12 -> InputAdapter (this+0x3b4) -> std::function posted to the CoreDispatcher; the posted lambda bodies (0x586cc4 show, 0x586f8c hide) call InputPane::GetForCurrentView (0x57f824, IID IInputPaneStatics 95F4AF3A-EF47-424A-9741-FD2815EBA2BD, class string 0xDB6FB8) and IInputPane2::TryShow (vtbl slot 6) / TryHide (slot 7, QI IID at VA 0x11b82e0).",
+   "arm_signature": "void showKeyboard(AppPlatform_Winrt* r0, ...); void hideKeyboard(AppPlatform_Winrt* r0)",
+   "x86_to_arm_notes": "UNCHANGED vs x86 1.2.8: x86 installs no keyboard hooks on 1.2.8, relying on the fake CoreDispatcher (queue drained by drain_dispatcher_queue, win32_host.c:4899) whose handler Invoke is the C++/CX delegate ABI wrapper that converts exceptions to an HRESULT. The same delegate machinery exists in the ARM exe, so no patch is required; if the ARM host sees exceptions escaping from these lambdas, the data-cell alternative is to replace the AppPlatform_Winrt vtable cells for vf11/vf12 (vtable 0x013695A4, slots 11/12 = cells 0x013695D0 / 0x013695D4) with host stubs that only set the keyboard-visible byte (this+9) like win32_show_text_keyboard.",
+   "expected_bytes": "0x5829ac: 2d e9 f0 4f 0d f1 1c 0b 99 b0 6f 46; 0x582a5c: 2d e9 00 48 eb 46 7e f6 cb f3 8b b0",
+   "evidence": [
+    "arm32re.py func 5829ac -> builds std::function and calls InputAdapter helper sub_585990 via [this+0x3b4] (matches x86 showKeyboard(text,max,multiline,secure,position) arity)",
+    "arm32re.py func 582a5c -> no-arg: builds lambda_e6d0... and calls sub_586ed0 -> sub_58ed1c (hide)",
+    "arm32re.py callers 57f824 -> 0x57e316, 0x586d76 (show), 0x586fa6 (hide), 0x5951b8; vtable slot constants (0x18 / 0x1c) at 0x586dc0 and 0x586ff0"
+   ],
+   "confidence": "medium",
+   "arm_rva_list": "0x005829AC (vf11 showKeyboard, probable), 0x00582A5C (vf12 hideKeyboard, probable)"
+  },
+  {
+   "id": "chat_xbox.exception_trace_iat",
+   "x86_symbol": "RVA_128_CXX_THROW_IAT 0x011d2690, install_exception_trace (win32_host.c:9605-9621), win32_cxx_throw 9588",
+   "x86_value": "0x011d2690",
+   "kind": "iat",
+   "arm_rva": "0x00C374E4",
+   "summary": "IAT cell of VCRUNTIME140_APP.dll!_CxxThrowException. The host swaps the cell for a logger that dumps 24 frames via RtlCaptureStackBackTrace then tail-calls the original. ALL game throws go through this one cell: the single import thunk 0xB4A100 (movw/movt ip=cell ; ldr.w pc,[ip]) has ~2900 direct callers and the cell is referenced nowhere else.",
+   "arm_signature": "void __stdcall _CxxThrowException(void* exceptionObject /*r0*/, const void* throwInfo /*r1*/) noreturn",
+   "x86_to_arm_notes": "Only the cell address changes (0x00C374E4). Save *cell (Thumb pointer) as original before patching; PAGE_READWRITE (cell is in .rdata IAT 0xC37000..0xC37BF8, read-only after load). Frame addresses printed by RtlCaptureStackBackTrace on ARM32 are VAs, possibly with the Thumb bit; subtract image base and clear bit 0 when logging RVAs. The hook is 'noreturn' like the original; dump_115_stdio_state() is 1.1.5/1.16 only (not 1.2.8).",
+   "expected_bytes": "thunk 0xB4A100: 47 f2 e4 4c c0 f2 03 1c dc f8 00 f0",
+   "evidence": [
+    "arm32re.py imports CxxThrow -> 00c374e4 VCRUNTIME140_APP.dll!_CxxThrowException",
+    "arm32re.py impcallers _CxxThrowException -> IAT=00c374e4 thunk=00b4a100, ~2900 call sites",
+    "arm32re.py xref c374e4 -> only mov32 00b4a100 in thunk[_CxxThrowException]"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.crash_trace_x86_context",
+   "x86_symbol": "install_crash_trace (win32_host.c:432), win32_unhandled_exception (386), win32_vectored_exception (11133): CONTEXT.Eip/Esp/Ebp/Eax..Edi, EBP-chain walk, game range 'game_image + 0x00c00000'",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Diagnostics only (no game code is patched) but they are x86-specific and reachable on 1.2.8: SetUnhandledExceptionFilter + AddVectoredExceptionHandler(1, ...). VEH filters codes 0xE06D7363 (C++ exception) and 0xC0000409 and logs EAX/ECX/EDX/EDI/EBP/ESP, a RtlCaptureStackBackTrace dump and scans 2048 stack dwords for values inside the game image.",
+   "arm_signature": "LONG CALLBACK vectored(EXCEPTION_POINTERS*)",
+   "x86_to_arm_notes": "ARM32 CONTEXT has no Eip/Esp/Ebp/Eax: use Pc, Sp, Lr, R0..R12 (R11 = fp). Replace EBP-chain walking (frame[1]=return) by RtlCaptureStackBackTrace or RtlVirtualUnwind (ARM32 MSVC code uses fp chains inconsistently). Game image range for the '(game)' tag: x86 used +0x00c00000; ARM .text is 0x1000..0xC36E9C and SizeOfImage 0x1730000, so use [image, image+SizeOfImage) or [+0x1000, +0xC36E9C). Code 0xC0000409 still exists on ARM (__fastfail = udf #251). The FMOD guard-page / Wine 0x80000001 workaround (11146-11160) targets x86 Wine+desktop FMOD and does not apply to fmod_ARM.dll imports.",
+   "expected_bytes": null,
+   "evidence": [
+    "grep Eip|Esp|Ebp in win32_host.c -> 402-419, 11177-11192, 11722-11725 (the last is a 1.1.5-only watchdog)",
+    "ARM exe image facts: .text va 0x1000 size 0xc35e9c; SizeOfImage 0x1730000 (arm32re.py info)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "chat_xbox.image_size_gate",
+   "x86_symbol": "IMAGE_SIZE_128_PATCHED 0x01923000 / host_is_128 selection (win32_host.c:176, 14872-14883)",
+   "x86_value": "0x01923000",
+   "kind": "pe",
+   "arm_rva": "0x01730000",
+   "summary": "host_is_128 is selected by comparing OptionalHeader.SizeOfImage against the x86 patched-exe size; the x86 patcher (arm32/orig/1.2.8-patcher.py) appends a .d3imp section so the patched image size differs from stock. The ARM exe in the repo has SizeOfImage 0x1730000 (stock). Whatever ARM patching produces, the gate constant must be changed accordingly.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Owned by the winmain/pe area; recorded here because every byte patch in this area is conditioned on it. patch_chat_textbox_compat / patch_xbox_actions_noop are reached only after the gate.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py info -> image: 0x1730000",
+    "arm32/orig/1.2.8-patcher.py: checked_write 'image size', new .d3imp section, WinMain call patch at file offset 0x10293A2 (x86 only, outside this area)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "chat_xbox.catalog_write_relative_jump",
+   "x86_symbol": "write_relative_jump (win32_host.c:10778-10797): E9 rel32 + 5x 0x90 over 10 bytes, PAGE_EXECUTE_READWRITE",
+   "x86_value": "e9 <rel32> 90 90 90 90 90",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Generic x86 hook primitive. Callers reachable on 1.2.8: install_mouse_mode_hooks (12863-12865, three sites) and install_win32_platform_fixes_128 (13949, one site). All other callers (10770, 13559, 13917-13932, 13974-13995) are 0.15.10 / 1.1.5.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Do not port: E9 rel32 does not exist on Thumb-2. Preferred replacement = overwrite the vtable/data cell that points to the function (no code patching). Fallback = 8-byte absolute trampoline at a 4-aligned function entry: DF F8 00 F0 <target|1 as LE dword> = 'ldr.w pc,[pc,#0]' + literal (assembled with keystone, disassembled with capstone). Needs VirtualProtect(PAGE_EXECUTE_READWRITE or WriteProcessMemory-style) and FlushInstructionCache; may be refused on Windows RT code integrity, hence the data-cell route.",
+   "expected_bytes": "df f8 00 f0",
+   "evidence": [
+    "keystone Thumb 'ldr.w pc, [pc, #0]' -> df f8 00 f0; capstone Thumb back-disassembly -> 'ldr.w pc, [pc, #0]' (verified)",
+    "grep write_relative_jump -> callers at 10770, 12863-12865, 13559, 13917-13932, 13949, 13974-13995",
+    "all three mouse targets and the pickFile target are 4-aligned and >= 18 bytes long, so the 8-byte trampoline fits"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.catalog_mouse_hooks",
+   "x86_symbol": "install_mouse_mode_hooks (win32_host.c:12806-12873): RVA_128_MOUSE_RELATIVE 0x007e8300 / ABSOLUTE 0x007e82c0 / TOGGLE 0x007e8260, 10-byte memcmp + write_relative_jump",
+   "x86_value": "0x007e8300 / 0x007e82c0 / 0x007e8260 (x86 expected: 8b 41 04 8b 40 04 80 b8 a0 00 | 8b 41 04 8b 40 04 c7 40 28 02 | 8b 41 04 8b 50 04 80 ba a0 00)",
+   "kind": "hook_site",
+   "arm_rva": "0x0058E93C",
+   "summary": "Owned by area 'input' (input.mouse_*_hook). ARM: std::function<void()>::_Do_call bodies of the AppPlatform_Winrt mouse lambdas. Preferred: replace vtable slot-2 cells 0x01369C30 (relative), 0x01369C14 (absolute), 0x01369C68 (toggle) after checking *cell == image+fn+1. Fallback Thumb trampoline bytes at the entries (replacement): DF F8 00 F0 + (hook|1) LE.",
+   "arm_signature": "void hook(void* lambdaThis /*r0*/) (no thiscall on ARM)",
+   "x86_to_arm_notes": "Expected ARM bytes (16): relative 2d e9 00 48 eb 46 43 68 5a 68 92 f8 a0 30 0b b9; absolute 2d e9 00 48 eb 46 43 68 02 22 5b 68 9a 62 bd e8; toggle 2d e9 00 48 eb 46 43 68 5a 68 92 f8 a0 30 33 b9. x86 10-byte expected arrays are meaningless on ARM.",
+   "expected_bytes": "see x86_to_arm_notes",
+   "evidence": [
+    "arm32re.py bytes 58e88c/58e8f0/58e93c 16 -> values above (verified here)",
+    "arm32re.py ptrs 1369c68/1369c14/1369c30 -> 0x0098e88d / 0x0098e8f1 / 0x0098e93d (raw VA|1) = RVA+0x400000 +1 (verified)",
+    "cross-check with facts/input.json (input.mouse_*_hook)"
+   ],
+   "confidence": "high",
+   "arm_rva_list": "0x0058E93C (relative), 0x0058E8F0 (absolute), 0x0058E88C (toggle)"
+  },
+  {
+   "id": "chat_xbox.catalog_pickfile_jump",
+   "x86_symbol": "install_win32_platform_fixes_128 (13941-13955): RVA_128_PICK_FILE 0x007d72e0, expected 55 8b ec 6a ff 68 f8 cf 4c 01, write_relative_jump -> win32_pick_custom_skin_128",
+   "x86_value": "0x007d72e0",
+   "kind": "hook_site",
+   "arm_rva": "0x005830F8",
+   "summary": "Owned by area 'platform_fixes'. ARM AppPlatform_Winrt::pickFile (vtable 0x013695A4 slot 35). Preferred: replace data cell 0x01369630 (raw value 0x009830F9 = RVA 0x5830F8|1). Fallback trampoline: DF F8 00 F0 + hook|1.",
+   "arm_signature": "pick-file hook with the ARM pickFile signature (see platform_fixes)",
+   "x86_to_arm_notes": "Expected ARM bytes: 2d e9 80 48 0d f1 04 0b 8d b0 6f 46 6f f0 01 03.",
+   "expected_bytes": "2d e9 80 48 0d f1 04 0b 8d b0 6f 46",
+   "evidence": [
+    "arm32re.py bytes 5830f8 16 -> 2d e9 80 48 0d f1 04 0b 8d b0 6f 46 6f f0 01 03 (verified)",
+    "arm32re.py ptrs 1369630 -> 009830f9 AppPlatform_Winrt::pickFile (verified)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.catalog_vtable_cells",
+   "x86_symbol": "pointer swaps in game vtables on 1.2.8: patch_128_zip_slot x2 (8563-8589; RVA 0x0157ba84 / 0x0157bad4), install_client_state_hook_128 (12934-12944; ClientInstance vtable 0x01549354 slot 3, expects image+0x15a080)",
+   "x86_value": "0x0157ba84, 0x0157bad4, 0x0154935c",
+   "kind": "vtable_slot",
+   "arm_rva": "0x0136E5E8",
+   "summary": "Data-only patches, owned by platform_fixes / client_state. ARM cells: ZipPackAccessStrategyOwningFileAcccess[11] 0x0136E5E8 and ZipPackAccessStrategy[11] 0x0136E598 (both raw 0x00A4E6B9 = fn 0x64E6B8), DirectoryPackAccessStrategy[11] 0x0136DF2C (raw 0x00A314BD = fn 0x6314BC), ClientInstance vtable (0x0133A758) slot 3 cell 0x0133A764 (raw 0x0051A281 = fn 0x11A280). Use PAGE_READWRITE; no instruction flush needed.",
+   "arm_signature": "see owning areas",
+   "x86_to_arm_notes": "x86 verification 'if (*slot != image+0x15a080) return FALSE' becomes 'if (*slot != image+0x11A280+1) return FALSE' (cell holds the Thumb bit). Order of the two zip vtables is reversed vs x86.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py ptrs 136e598/136e5e8/136df2c/133a764 (verified values above)",
+    "arm32re.py bytes 11a280 -> 0f b4 2d e9 f0 49 0d f1 14 0b e6 f6 b7 ff 8c b0"
+   ],
+   "confidence": "high",
+   "arm_rva_list": "0x0136E5E8, 0x0136E598, 0x0133A764 (+ directory strategy 0x0136DF2C)"
+  },
+  {
+   "id": "chat_xbox.catalog_iat_patches",
+   "x86_symbol": "IAT/pointer-cell swaps on the 1.2.8 path: install_create_file2_compat (376; 0x011d20d4), install_activation_redirect (8195; 0x011d2b54), install_vccorlib_compat (8289; 0x011d2ae4/0x011d2aac/0x011d2aa8/0x011d2acc/0x011d2b1c), install_d3d_compile_trace (9702; 0x011d20b4), install_d3d11_device_compat (9968; 0x011d2a44), install_exception_trace (9612; 0x011d2690), install_xbox_tcui_noops_128 (13797)",
+   "x86_value": "see x86 RVAs",
+   "kind": "iat",
+   "arm_rva": null,
+   "summary": "Owned by area pe_imports (this list only cross-references names -> cells found with arm32re.py imports). All are pointer cells, patched with PAGE_READWRITE. The 'activation factory' import is vccorlib's GetActivationFactoryByPCWSTR(PCWSTR cls, GUID* iid, void** out) (ARM thunk 0xB48F88 tail-calls it).",
+   "arm_signature": "see pe_imports",
+   "x86_to_arm_notes": "ARM manglings differ (e.g. ??0Object@Platform@@Q$AAA@XZ); vccorlib on ARM is native vccorlib140_app so the Wine-oriented shims win32_platform_allocate*/ibox may be unnecessary - decision belongs to pe_imports. install_vccorlib_compat protects the contiguous span first..last cell (0xC37B7C..0xC37BC8 here) in one VirtualProtect, still fine.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports CreateFile2 / D3DCompile / D3D11CreateDevice / CxxThrow / vccorlib / Activation / IBox / Heap results (see summary column)",
+    "arm32re.py func 628248 shows the game calls GetActivationFactoryByPCWSTR through thunk 0xB48F88"
+   ],
+   "confidence": "medium",
+   "arm_rva_list": "CreateFile2 0x00C3765C; GetActivationFactoryByPCWSTR 0x00C37BF0; Platform::Object ctor 0x00C37B90; Heap::Allocate(uint) 0x00C37B7C; Heap::Allocate(uint,uint) 0x00C37B80; GetIBoxArrayVtable 0x00C37B88; GetIBoxVtable 0x00C37BC8; D3DCompile 0x00C370B4; D3D11CreateDevice 0x00C37A50; _CxxThrowException 0x00C374E4; TCUI 0x015121FC/0x01512200/0x01512208"
+  },
+  {
+   "id": "chat_xbox.catalog_win7_only_patches",
+   "x86_symbol": "patch_win7_discard_views (9916-9958; RVA_128_DISCARD_WINDOW_VIEWS 0x007d68e0: expects first byte 0xa1 or 0xc3, writes 0xc3) and patch_win7_dxgi_device3_query_to_base (9870-9914; IID at RVA_128_DXGI_DEVICE3_IID 0x012d8b28 overwritten with IID_IDXGIDevice)",
+   "x86_value": "0x007d68e0 / 0x012d8b28",
+   "kind": "hook_site",
+   "arm_rva": "0x00582970",
+   "summary": "Both are gated by host_is_windows7 (GetVersion()==6.1) and never run on ARM (no ARM Windows 7). NOT NEEDED. For reference (gfx areas): DiscardWindowViews = AppPlatform_Winrt vtable slot 33, entry bytes 2d e9 18 48 0d f1 08 0b 48 f2 ac 63 c0 f2 9b 13; if ever required the Thumb 'ret' is 'bx lr' = 70 47; IID literal {6007896c-3244-4afd-bf18-a6d3beda5023} at 0xDBC2C4 (bytes 6c 89 07 60 44 32 fd 4a bf 18 a6 d3 be da 50 23).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "patch_win7_device2_queries_to_base is skipped on 1.2.8 even on x86 (14941). Entry-byte check 0xa1/0xc3 is x86-only.",
+   "expected_bytes": "70 47 (bx lr) only if ever needed",
+   "evidence": [
+    "arm32re.py bytes 582970 16; arm32re.py guid 6007896c-... -> 00dbc2c4 refs=5 (verified)",
+    "cross-check facts/gfx_compat.json (win7_discard_views, iid_dxgi_device3)"
+   ],
+   "confidence": "high",
+   "arm_rva_list": "0x00582970 (discard views fn), 0x00DBC2C4 (IID literal)"
+  },
+  {
+   "id": "chat_xbox.catalog_non_game_vtable_hooks",
+   "x86_symbol": "install_scissor_fix (1312; ID3D11DeviceContext vtable[45]) and install_swap_chain_present_hook (10024; IDXGISwapChain vtable[8], PAGE_EXECUTE_READWRITE)",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Host-owned system COM vtables (D3D11/DXGI), not game code. Owned by gfx areas. Same slot indices on ARM (COM ABI). For the swap-chain slot use PAGE_READWRITE (it is data); x86 requested EXECUTE_READWRITE needlessly.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "No byte-level change.",
+   "expected_bytes": null,
+   "evidence": [
+    "grep install_scissor_fix -> 1312/11469; install_swap_chain_present_hook -> 10024/11571 (both inside initialize_game_d3d)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "chat_xbox.catalog_not_on_128_path",
+   "x86_symbol": "byte patches present in the source but unreachable for 1.2.8",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Verified by call-site analysis (Win32Bootstrap branches): patch_xbox_actions_noop 0.15.10/1.1.5 return_handled sites (12308-12329), patch_chat_textbox_compat 1.1.5 (12390-12421), patch_115_xaml_self_references (12139-12220), install_115_stdio_trace / patch_115_iat_slot (9334), memcmp 83 c4 04 90 90 at RVA_115_SOUND_JSON_LOAD_CALL (14986), install_win32_platform_fixes (13957, 0.15.10), install_win32_platform_fixes_115 (13897), install_chat_submit_compat_01510 (14304), install_development_version_text_01510 (10756), install_file_browser_compat_01510 (13542), install_material_task_compat (10659), trace installers with E8 patches (install_game_tick_trace 10068, install_client_update_trace, install_material_trace 10576, install_render_state_guard 10601; unreachable), install_native_fmod_bridge (11120) and resolve_fmod_delay_imports_115/116.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Nothing to port. resolve_fmod_delay_imports_128 (10885): patches delay-IAT cells for fmod.dll on x86; ARM links fmod_ARM.dll as a REGULAR import (RE_GUIDE) so it is not needed (verify in the imports area).",
+   "expected_bytes": null,
+   "evidence": [
+    "func_index.txt flags + grep of host_is_128 / Win32Bootstrap lines 14899-14980 (1.2.8 branch calls only: install_exception_trace, install_create_file2_compat, install_activation_redirect, install_vccorlib_compat, install_d3d_compile_trace, patch_win7_dxgi_device3_query_to_base, patch_win7_discard_views, install_d3d11_device_compat, install_xbox_tcui_noops_128, patch_xbox_actions_noop, patch_chat_textbox_compat(no-op), install_128_zip_resource_overrides, install_client_state_hook_128, resolve_fmod_delay_imports_128, install_mouse_mode_hooks, install_win32_platform_fixes_128)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "chat_xbox.catalog_thumb_replacement_bytes",
+   "x86_symbol": "assembled with keystone (Thumb) and disassembled back with capstone",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Verified Thumb-2 encodings: 'ldr.w pc,[pc,#0]' = DF F8 00 F0 (entry must be 4-aligned; literal dword follows at entry+4, value = target|1); 'bx lr' = 70 47; 'movs r0,#0; bx lr' = 00 20 70 47; 'movs r0,#8; bx lr' = 08 20 70 47; 'movw r0,#0x4001; movt r0,#0x8000; bx lr' (return E_NOTIMPL) = 44 F2 01 00 C8 F2 00 00 70 47.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Use after FlushInstructionCache when code patching cannot be avoided. Prefer data-cell patches.",
+   "expected_bytes": "see summary",
+   "evidence": [
+    "keystone: ks.asm per instruction; capstone: Cs(CS_ARCH_ARM, CS_MODE_THUMB).disasm round trip matched for every sequence (note: 'keystone' name collides with the OpenStack package; import keystone.keystone.Ks)"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "patch_xbox_actions_noop (1.2.8 branch): write byte 0x21 ('!') over the first character of two .rdata strings after checking they are 0x62 ('b'): image+0x00D99E28 (\"button.signin\", expected bytes 62 75 74 74 6f 6e 2e 73...) and image+0x00DA345C (\"button.xbl_signin\"). Use VirtualProtect(PAGE_READWRITE) and restore; no execute permission, no FlushInstructionCache. Do it before the game constructs any ScreenController (i.e. in Win32Bootstrap, same place as on x86). Keep the 'return FALSE + log' behaviour on mismatch.",
+  "There is exactly one copy of each string; five registration sites (ItemDetail/StoreBase for button.signin, StartMenu/XblFirstLaunch/XblOptionalSignin for button.xbl_signin) all read that single copy, so no further string or lambda patches are needed (matches x86). Do not touch 'button.save_to_xbl', 'menu_xbox_signin_button' or 'xbox_signin' (x86 does not).",
+  "install_xbox_tcui_noops_128: ARM cell order is DIFFERENT. Assign by import name: *(void**)(image+0x015121FC) = win32_show_profile_card_noop (HRESULT, args HSTRING/callback/context ignored, return E_NOTIMPL=0x80004001); *(void**)(image+0x01512200) = win32_process_pending_game_ui_noop (return S_OK); *(void**)(image+0x01512208) = win32_show_profile_card_for_user_noop (return E_NOTIMPL); leave image+0x01512204 (null terminator) untouched. One VirtualProtect(image+0x015121FC, 16, PAGE_READWRITE) as on x86. Drop WINAPI/stdcall annotations; function pointers are Thumb (bit0 set) automatically. The only caller is wrapper 0xA3E014, which skips ProcessPendingGameUI/wait when the Show* call returns E_NOTIMPL, exactly like x86.",
+  "patch_chat_textbox_compat: delete/skip. It is 1.1.5-only on x86 (early return for 1.2.8) and the ARM 1.2.8 exe contains no XAML classes (no 'Windows.UI.Xaml*' or TextBox strings, UTF-16 or ASCII), so there is nothing to guard. Keep supplying the fake Windows.UI.Text.Core.CoreTextServicesManager/CoreTextEditContext factory (used by HIDController ctor via fn 0x628248) as on x86 1.2.8.",
+  "install_exception_trace: patch the IAT cell image+0x00C374E4 (VCRUNTIME140_APP!_CxxThrowException) with the logging hook, saving the original (Thumb) pointer. Signature void(void* exception /*r0*/, const void* throwInfo /*r1*/), noreturn. Convert logged frame addresses to RVAs by subtracting image base and clearing bit 0. dump_115_stdio_state is not relevant to 1.2.8. install_crash_trace/win32_vectored_exception must be rewritten for the ARM32 CONTEXT (Pc/Sp/Lr/R0-R12) and must not walk an EBP chain.",
+  "Every code-bytes patch on the x86 1.2.8 path that remains necessary (3 mouse lambdas, pickFile, ClientInstance vtable slot 3, zip getAsset cells) should be done by overwriting vtable/data cells (see catalog_mouse_hooks, catalog_pickfile_jump, catalog_vtable_cells); write_relative_jump (E9 + NOPs) and the 10-byte x86 expected-byte arrays must be removed. If a code patch is unavoidable use the 8-byte Thumb trampoline DF F8 00 F0 + (target|1) at a 4-aligned entry, then FlushInstructionCache.",
+  "Windows-7-only patches (DiscardView 0xC3 patch, DXGI Device3 IID downgrade, Device2 QI downgrade) are never executed on ARM; do not port them."
+ ],
+ "open_questions": [
+  "The ShowProfileCard chain (0xA3CC30 -> 0xA3C580 -> 0xA3E014) has no inbound references in the image; the three TCUI no-ops are therefore defensive. If a runtime log ever shows 'Xbox profile-card request ignored by Win32 host' on ARM, find the dynamic caller (maybe via a std::function stored as a raw pointer built at runtime).",
+  "AppPlatform_Winrt::showKeyboard/hideKeyboard (vf11/vf12, lambdas 0x586CC4/0x586F8C) call InputPane::GetForCurrentView, which fails in a plain HWND process. x86 1.2.8 installs no hook and apparently survives because the CoreDispatcher delegate Invoke translates the thrown exception to an HRESULT; this was not proven on ARM (delegate wrapper not disassembled). If the ARM host crashes when a chat/text box gets focus, replace vtable cells 0x013695D0/0x013695D4 (slots 11/12 of AppPlatform_Winrt 0x013695A4) with host stubs that only maintain the keyboard-visible byte (this+9) and text_input_active.",
+  "button.save_to_xbl and the other non-patched callers of ScreenController::xblSignIn (0x21B848; 11 of its 16 callers are not covered by the string patch) remain live on both x86 and ARM; if the ARM host (WinRT sign-in classes absent) crashes when they are used, hook 0x21B848 (bytes 2d e9 b0 48 0d f1 0c 0b) or rename 'button.save_to_xbl' (0xD95E5C) as optional hardening.",
+  "ViewRequest return value semantics (0 vs 8) are only partially confirmed (0x2d33b4 returns 8 on its early-out; sign-in lambdas return 0 after starting the sign-in). Only relevant for the optional lambda-body fallback.",
+  "The XblOptionalSigninScreenController handler lambda (registered at 0x2D646C through a stack std::function built by 0x2D6B38, sign-in call from 0x2D64CC) was not isolated; irrelevant while the string patch is used.",
+  "The ARM image size gate (SizeOfImage 0x1730000 stock) and how the ARM exe will be patched to import win32craft.dll are outside this area (winmain/pe)."
+ ]
+}

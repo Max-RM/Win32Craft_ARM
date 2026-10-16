@@ -1,0 +1,4 @@
+    installed_result = activation_ok && device_ok;
+    installed_once = TRUE;
+    return installed_result;
+}

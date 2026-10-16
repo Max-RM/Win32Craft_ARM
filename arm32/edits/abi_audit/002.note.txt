@@ -1,0 +1,1 @@
+ARM32: the empty-string async operation answers QueryInterface(IAsyncInfo) like every other fake IAsyncOperation.

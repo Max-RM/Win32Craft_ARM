@@ -1,0 +1,282 @@
+#ifdef WIN32CRAFT_ARM32
+/* ARM32 resource overrides (facts platform_fixes.zip_get_contents_fn / directory_get_contents_slot / string_assign_fn).
+ * PackAccessStrategy::getAsset (vtable slot 11) is a plain AAPCS call:
+ *   BOOL getAsset(void *this /r0/, const std::string *path /r1/, std::string *out /r2/, BOOL requireValidPack /r3/)
+ * The ARM package ships loose files, so DirectoryPackAccessStrategy (original 0x6314BC, cell 0x0136DF2C) is the likely live
+ * path; the two zip vtables (original 0x64E6B8, cells 0x0136E598 / 0x0136E5E8) are kept for parity with x86.  The strategies
+ * have DIFFERENT originals, so there is one thin wrapper per original.  The direct bl callers of 0x64E6B8 (0x9389A inside
+ * sub_936B0 and 0x93BA6 inside sub_939B4) belong to MinecraftUnitTest code (FixedKeyProvider/MockFileAccess, "validfile.txt",
+ * "stuff/more_stuff.json") that only ever runs from the test runner, so the cell patches cover every real path.
+ * DirectoryPackWithEncryptionAccessStrategy[11] (cell 0x0136E004, original 0x6323F0) is deliberately not hooked: the vanilla
+ * pack is not encrypted (plain UTF-8 en_US.lang / start_screen.json in the package); only its cell value is logged. */
+typedef BOOL (*Arm32GetAssetFn)(void *, const GameStringX86 *, GameStringX86 *, BOOL);
+typedef void *(*Arm32StringAssignFn)(GameStringX86 *, const char *, size_t);
+
+static Arm32GetAssetFn arm32_original_zip_get_asset;
+static Arm32GetAssetFn arm32_original_directory_get_asset;
+static Arm32StringAssignFn arm32_string_assign;
+static int arm32_get_asset_probe_budget = 16;     /* first calls are logged: shows which strategy serves which path */
+static int arm32_get_asset_override_budget = 24;  /* rewritten .lang/start_screen.json results are logged */
+
+static BOOL arm32_get_asset_override(Arm32GetAssetFn original, const char *kind, void *self,
+                                     const GameStringX86 *path, GameStringX86 *output,
+                                     BOOL require_valid_pack)
+{
+    static const BYTE copyright_key[] = "menu.copyright=";
+    static const BYTE copyright_replacement[] = COPYRIGHT_OVERRIDE_LINE_A;
+    static const BYTE development_key[] = "development_version=";
+    static const BYTE development_replacement[] = DEVELOPMENT_OVERRIDE_LINE_A;
+    BYTE *copyright_output = NULL;
+    BYTE *final_output = NULL;
+    BYTE *start_screen_output = NULL;
+    DWORD copyright_size = 0;
+    DWORD final_size = 0;
+    DWORD start_screen_size = 0;
+    DWORD original_size;
+    const char *contents;
+    BOOL result;
+    BOOL is_start_screen;
+    BOOL is_lang;
+    char sample[96];
+    char line[256];
+
+    if (!original) return FALSE;
+    result = original(self, path, output, require_valid_pack);
+    if (arm32_get_asset_probe_budget > 0) {
+        --arm32_get_asset_probe_budget;
+        copy_ascii_sample(sample, sizeof(sample), game_string_data(path));
+        wsprintfA(line, "ARM32 getAsset[%s] this=%p path='%s' result=%d out_length=%lu", kind, self, sample,
+                  (int)result,
+                  (result && output && !IsBadReadPtr(output, sizeof(*output))) ? (unsigned long)output->length : 0ul);
+        log_line(line);
+    }
+    if (!result || !output || !arm32_string_assign) return result;
+
+    is_start_screen = resource_path_has_suffix(path, "start_screen.json");
+    is_lang = !is_start_screen && resource_path_has_suffix(path, ".lang");
+    if (!is_start_screen && !is_lang) return result;
+
+    contents = game_string_data(output);
+    if (!contents || !output->length || IsBadReadPtr(contents, output->length)) {
+        log_line("ARM32 getAsset override skipped: output string empty or unreadable");
+        return result;
+    }
+    original_size = output->length;
+
+    if (is_start_screen) {
+        if (start_screen_force_development_control((const BYTE *)contents, original_size,
+                                                   &start_screen_output, &start_screen_size)) {
+            arm32_string_assign(output, (const char *)start_screen_output, start_screen_size);
+            HeapFree(GetProcessHeap(), 0, start_screen_output);
+            if (arm32_get_asset_override_budget > 0) {
+                --arm32_get_asset_override_budget;
+                copy_ascii_sample(sample, sizeof(sample), game_string_data(path));
+                wsprintfA(line, "ARM32 getAsset[%s] start_screen override applied to '%s': %lu -> %lu bytes",
+                          kind, sample, (unsigned long)original_size, (unsigned long)output->length);
+                log_line(line);
+            }
+        } else if (arm32_get_asset_override_budget > 0) {
+            --arm32_get_asset_override_budget;
+            copy_ascii_sample(sample, sizeof(sample), game_string_data(path));
+            wsprintfA(line, "ARM32 getAsset[%s] start_screen rewrite found nothing to change in '%s' (%lu bytes)",
+                      kind, sample, (unsigned long)original_size);
+            log_line(line);
+        }
+        return result;
+    }
+
+    if (!lang_apply_line_override((const BYTE *)contents, original_size,
+                                  copyright_key, sizeof(copyright_key) - 1,
+                                  copyright_replacement, sizeof(copyright_replacement) - 1,
+                                  &copyright_output, &copyright_size)) {
+        log_line("ARM32 getAsset lang override: menu.copyright rewrite failed (out of memory?)");
+        return result;
+    }
+    if (lang_apply_line_override(copyright_output, copyright_size,
+                                 development_key, sizeof(development_key) - 1,
+                                 development_replacement, sizeof(development_replacement) - 1,
+                                 &final_output, &final_size)) {
+        arm32_string_assign(output, (const char *)final_output, final_size);
+        HeapFree(GetProcessHeap(), 0, final_output);
+    } else {
+        /* x86 dropped the copyright change here; keeping it costs nothing */
+        arm32_string_assign(output, (const char *)copyright_output, copyright_size);
+    }
+    HeapFree(GetProcessHeap(), 0, copyright_output);
+    if (arm32_get_asset_override_budget > 0) {
+        --arm32_get_asset_override_budget;
+        copy_ascii_sample(sample, sizeof(sample), game_string_data(path));
+        wsprintfA(line, "ARM32 getAsset[%s] .lang override applied to '%s': %lu -> %lu bytes",
+                  kind, sample, (unsigned long)original_size, (unsigned long)output->length);
+        log_line(line);
+    }
+    return result;
+}
+
+static BOOL win32_128_zip_get_contents(void *self, const GameStringX86 *path, GameStringX86 *output,
+                                       BOOL require_valid_pack)
+{
+    return arm32_get_asset_override(arm32_original_zip_get_asset, "zip", self, path, output, require_valid_pack);
+}
+
+static BOOL win32_128_directory_get_contents(void *self, const GameStringX86 *path, GameStringX86 *output,
+                                             BOOL require_valid_pack)
+{
+    return arm32_get_asset_override(arm32_original_directory_get_asset, "dir", self, path, output,
+                                    require_valid_pack);
+}
+
+/* Swap one strategy's slot-11 cell.  The original is recorded BEFORE the cell is written so a call arriving right after
+ * the store already finds it.  A cell that already holds the hook counts as installed. */
+static BOOL patch_128_zip_slot(BYTE *image, SIZE_T slot_rva, SIZE_T function_rva, const BYTE *function_bytes,
+                               SIZE_T function_bytes_size, void *hook, Arm32GetAssetFn *original_slot,
+                               const char *what)
+{
+    void **slot = (void **)(image + slot_rva);
+    void *expected = ARM_CODE(image, function_rva);
+    char line[200];
+
+    if (IsBadReadPtr(slot, sizeof(*slot))) {
+        wsprintfA(line, "ARM32 %s: cell %p is unreadable", what, (void *)slot);
+        log_line(line);
+        return FALSE;
+    }
+    if (*slot == hook) {
+        wsprintfA(line, "ARM32 %s: cell %p already holds the override", what, (void *)slot);
+        log_line(line);
+        return TRUE;
+    }
+    if (!arm32_check_bytes(image + function_rva, function_bytes, function_bytes_size, what)) return FALSE;
+    *original_slot = (Arm32GetAssetFn)expected;
+    return arm32_patch_cell(slot, expected, hook, NULL, what);
+}
+
+static BOOL install_128_zip_resource_overrides(BYTE *image)
+{
+    BOOL directory_ok;
+    BOOL zip_plain_ok;
+    BOOL zip_owning_ok;
+    void **encrypted_cell;
+    char line[200];
+
+    if (!image) return FALSE;
+    encrypted_cell = (void **)(image + ARM_PLATFORM_FIXES_DIRECTORY_ENCRYPTED_GET_CONTENTS_SLOT);
+    arm32_string_assign = (Arm32StringAssignFn)ARM_CODE(image, ARM_PLATFORM_FIXES_STRING_ASSIGN_FN);
+    if (!arm32_check_bytes(image + ARM_PLATFORM_FIXES_STRING_ASSIGN_FN,
+                           ARM_PLATFORM_FIXES_STRING_ASSIGN_FN_EXPECTED,
+                           sizeof(ARM_PLATFORM_FIXES_STRING_ASSIGN_FN_EXPECTED), "std::string::assign(ptr,len)")) {
+        arm32_string_assign = NULL;
+        log_line("Minecraft 1.2.8 ARM32 getAsset overrides not installed: std::string::assign signature mismatch");
+        return FALSE;
+    }
+    directory_ok = patch_128_zip_slot(image, ARM_PLATFORM_FIXES_DIRECTORY_GET_CONTENTS_SLOT,
+                                      0x006314bc /* DirectoryPackAccessStrategy::getAsset (facts) */,
+                                      ARM_PLATFORM_FIXES_DIRECTORY_GET_CONTENTS_SLOT_EXPECTED,
+                                      sizeof(ARM_PLATFORM_FIXES_DIRECTORY_GET_CONTENTS_SLOT_EXPECTED),
+                                      (void *)win32_128_directory_get_contents,
+                                      &arm32_original_directory_get_asset,
+                                      "DirectoryPackAccessStrategy::getAsset vtable[11]");
+    zip_plain_ok = patch_128_zip_slot(image, ARM_PLATFORM_FIXES_ZIP_PLAIN_SLOT_CELL,
+                                      ARM_PLATFORM_FIXES_ZIP_GET_CONTENTS_FN,
+                                      ARM_PLATFORM_FIXES_ZIP_GET_CONTENTS_FN_EXPECTED,
+                                      sizeof(ARM_PLATFORM_FIXES_ZIP_GET_CONTENTS_FN_EXPECTED),
+                                      (void *)win32_128_zip_get_contents, &arm32_original_zip_get_asset,
+                                      "ZipPackAccessStrategy::getAsset vtable[11]");
+    zip_owning_ok = patch_128_zip_slot(image, ARM_PLATFORM_FIXES_ZIP_OWNING_SLOT_CELL,
+                                       ARM_PLATFORM_FIXES_ZIP_GET_CONTENTS_FN,
+                                       ARM_PLATFORM_FIXES_ZIP_GET_CONTENTS_FN_EXPECTED,
+                                       sizeof(ARM_PLATFORM_FIXES_ZIP_GET_CONTENTS_FN_EXPECTED),
+                                       (void *)win32_128_zip_get_contents, &arm32_original_zip_get_asset,
+                                       "ZipPackAccessStrategyOwningFileAcccess::getAsset vtable[11]");
+    if (!IsBadReadPtr(encrypted_cell, sizeof(*encrypted_cell))) {
+        wsprintfA(line, "ARM32 DirectoryPackWithEncryptionAccessStrategy getAsset cell %p = %p (left unhooked)",
+                  (void *)encrypted_cell, *encrypted_cell);
+        log_line(line);
+    }
+    wsprintfA(line, "Minecraft 1.2.8 ARM32 getAsset overrides: directory=%s zip=%s zip-owning=%s",
+              directory_ok ? "ok" : "FAILED", zip_plain_ok ? "ok" : "FAILED", zip_owning_ok ? "ok" : "FAILED");
+    log_line(line);
+    return directory_ok || zip_plain_ok || zip_owning_ok;
+}
+#else
+static BOOL __attribute__((thiscall)) win32_128_zip_get_contents(
+    void *self, const GameStringX86 *path, GameStringX86 *output,
+    BOOL require_valid_pack)
+{
+    static const BYTE copyright_key[] = "menu.copyright=";
+    static const BYTE copyright_replacement[] = COPYRIGHT_OVERRIDE_LINE_A;
+    static const BYTE development_key[] = "development_version=";
+    static const BYTE development_replacement[] = DEVELOPMENT_OVERRIDE_LINE_A;
+    Game128StringAssignFn assign = (Game128StringAssignFn)(
+        game_image + RVA_128_STRING_ASSIGN);
+    const char *contents;
+    BYTE *copyright_output = NULL;
+    BYTE *final_output = NULL;
+    BYTE *start_screen_output = NULL;
+    DWORD copyright_size = 0;
+    DWORD final_size = 0;
+    DWORD start_screen_size = 0;
+    BOOL result;
+
+    result = original_128_zip_get_contents(
+        self, path, output, require_valid_pack);
+    if (!result) return result;
+    contents = game_string_data(output);
+    if (!contents || IsBadReadPtr(contents, output->length)) return result;
+    if (resource_path_has_suffix(path, "start_screen.json")) {
+        if (start_screen_force_development_control(
+                (const BYTE *)contents, output->length,
+                &start_screen_output, &start_screen_size)) {
+            assign(output, (const char *)start_screen_output,
+                   start_screen_size);
+            HeapFree(GetProcessHeap(), 0, start_screen_output);
+        }
+        return result;
+    }
+    if (!resource_path_has_suffix(path, ".lang")) return result;
+    if (!lang_apply_line_override(
+            (const BYTE *)contents, output->length,
+            copyright_key, sizeof(copyright_key) - 1,
+            copyright_replacement, sizeof(copyright_replacement) - 1,
+            &copyright_output, &copyright_size))
+        return result;
+    if (lang_apply_line_override(
+            copyright_output, copyright_size,
+            development_key, sizeof(development_key) - 1,
+            development_replacement, sizeof(development_replacement) - 1,
+            &final_output, &final_size)) {
+        assign(output, (const char *)final_output, final_size);
+        HeapFree(GetProcessHeap(), 0, final_output);
+    }
+    HeapFree(GetProcessHeap(), 0, copyright_output);
+    return result;
+}
+
+static BOOL patch_128_zip_slot(BYTE *image, SIZE_T slot_rva)
+{
+    void **slot = (void **)(image + slot_rva);
+    DWORD old_protection;
+    DWORD ignored;
+    if (*slot != image + RVA_128_ZIP_GET_CONTENTS &&
+        *slot != win32_128_zip_get_contents) return FALSE;
+    if (!VirtualProtect(slot, sizeof(*slot), PAGE_READWRITE,
+                        &old_protection)) return FALSE;
+    *slot = win32_128_zip_get_contents;
+    VirtualProtect(slot, sizeof(*slot), old_protection, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), slot, sizeof(*slot));
+    return TRUE;
+}
+
+static BOOL install_128_zip_resource_overrides(BYTE *image)
+{
+    original_128_zip_get_contents = (Game128ZipGetContentsFn)(
+        image + RVA_128_ZIP_GET_CONTENTS);
+    if (!patch_128_zip_slot(image, RVA_128_ZIP_OWNING_GET_CONTENTS_SLOT) ||
+        !patch_128_zip_slot(image, RVA_128_ZIP_GET_CONTENTS_SLOT)) {
+        log_line("Minecraft 1.2.8 ZIP resource override installation failed");
+        return FALSE;
+    }
+    log_line("Minecraft 1.2.8 ZIP screen/language overrides installed");
+    return TRUE;
+}
+#endif /* WIN32CRAFT_ARM32 */

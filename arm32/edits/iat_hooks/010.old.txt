@@ -1,0 +1,3 @@
+static BOOL install_xbox_tcui_noops_128(BYTE *image)
+{
+    void **slots = (void **)(image + RVA_128_TCUI_PROCESS_PENDING_IAT);

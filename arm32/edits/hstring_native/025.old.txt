@@ -1,0 +1,2 @@
+HRESULT WINAPI GetRestrictedErrorInfo(void **info)
+{

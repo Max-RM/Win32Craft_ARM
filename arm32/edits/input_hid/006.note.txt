@@ -1,0 +1,1 @@
+ARM32 queue_keyboard_event + queue_character_event (map_virtual_key(vk-8), key/text bridges, EnqueueInput by slot address, CR->LF like the stock Enter path); x86 originals kept under #else.

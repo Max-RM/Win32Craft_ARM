@@ -1,0 +1,518 @@
+{
+ "area": "gfx_device",
+ "facts": [
+  {
+   "id": "gfx_device.operator_new",
+   "x86_symbol": "operator_new_rva (host_is_128)",
+   "x86_value": "0x010296d1",
+   "kind": "function",
+   "arm_rva": "0x00b4929c",
+   "summary": "MSVC CRT `operator new(size_t)` linked into the game (malloc + _callnewh retry loop, throws bad_alloc / bad_array_new_length). The game's own owner/renderer make-functions allocate with exactly this function, and every delete goes through operator_delete_sized 0x00b49864 -> operator_delete 0x00b495b0 (-> free). The host must allocate the owner with it (not HeapAlloc/malloc of the host CRT).",
+   "arm_signature": "void* operator_new(size_t size /*r0*/) -> r0 (never returns NULL, throws on OOM); plain AAPCS, no hidden args; callee-saved r4-r11",
+   "x86_to_arm_notes": "Thumb function: the host MUST call it through a pointer with bit0 set, i.e. (void*)((uintptr_t)image + rva + 1) (a BLX to an even address switches to ARM state and crashes). x86 was cdecl `GameOperatorNewFn(size_t)`; on ARM it is the same shape (r0=size). Typedef: `typedef void *(*GameOperatorNewFn)(size_t);` and the pointer is image+0xb4929c+1. Matching free routines (if the host ever frees): 0x00b495b0 void operator_delete(void*), 0x00b49864 void operator_delete_sized(void*,size_t).",
+   "expected_bytes": "2de918480df1080b04460be0",
+   "evidence": [
+    "arm32re func b4929c -> push {r3,r4,fp,lr}; mov r4,r0; loop: _callnewh thunk (api-ms-win-crt-heap!_callnewh), malloc thunk, cmp r0,0 ; bad_array_new_length when size==-1",
+    "arm32re func 13f2a0 (make_owner) -> `movs r0,#0xd0; bl 0xb4929c` then memset(r0,0,0xd0); and sub_5b8320 (make_renderer) -> `mov.w r0,#0x204; bl 0xb4929c`",
+    "arm32re callers b4929c -> many callers across game incl. std containers; 0x13f2a0, 0x5b8320, 0x5bc0a4 are the owner/renderer allocations"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.owner_ctor",
+   "x86_symbol": "RVA_128_OWNER_CTOR",
+   "x86_value": "0x0082cce0",
+   "kind": "function",
+   "arm_rva": "0x005b7e7c",
+   "summary": "GameOwner constructor (the object that holds the D3D11 device and owns the Renderer; x86 host calls it `game resource owner`). Zero-initialises many members, creates the Renderer via sub_5b8320 (new 0x204 + memset + Renderer::ctor 0x5bb62c), stores it at owner+0xac and writes the owner back-pointer into renderer+0x108. Does NOT touch owner+0xb8/0xbc/0xc0/0xc4.",
+   "arm_signature": "void* GameOwner_ctor(void* owner /*r0*/) -> r0 = owner (same pointer); memory must be pre-zeroed 0xd0 bytes; no other args; callee-saved r4-r11",
+   "x86_to_arm_notes": "Thumb function: the host MUST call it through a pointer with bit0 set, i.e. (void*)((uintptr_t)image + rva + 1) (a BLX to an even address switches to ARM state and crashes). x86 `thiscall(void*)` -> plain C `void*(*)(void*)`. Sequence the host must reproduce (it mirrors the game's own make_owner at 0x13f2a0): owner = operator_new(0xd0); memset(owner,0,0xd0); owner = ctor(owner); *(uint32_t*)(owner+0xb8)=0x9100; *(uint8_t*)(owner+0xbc)=0; *(void**)(owner+0xc0)=0; *(void**)(owner+0xc4)=0; then publish the pointer in the owner cell. The 0xb8 store (=0x9100, D3D_FEATURE_LEVEL_9_1) is not done by the x86 host (ZeroMemory only) and is harmless to omit because InitDevice overwrites it, but doing it matches the game.",
+   "expected_bytes": "2de9ff480df1200b6f466ff0",
+   "evidence": [
+    "arm32re func 5b7e7c -> `str r4,[r3,#0x108]` at end where r3=[r6=owner+0xac] (renderer->owner back pointer), `bl 0x5b8320` stores renderer at owner+0xac",
+    "arm32re func 13f2a0 (make_owner) -> new(0xd0), memset(0xd0), `bl 0x5b7e7c`, then `str #0x9100,[owner,#0xb8]; strb 0,[owner,#0xbc]; strd 0,0,[owner,#0xc0]`",
+    "arm32re func 5b7e7c -> no globals read; ctor is safe to run before AppMain/DeviceResources exist (renderer ctor 0x5bb62c / 0x5b7cd8 / list sentinel 0x5bc0a4 only allocate and zero)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.init_device",
+   "x86_symbol": "RVA_128_INIT_DEVICE",
+   "x86_value": "0x0082cff0",
+   "kind": "function",
+   "arm_rva": "0x005bc258",
+   "summary": "GameOwner::InitDevice: builds the feature-level vector {11_1,11_0,10_1,10_0,9_3,9_2,9_1} (trimmed to 11_1..10_0 when owner+0xbc != 0), calls D3D11CreateDevice (pAdapter=[owner+0xc4]; DriverType=HARDWARE(1), or UNKNOWN(0) only when owner+0xbc!=0 and an adapter is set; on failure releases outputs and retries once with WARP driver type 5), outputs: owner+0xc0 = ID3D11Device (base interface), owner+0xb8 = selected feature level, renderer+0x110 = immediate ID3D11DeviceContext (base); then QI ID3D11DeviceContext2 -> renderer+0x114, IDXGIDevice3 -> GetAdapter -> IDXGIAdapter3 (optional, QueryVideoMemoryInfo), and ID3DUserDefinedAnnotation -> renderer+0x140.",
+   "arm_signature": "void GameOwner_InitDevice(void* owner /*r0*/, void* renderer /*r1*/); no return value used; callee-saved r4-r11; HRESULT failures are only logged (sub_9d1058=FormatMessage), NOT thrown",
+   "x86_to_arm_notes": "Thumb function: the host MUST call it through a pointer with bit0 set, i.e. (void*)((uintptr_t)image + rva + 1) (a BLX to an even address switches to ARM state and crashes). x86 `thiscall(this=owner, renderer)` -> plain `void(*)(void* owner, void* renderer)`. Calls D3D11CreateDevice through IAT cell 0x00c37a50 (import thunk 0xa3b968) from two sites 0x5bc3a0 and 0x5bc3ec, so the host's IAT hook (flags |= 0x20 BGRA) still applies. The game already contains the WARP retry (second call, driver type 5) so the host's `FAILED && driver_type==1` WARP fallback is redundant on ARM (harmless). Windows 7 specifics (E_NOINTERFACE on Device2/Context2/DXGIDevice3 QI) do not apply on Windows RT 8.1 / Windows 10 ARM32.",
+   "expected_bytes": "2de9f04f0df11c0b44f6ccf7",
+   "evidence": [
+    "arm32re impcallers D3D11CreateDevice -> only sub_5bc258 (calls at 0x5bc3a0 and 0x5bc3ec); args: pAdapter=[owner+0xc4], DriverType, flags=[sp-local+4], levels vector, count, SDK=7, ppDevice=owner+0xc0, pFeatureLevel=owner+0xb8, ppContext=renderer+0x110",
+    "arm32re func 134d40 @0x134ea6..0x134eac -> `ldr r0,[cell]; ldr r1,[r0,#0xac]; bl 0x5bc258` i.e. InitDevice(owner, owner->renderer): matches x86 init_device(owner, renderer)",
+    "QI IIDs at RVA 0xdbc3fc (ID3D11DeviceContext2 420d5b32-..), 0xdbc2c4 (IDXGIDevice3), 0xdbc2a4 (IDXGIAdapter3), 0xdbc3dc (ID3DUserDefinedAnnotation) verified byte-wise; context stored renderer+0x110/0x114 equals x86 table"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.init_targets",
+   "x86_symbol": "RVA_128_INIT_TARGETS",
+   "x86_value": "0x0082cd90",
+   "kind": "function",
+   "arm_rva": "0x005bc0cc",
+   "summary": "GameOwner::InitTargets: (re)creates the window-size dependent targets from a display descriptor. Releases old renderer+0x124, IDXGISwapChain::GetBuffer(0, IID_ID3D11Texture2D, &renderer+0x124); creates RTV(s) -> renderer+0x118 (and, if display.stereo, a second array-slice RTV -> renderer+0x11c); creates a transient depth Texture2D (DXGI_FORMAT_D24_UNORM_S8_UINT=0x2d, bind 0x40, array size 1 or 2) and its DSV -> renderer+0x120, then releases the transient texture. It does NOT store the swap chain anywhere, does NOT touch renderer+0x104, viewport or OM bindings.",
+   "arm_signature": "void GameOwner_InitTargets(void* owner /*r0*/, const DisplayDesc* display /*r1*/, void* renderer /*r2*/); reads display->width@0, height@4, stereo@0x19, swap_chain@0x1c; uses owner+0xc0 (device) and renderer+0x110..0x124; no return value",
+   "x86_to_arm_notes": "Thumb function: the host MUST call it through a pointer with bit0 set, i.e. (void*)((uintptr_t)image + rva + 1) (a BLX to an even address switches to ARM state and crashes). x86 `thiscall(owner, display*, renderer)` -> plain 3-register-arg C call. Argument order unchanged (owner, display, renderer). The host must itself store the swap chain at renderer+0x104 before the first game Present (see renderer_swapchain fact).",
+   "expected_bytes": "2de9f04b0df1180b45f692f0",
+   "evidence": [
+    "arm32re func 5bc0cc -> `ldr.w r4,[r8,#0x1c]` (swap chain) then `ldr r4,[vtbl,#0x24]` (IDXGISwapChain::GetBuffer, idx 9) with IID 0xdbc3ec (6f15aaf2-.. ID3D11Texture2D) and out=r5+0x124; `ldrb.w r3,[r8,#0x19]` (stereo) selects Texture2DArray RTV desc (fmt 0x57, dim 5)",
+    "device vtable calls via [owner+0xc0]: +0x24 CreateRenderTargetView -> renderer+0x118 / +0x11c, +0x14 CreateTexture2D (fmt 0x2d, w=[disp],h=[disp+4]), +0x28 CreateDepthStencilView -> renderer+0x120",
+    "arm32re callers 5bc0cc -> only gfx:Renderer::createWindowSizeDependentResources (0x5bb774) at 0x5bb81c with (owner=[renderer+0x108], display=renderer+0xe8, renderer) - same triple order as the x86 host"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.release_targets",
+   "x86_symbol": "RVA_128_RELEASE_TARGETS",
+   "x86_value": "0x0082c680",
+   "kind": "function",
+   "arm_rva": "0x005bbb30",
+   "summary": "Renderer::releaseWindowSizeDependentResources: context->OMSetRenderTargets(1,&NULL,NULL); releases RTVs renderer+0x118 and +0x11c and DSV +0x120 (nulling each); then ID3D11DeviceContext::Flush (vtbl idx 111 = +0x1bc). It does NOT release the back-buffer texture at renderer+0x124 and does not touch the swap chain.",
+   "arm_signature": "void Renderer_ReleaseTargets(void* renderer /*r0*/); uses renderer+0x110 (context); no return value",
+   "x86_to_arm_notes": "Thumb function: the host MUST call it through a pointer with bit0 set, i.e. (void*)((uintptr_t)image + rva + 1) (a BLX to an even address switches to ARM state and crashes). x86 `thiscall(renderer)` -> `void(*)(void*)`. The x86 host's extra step (release + null renderer+0x124 before ResizeBuffers) is still REQUIRED on ARM because this function leaves 0x124 alone; InitTargets also releases 0x124 first, but DXGI ResizeBuffers needs all buffer refs gone before it is called.",
+   "expected_bytes": "2de930480df1080b45f660f3",
+   "evidence": [
+    "arm32re func 5bbb30 -> `[ctx+0x84]` (OMSetRenderTargets idx33) with r1=1,&0,r3=0; releases [r5+0x118],[r5+0x11c],[r5+0x120]; `[ctx+0x1bc]` Flush",
+    "arm32re func 5bb774 -> first call is `bl 0x5bbb30` (createWindowSizeDependentResources starts with releaseWindowSizeDependentResources), x86 comment calls the same helper 'Renderer::releaseWindowSizeDependentResources'",
+    "full disassembly of 0x5bbb30 contains no access to renderer+0x124; the back buffer is released by InitTargets (0x5bc0cc), the renderer dtor (0x5bb68c) and Display::resizeSwapChain (0x5bec54)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.discard_window_views",
+   "x86_symbol": "RVA_128_DISCARD_WINDOW_VIEWS",
+   "x86_value": "0x007d68e0",
+   "kind": "function",
+   "arm_rva": "0x00582970",
+   "summary": "AppPlatform_Winrt vtable slot 33 (+0x84; AppPlatform_Winrt vtable RVA 0x013695a4): loads the owner cell, renderer=owner+0xac, then ID3D11DeviceContext1::DiscardView (idx 118, +0x1d8) on renderer+0x114 (ID3D11DeviceContext2) for the colour view renderer+0x118 and the depth view renderer+0x120. Unguarded: crashes if renderer+0x114 is NULL (Windows 7 only).",
+   "arm_signature": "void AppPlatform_Winrt_DiscardWindowViews(AppPlatform_Winrt* this /*r0, unused*/); callee-saved r4-r11; leaf-ish (2 virtual calls)",
+   "x86_to_arm_notes": "Thumb function: the host MUST call it through a pointer with bit0 set, i.e. (void*)((uintptr_t)image + rva + 1) (a BLX to an even address switches to ARM state and crashes). x86 patch_win7_discard_views wrote 0xC3 (ret) at function[0] after checking function[0] is 0xA1 (mov eax,[moffs32]) or 0xC3. ARM: NOT needed on Windows RT 8.1 / Windows 10 ARM32 because ID3D11DeviceContext2 exists there; host_is_windows7 is FALSE so the function is a no-op. If a defensive patch is ever wanted: expected first 4 bytes `2d e9 18 48` (push.w {r3,r4,fp,lr}); replacement `70 47` (bx lr) (overwrite 2 bytes at function entry with `70 47` = bx lr via VirtualProtect(PAGE_EXECUTE_READWRITE) + FlushInstructionCache; PAGE_EXECUTE_WRITECOPY may be needed on Windows RT). Accept-set for the entry sanity check: {2d e9 18 48 (original), 70 47 (already patched)}.",
+   "expected_bytes": "2de918480df1080b48f2ac63",
+   "evidence": [
+    "arm32re func 582970 -> movw/movt 0x019b86ac (owner cell VA) ; ldr r3,[r3]; ldr.w r4,[r3,#0xac]; `ldrd r3,r1,[r4,#0x114]` => context2=[+0x114], view=[+0x118]; `ldr r3,[r3,#0x1d8]` DiscardView; second call with [r4,#0x120]",
+    "arm32re vtable 13695a4 150 -> slot [33] +0x84 = 0x00982971 (VA|thumb) = this function (auto-name AppPlatform_Winrt::vf33)",
+    "x86 first byte 0xA1 = `mov eax,[global]` == the ARM first data access (owner cell load); x86 comment: 'DiscardView method for colour and depth views via context2' matches"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.owner_global",
+   "x86_symbol": "RVA_128_OWNER_GLOBAL",
+   "x86_value": "0x017c50f4",
+   "kind": "data",
+   "arm_rva": "0x015b86ac",
+   "summary": "The game's global GameOwner* cell (plain pointer, in .data, RW, no relocation). The host publishes the freshly constructed owner here; the game then reads renderer=[cell]+0xac / device=[cell]+0xc0 everywhere (>50 xrefs: AppPlatform_Winrt::vf32/vf33/vf143, MinecraftOptionValue::*, LevelRenderer, MinecraftGraphics, Renderer helpers...). If the cell is non-NULL when MinecraftGame init (sub_134d40, called from MinecraftGame::vf27 @0x12a0ec and sub_12dee0 @0x12e0fc) runs, the game SKIPS its own make_owner + InitDevice + sub_5b9f4c(queryAdapterInfo) + AppPlatform::vf143.",
+   "arm_signature": "GameOwner* g_owner; store with `*(void**)(image + 0x015b86ac) = owner;` (4-byte aligned word store)",
+   "x86_to_arm_notes": "Same semantics as x86. Address is an RVA (VA 0x019b86ac with ImageBase 0x400000). No VirtualProtect needed (.data is RW). Because the host publishes the owner itself, the game does not run sub_5b9f4c (adapter caps -> owner+0x40/0x44/0x90/0x91) nor AppPlatform vf143; owner+0x90 stays 0 (see owner_caps fact). The x86 host has the same skip.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re xref 15b86ac -> 50+ mov32 sites; sub_134d40 @0x134e96 `ldr r3,[r5]; cbnz -> skip` then `bl 0x13db5c (make+store)` then InitDevice([cell],[[cell]+0xac])",
+    "arm32re func 13db5c -> `movw/movt 0x019b86ac; sub_13f2a0 holder; swap [cell]` (stores make_owner result into the cell; old owner deleted with size 0xd0 / renderer 0x204)",
+    "arm32re func 582970 / 583b94 / 3efb28 -> all use `ldr r?,[cell]; ldr r?,[r?,#0xac]` or [owner+0x90/94/98]: the cell holds the owner pointer itself (no wrapper)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.owner_size",
+   "x86_symbol": "owner_size (0xd0 for 1.2.8)",
+   "x86_value": "0x000000d0",
+   "kind": "offset",
+   "arm_rva": "0xd0",
+   "summary": "sizeof(GameOwner) = 0xd0 bytes.",
+   "arm_signature": "operator_new(0xd0); memset(owner,0,0xd0)",
+   "x86_to_arm_notes": "UNCHANGED vs x86 (0xd0).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 13f2a0 -> `movs r0,#0xd0` ... `movs r2,#0xd0; movs r1,#0; memset`",
+    "arm32re func 13db5c / 13f2a0 dtor path -> `movs r1,#0xd0; bl operator_delete_sized` (sized delete = 0xd0)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.owner_renderer_offset",
+   "x86_symbol": "owner_renderer_offset (1.2.8)",
+   "x86_value": "0x000000ac",
+   "kind": "offset",
+   "arm_rva": "0xac",
+   "summary": "owner->renderer (Renderer*, 0x204-byte object).",
+   "arm_signature": "Renderer* renderer = *(Renderer**)((BYTE*)owner + 0xac);",
+   "x86_to_arm_notes": "UNCHANGED (0xac).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5b7e7c -> `add.w r6,r0,#0xac; str r?,[r6]` (renderer installed by ctor)",
+    "arm32re func 134d40 -> `ldr.w r1,[r0,#0xac]` passed as renderer to InitDevice; func 582970 `ldr.w r4,[r3,#0xac]` used as renderer"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.owner_device_offset",
+   "x86_symbol": "owner_device_offset (1.2.8)",
+   "x86_value": "0x000000c0",
+   "kind": "offset",
+   "arm_rva": "0xc0",
+   "summary": "owner->ID3D11Device* (base ID3D11Device; ppDevice of D3D11CreateDevice).",
+   "arm_signature": "ID3D11Device* device = *(ID3D11Device**)((BYTE*)owner + 0xc0);",
+   "x86_to_arm_notes": "UNCHANGED (0xc0). On ARM it is the base ID3D11Device (there is no Device2 QI in InitDevice), so the Windows 7 'device null after Device2 QI' fallback is dead code on ARM.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bc258 -> `add.w r6,sb,#0xc0` is the ppDevice stack arg (sp+0xc) of D3D11CreateDevice at 0x5bc3a0",
+    "arm32re func 5bc0cc -> device methods called via `ldr.w r4,[r6,#0xc0]`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.owner_other_fields",
+   "x86_symbol": "(not used by x86 host, needed for ARM parity)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "GameOwner extra fields found on ARM: +0xb8 u32 achieved feature level (initial 0x9100, written by D3D11CreateDevice via pFeatureLevel); +0xbc u8 flag (0 by default; if !=0 InitDevice passes flags=0x20 and drops 9_x levels); +0xc4 IDXGIAdapter* (NULL in the host path; only consulted for the driver type when +0xbc!=0, then non-NULL => UNKNOWN); +0x90 u8 / +0x91 u8 capability bytes (set by sub_5b9f4c, read via GameOwner::hasFeature 0x5bc524: id7 -> [0x90]==1 (swap-chain tearing support), id10 -> [0x91]); +0x94/+0x98 i32 cached window width/height copied to AppPlatform+0x330/0x334 by AppPlatform_Winrt::vf143; +0x40/+0x44 a 64-bit DXGI_QUERY_VIDEO_MEMORY_INFO field copied from IDXGIAdapter3::QueryVideoMemoryInfo (by sub_5b9f4c).",
+   "arm_signature": "struct GameOwner (size 0xd0): u32 featureLevel @0xb8; u8 initFlag @0xbc; ID3D11Device* device @0xc0; IDXGIAdapter* adapter @0xc4; Renderer* renderer @0xac; u8 caps @0x90,@0x91",
+   "x86_to_arm_notes": "Host should zero everything (as x86) and write featureLevel=0x9100. Do NOT call sub_5b9f4c: it would set owner+0x90=1 on tearing-capable machines, after which the game's own Present1/ResizeBuffers paths add ALLOW_TEARING flags that the host-created swap chain was not created with (DXGI_ERROR_INVALID_CALL).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bc258 -> ldrb.w r3,[sb,#0xbc]; ldr.w r0,[sb,#0xc4]; sb+0xb8 as out param",
+    "arm32re func 5bc524 (tbb switch) case7 -> `ldrb.w r3,[r0,#0x90]; cmp #1`, case10 -> `ldrb.w r0,[r0,#0x91]`",
+    "arm32re func 583b94 -> `ldrb [owner+0x90]->platform+0x298; [owner+0x94]->platform+0x9c,+0x330; [owner+0x98]->platform+0xa0,+0x334`",
+    "arm32re func 5b9f4c -> strb [r5,#0x90]/[0x91], str [r5,#0x40]/[0x44]"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "gfx_device.renderer_size",
+   "x86_symbol": "(renderer allocation done inside owner ctor)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x204",
+   "summary": "sizeof(Renderer) = 0x204, allocated and constructed by the owner ctor (make_renderer 0x5b8320). The host never allocates it.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Informational. Renderer back-pointer to the owner is renderer+0x108.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5b8320 -> `mov.w r0,#0x204; bl operator_new; memset 0x204; bl 0x5bb62c`",
+    "arm32re func 5b7e7c -> `str.w r4,[r3,#0x108]` (owner back-pointer)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.renderer_context",
+   "x86_symbol": "renderer_context_offset (1.2.8)",
+   "x86_value": "0x00000110",
+   "kind": "offset",
+   "arm_rva": "0x110",
+   "summary": "renderer->ID3D11DeviceContext* immediate context (base interface; ppImmediateContext of D3D11CreateDevice). Host hooks vtable slot 45 (RSSetScissorRects) of this context and drives OMSetRenderTargets/RSSetViewports on it.",
+   "arm_signature": "ID3D11DeviceContext* game_context = *(ID3D11DeviceContext**)((BYTE*)renderer + 0x110);",
+   "x86_to_arm_notes": "UNCHANGED (0x110).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bc258 -> ppImmediateContext = r5+0x110 (`add.w r4,r5,#0x110`, sp+0x14 of D3D11CreateDevice)",
+    "arm32re func 5bbb30 -> `ldr.w r4,[r0,#0x110]` then `[vtbl,#0x84]` OMSetRenderTargets and `[vtbl,#0x1bc]` Flush"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.renderer_context2",
+   "x86_symbol": "renderer_context2_offset (1.2.8)",
+   "x86_value": "0x00000114",
+   "kind": "offset",
+   "arm_rva": "0x114",
+   "summary": "renderer->ID3D11DeviceContext2* (QI result; used only for DiscardView).",
+   "arm_signature": "void* context2 = *(void**)((BYTE*)renderer + 0x114);",
+   "x86_to_arm_notes": "UNCHANGED (0x114). Only logged by the x86 host.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bc258 -> QI with IID 0xdbc3fc (ID3D11DeviceContext2) into `add.w r2,r5,#0x114` @0x5bc408..0x5bc41a",
+    "arm32re func 582970 -> `ldrd r3,r1,[r4,#0x114]` then DiscardView(+0x1d8)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.renderer_swapchain",
+   "x86_symbol": "renderer_swap_chain_offset (1.2.8)",
+   "x86_value": "0x00000104",
+   "kind": "offset",
+   "arm_rva": "0x104",
+   "summary": "renderer->IDXGISwapChain*. It is field display.swap_chain (+0x1c) of the display descriptor EMBEDDED in the renderer at renderer+0xe8 (0xe8+0x1c = 0x104). The game's Present path (AppPlatform_Winrt::vf32 -> Display::present 0x5bed3c) passes renderer+0xe8 and reads [display+0x1c]; renderer dtor / releaseSwapChain (0x5b7d4c) Release it.",
+   "arm_signature": "IDXGISwapChain* sc = *(IDXGISwapChain**)((BYTE*)renderer + 0x104);   /* host must AddRef + store it, releasing any old value */",
+   "x86_to_arm_notes": "UNCHANGED (0x104). InitTargets does not store it, so the x86 host's explicit store (Release old, AddRef new) is required on ARM too.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bb774 -> `add.w r0,r6,#0xe8` (display) passed to sub_5bec54 and InitTargets; sub_5bec54 reads `ldr r4,[r5,#0x1c]` (swap chain) => renderer+0x104",
+    "arm32re func 582908 (vf32) -> `add.w r0,r5,#0xe8; bl 0x5bed3c`; 0x5bed3c -> `ldr r3,[r4,#0x1c]; ldr r3,[r3]; ldr r3,[r3,#0x20]` (IDXGISwapChain::Present idx 8)",
+    "arm32re func 5bb68c / 5b7d4c -> release of [renderer+0x104] (dtor / releaseSwapChain), and 5b7cd8 zeroes it in the base ctor `strd r4,r4,[r0,#0x104]`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.renderer_rtv",
+   "x86_symbol": "renderer_rtv_offset (1.2.8)",
+   "x86_value": "0x00000118",
+   "kind": "offset",
+   "arm_rva": "0x118",
+   "summary": "renderer->ID3D11RenderTargetView* (colour target, left eye). renderer+0x11c holds the right-eye RTV only when display.stereo!=0 (NULL for the host).",
+   "arm_signature": "game_target = *(ID3D11RenderTargetView**)((BYTE*)renderer + 0x118);",
+   "x86_to_arm_notes": "UNCHANGED (0x118).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bc0cc -> CreateRenderTargetView(res=[r5+0x124], desc, out=r5+0x118) @0x5bc178/0x5bc1aa; stereo branch writes second view to r5+0x11c",
+    "arm32re func 5bbb30 -> releases 0x118, 0x11c, 0x120; func 5bb774 tail -> OMSetRenderTargets(1,&renderer+0x118,[renderer+0x120])"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.renderer_dsv",
+   "x86_symbol": "renderer_dsv_offset (1.2.8)",
+   "x86_value": "0x00000120",
+   "kind": "offset",
+   "arm_rva": "0x120",
+   "summary": "renderer->ID3D11DepthStencilView* (the depth texture is transient: only the view is kept). Also used by render_game_target_128 (+0x120).",
+   "arm_signature": "ID3D11DepthStencilView* dsv = *(ID3D11DepthStencilView**)((BYTE*)renderer + 0x120);",
+   "x86_to_arm_notes": "UNCHANGED (0x120); the host's hard-coded `+ 0x120` in render_game_target_128 stays valid.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bc0cc -> CreateDepthStencilView(tex, desc, out=r5+0x120) (device vtbl +0x28) @0x5bc236, then transient texture released",
+    "arm32re func 5bb774 -> `ldr.w r3,[r6,#0x120]` as pDepthStencilView of OMSetRenderTargets; func 582970 DiscardView(+0x120)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.renderer_backbuffer",
+   "x86_symbol": "renderer_backbuffer_offset (1.2.8)",
+   "x86_value": "0x00000124",
+   "kind": "offset",
+   "arm_rva": "0x124",
+   "summary": "renderer->ID3D11Texture2D* swap-chain back buffer (GetBuffer(0, IID_ID3D11Texture2D)). Must be released before IDXGISwapChain::ResizeBuffers.",
+   "arm_signature": "ID3D11Texture2D* bb = *(ID3D11Texture2D**)((BYTE*)renderer + 0x124);",
+   "x86_to_arm_notes": "UNCHANGED (0x124). ReleaseTargets does not release it, so resize_game_window's manual Release+NULL is still required.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bc0cc -> `add.w r3,r5,#0x124` out param of GetBuffer, preceded by Release/NULL of the old value",
+    "arm32re func 5bec54 (Display::resizeSwapChain) -> releases [renderer+0x124] before ResizeBuffers(vtbl+0x34) and re-GetBuffer's it"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.renderer_other_fields",
+   "x86_symbol": "(not used by host)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "Other Renderer fields seen on ARM: +0xe8 embedded display descriptor (w@0xe8,h@0xec,fmt@0xf0,msaa@0xf4,... bufferCount@0xfc, scaling@0x100, stereo@0x101, swapchain@0x104); +0x108 owner back-pointer; +0x128 D3D11_VIEWPORT (6 floats, written by createWindowSizeDependentResources after InitTargets); +0x140 ID3DUserDefinedAnnotation; +0x144 std::list sentinel (new 0x24); +0x200 u8.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Informational. The host passes its own display struct to InitTargets but the game's embedded descriptor (renderer+0xe8/+0xec width/height) stays at its ctor defaults unless the host also writes them; only needed if the game ever runs its own Renderer::createWindowSizeDependentResources (it does not on the HWND path).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bb774 / 5bec54 / 5beaac -> display fields +0,+4,+8,+0xc,+0x10,+0x14,+0x18,+0x19,+0x1c"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "gfx_device.display_descriptor",
+   "x86_symbol": "struct display {UINT width,height; BYTE reserved_08[0x11]; BYTE stereo; BYTE reserved_1a[2]; IDXGISwapChain* swap_chain;}",
+   "x86_value": "size 0x20",
+   "kind": "offset",
+   "arm_rva": "0x1c",
+   "summary": "Display descriptor passed to InitTargets. ARM layout is IDENTICAL to the x86 host struct: u32 width @0x00, u32 height @0x04, [0x08..0x18] game fields (format enum @8, sample count @0xc, quality @0x10, buffer count @0x14, scaling index @0x18), u8 stereo @0x19, 2 pad bytes, IDXGISwapChain* @0x1c, sizeof 0x20. All members are 32-bit, so ARM natural alignment adds no padding.",
+   "arm_signature": "struct Display { uint32_t width; uint32_t height; uint8_t reserved_08[0x11]; uint8_t stereo; uint8_t reserved_1a[2]; IDXGISwapChain* swap_chain; };  /* _Static_assert(offsetof(swap_chain)==0x1c && sizeof==0x20) */",
+   "x86_to_arm_notes": "UNCHANGED. Zero everything except width, height, swap_chain (stereo must stay 0: stereo=1 would create Texture2DArray views). The game's resize code (Display::resizeSwapChain 0x5bec54) writes width/height back into this struct at [0],[4].",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bc0cc -> `ldr.w r4,[r8,#0x1c]` (swap chain), `ldrb.w r3,[r8,#0x19]` (stereo), `ldr.w r3,[r8]`/`[r8,#4]` (w,h) packed into the depth-texture desc",
+    "arm32re func 5beaac (CreateSwapChainForCoreWindow) -> reads d+0,+4,+8(format via sub_5bf260),+0xc,+0x10,+0x14,+0x18(table idx),+0x19(stereo) to fill DXGI_SWAP_CHAIN_DESC1",
+    "arm32re func 5bed3c -> swap chain taken from `ldr r3,[r4,#0x1c]` with r4 = display = renderer+0xe8"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.present_path",
+   "x86_symbol": "win32_present / install_swap_chain_present_hook / game_present_success_count",
+   "x86_value": "IDXGISwapChain vtable[8]",
+   "kind": "hook_site",
+   "arm_rva": "0x005bed3c",
+   "summary": "Game-side Present: Display::present(display*) 0x5bed3c (called only by AppPlatform_Winrt::vf32 = 'swapBuffers' 0x582908 with display=renderer+0xe8). If [g_displaySettings+0x30]==1 (default; byte set to 1 in make 0x13ef14) it calls IDXGISwapChain::Present(1,0) = vtable slot 8 (+0x20). Otherwise it calls IDXGISwapChain1::Present1(0, flags, &zeroed DXGI_PRESENT_PARAMETERS) = vtable slot 22 (+0x58) with flags=0x200 (ALLOW_TEARING) iff GameOwner::hasFeature(7). Return codes DEVICE_REMOVED/RESET/HUNG are routed to sub_5bf134, any other failure is only logged.",
+   "arm_signature": "int Display_present(Display* display /*r0*/) -> r0 (0 ok, 2/3 device lost codes); host vtable hook signature: HRESULT STDMETHODCALLTYPE Present(IDXGISwapChain*, UINT sync, UINT flags) / HRESULT Present1(IDXGISwapChain1*, UINT sync, UINT flags, const DXGI_PRESENT_PARAMETERS*)",
+   "x86_to_arm_notes": "x86 hook of vtable slot 8 is still valid and catches the default path (COM vtable indices are identical on ARM). Additions for ARM: (1) the stored function pointer must be a Thumb pointer (compiler does this for &win32_present); use VirtualProtect(..., PAGE_READWRITE) not PAGE_EXECUTE_READWRITE for the data vtable (RWX can be refused on Windows RT code-integrity); (2) also hook slot 22 (Present1, +0x58) with the same sync/flag policy and increment game_present_success_count, because when [g_displaySettings+0x30]==0 the game uses Present1 and game_present_success_count would never move (host fallback Present then runs a second Present each frame); (3) strip DXGI_PRESENT_ALLOW_TEARING (0x200) from flags unless the swap chain was created with DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING; (4) make sure the pointer stored at renderer+0x104 is an IDXGISwapChain1* (QueryInterface it from the CreateSwapChain result if the Present1 slot is hooked). g_displaySettings = *(u8**)(image+0x015b86b0).",
+   "expected_bytes": "2de910480df1040b42f65af2",
+   "evidence": [
+    "arm32re func 5bed3c -> `ldr r3,[g]; ldrb [r3,#0x30]; cmp #1; ... ldr r3,[r3,#0x20] (Present) / ldr r4,[r4,#0x58] (Present1)`; callers 5bed3c -> only 0x58293e in AppPlatform_Winrt::vf32",
+    "arm32re func 13ef14 (make 0x38-byte display settings) -> `strb.w r3(=1),[r0,#0x30]` default; GameArguments::vf1 / sub_12f390 clear it for a mode flag",
+    "arm32re imm 887a0005 -> pools only in 0x5bed38 (Display::resizeSwapChain) and 0x5bedd0 (Display::present): the DXGI_ERROR_DEVICE_REMOVED handling"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "gfx_device.global_display_settings",
+   "x86_symbol": "(none)",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": "0x015b86b0",
+   "summary": "Global pointer to a 0x38-byte display/graphics-settings struct (make 0x13ef14, created in MinecraftGame init 0x1279c8): +0 bufferCount(3), +4 swap-chain format (0x57 B8G8R8A8), +8 u8, +0xc MSAA samples, +0x14/+0x18 float logical window width/height (written by MinecraftGame::vf24 windowSizeChanged 0x12f8f0), +0x30 u8 vsync-present selector (1), +0x31 u8, +0x34. Read by Display::present, Display::resizeSwapChain and Renderer::setScissorRect (0x5bb560 uses +0x14/+0x18 to convert scissor Y).",
+   "arm_signature": "uint8_t* g_displaySettings = *(uint8_t**)(image + 0x015b86b0);",
+   "x86_to_arm_notes": "Not used by the x86 host directly; relevant because the host's call to game vtable +0x60 (MinecraftGame::vf24) is what feeds +0x14/+0x18, and install_scissor_fix compensates the scissor conversion that uses those floats.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 12f8f0 (MinecraftGame::vf24) -> vstr s0,[g,#0x14]; vstr s1,[g,#0x18]",
+    "arm32re func 5bb560 -> `vldr s6,[g,#0x14]; vldr s4,[g,#0x18]` used to build the RECT passed to RSSetScissorRects (+0xb4)",
+    "arm32re func 13ef14 -> new(0x38), defaults {3,0x57,1,1,0,0..}, +0x30=1"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "gfx_device.scissor_fix",
+   "x86_symbol": "install_scissor_fix(game_context) : context->lpVtbl[45]",
+   "x86_value": "vtable idx 45",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "ID3D11DeviceContext::RSSetScissorRects hook; vtable index 45 (+0xb4) is a property of the D3D11 COM interface and is identical on ARM. The game's own caller is Renderer::setScissorRect 0x5bb560 (`ldr r3,[r3,#0xb4]`).",
+   "arm_signature": "void STDMETHODCALLTYPE hook(ID3D11DeviceContext*, UINT count, const D3D11_RECT*)",
+   "x86_to_arm_notes": "UNCHANGED. Use PAGE_READWRITE for the vtable patch (it already does). Whether the Y-offset bug reproduces on ARM cannot be proven statically; keep the fix (it only rewrites wholly-negative rects).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bb560 -> `ldr.w r3,[r3,#0xb4]` right after getContext_addref_copy: RSSetScissorRects idx 45",
+    "RSSetViewports idx 44 (+0xb0) used in 5bb774 for the same context"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "gfx_device.d3d11_create_device_iat",
+   "x86_symbol": "RVA_128_D3D11_CREATE_DEVICE_IAT / win32_d3d11_create_device",
+   "x86_value": "0x011d2a44",
+   "kind": "iat",
+   "arm_rva": "0x00c37a50",
+   "summary": "IAT cell of d3d11.dll!D3D11CreateDevice (thunk 0x00a3b968 = movw ip/movt ip/ldr.w pc,[ip]); the only game call sites are in InitDevice (0x5bc3a0, 0x5bc3ec).",
+   "arm_signature": "HRESULT WINAPI D3D11CreateDevice(IDXGIAdapter* r0, D3D_DRIVER_TYPE r1, HMODULE r2, UINT flags r3, const D3D_FEATURE_LEVEL* [sp+0], UINT count [sp+4], UINT sdk [sp+8], ID3D11Device** [sp+0xc], D3D_FEATURE_LEVEL* [sp+0x10], ID3D11DeviceContext** [sp+0x14])",
+   "x86_to_arm_notes": "Hook still needed: the game passes flags=0 (owner+0xbc==0), the host ORs D3D11_CREATE_DEVICE_BGRA_SUPPORT (0x20) for the BGRA swap chain. The Windows-7-only branch (drop 11_1 from the list), the captured_base_device/context bookkeeping and the WARP retry are not needed on ARM (game retries with driver type 5 itself). The cell value must be a Thumb pointer (bit0=1).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re imports D3D11 -> d3d11.dll!D3D11CreateDevice IAT=00c37a50 thunk=00a3b968",
+    "arm32re impcallers D3D11CreateDevice -> 0x5bc3a0 and 0x5bc3ec in sub_5bc258"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.appmain_layout_resize",
+   "x86_symbol": "game_app_main+0x1c platform, +0x20 game (1.2.8)",
+   "x86_value": "0x1c / 0x20",
+   "kind": "offset",
+   "arm_rva": "0x1c,0x20",
+   "summary": "MCPE_Host::AppMain: +0x1c AppPlatform_Winrt*, +0x20 MinecraftGame*. The ARM function that performs the same work as resize_game_window's tail is AppMain::onWindowSizeChanged 0x57df28 (this=AppMain in r0).",
+   "arm_signature": "AppPlatform_Winrt* platform = *(void**)((BYTE*)app_main+0x1c); MinecraftGame* game = *(void**)((BYTE*)app_main+0x20);",
+   "x86_to_arm_notes": "UNCHANGED (0x1c / 0x20). Cross-checked in 57df28 and 57d0b8; AppMain construction itself belongs to another area.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 57df28 -> `ldr r5,[r6,#0x1c]` (platform: [r5+0x330/0x334] stored, [r5+0x33c/0x340] scale read), `ldr r3,[r6,#0x20]` (game) then vtable calls +0x5c and +0x60",
+    "arm32re func 57d0b8 -> `ldr r0,[r5,#0x1c]` platform, stores game at `add.w r1,r5,#0x20`, +0x24 another member"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "gfx_device.platform_size_fields",
+   "x86_symbol": "platform+0x330 / platform+0x334",
+   "x86_value": "0x330 / 0x334",
+   "kind": "offset",
+   "arm_rva": "0x330,0x334",
+   "summary": "AppPlatform_Winrt int32 window width / height written by resize_game_window and activate_game_app_128.",
+   "arm_signature": "*(int*)((BYTE*)platform+0x330)=width; *(int*)((BYTE*)platform+0x334)=height;",
+   "x86_to_arm_notes": "UNCHANGED (0x330/0x334). ARM also keeps duplicate +0x9c/+0xa0 (set only by AppPlatform_Winrt::vf143 from owner+0x94/0x98, never run in the host path; the x86 host does not set them either) and float scale at +0x33c/+0x340.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 57df28 -> `str.w r3,[r5,#0x330]; str.w r3,[r5,#0x334]` after computing w,h",
+    "arm32re func 583b94 (AppPlatform_Winrt::vf143) -> `str.w r3,[r0,#0x330]`, `str.w r3,[r0,#0x334]`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.game_resize_vslots",
+   "x86_symbol": "game vtable +0x5c resize(w,h,float 0) / +0x60 windowSizeChanged(w,h)",
+   "x86_value": "0x5c / 0x60",
+   "kind": "vtable_slot",
+   "arm_rva": "0x0012f860,0x0012f8f0",
+   "summary": "MinecraftGame vtable (RVA 0x0133bacc) slot 23 = MinecraftGame::vf23 0x12f860 (resize), slot 24 = MinecraftGame::vf24 0x12f8f0 (windowSizeChanged; stores g_displaySettings+0x14/0x18 floats then tail-calls sub_474030). vtable layout/slot numbers unchanged, IsBadReadPtr(vtbl,0x64) check still valid.",
+   "arm_signature": "void MinecraftGame_resize(MinecraftGame* r0, int w r1, int h r2, float scale s0 /*pass 0.0f*/);  void MinecraftGame_windowSizeChanged(MinecraftGame* r0, int w r1, int h r2);",
+   "x86_to_arm_notes": "IMPORTANT: the 4th argument of resize is a FLOAT and is passed in s0 (hard-float AAPCS-VFP), not in r3. Declare `typedef void (*GameResizeFn)(void*, int, int, float);` and call `resize(game, w, h, 0.0f)`; an int 0 would land in r3 and leave s0 undefined. The x86 asm thunk call_game_resize disappears (plain call). Both are Thumb pointers read from the vtable (bit0 already set).",
+   "expected_bytes": "2de9f0480df1100b2ded028b",
+   "evidence": [
+    "arm32re func 57df28 @0x57dfd0..0x57e032 -> `ldr r3,[r3,#0x5c]` with r1=w r2=h `vldr s0,[pc]`=0.0f; @0x57e080 `ldr r3,[r3,#0x60]` with r1,r2 only",
+    "arm32re func 12f860 -> `vmov.f32 s16,s0` (float arg), r1,r2 = w,h, defaults w==0->0xf0,h==0->0x8c",
+    "arm32re vtable 133bacc 30 -> [23] +0x5c 0x0052f861, [24] +0x60 0x0052f8f1"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.resize_sequence",
+   "x86_symbol": "resize_game_window: OMSet(0)+Flush, ReleaseTargets, drop 0x124, ResizeBuffers(0,w,h,UNKNOWN,0), InitTargets, re-read 0x118",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "The x86 resize sequence is still the correct way to resize on ARM. The game's own equivalent is Display::resizeSwapChain 0x5bec54(display*, owner, w, h) (ResizeBuffers on [display+0x1c] with display+0x14 buffer count, format from display+8, flags 0x800 only if hasFeature(7); then GetBuffer into renderer+0x124), called from createWindowSizeDependentResources 0x5bb774 -> InitTargets; not used by the host because it also reads g_displaySettings and would recreate the CoreWindow swap chain when display+0x1c==NULL.",
+   "arm_signature": "unchanged host logic; all game calls are plain C (release_targets(renderer), init_targets(owner,&display,renderer))",
+   "x86_to_arm_notes": "No byte patches. Keep: ID3D11DeviceContext_OMSetRenderTargets(ctx,0,NULL,NULL); Flush; Release game_target; release_targets; Release+NULL renderer+0x124; IDXGISwapChain_ResizeBuffers(sc,0,w,h,DXGI_FORMAT_UNKNOWN,0) (flags must be 0 on the host chain); init_targets; game_target=*(renderer+0x118); AddRef. Note ARM InitTargets releases the old +0x118/+0x11c views itself, so releasing game_target first is still needed only for the host's extra AddRef.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re func 5bec54 and 5bbb30 / 5bc0cc as above",
+    "x86 comment about 0x124 (DXGI rejects ResizeBuffers until dropped) matches ARM since 0x5bbb30 skips it"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.win7_device_compat",
+   "x86_symbol": "host_is_windows7 branches in initialize_game_d3d / patch_win7_*",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Every Windows 7 branch (captured_base_device/captured_base_context fallback storing into owner+0xc0 / renderer+0x110, BufferCount 1, RGBA retry, DXGI device3 IID downgrade, DiscardView ret patch, drop 11_1 level) is dead on ARM: Windows RT 8.1 and Windows 10 ARM32 have D3D11.2/DXGI 1.3.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "host_is_windows7 will be FALSE on ARM so all of them are no-ops; the port may delete them. If kept: DXGI Device3 IID cell is at RVA 0x00dbc2c4 (x86 RVA_128_DXGI_DEVICE3_IID 0x012d8b28; bytes 6c 89 07 60 44 32 fd 4a bf 18 a6 d3 be da 50 23, replacement IID_IDXGIDevice 54ec77fa-1377-44e6-8c32-88fd5f44c84c); the unused-on-1.2.8 constants RVA_128_D3D_CONTEXT_IID 0x012d8c7c -> 0x00dbc3fc (IID_ID3D11DeviceContext2) and RVA_128_D3D_ANNOTATION_IID 0x012d8c4c -> 0x00dbc3dc (IID_ID3DUserDefinedAnnotation). The ARM game derefs the IDXGIDevice3 QI result unguarded at 0x5bc43e.. (HRESULT only logged), exactly as on x86.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re guid 6007896c-3244-4afd-bf18-a6d3beda5023 -> 0x00dbc2c4 (refs 0x5b9f96, 0x5bb79a, 0x5bc42a)",
+    "arm32re guid 420d5b32-b90c-4da4-bef0-359f6a24a83a -> 0x00dbc3fc (ref 0x5bc408)",
+    "arm32re guid b2daad8b-03d4-4dbf-95eb-32ab4b63d0ab -> 0x00dbc3dc (ref 0x5bc4c4)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "gfx_device.calling_convention",
+   "x86_symbol": "GameOwnerCtorFn/GameInitDeviceFn/GameInitTargetsFn/GameReleaseTargetsFn/GameOperatorNewFn typedefs (thiscall/cdecl)",
+   "x86_value": "__attribute__((thiscall))",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "x86 thiscall (ecx=this) wrappers become ordinary AAPCS-VFP calls; this/owner in r0, following args r1,r2. No stack args, no float args, no sret. All five functions are Thumb-2.",
+   "arm_signature": "void* (*GameOwnerCtorFn)(void* /*r0*/);  void (*GameInitDeviceFn)(void* owner /*r0*/, void* renderer /*r1*/);  void (*GameInitTargetsFn)(void* owner /*r0*/, void* display /*r1*/, void* renderer /*r2*/);  void (*GameReleaseTargetsFn)(void* renderer /*r0*/);  void* (*GameOperatorNewFn)(size_t /*r0*/);",
+   "x86_to_arm_notes": "Remove __attribute__((thiscall)). Compute function pointers as `(Fn)((uintptr_t)image + rva + 1)` (Thumb bit). Exceptions: the game functions may raise C++ SEH-type exceptions only on OOM (operator new). Stack alignment is the host compiler's job (AAPCS 8-byte).",
+   "expected_bytes": null,
+   "evidence": [
+    "prologues: push.w {r4-r..,lr} / push {r3,r4,fp,lr}; no `push {r0-r3}` spill of unused varargs; parameters consumed exactly as listed (verified by disassembling each function)"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "Add THUMB() helper: #define GAME_FN(rva) ((void*)((uintptr_t)image + (rva) + 1)). Use it for owner ctor (0x005b7e7c), InitDevice (0x005bc258), InitTargets (0x005bc0cc), ReleaseTargets (0x005bbb30), operator new (0x00b4929c), and any vtable-derived pointer is already Thumb (bit0 set).",
+  "ARM table for initialize_game_d3d (1.2.8/ARM32): operator_new_rva=0x00b4929c, owner_ctor_rva=0x005b7e7c, init_device_rva=0x005bc258, init_targets_rva=0x005bc0cc, release_targets_rva=0x005bbb30, owner_global_rva=0x015b86ac, owner_size=0xd0, owner_renderer_offset=0xac, owner_device_offset=0xc0, renderer_context_offset=0x110, renderer_context2_offset=0x114, renderer_swap_chain_offset=0x104, renderer_rtv_offset=0x118, renderer_dsv_offset=0x120, renderer_backbuffer_offset=0x124 (all offsets except the RVAs are identical to the x86 1.2.8 values).",
+  "Owner construction: owner = game_new(0xd0); memset(owner,0,0xd0); owner = owner_ctor(owner); *(uint32_t*)((BYTE*)owner+0xb8) = 0x9100; (+0xbc,+0xc0,+0xc4 stay 0); *(void**)(image+0x015b86ac)=owner. The cell lives in .data (RW) - no VirtualProtect.",
+  "Call order is unchanged: owner_ctor -> read renderer=*(owner+0xac) -> init_device(owner, renderer) -> device=*(owner+0xc0), context=*(renderer+0x110) -> create HWND swap chain -> init_targets(owner,&display,renderer) -> store swap chain at renderer+0x104 (Release old, AddRef new) -> read RTV from renderer+0x118 -> install Present hook. InitTargets does not store the swap chain, so keep the explicit store.",
+  "Keep the D3D11CreateDevice IAT hook but patch IAT cell 0x00c37a50 (not 0x011d2a44). Keep `flags | 0x20`. Drop the Windows 7 level filtering and captured_base_* logic (host_is_windows7 is never true on ARM). The game retries with WARP by itself.",
+  "Present hook: keep vtable slot 8 hook. ADD a slot 22 (Present1) hook with the same sync-interval override, counting game_present_success_count, because the game switches to Present1(0, flags, &params) when [*(u8**)(image+0x015b86b0)+0x30]==0. Also mask DXGI_PRESENT_ALLOW_TEARING (0x200) unless the swap chain supports it. Use PAGE_READWRITE for vtable writes. Consider QueryInterface(IDXGISwapChain1) and store THAT pointer in renderer+0x104 so slot 22 is valid.",
+  "Do not call sub_5b9f4c (queryAdapterInfo) or AppPlatform vf143; they are skipped by the game itself when the owner cell is pre-populated (same as x86) and calling queryAdapterInfo would set owner+0x90=1 (tearing) which the host swap chain does not honour.",
+  "Display descriptor: keep the same struct (static assert offsetof(swap_chain)==0x1c, sizeof==0x20; stereo @0x19 must stay 0). Optionally also write width/height into renderer+0xe8/+0xec to keep the game's embedded descriptor in sync (not required).",
+  "resize_game_window: keep the sequence. release_targets=0x005bbb30, init_targets=0x005bc0cc, backbuffer_offset=0x124, rtv_offset=0x118. Platform/game: app_main+0x1c / +0x20; platform+0x330/+0x334 = width/height; game vtable slot 23 (+0x5c) resize(game,int w,int h,float 0.0f) and slot 24 (+0x60) windowSizeChanged(game,int w,int h) - pass the 4th argument of resize as a float (s0).",
+  "patch_win7_discard_views / patch_win7_dxgi_device3_query_to_base: no-ops on ARM (host_is_windows7 false). If ever needed: DiscardWindowViews=0x00582970 (expect 2d e9 18 48 0d f1 08 0b; patch 70 47 00 bf = bx lr), IDXGIDevice3 IID cell=0x00dbc2c4.",
+  "game_resource_owner/game_renderer/game_context/game_target/game_swap_chain statics keep their meaning: owner=*(cell), renderer=owner+0xac, context=renderer+0x110, target=renderer+0x118, swap chain host-created and mirrored in renderer+0x104; render_game_target_128's depth view is *(renderer+0x120)."
+ ],
+ "open_questions": [
+  "Whether [g_displaySettings+0x30] (vsync-present selector) can become 0 in normal 1.2.8 play: GameArguments::vf1 (site 0x12479e) and sub_12f390 (0x12f390, called with a bool) clear it when a mode flag ==1; semantics of that flag unknown. If it never changes the Present1 path is dead, but hooking slot 22 is cheap insurance.",
+  "owner+0xbc (u8) meaning and who sets it (0 in make_owner): when non-zero InitDevice adds BGRA flag 0x20 and drops 9_x feature levels. Probably a 'needs D2D/BGRA' or high-end flag; unset in the host path.",
+  "Whether the CreateSwapChain (IDXGISwapChain*) pointer on ARM exposes Present1 in the same vtable; recommend QI IDXGISwapChain1 and store that pointer if the Present1 hook is installed. Not testable statically.",
+  "Whether the scissor Y bug of install_scissor_fix reproduces on ARM (Renderer::setScissorRect 0x5bb560 uses g_displaySettings+0x14/+0x18 or an object at [renderer-arg+0xe4]); keep the fix, verify at runtime.",
+  "ARM AppMain layout (+0x1c/+0x20) and AppMain::onWindowSizeChanged 0x57df28 identity are medium confidence (derived from 57df28/57d0b8); the 'appmain' area owns the definitive answer."
+ ]
+}

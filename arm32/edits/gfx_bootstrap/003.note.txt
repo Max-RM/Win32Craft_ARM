@@ -1,0 +1,1 @@
+ARM32 initialize_game_d3d (owner, InitDevice, HWND swap chain, InitTargets, Present hooks); x86 original kept under #else.

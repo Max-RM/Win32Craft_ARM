@@ -1,0 +1,1 @@
+ARM32: ICoreTextEditContext::NotifyTextChanged/NotifySelectionChanged take CoreTextRange structs by value (r1:r2 / stack), not 64-bit integers.

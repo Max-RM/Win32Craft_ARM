@@ -1,0 +1,1 @@
+ARM32 current_app_platform: fixed 0x1c offset (verified in AppMain ctor 0x57ceec / update_frame 0x57d3a8 / dtor 0x57cff8) with a readability guard; x86 original under #else.

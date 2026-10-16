@@ -1,0 +1,6 @@
+HRESULT WINAPI RoRegisterActivationFactories(
+    HSTRING *classes, void **callbacks, UINT32 count, void **cookie)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "RoRegisterActivationFactories", (HSTRING *, void **, UINT32, void **), (classes, callbacks, count, cookie));
+#endif

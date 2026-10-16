@@ -1,0 +1,2 @@
+static void center_mouse_cursor(HWND window)
+{

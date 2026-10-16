@@ -1,0 +1,5 @@
+        log_line(line);
+    }
+}
+
+static void __cdecl win32_115_invalid_parameter(void)

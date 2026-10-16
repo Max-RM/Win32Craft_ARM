@@ -1,0 +1,1 @@
+ARM: log, then the real fail-fast (the stub swallowed it).

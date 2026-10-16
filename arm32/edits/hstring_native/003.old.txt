@@ -1,0 +1,2 @@
+INT WINAPI WindowsCompareStringOrdinal(HSTRING left, HSTRING right, INT *result)
+{

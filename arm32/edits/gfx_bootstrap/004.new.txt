@@ -1,0 +1,5 @@
+    return FALSE;
+}
+#endif /* WIN32CRAFT_ARM32 initialize_game_d3d */
+
+static BOOL initialize_game_app(BYTE *image)

@@ -1,0 +1,4 @@
+    if (!result) return E_POINTER;
+    *result = NULL;
+    if (class_name &&
+        lstrcmpW(class_name, L"Windows.ApplicationModel.Package") == 0) {

@@ -1,0 +1,18 @@
+Win32Craft 1.2.8 ARM32 package manifest
+
+Inputs (read only):
+  Minecraft.Windows.exe  b01d5f1237d2daad8cc076d7218f0788751b55a9576c779ccdba08eef6fcfcf8  23595520 bytes
+  fmod_ARM.dll           5f92f5ac9317c7a5d61ab6b43a2e799ae90eb7eee5c992c85d0325ba1d09fc38  1118720 bytes
+  redistributable dir    D:\Program Files\vs22buildtools\VC\Redist\MSVC\14.44.35112\onecore\arm\Microsoft.VC143.CRT
+
+Package files (SHA-256, size, source):
+  0f30d9cd8474c5959975711b6b3d9c4421dc593d5bf3021b141652dc250fa36f   23597056  Win32Craft.1.2.8-arm32.exe   <- D:\repo\Win32Craft-main\dist-arm32\Win32Craft.1.2.8-arm32.exe
+  cf226ecb83f478a67c6dab205dbd2a5ed0a469ac9fa27f2ed4bda12680d5d1f6    1118720  fmod_ARM.dll   <- D:\repo\Win32Craft-main\dist-arm32\fmod_ARM.dll
+  7ae525ad206fa2093f5ef1b85e42c02cecf703c1dbf3405a0ef115c3c31d41c6     168448  win32craft.dll   <- D:\repo\Win32Craft-main\dist-arm32\win32craft.dll
+  48218259ab186317a3607dddbb461ad5a4983f029b9a3f9623c6ab2838b45b59     270728  concrt140.dll   <- D:\Program Files\vs22buildtools\VC\Redist\MSVC\14.44.35112\onecore\arm\Microsoft.VC143.CRT\concrt140.dll
+  614616f0ed73fbb636f0dfb9c806e32a56f5ead979ae309aeca9b099328d8f2c     559016  msvcp140.dll   <- D:\Program Files\vs22buildtools\VC\Redist\MSVC\14.44.35112\onecore\arm\Microsoft.VC143.CRT\msvcp140.dll
+  d7cc8af067474346d4127573cbda4a87aa8c8750f622f7863c1a423658b12de9     342504  vccorlib140.dll   <- D:\Program Files\vs22buildtools\VC\Redist\MSVC\14.44.35112\onecore\arm\Microsoft.VC143.CRT\vccorlib140.dll
+  fb32b3052e9da98bb801aa23199b2f6d85d0b85474d505a2f9fb78c117edc264      72976  vcruntime140.dll   <- D:\Program Files\vs22buildtools\VC\Redist\MSVC\14.44.35112\onecore\arm\Microsoft.VC143.CRT\vcruntime140.dll
+  05fa33ca25d730a19301c0ea2fe82bbe004aa5db368bf387397b346df3035703       6144  fmod-silent/fmod_ARM.dll   <- D:\repo\Win32Craft-main\dist-fmod-null-arm32\fmod_ARM.dll
+
+Nothing in this package has been run on a device yet.

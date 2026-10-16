@@ -1,0 +1,5 @@
+HRESULT WINAPI RoRegisterForApartmentShutdown(void *callback, ULONGLONG *id, void **cookie)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "RoRegisterForApartmentShutdown", (void *, ULONGLONG *, void **), (callback, id, cookie));
+#endif

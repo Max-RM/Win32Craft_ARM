@@ -1,0 +1,79 @@
+#ifdef WIN32CRAFT_ARM32
+    /* ARM32 1.2.8 options.txt (unit bootstrap_main).  Every key below was checked against the option table of the ARM exe
+     * (strings 0xDAC000-0xDAE200).  Dropped because the ARM exe has no such key: game_flatworldlayers, game_limitworldsize,
+     * ctrl_sensitivity (the key is ctrl_sensitivity2 now: the game default is kept), ctrl_usetouchscreen, ctrl_keyboardlayout,
+     * ctrl_gamePadMap, gfx_renderdistance_new (gfx_viewdistance now: game default kept), gfx_animatetextures, gfx_hidegui,
+     * dev_disablefilesystem.  old_game_version_* is omitted on purpose: absent keys give the fresh-install state (0.0.0) the
+     * stock game starts from, whereas the old 0.15.10 values would make 1.2.8 run its "upgrade from 0.15.10" path.
+     * gfx_msaa / gfx_texel_aa_2 are forced off: the host runs the D3D11 device at feature level 9_1 (facts fl91: no MSAA, no
+     * TexelAA at 9_x) and 0 means "off" whatever the option's value domain is. */
+    static const char defaults[] =
+        "mp_username:Steve\r\n"
+        "game_difficulty_new:1\r\n"
+        "game_thirdperson:0\r\n"
+        "gfx_dpadscale:0.5\r\n"
+        "mp_server_visible:1\r\n"
+        "mp_xboxlive_visible:0\r\n"
+        "game_language:en_US\r\n"
+        "game_skintypefull:Standard_Steve\r\n"
+        "game_lastcustomskinnew:\r\n"
+        "ctrl_invertmouse:0\r\n"
+        "ctrl_islefthanded:0\r\n"
+        "ctrl_usetouchjoypad:0\r\n"
+        "ctrl_swapjumpandsneak:0\r\n"
+        "feedback_vibration:1\r\n"
+        "ctrl_autojump:0\r\n"
+        "gfx_viewbobbing:1\r\n"
+        "gfx_fancygraphics:1\r\n"
+        "gfx_fancyskies:1\r\n"
+        "gfx_field_of_view:70\r\n"
+        "gfx_gamma:0\r\n"
+        "gfx_fullscreen:0\r\n"
+        "gfx_msaa:0\r\n"
+        "gfx_texel_aa_2:0\r\n"
+        "audio_sound:1\r\n"
+        "audio_music:1\r\n"
+        "dev_autoloadlevel:0\r\n"
+        "dev_showchunkmap:0\r\n";
+#else
+    static const char defaults[] =
+        "mp_username:Steve\r\n"
+        "game_difficulty_new:1\r\n"
+        "game_thirdperson:0\r\n"
+        "gfx_dpadscale:0.5\r\n"
+        "mp_server_visible:1\r\n"
+        "mp_xboxlive_visible:0\r\n"
+        "game_flatworldlayers:[7,3,3,2]\r\n"
+        "game_limitworldsize:0\r\n"
+        "game_language:en_US\r\n"
+        "game_skintypefull:Standard_Steve\r\n"
+        "game_lastcustomskinnew:\r\n"
+        "ctrl_sensitivity:0.33\r\n"
+        "ctrl_invertmouse:0\r\n"
+        "ctrl_islefthanded:0\r\n"
+        "ctrl_usetouchscreen:0\r\n"
+        "ctrl_usetouchjoypad:0\r\n"
+        "ctrl_swapjumpandsneak:0\r\n"
+        "feedback_vibration:1\r\n"
+        "ctrl_autojump:0\r\n"
+        "ctrl_keyboardlayout:0\r\n"
+        "ctrl_gamePadMap:[0,1,t:1,t:0,2,3,10,11,8,9,13,4,5,6,12,X,X,X,X]\r\n"
+        "gfx_renderdistance_new:96\r\n"
+        "gfx_viewbobbing:1\r\n"
+        "gfx_fancygraphics:1\r\n"
+        "gfx_fancyskies:1\r\n"
+        "gfx_animatetextures:1\r\n"
+        "gfx_hidegui:0\r\n"
+        "gfx_field_of_view:70\r\n"
+        "gfx_gamma:0\r\n"
+        "gfx_fullscreen:0\r\n"
+        "audio_sound:1\r\n"
+        "audio_music:1\r\n"
+        "dev_autoloadlevel:0\r\n"
+        "dev_showchunkmap:0\r\n"
+        "dev_disablefilesystem:0\r\n"
+        "old_game_version_major:0\r\n"
+        "old_game_version_minor:15\r\n"
+        "old_game_version_patch:10\r\n"
+        "old_game_version_beta:0\r\n";
+#endif

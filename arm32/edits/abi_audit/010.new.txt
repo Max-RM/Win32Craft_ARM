@@ -1,0 +1,258 @@
+#ifdef WIN32CRAFT_ARM32
+/*
+ * ARM32 abi_audit additions to the fake WinRT shim.
+ *
+ * (1) Unimplemented-slot trap.  Many fake vtables leave slots NULL (x86 never reached them).  A NULL slot would crash
+ *     at pc=0 with no hint which interface was called; every NULL hole of the tables below is filled with a stub that
+ *     logs slot/object kind/caller and returns E_NOTIMPL (C++/CX turns that into a catchable exception).
+ * (2) IID-specific factories the ARM exe asks for that the x86 dispatcher answered with the wrong table:
+ *       Windows.UI.ViewManagement.ApplicationView  IID A28D7594-8C41-4E13-9719-5164796FE4C7
+ *           (IApplicationViewStatics3: slot 7 = put_PreferredLaunchWindowingMode(enum), called by the game's
+ *            AppPlatformWinRTDispatcher::setFullscreenMode lambda 0x5870b4 through 0x589af4 with r1 = 0 or 2; the
+ *            shared application_view_factory table treated r1 as a BYTE* result -> E_POINTER / write to address 2)
+ *       Windows.ApplicationModel.Store.CurrentApp  IID DF4E6E2D-3171-4AD3-8614-2C61244373CB
+ *           (ICurrentApp2Statics: slot 6 GetCustomerPurchaseIdAsync(token, ticket, &op) called by 0x574ccc; the shared
+ *            currentapp_factory table wrote a LicenseInformation pointer through the HSTRING argument)
+ * (3) A bounded log line for every activation request (class + IID) so the device log shows exactly which classes the
+ *     game asked for and which fell through to the real runtime.
+ */
+static void arm32_narrow_class_name(LPCWSTR class_name, char *out, UINT capacity)
+{
+    UINT index = 0;
+    if (!capacity) return;
+    if (class_name) {
+        while (index + 1 < capacity && class_name[index]) {
+            out[index] = class_name[index] < 0x80 ? (char)class_name[index] : '?';
+            ++index;
+        }
+    }
+    out[index] = 0;
+}
+
+static void arm32_log_activation_request(LPCWSTR class_name, const GUID *iid)
+{
+    static volatile LONG count;
+    char name[160];
+    char line[320];
+    LONG sequence = InterlockedIncrement(&count);
+    if (sequence > 400) return;
+    arm32_narrow_class_name(class_name, name, sizeof(name));
+    if (iid) {
+        wsprintfA(line,
+            "ARM32 activation #%ld %s IID=%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+            (long)sequence, name[0] ? name : "(null)", (unsigned long)iid->Data1,
+            (unsigned)iid->Data2, (unsigned)iid->Data3, (unsigned)iid->Data4[0],
+            (unsigned)iid->Data4[1], (unsigned)iid->Data4[2], (unsigned)iid->Data4[3],
+            (unsigned)iid->Data4[4], (unsigned)iid->Data4[5], (unsigned)iid->Data4[6],
+            (unsigned)iid->Data4[7]);
+    } else {
+        wsprintfA(line, "ARM32 activation #%ld %s (no IID)", (long)sequence,
+                  name[0] ? name : "(null)");
+    }
+    log_line(line);
+}
+
+static HRESULT __attribute__((noinline)) arm32_unimplemented_slot(
+    FakeInspectable *object, unsigned slot, ULONG_PTR caller)
+{
+    static volatile LONG count;
+    char line[256];
+    ULONG_PTR image = (ULONG_PTR)game_image;
+    ULONG_PTR rva = (image && (caller & ~(ULONG_PTR)1) >= image &&
+                     (caller & ~(ULONG_PTR)1) - image < 0x02000000u)
+        ? (caller & ~(ULONG_PTR)1) - image : 0;
+    if (InterlockedIncrement(&count) <= 64) {
+        wsprintfA(line,
+            "ARM32 WinRT fake: UNIMPLEMENTED slot %u called on object=%p kind=%d "
+            "caller=%p (game RVA 0x%08lX) -> E_NOTIMPL",
+            slot, object, object ? (int)object->kind : -1, (void *)caller,
+            (unsigned long)rva);
+        log_line(line);
+    }
+    return E_NOTIMPL;
+}
+
+#define ARM32_UNIMPLEMENTED_SLOT(n) \
+    static HRESULT WINAPI arm32_unimplemented_slot_##n(FakeInspectable *object) \
+    { return arm32_unimplemented_slot(object, (n), (ULONG_PTR)__builtin_return_address(0)); }
+ARM32_UNIMPLEMENTED_SLOT(0)  ARM32_UNIMPLEMENTED_SLOT(1)  ARM32_UNIMPLEMENTED_SLOT(2)  ARM32_UNIMPLEMENTED_SLOT(3)
+ARM32_UNIMPLEMENTED_SLOT(4)  ARM32_UNIMPLEMENTED_SLOT(5)  ARM32_UNIMPLEMENTED_SLOT(6)  ARM32_UNIMPLEMENTED_SLOT(7)
+ARM32_UNIMPLEMENTED_SLOT(8)  ARM32_UNIMPLEMENTED_SLOT(9)  ARM32_UNIMPLEMENTED_SLOT(10) ARM32_UNIMPLEMENTED_SLOT(11)
+ARM32_UNIMPLEMENTED_SLOT(12) ARM32_UNIMPLEMENTED_SLOT(13) ARM32_UNIMPLEMENTED_SLOT(14) ARM32_UNIMPLEMENTED_SLOT(15)
+ARM32_UNIMPLEMENTED_SLOT(16) ARM32_UNIMPLEMENTED_SLOT(17) ARM32_UNIMPLEMENTED_SLOT(18) ARM32_UNIMPLEMENTED_SLOT(19)
+ARM32_UNIMPLEMENTED_SLOT(20) ARM32_UNIMPLEMENTED_SLOT(21) ARM32_UNIMPLEMENTED_SLOT(22) ARM32_UNIMPLEMENTED_SLOT(23)
+
+static HRESULT (WINAPI *const arm32_unimplemented_slots[24])(FakeInspectable *) = {
+    arm32_unimplemented_slot_0,  arm32_unimplemented_slot_1,  arm32_unimplemented_slot_2,  arm32_unimplemented_slot_3,
+    arm32_unimplemented_slot_4,  arm32_unimplemented_slot_5,  arm32_unimplemented_slot_6,  arm32_unimplemented_slot_7,
+    arm32_unimplemented_slot_8,  arm32_unimplemented_slot_9,  arm32_unimplemented_slot_10, arm32_unimplemented_slot_11,
+    arm32_unimplemented_slot_12, arm32_unimplemented_slot_13, arm32_unimplemented_slot_14, arm32_unimplemented_slot_15,
+    arm32_unimplemented_slot_16, arm32_unimplemented_slot_17, arm32_unimplemented_slot_18, arm32_unimplemented_slot_19,
+    arm32_unimplemented_slot_20, arm32_unimplemented_slot_21, arm32_unimplemented_slot_22, arm32_unimplemented_slot_23
+};
+
+typedef struct Arm32VtableHoles {
+    const char *name;
+    const void **table;
+    unsigned count;
+} Arm32VtableHoles;
+
+static void arm32_fill_unimplemented_slots_once(void)
+{
+    static volatile LONG done;
+    static const Arm32VtableHoles tables[] = {
+        { "connection_profile",    connection_profile_vtable,    ARRAYSIZE(connection_profile_vtable) },
+        { "connection_profile2",   connection_profile2_vtable,   ARRAYSIZE(connection_profile2_vtable) },
+        { "crypto_factory",        crypto_factory_vtable,        ARRAYSIZE(crypto_factory_vtable) },
+        { "currentapp_consumables", currentapp_consumables_vtable, ARRAYSIZE(currentapp_consumables_vtable) },
+        { "launcher",              launcher_vtable,              ARRAYSIZE(launcher_vtable) },
+        { "xaml_window",           xaml_window_vtable,           ARRAYSIZE(xaml_window_vtable) },
+        { "xaml_size_source",      xaml_size_source_vtable,      ARRAYSIZE(xaml_size_source_vtable) },
+        { "package",               package_vtable,               ARRAYSIZE(package_vtable) },
+        { "appdata",               appdata_vtable,               ARRAYSIZE(appdata_vtable) },
+        { "currentapp",            currentapp_vtable,            ARRAYSIZE(currentapp_vtable) },
+        { "license",               license_vtable,               ARRAYSIZE(license_vtable) },
+        { "folder_01510",          folder_vtable_01510,          ARRAYSIZE(folder_vtable_01510) },
+        { "folder_115",            folder_vtable_115,            ARRAYSIZE(folder_vtable_115) },
+        { "coreapp",               coreapp_vtable,               ARRAYSIZE(coreapp_vtable) }
+    };
+    unsigned filled = 0;
+    unsigned table_index;
+    unsigned slot;
+    char line[96];
+
+    if (InterlockedExchange(&done, 1)) return;
+    for (table_index = 0; table_index < ARRAYSIZE(tables); ++table_index) {
+        const Arm32VtableHoles *entry = &tables[table_index];
+        for (slot = 0; slot < entry->count; ++slot) {
+            if (!entry->table[slot] && slot < ARRAYSIZE(arm32_unimplemented_slots)) {
+                entry->table[slot] = (const void *)arm32_unimplemented_slots[slot];
+                ++filled;
+            }
+        }
+    }
+    wsprintfA(line, "ARM32 WinRT fakes: %u NULL vtable slots now log and return E_NOTIMPL", filled);
+    log_line(line);
+}
+
+/* --- IApplicationViewStatics3 (slots 6/7 PreferredLaunchWindowingMode get/put, 8/9 PreferredLaunchViewSize get/put) --- */
+static volatile LONG arm32_preferred_windowing_mode;
+
+static HRESULT WINAPI arm32_app_view_statics3_get_mode(
+    FakeInspectable *object, INT *result)
+{
+    (void)object;
+    if (!result) return E_POINTER;
+    *result = (INT)arm32_preferred_windowing_mode;
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_app_view_statics3_put_mode(
+    FakeInspectable *object, INT mode)
+{
+    char line[96];
+    (void)object;
+    arm32_preferred_windowing_mode = mode;
+    wsprintfA(line, "ApplicationView.PreferredLaunchWindowingMode = %d accepted", (int)mode);
+    log_line(line);
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_app_view_statics3_get_size(
+    FakeInspectable *object, Win32Float2 *result)
+{
+    (void)object;
+    if (!result) return E_POINTER;
+    result->x = 0.0f;
+    result->y = 0.0f;
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_app_view_statics3_put_size(
+    FakeInspectable *object, Win32Float2 size)
+{
+    (void)object;
+    (void)size;
+    return S_OK;
+}
+
+static const void *arm32_app_view_statics3_vtable[10] = {
+    fake_query_interface, fake_add_ref, fake_release,
+    fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
+    arm32_app_view_statics3_get_mode, arm32_app_view_statics3_put_mode,
+    arm32_app_view_statics3_get_size, arm32_app_view_statics3_put_size
+};
+static FakeInspectable arm32_app_view_statics3 = {
+    arm32_app_view_statics3_vtable, 1, FAKE_APPLICATION_VIEW_FACTORY
+};
+
+/* --- ICurrentApp2Statics (slot 6 GetCustomerPurchaseIdAsync, slot 7 GetCustomerCollectionsIdAsync) --- */
+static FakeInspectable arm32_empty_string_async = {
+    async_operation_vtable, 1, ARM32_FAKE_KIND_EMPTY_STRING_ASYNC
+};
+
+static HRESULT WINAPI arm32_currentapp2_customer_id(
+    FakeInspectable *object, HSTRING token, HSTRING ticket, void **operation)
+{
+    (void)object;
+    (void)token;
+    (void)ticket;
+    if (!operation) return E_POINTER;
+    *operation = &arm32_empty_string_async;
+    fake_add_ref(&arm32_empty_string_async);
+    log_line("ARM32 CurrentApp2 GetCustomerPurchaseId/CollectionsId answered with a completed empty-string operation");
+    return S_OK;
+}
+
+static const void *arm32_currentapp2_vtable[8] = {
+    fake_query_interface, fake_add_ref, fake_release,
+    fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
+    arm32_currentapp2_customer_id, arm32_currentapp2_customer_id
+};
+static FakeInspectable arm32_currentapp2_statics = {
+    arm32_currentapp2_vtable, 1, FAKE_CURRENTAPP_FACTORY
+};
+
+static BOOL arm32_activation_override(
+    LPCWSTR class_name, const GUID *iid, void **result)
+{
+    static const GUID application_view_statics3_iid = {
+        0xa28d7594, 0x8c41, 0x4e13,
+        {0x97, 0x19, 0x51, 0x64, 0x79, 0x6f, 0xe4, 0xc7}
+    };
+    static const GUID currentapp2_statics_iid = {
+        0xdf4e6e2d, 0x3171, 0x4ad3,
+        {0x86, 0x14, 0x2c, 0x61, 0x24, 0x43, 0x73, 0xcb}
+    };
+
+    static volatile LONG warned_not_128;
+
+    arm32_fill_unimplemented_slots_once();
+    if (!host_is_128 && !InterlockedExchange(&warned_not_128, 1)) {
+        /* every 1.2.8-only fake (CoreText, AudioGraph, HardwareIdentification, DataReader, ApplicationView, Speech...) is
+         * gated on host_is_128; if the image identification failed they silently fall through to the real runtime */
+        log_line("ARM32 WARNING: host_is_128 is FALSE during WinRT activation - the 1.2.8 fake WinRT classes are NOT active");
+    }
+    arm32_log_activation_request(class_name, iid);
+    if (!class_name || !iid || !result) return FALSE;
+    if (lstrcmpW(class_name, L"Windows.UI.ViewManagement.ApplicationView") == 0 &&
+        memcmp(iid, &application_view_statics3_iid, sizeof(GUID)) == 0) {
+        *result = &arm32_app_view_statics3;
+        fake_add_ref(&arm32_app_view_statics3);
+        log_line("ARM32 redirected ApplicationView IApplicationViewStatics3 to its own fake");
+        return TRUE;
+    }
+    if (lstrcmpW(class_name, L"Windows.ApplicationModel.Store.CurrentApp") == 0 &&
+        memcmp(iid, &currentapp2_statics_iid, sizeof(GUID)) == 0) {
+        *result = &arm32_currentapp2_statics;
+        fake_add_ref(&arm32_currentapp2_statics);
+        log_line("ARM32 redirected CurrentApp ICurrentApp2Statics to its own fake");
+        return TRUE;
+    }
+    return FALSE;
+}
+#endif
+
+static HRESULT WINAPI win32_get_activation_factory(
+    LPCWSTR class_name, const GUID *iid, void **result)
+{

@@ -1,0 +1,7 @@
+#ifdef WIN32CRAFT_ARM32
+/* The original body below becomes arm32_resolve_local_ipv4_once(); a thread-safe wrapper with the original name follows it. */
+#define resolve_local_ipv4 arm32_resolve_local_ipv4_once
+#endif
+static void resolve_local_ipv4(void)
+{
+    HMODULE winsock;

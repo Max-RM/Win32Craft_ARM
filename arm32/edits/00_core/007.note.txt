@@ -1,0 +1,1 @@
+closes #else/#endif of win32_unhandled_exception.

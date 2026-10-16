@@ -1,0 +1,1 @@
+ARM32 stub for the 1.1.5 naked adapter thunk.

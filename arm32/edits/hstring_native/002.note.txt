@@ -1,0 +1,1 @@
+ARM: native_hstring_proc always forwards to combase (cached, thread-safe table), plus the Win32CraftActivationDispatcher hook, a shared logger and the RoGetActivationFactory dispatcher/fallback helper.

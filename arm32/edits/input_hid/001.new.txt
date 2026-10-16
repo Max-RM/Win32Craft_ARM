@@ -1,0 +1,5 @@
+        previous_command = command;
+    }
+    return host_relative_requested;
+}
+#endif /* WIN32CRAFT_ARM32 (input_hid: get_hid_controller .. game_requests_relative_mouse) */

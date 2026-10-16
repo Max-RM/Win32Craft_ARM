@@ -1,0 +1,12 @@
+    BOOL optional_ok = TRUE;
+    char line[200];
+    static BOOL installed_once;
+    static BOOL installed_result;
+
+    if (installed_once) {
+        /* install_activation_redirect re-initialises the fake objects: a second pass must not touch anything */
+        log_line("ARM32 IAT hooks: already installed - repeating the previous result");
+        return installed_result;
+    }
+    if (!image) {
+        log_line("ARM32 IAT hooks: image base is null");

@@ -1,0 +1,10 @@
+LIBRARY api-ms-win-core-threadpool-l1-2-0.dll
+EXPORTS
+CloseThreadpoolTimer=KERNEL32.CloseThreadpoolTimer
+CloseThreadpoolWork=KERNEL32.CloseThreadpoolWork
+CreateThreadpoolTimer=KERNEL32.CreateThreadpoolTimer
+CreateThreadpoolWork=KERNEL32.CreateThreadpoolWork
+FreeLibraryWhenCallbackReturns=KERNEL32.FreeLibraryWhenCallbackReturns
+SetThreadpoolTimer=KERNEL32.SetThreadpoolTimer
+SubmitThreadpoolWork=KERNEL32.SubmitThreadpoolWork
+WaitForThreadpoolTimerCallbacks=KERNEL32.WaitForThreadpoolTimerCallbacks

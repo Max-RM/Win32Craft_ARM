@@ -1,0 +1,12 @@
+static void __attribute__((thiscall)) win32_pick_custom_skin_128(
+    void *platform, void *callback)
+{
+    void *adapter = NULL;
+    if (platform && !IsBadReadPtr((BYTE *)platform + 0x3b4, sizeof(void *))) {
+        adapter = *(void **)((BYTE *)platform + 0x3b4);
+    }
+    if (adapter && !IsBadReadPtr((BYTE *)adapter + 0xa8, sizeof(void *))) {
+        *(void **)((BYTE *)adapter + 0xa8) = callback;
+    }
+    win32_pick_custom_skin(NULL, callback);
+}

@@ -1,0 +1,1 @@
+Reviewer fix: log the two silent FALSE returns of activate_game_app_128 (PORT_RULES decision 9).

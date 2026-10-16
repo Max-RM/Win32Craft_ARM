@@ -1,0 +1,12 @@
+#ifdef WIN32CRAFT_ARM32
+/* facts appmain.current_app_platform / appmain.layout: AppMain+0x1c holds the AppPlatform_Winrt* on ARM too (ctor,
+ * update_frame and dtor all use [AppMain+0x1c]); the offset does not depend on host_is_128 here. */
+static void *current_app_platform(void)
+{
+    if (!game_app_main || IsBadReadPtr((BYTE *)game_app_main + 0x1c, sizeof(void *))) return NULL;
+    return *(void **)((BYTE *)game_app_main + 0x1c);
+}
+#else
+static void *current_app_platform(void)
+{
+    if (!game_app_main) return NULL;

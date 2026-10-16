@@ -1,0 +1,2 @@
+static BOOL activate_game_app_115(HWND window)
+{

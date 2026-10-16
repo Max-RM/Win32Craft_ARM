@@ -1,0 +1,70 @@
+#ifdef WIN32CRAFT_ARM32
+/* ARM32 (unit bootstrap_main): the D3D11 device runs at feature level 9_1 by default (facts fl91), whose texture / render
+ * target limit is 2048 (4096 at 9_3, 8192 at 10_x, 16384 at 11_x).  The swap chain is also clamped by resize_game_window,
+ * but a window the user can stretch past the limit would only show a letterboxed/scaled image, so WM_GETMINMAXINFO caps the
+ * maximum tracking / maximized window size at "client area == limit".  The limit comes from the feature level the game's
+ * InitDevice stored in owner+0xb8 (facts gfx_device owner layout); before the device exists the 9_1 limit is assumed. */
+#ifndef WM_GETMINMAXINFO
+#define WM_GETMINMAXINFO 0x0024U
+#endif
+typedef struct Arm32MinMaxInfo {
+    POINT ptReserved;
+    POINT ptMaxSize;
+    POINT ptMaxPosition;
+    POINT ptMinTrackSize;
+    POINT ptMaxTrackSize;
+} Arm32MinMaxInfo;
+extern BOOL WINAPI AdjustWindowRectEx(RECT *, DWORD, BOOL, DWORD);
+
+static UINT arm32_window_texture_limit(void)
+{
+    UINT level = 0;
+
+    if (game_resource_owner && !IsBadReadPtr((BYTE *)game_resource_owner + 0xb8, sizeof(UINT)))
+        level = *(UINT *)((BYTE *)game_resource_owner + 0xb8);
+    if (level >= 0xb000u) return 16384u;
+    if (level >= 0xa000u) return 8192u;
+    if (level >= 0x9300u) return 4096u;
+    return 2048u;
+}
+
+static void arm32_clamp_min_max_info(HWND window, Arm32MinMaxInfo *info)
+{
+    static UINT logged_limit;
+    UINT limit = arm32_window_texture_limit();
+    LONG style = window ? GetWindowLongW(window, GWL_STYLE) : 0;
+    LONG exstyle = window ? GetWindowLongW(window, GWL_EXSTYLE) : 0;
+    RECT frame;
+    LONG max_width;
+    LONG max_height;
+    char line[160];
+
+    if (!info) return;
+    /* WM_GETMINMAXINFO is sent before WM_NCCREATE: the style may not be stored yet */
+    if (!style) style = (LONG)WS_OVERLAPPEDWINDOW;
+    frame.left = 0;
+    frame.top = 0;
+    frame.right = (LONG)limit;
+    frame.bottom = (LONG)limit;
+    if (!AdjustWindowRectEx(&frame, (DWORD)style, FALSE, (DWORD)exstyle)) {
+        frame.left = 0;
+        frame.top = 0;
+        frame.right = (LONG)limit;
+        frame.bottom = (LONG)limit;
+    }
+    max_width = frame.right - frame.left;
+    max_height = frame.bottom - frame.top;
+    if (info->ptMaxTrackSize.x > max_width) info->ptMaxTrackSize.x = max_width;
+    if (info->ptMaxTrackSize.y > max_height) info->ptMaxTrackSize.y = max_height;
+    if (info->ptMaxSize.x > max_width) info->ptMaxSize.x = max_width;
+    if (info->ptMaxSize.y > max_height) info->ptMaxSize.y = max_height;
+    if (logged_limit != limit) {
+        logged_limit = limit;
+        wsprintfA(line, "window size limit: client area capped at %ux%u (outer %ldx%ld) for the current feature level",
+                  limit, limit, (long)max_width, (long)max_height);
+        log_line(line);
+    }
+}
+#endif
+
+static LRESULT CALLBACK window_proc(HWND window, UINT message,

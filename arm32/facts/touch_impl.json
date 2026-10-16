@@ -1,0 +1,223 @@
+{
+ "area": "touch_impl",
+ "facts": [
+  {
+   "id": "touch_impl.touch_mapper_reset",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x005b23f8",
+   "summary": "input:TouchMapper::vf2 reset (vtable slot 2): sub_5b0218 clears the 12 Multitouch pointer slots / released+pressed flag arrays at 0x019159bc and the Pointer instances at 0x019788a8; does not read `this`. Called by the game on scene/focus changes; the host calls it when the input source flips touch -> mouse so stale 'released' flags do not keep TouchMapper::tick returning 1 (Touch beats Mouse in InputHandler::tick).",
+   "arm_signature": "void reset(TouchMapper* this /*r0*/)",
+   "x86_to_arm_notes": "Call only after checking that vtable[2] of the found TouchMapper object equals image+0x5b23f8+1. Plain AAPCS void f(void* this).",
+   "expected_bytes": "2de90048eb46fdf70bff0022",
+   "evidence": [
+    "arm32re.py func 5b23f8 -> bl 0x5b0218 then a loop clearing bytes at 0x019159d4 and +0x18 (12 entries)",
+    "vtable dbba20 slot 2 = 0x009b23f9 (VA, Thumb)",
+    "sub_5b0218 is the only writer of the +0/+0xc 'released' arrays besides Multitouch::feed (xref 15159bc)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "touch_impl.appplatform_vf154_cell",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x0136980c",
+   "summary": "Data cell: AppPlatform_Winrt vtable slot 154 = getDefaultInputMode (0x62212c). File bytes hold the relocated VA 0x00a2212d (ImageBase 0x400000 + 0x62212c + Thumb bit); at runtime the cell must equal image + 0x62212c + 1 before it is patched (PAGE_READWRITE, data only).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Replace with a host function `int hook(void* self)` returning 2 (Touch) on touch-only machines. Must be installed before MinecraftGame::vf27 reaches setupMappers 0x38ba44 (InputHandler ctor reads the default mode once).",
+   "expected_bytes": "2d21a200",
+   "evidence": [
+    "arm32re.py ptrs 136980c 1 -> 00a2212d fn getDefaultInputMode",
+    "touch_game.default_mode_chain"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.input_handler_mappers_begin",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x00000108",
+   "summary": "InputHandler+0x108: begin of vector<unique_ptr<InputDeviceMapper>> (end at +0x10c). Verified by InputHandler::tick (ldrd r5,r8,[r0,#0x108]) and renderInputMapperControls (ldrd r4,r6,[r6,#0x108]).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics only.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 5abb44 @5abb62; func 3783ac @378436"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.input_handler_mappers_end",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x0000010c",
+   "summary": "InputHandler+0x10c: end pointer of the mapper vector.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics only.",
+   "expected_bytes": null,
+   "evidence": [
+    "same ldrd as input_handler_mappers_begin"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.input_handler_client_id",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x0000013c",
+   "summary": "InputHandler+0x13c: client id of the primary client; renderInputMapperControls and tick pass [InputHandler+0x13c] to getInputMode (ldr.w r1,[r6,#0x13c] @378424; ldr.w r3,[sb,#0x13c] @5abb9c). Simpler than the sub_51b860 recipe.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Use getInputMode(inputHandler, *(int*)(inputHandler+0x13c)).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 3783ac @0x378424..0x37842a: ldr.w r1,[r6,#0x13c]; bl 0x5ad050"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.client_input_owner",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x00000040",
+   "summary": "ClientInstance+0x40: MinecraftInputHandler* (owner[0] == ClientInstance, owner[1] == InputHandler*). Verified by the UI renderer call site: ldr r3,[r5,#0x74] (ClientInstance); ldr r0,[r3,#0x40]; bl renderInputMapperControls whose ldr r6,[r5,#4] is the InputHandler.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics: ih = *(void**)(*(BYTE**)(client+0x40)+4).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py dis 4749a0: 004749a4 ldr r0,[r3,#0x40]; bl 3783ac",
+    "func 3783ac @378422 ldr r6,[r5,#4]"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.mapper_vtable_gaze",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbb5a8",
+   "summary": "RTTI vtable of GazeGestureVoiceMapper (InputDeviceMapper subclass). An element of the InputHandler mapper vector has *(void**)m == image + this RVA.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics: identify mapper objects in the vector.",
+   "expected_bytes": "917e9a00c57e9a00",
+   "evidence": [
+    "arm32re.py rtti .?AVGazeGestureVoiceMapper@@ -> vtable rva=00dbb5a8"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.mapper_vtable_keyboard",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbb940",
+   "summary": "RTTI vtable of KeyboardMapper (InputDeviceMapper subclass). An element of the InputHandler mapper vector has *(void**)m == image + this RVA.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics: identify mapper objects in the vector.",
+   "expected_bytes": "5d55770059f39a00",
+   "evidence": [
+    "arm32re.py rtti .?AVKeyboardMapper@@ -> vtable rva=00dbb940"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.mapper_vtable_mouse",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbb970",
+   "summary": "RTTI vtable of MouseMapper (InputDeviceMapper subclass). An element of the InputHandler mapper vector has *(void**)m == image + this RVA.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics: identify mapper objects in the vector.",
+   "expected_bytes": "cdfa9a0029fb9a00",
+   "evidence": [
+    "arm32re.py rtti .?AVMouseMapper@@ -> vtable rva=00dbb970"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.mapper_vtable_gamepad",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbb52c",
+   "summary": "RTTI vtable of GamePadMapper (InputDeviceMapper subclass). An element of the InputHandler mapper vector has *(void**)m == image + this RVA.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics: identify mapper objects in the vector.",
+   "expected_bytes": "01659a00c1999a00",
+   "evidence": [
+    "arm32re.py rtti .?AVGamePadMapper@@ -> vtable rva=00dbb52c"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.mapper_vtable_touch",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbba20",
+   "summary": "RTTI vtable of TouchMapper (InputDeviceMapper subclass). An element of the InputHandler mapper vector has *(void**)m == image + this RVA.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics: identify mapper objects in the vector.",
+   "expected_bytes": "991f9b001d209b00",
+   "evidence": [
+    "arm32re.py rtti .?AVTouchMapper@@ -> vtable rva=00dbba20"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.mapper_vtable_motion",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbba70",
+   "summary": "RTTI vtable of MotionControllerMapper (InputDeviceMapper subclass). An element of the InputHandler mapper vector has *(void**)m == image + this RVA.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics: identify mapper objects in the vector.",
+   "expected_bytes": "01659a00c1999a00",
+   "evidence": [
+    "arm32re.py rtti .?AVMotionControllerMapper@@ -> vtable rva=00dbba70"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.mapper_vtable_devicebutton",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00dbb578",
+   "summary": "RTTI vtable of DeviceButtonMapper (InputDeviceMapper subclass). An element of the InputHandler mapper vector has *(void**)m == image + this RVA.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics: identify mapper objects in the vector.",
+   "expected_bytes": "6d699a00a9699a00",
+   "evidence": [
+    "arm32re.py rtti .?AVDeviceButtonMapper@@ -> vtable rva=00dbb578"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "touch_impl.mapper_vtable_behavior",
+   "x86_symbol": "none (new ARM touch code)",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x0135b798",
+   "summary": "RTTI vtable of BehaviorActionMapper (InputDeviceMapper subclass). An element of the InputHandler mapper vector has *(void**)m == image + this RVA.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Diagnostics: identify mapper objects in the vector.",
+   "expected_bytes": "5d557700b1557700",
+   "evidence": [
+    "arm32re.py rtti .?AVBehaviorActionMapper@@ -> vtable rva=0135b798"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "Constants for the ARM touch/input implementation (win32_host.c arm32_input_*); each fact was re-derived independently of touch_game/touch_host."
+ ],
+ "open_questions": []
+}

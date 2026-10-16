@@ -1,0 +1,3 @@
+    case WM_CLOSE:
+        DestroyWindow(window);
+        return 0;

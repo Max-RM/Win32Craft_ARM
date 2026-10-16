@@ -1,0 +1,5 @@
+    BOOL optional_ok = TRUE;
+    char line[200];
+
+    if (!image) {
+        log_line("ARM32 IAT hooks: image base is null");

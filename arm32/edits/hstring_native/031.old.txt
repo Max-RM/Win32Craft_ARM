@@ -1,0 +1,1 @@
+void WINAPI RoFailFastWithErrorContext(HRESULT error) {

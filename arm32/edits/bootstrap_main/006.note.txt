@@ -1,0 +1,8 @@
+Closes the #else/#endif of Win32Bootstrap.  DllMain is unchanged (nothing binary specific; no DisableThreadLibraryCalls, no host start;
+Win32CraftCleanupCopyrightTemps is a no-op on ARM because the copyright temp table is never filled).
+
+Decision for the exported tail (D3D11CreateDevice / CreateDirect3D11DeviceFromDXGIDevice / CreateDXGIFactory2): the ARM exe imports only
+d3d11.dll!D3D11CreateDevice (IAT 0xC37A50, patched at runtime by install_d3d11_device_compat), no dxgi.dll and no
+CreateDirect3D11DeviceFromDXGIDevice, and the ARM patcher does NOT redirect d3d11/dxgi to win32craft.dll (facts pe_imports, winmain).
+The three functions therefore have no consumer on ARM.  They stay compiled (dead code, x86 identical, an x86-derived .def still links) but must NOT
+be listed in the ARM .def.

@@ -1,0 +1,14 @@
+static void *native_hstring_proc(const char *name)
+{
+    static HMODULE combase;
+    BYTE *image = (BYTE *)GetModuleHandleW(NULL);
+    DWORD pe_offset;
+    if (!image || IsBadReadPtr(image, 0x40)) return NULL;
+    pe_offset = *(DWORD *)(image + 0x3c);
+    if (pe_offset >= 0x1000 || IsBadReadPtr(image + pe_offset, 0x54) ||
+        *(DWORD *)(image + pe_offset) != 0x00004550 ||
+        *(DWORD *)(image + pe_offset + 0x50) != 0x02db1000)
+        return NULL;
+    if (!combase) combase = LoadLibraryW(L"combase.dll");
+    return combase ? GetProcAddress(combase, name) : NULL;
+}

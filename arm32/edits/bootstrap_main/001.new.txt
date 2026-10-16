@@ -1,0 +1,8 @@
+#define IMAGE_SIZE_128_PATCHED               0x01923000
+#ifdef WIN32CRAFT_ARM32
+/* ARM32 1.2.8 exe after the ARM patcher: SizeOfImage = align(.d3imp RVA 0x01730000 + 0x444, 0x1000) (facts winmain.pe.size_of_image).
+ * The stock exe is 0x01730000 and a patch that had to add the .d3tr fallback section would give 0x01732000. */
+#define IMAGE_SIZE_128_ARM_PATCHED           0x01731000
+#define IMAGE_SIZE_128_ARM_STOCK             0x01730000
+#define IMAGE_SIZE_128_ARM_FALLBACK_SECTION  0x01732000
+#endif

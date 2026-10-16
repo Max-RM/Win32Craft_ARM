@@ -1,0 +1,5 @@
+BOOL WINAPI RoTransformError(HRESULT old_error, HRESULT new_error, HSTRING message)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(BOOL, "RoTransformError", (HRESULT, HRESULT, HSTRING), (old_error, new_error, message));
+#endif

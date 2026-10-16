@@ -1,0 +1,58 @@
+#ifdef WIN32CRAFT_ARM32
+/* Facts pe_imports.tcui_* / chat_xbox.tcui_*: the three delay-IAT cells are patched BY NAME (ARM order differs from
+ * x86: ShowProfileCardUI 0x015121FC, ProcessPendingGameUI 0x01512200, [0x01512204 = 0 terminator, never written],
+ * ShowProfileCardUIForUser 0x01512208).  Each cell must still hold its lazy delay-load stub (image + stub rva, bit 0
+ * set; the cells are covered by base relocations, so the value is correct at any load address).  The wrapper
+ * 0xA3E014 only waits when a Show* result is >= 0 or E_PENDING, hence E_NOTIMPL/E_NOTIMPL/S_OK as on x86. */
+static BOOL install_xbox_tcui_noops_128(BYTE *image)
+{
+    struct Arm32TcuiCell {
+        const char *name;
+        DWORD cell_rva;
+        DWORD stub_value_rva;
+        void *hook;
+    } cells[3];
+    UINT index;
+    UINT installed = 0;
+    char line[160];
+
+    cells[0].name = "ShowProfileCardUI";
+    cells[0].cell_rva = ARM_CHAT_XBOX_TCUI_CELL_SHOW_PROFILE;
+    cells[0].stub_value_rva = 0x00b4a2cdu;
+    cells[0].hook = arm32_iat_thumb_pointer((void *)win32_show_profile_card_noop);
+    cells[1].name = "ProcessPendingGameUI";
+    cells[1].cell_rva = ARM_CHAT_XBOX_TCUI_CELL_PROCESS_PENDING;
+    cells[1].stub_value_rva = 0x00b4a2e9u;
+    cells[1].hook = arm32_iat_thumb_pointer((void *)win32_process_pending_game_ui_noop);
+    cells[2].name = "ShowProfileCardUIForUser";
+    cells[2].cell_rva = ARM_CHAT_XBOX_TCUI_CELL_SHOW_PROFILE_FOR_USER;
+    cells[2].stub_value_rva = 0x00b4a32du;
+    cells[2].hook = arm32_iat_thumb_pointer((void *)win32_show_profile_card_for_user_noop);
+
+    if (!IsBadReadPtr(image + ARM_CHAT_XBOX_TCUI_NULL_CELL, sizeof(DWORD)) &&
+        *(const DWORD *)(image + ARM_CHAT_XBOX_TCUI_NULL_CELL) != 0) {
+        wsprintfA(line, "ARM32 TCUI: terminator cell %08lx holds %08lx instead of 0 (left untouched)",
+                  (unsigned long)ARM_CHAT_XBOX_TCUI_NULL_CELL,
+                  (unsigned long)*(const DWORD *)(image + ARM_CHAT_XBOX_TCUI_NULL_CELL));
+        log_line(line);
+    }
+    for (index = 0; index < 3; ++index) {
+        void **cell = arm32_iat_resolve_cell(image, TRUE, cells[index].name, cells[index].cell_rva);
+        if (!cell) continue;
+        if (*cell == cells[index].hook) {
+            wsprintfA(line, "ARM32 TCUI %s: already hooked", cells[index].name);
+            log_line(line);
+            ++installed;
+        } else if (arm32_patch_cell(cell, image + cells[index].stub_value_rva, cells[index].hook, NULL,
+                                    cells[index].name)) {
+            ++installed;
+        }
+    }
+    wsprintfA(line, "Minecraft 1.2.8 ARM32 Xbox TCUI no-ops installed: %u of 3 cells", installed);
+    log_line(line);
+    return installed == 3;
+}
+#else
+static BOOL install_xbox_tcui_noops_128(BYTE *image)
+{
+    void **slots = (void **)(image + RVA_128_TCUI_PROCESS_PENDING_IAT);

@@ -1,0 +1,17 @@
+static HRESULT WINAPI fake_application_view_try_resize(
+    FakeInspectable *object, LONGLONG size, BYTE *result)
+{
+    (void)object;
+    (void)size;
+    if (!result) return E_POINTER;
+    *result = TRUE;
+    return S_OK;
+}
+
+static HRESULT WINAPI fake_application_view_set_size(
+    FakeInspectable *object, LONGLONG size)
+{
+    (void)object;
+    (void)size;
+    return S_OK;
+}

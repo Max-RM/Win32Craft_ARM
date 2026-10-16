@@ -1,0 +1,1 @@
+ARM: native (HSTRING_BUFFER handles are combase objects).

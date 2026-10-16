@@ -1,0 +1,1 @@
+Reviewer fix: the watchdog snapshot must not log while the main thread is suspended (deadlock if it was suspended inside log_line/stdio/heap); new arm32_boot_snapshot_main_thread captures, resumes, then logs.

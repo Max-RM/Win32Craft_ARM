@@ -1,0 +1,1 @@
+apply_runtime_patches: data-only patches on ARM, PAGE_READWRITE instead of PAGE_EXECUTE_READWRITE.

@@ -1,0 +1,1068 @@
+{
+ "area": "pe_imports",
+ "facts": [
+  {
+   "id": "pe_imports.import_directory",
+   "x86_symbol": "x86 patcher: len(descriptors)==27 and import_size==0x230",
+   "x86_value": "27 descriptors / 0x230",
+   "kind": "pe",
+   "arm_rva": "0x013269a8",
+   "summary": "ARM import directory: 50 import descriptors (716 function imports, 26 of them WS2_32 imports by ordinal), size 0x3fc (=51*20 incl. terminator). Every descriptor has TimeDateStamp=0 and ForwarderChain=0 (no bound imports; no bound-import data directory).",
+   "arm_signature": "n/a (data)",
+   "x86_to_arm_notes": "Replace the x86 patcher assertion by len(descriptors)==50 and import_size==0x3fc. The IAT cells are NOT moved by the x86-style patcher (descriptors are copied to the new section, only the DLL-name RVA is changed), so every IAT RVA in imports_table.json stays valid after patching. There is NO KERNEL32.dll import in the ARM exe (see pe_imports.kernel32_placeholders).",
+   "expected_bytes": null,
+   "evidence": [
+    "python arm32re.py info -> dd[1] rva=013269a8 size=3fc; parsed with own PE walker -> 50 descriptors, 716 funcs (arm32/facts/imports_table.json)",
+    "all 50 descriptors: TimeDateStamp==0, ForwarderChain==0; PE data directories 11 (bound import) absent"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.iat_directory",
+   "x86_symbol": "IAT is not asserted by the x86 patcher",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x00c37000",
+   "summary": "IAT data directory = 0xC37000 size 0xBF8 (.rdata). Holds all normal-import cells (0xC37000..0xC37BF4); the cell at 0xC37BF8 is the CFG check-function pointer slot (LoadConfig.GuardCFCheckFunctionPointer = VA 0x01037BF8), filled by the loader.",
+   "arm_signature": "n/a (data)",
+   "x86_to_arm_notes": "Host-patched cells are plain IAT cells in .rdata (not .data): VirtualProtect is mandatory (the x86 host already does it). The ARM exe is CFG-instrumented (GuardFlags=0x100) but has an empty guard function table (GuardCFFunctionCount=0), so indirect calls into the host DLL are not rejected.",
+   "expected_bytes": null,
+   "evidence": [
+    "python arm32re.py info -> dd[12] rva=00c37000 size=bf8",
+    "LoadConfig at RVA 0x11859a8 (size 0x68): GuardCFCheckFunctionPointer=0x01037bf8, GuardCFFunctionTable=0, GuardCFFunctionCount=0, GuardFlags=0x100 (read with struct unpack)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.delay_directory",
+   "x86_symbol": "resolve_fmod_delay_imports_128: optional+0xc8 (delay_rva) / +0xcc (delay_size)",
+   "x86_value": "DelayDescriptor {attributes,name_rva,module_handle_rva,iat_rva,int_rva,bound_iat_rva,unload_iat_rva,timestamp}",
+   "kind": "pe",
+   "arm_rva": "0x0131f20c",
+   "summary": "ARM delay-import directory: RVA 0x131F20C size 0x60 = TWO 32-byte descriptors + zero terminator, both attributes=1 (RVA based): [0] api-ms-win-gaming-tcui-l1-1-0.dll (name RVA 0xCFBAF0, HMODULE cell 0x1515080, IAT 0x15121FC, INT 0x131F26C, bound IAT 0x131F2C8, unload 0), [1] api-ms-win-gaming-tcui-l1-1-2.dll (name RVA 0xCFBB20, HMODULE cell 0x1515084, IAT 0x1512208, INT 0x131F278, bound IAT 0x131F2D4). There is NO fmod delay descriptor (fmod_ARM.dll is a normal import). Delay cells live in .data (writable).",
+   "arm_signature": "n/a (data)",
+   "x86_to_arm_notes": "optional-header offset of the delay directory is the same (data directory 13 -> optional+0x60+13*8 = +0xC8/+0xCC in PE32) but its content differs: the x86 search for \"fmod.dll\" would fail on ARM (only tcui descriptors). resolve_fmod_delay_imports_128 must not be ported.",
+   "expected_bytes": null,
+   "evidence": [
+    "python arm32re.py info -> dd[13] rva=0131f20c size=60; arm32re ptrs 131f20c -> {1, 0xcfbaf0, 0x1515080, 0x15121fc, 0x131f26c, 0x131f2c8,0,0} and {1,0xcfbb20,0x1515084,0x1512208,0x131f278,0x131f2d4,...}",
+    "name strings read from .rdata: \"api-ms-win-gaming-tcui-l1-1-0.dll\" / \"...-l1-1-2.dll\"; INT hint-names: ShowProfileCardUI, ProcessPendingGameUI (desc0), ShowProfileCardUIForUser (desc1)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.pe_header_flags",
+   "x86_symbol": "tools/1.2.8-patcher.py: Characteristics 0x0102->0x0122, OS minor 2->1, subsystem minor 2->1, DllCharacteristics 0x9140->0x8100",
+   "x86_value": "0x0102->0x0122; 2->1; 2->1; 0x9140->0x8100",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "ARM header values: FileHeader.Characteristics=0x0122 (LAA already set), OS 6.2, subsystem 6.2, Subsystem=2 (GUI), DllCharacteristics=0x9140 (TS-aware 0x8000 | APPCONTAINER 0x1000 | NX 0x100 | DYNAMIC_BASE 0x40), ImageBase 0x400000, SizeOfImage 0x1730000, SizeOfHeaders 0x400, 7 sections, no certificate directory.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Characteristics: no change (LAA already). OS/subsystem version: no change (6.2 is below every ARM Windows: RT 8.1 = 6.3, Win10 = 10.0; the x86 6.2->6.1 downgrade was for Win7 and is not needed). DllCharacteristics: clear ONLY the APPCONTAINER bit (0x9140 -> 0x8140) - an AppContainer-flagged exe cannot be started as a normal desktop process. Do NOT clear DYNAMIC_BASE (0x40) and do not strip relocations (MSVC ARM images are relocatable by design, clearing it buys nothing and risks load failure): the exe contains 0xBBD28 bytes of .reloc (movw/movt pairs, type 7). Any NEW absolute address written into code must get a base-relocation entry, or be encoded position-independent. The host must always use GetModuleHandleW(NULL) as image base (ASLR), never 0x400000.",
+   "expected_bytes": null,
+   "evidence": [
+    "own header parse: char=0x122 osver=6.2 subsys=6.2 dllchar=0x9140 imagebase=0x400000 sizeofimage=0x1730000 sizeofheaders=0x400",
+    "data directories present: 0 export,1 import,2 rsrc,3 pdata,5 reloc,6 debug,9 tls,10 loadconfig,12 iat,13 delay; no 4 (certificate) => no signature to invalidate",
+    "section table ends at 0x350 inside SizeOfHeaders 0x400: room for 2 more 40-byte section headers"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.patcher_new_section",
+   "x86_symbol": "Pe32 patcher: new section \".d3imp\" at align(last_va+size), 0xC0000040, new import dir",
+   "x86_value": "IMAGE_SIZE_128_PATCHED 0x01923000",
+   "kind": "pe",
+   "arm_rva": "0x01730000",
+   "summary": "New import section for the ARM patcher: last section .reloc ends at RVA 0x172FD28, so the new section RVA = 0x01730000 (= current SizeOfImage), file offset 0x1680A00 (= current file size, already 0x200-aligned). With one added import (win32craft.dll!Win32Bootstrap) the section is ~0x444 bytes (52 descriptors*20 + name + hint + ILT + IAT) => new SizeOfImage = 0x01731000 (= ARM equivalent of IMAGE_SIZE_128_PATCHED).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Win32Bootstrap identifies the build by SizeOfImage at pe+0x50: add `#define IMAGE_SIZE_128_ARM_PATCHED 0x01731000` (only valid while the added section stays <= 0xFFF bytes; if the patcher adds more compat imports the constant must be recomputed = align(0x1730000+vsize, 0x1000)). The section header slot at file offset 0x350 is free. Section flags: data-only (0xC0000040) is enough for imports; if a code trampoline is placed in it use 0xE0000060 instead (see winmain area for the call-site plan; it uses .text slack at 0xC36EA0 instead).",
+   "expected_bytes": null,
+   "evidence": [
+    "section table: .reloc va=0x1674000 vs=0xbbd28 -> end 0x172fd28 -> align 0x1000 = 0x1730000",
+    "file size 0x1680a00 (python os.stat); filealign 0x200 -> 0x1680a00 aligned",
+    "cross-checked against arm32/facts/winmain_verify.py (EXPECTED_NEW_IMAGE_SIZE = 0x01731000, NEW_SECTION_RVA = 0x01730000)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.dll_renames",
+   "x86_symbol": "patcher replace_all: vccorlib140_app.DLL->vccorlib140.DLL, MSVCP140_APP.dll->MSVCP140.dll, CONCRT140_APP.dll->CONCRT140.dll, VCRUNTIME140_APP.dll->VCRUNTIME140.dll (each expected_count=1)",
+   "x86_value": "4 renames, 1 occurrence each",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "All four UWP runtime names occur exactly once in the ARM exe (the import-descriptor name strings), file offsets 0x1328CDE (vccorlib140_app.DLL), 0x132C3C8 (MSVCP140_APP.dll), 0x132CD0A (CONCRT140_APP.dll), 0x132CE36 (VCRUNTIME140_APP.dll); the replacement names are shorter so the in-place NUL-padded replace of the x86 patcher works unchanged. Imports: vccorlib 63, MSVCP140 258, CONCRT140 43, VCRUNTIME140 19.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Same four renames, same expected_count=1. Case of the original strings is preserved exactly (\"vccorlib140_app.DLL\" upper-case DLL, \"MSVCP140_APP.dll\", \"CONCRT140_APP.dll\", \"VCRUNTIME140_APP.dll\").",
+   "expected_bytes": null,
+   "evidence": [
+    "python byte search of Minecraft.Windows.exe: each of the 4 names found exactly once (offsets above)",
+    "llvm-readobj --coff-exports of desktop ARM DLLs in VC/Redist/MSVC/14.44.35112/onecore/arm/Microsoft.VC143.CRT: 0 imported symbols missing (see pe_imports.desktop_crt_compare)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.fmod_dll_name",
+   "x86_symbol": "patcher replace_all fmod_X86.dll->fmod.dll (expected_count 2)",
+   "x86_value": "2 occurrences",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "ARM exe imports \"fmod_ARM.dll\" as an ordinary (non-delay) import, 39 functions, IAT 0xC37A58..0xC37AF0 (descriptor name string occurs once at file offset 0x13277EA). The DLL ships next to the exe.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "No rename. The 2nd x86 occurrence (delay descriptor) does not exist on ARM. Keep fmod_ARM.dll as is; the DLL must load at process start or the process never reaches WinMain.",
+   "expected_bytes": null,
+   "evidence": [
+    "python arm32re.py imports fmod -> 39 cells 0xc37a58..0xc37af0 under fmod_ARM.dll; exe has no fmod delay descriptor (delay dir only tcui)",
+    "byte search \"fmod_ARM.dll\" in exe -> 1 hit"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.kernel32_placeholders",
+   "x86_symbol": "patcher compatibility_names ResolveDelayLoadedAPI/ResolveDelayLoadsFromDll/DelayLoadFailureHook/CreateFile2 via KERNEL32 hint swap",
+   "x86_value": "4 KERNEL32 cells",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "NOT APPLICABLE: the ARM exe has no KERNEL32.dll import at all. The four APIs are imported through api-set DLLs: ResolveDelayLoadedAPI <- api-ms-win-core-delayload-l1-1-1.dll (IAT 0xC375F8), DelayLoadFailureHook <- api-ms-win-core-delayload-l1-1-0.dll (IAT 0xC375F0), CreateFile2 <- api-ms-win-core-file-l1-2-0.dll (IAT 0xC3765C). ResolveDelayLoadsFromDll is not imported.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Drop the whole kernel32 placeholder machinery (kernel_descriptor search, hint swap, 4 extra descriptors, compat_iats). The APIs exist natively on Windows 8.1/10 (KernelBase), only Win7 lacked them. If a target OS lacks one of these contracts, the contingency is to add that DLL to the redirect set; win32craft.def already exports ResolveDelayLoadedAPI, DelayLoadFailureHook, CreateFile2 (stubs return NULL / real CreateFileW wrapper).",
+   "expected_bytes": null,
+   "evidence": [
+    "python arm32re.py imports delayload -> 2 cells; imports kernel32 -> none; impcallers ResolveDelayLoadedAPI -> 1 caller (sub_b4a3f0)",
+    "win11 apiset schema: api-ms-win-core-delayload-l1-1-1 -> kernelbase.dll; file-l1-2-5 -> kernelbase.dll"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.api_set_redirect_set",
+   "x86_symbol": "WIN32CRAFT_API_SETS = {xinputuap, core-com-l1-1-0, winrt-error-l1-1-0, winrt-error-l1-1-1, winrt-l1-1-0, winrt-string-l1-1-0, eventing-provider-l1-1-0}; plus dxgi.dll/d3d11.dll",
+   "x86_value": "7 api-set DLLs + dxgi.dll + d3d11.dll",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "All 7 x86 WIN32CRAFT_API_SETS DLLs are imported by the ARM exe (25 functions in total: XInputGetState; 8 com; 2+1 winrt-error; RoInitialize; 8 winrt-string; 4 eventing). dxgi.dll is NOT imported; d3d11.dll only for D3D11CreateDevice. REQUIRED redirect: XINPUTUAP.dll only. All others resolve natively on Win10 ARM32 (verified against the Win11 apiset schema + real export tables) and are expected on 8.1; redirecting them is optional (x86 parity).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Patcher rule set for ARM: (1) REQUIRED: XINPUTUAP.dll -> win32craft.dll (name string \"XINPUTUAP.dll\\0\" is only 14 bytes, cannot be overwritten in place with \"win32craft.dll\\0\" (15), so repoint name RVA to a string in the new section as the x86 patcher does). (2) OPTIONAL parity: the six api-ms-win-core-{com-l1-1-0,winrt-error-l1-1-0,winrt-error-l1-1-1,winrt-l1-1-0,winrt-string-l1-1-0} / api-ms-win-eventing-provider-l1-1-0 descriptors (all names >= 27 chars so they could be overwritten in place, but use the same new-string repoint for uniformity). (3) NEVER redirect: CRT api sets, kernel api sets, WS2_32, IPHLPAPI, D3DCOMPILER_47, d3d11, delayload, file-l1-2-0. IMPORTANT: if (2) is applied the host HSTRING/Ro shims must forward to the real combase (see pe_imports.hstring_world) because the native desktop vccorlib140.dll and fmod_ARM.dll use REAL HSTRINGs.",
+   "expected_bytes": null,
+   "evidence": [
+    "imports_table.json patcher.action per descriptor; names check: python set-compare of WIN32CRAFT_API_SETS vs ARM import descriptors -> all 7 present",
+    "arm32re imports dxgi / str dxgi.dll -> nothing; no LoadLibrary/GetProcAddress import exists in the ARM exe either"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.d3d11_dxgi_redirect",
+   "x86_symbol": "patcher redirects d3d11.dll and dxgi.dll descriptors; win32craft.def exports D3D11CreateDevice/CreateDirect3D11DeviceFromDXGIDevice/CreateDXGIFactory2",
+   "x86_value": "d3d11.dll,dxgi.dll -> win32craft.dll",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "ARM exe: d3d11.dll!D3D11CreateDevice only (IAT 0xC37A50). No dxgi.dll import, so CreateDXGIFactory2 / CreateDirect3D11DeviceFromDXGIDevice are not needed. d3d11.dll exists on RT 8.1 and Win10.",
+   "arm_signature": "HRESULT D3D11CreateDevice(IDXGIAdapter* r0, D3D_DRIVER_TYPE r1, HMODULE r2, UINT flags r3, const D3D_FEATURE_LEVEL* [sp], UINT count [sp+4], UINT sdk [sp+8], ID3D11Device** [sp+12], D3D_FEATURE_LEVEL* [sp+16], ID3D11DeviceContext** [sp+20])",
+   "x86_to_arm_notes": "Do not redirect d3d11/dxgi on ARM; keep install_d3d11_device_compat as a runtime IAT hook (cell 0xC37A50) - its job (force BGRA flag, WARP fallback) is still useful, the Win7 11_1 filter is inert (host_is_windows7 false). If you do redirect d3d11, win32craft.dll!D3D11CreateDevice (pass-through) must exist.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re imports d3d11 -> 00c37a50 d3d11.dll!D3D11CreateDevice only; impcallers -> 2 call sites in gfx:GameOwner::InitDevice (0x5bc3a0, 0x5bc3ec)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.cxx_throw_iat",
+   "x86_symbol": "RVA_128_CXX_THROW_IAT",
+   "x86_value": "0x011d2690",
+   "kind": "iat",
+   "arm_rva": "0x00c374e4",
+   "summary": "VCRUNTIME140_APP.dll!_CxxThrowException IAT cell (thunk 0xB4A100, 2908 callers). install_exception_trace hooks it to log a stack and tail into the original.",
+   "arm_signature": "void __cdecl _CxxThrowException(void* exceptionObject /*r0*/, const ThrowInfo* throwInfo /*r1*/) noreturn",
+   "x86_to_arm_notes": "The ARM exe calls the import through a 12-byte thunk (movw ip/movt ip/ldr.w pc,[ip]) so patching the IAT cell redirects every call. Cell value written by the host MUST have bit0 set (Thumb); a C function pointer compiled for thumbv7-windows-msvc already does. The cell lives in .rdata (read-only): keep the VirtualProtect(PAGE_READWRITE) + FlushInstructionCache sequence of the x86 host. Hook prototype: `static void win32_cxx_throw(void*, const void*)` with no WINAPI/stdcall; call the saved original (never returns). After the DLL rename this cell is resolved from the desktop vcruntime140.dll (_CxxThrowException exported, ordinal 2).",
+   "expected_bytes": "47f2e44cc0f2031cdcf800f0 (thunk 0xB4A100)",
+   "evidence": [
+    "arm32re imports _CxxThrowException -> IAT=00c374e4 thunk=00b4a100; impcallers -> 2908 callers; xrefs: only the thunk references the cell",
+    "llvm-readobj exports of desktop vcruntime140.dll: _CxxThrowException present"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.create_file2_iat",
+   "x86_symbol": "RVA_128_CREATE_FILE2_IAT",
+   "x86_value": "0x011d20d4",
+   "kind": "iat",
+   "arm_rva": "0x00c3765c",
+   "summary": "api-ms-win-core-file-l1-2-0.dll!CreateFile2 IAT cell. Only user: sub_98957c (leveldb WinRT env open) loads the cell directly with movw/movt+ldr at 0x9895C4 (no thunk) and calls it blx.",
+   "arm_signature": "HANDLE CreateFile2(LPCWSTR r0, DWORD access r1, DWORD share r2, DWORD disposition r3, LPCREATEFILE2_EXTENDED_PARAMETERS [sp]=NULL)",
+   "x86_to_arm_notes": "NO LONGER NEEDED: x86 Win32CraftCreateFile2/install_create_file2_compat exist because Windows 7 lacks CreateFile2. On Windows 8.1/10 (KernelBase, api-ms-win-core-file-l1-2-x) it is native and the game passes a NULL extended-parameters block anyway. Drop the hook and the Win32CraftCreateFile2 export on ARM.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re impcallers CreateFile2 -> \"direct mov32 009895c4 in sub_98957c\"; arm32re dis 9895a0 -> r0=path r1=r8 r2=r6 r3=[r7+0x58], str #0 -> [sp] before blx r4",
+    "win11 apiset schema: api-ms-win-core-file-l1-2-5 -> kernelbase.dll, CreateFile2 export present"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.activation_factory_iat",
+   "x86_symbol": "RVA_128_ACTIVATION_FACTORY_IAT (GameActivationFn)",
+   "x86_value": "0x011d2b54",
+   "kind": "iat",
+   "arm_rva": "0x00c37bf0",
+   "summary": "vccorlib140_app.DLL!?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z IAT cell (last cell of the vccorlib block; thunk 0xB49100, single caller = wrapper sub_b48f88 -> named pe:GetActivationFactoryByPCWSTR_wrapper, 102 call sites). It is the ONLY WinRT activation path of the ARM exe (RoGetActivationFactory/RoActivateInstance are not imported).",
+   "arm_signature": "HRESULT __cdecl GetActivationFactoryByPCWSTR(const wchar_t* className /*r0*/, Platform::Guid& iid /*r1 = const GUID* (16 bytes)*/, void** factory /*r2*/) -> r0 (HRESULT)",
+   "x86_to_arm_notes": "The ARM exe calls the import through a 12-byte thunk (movw ip/movt ip/ldr.w pc,[ip]) so patching the IAT cell redirects every call. Cell value written by the host MUST have bit0 set (Thumb); a C function pointer compiled for thumbv7-windows-msvc already does. The cell lives in .rdata (read-only): keep the VirtualProtect(PAGE_READWRITE) + FlushInstructionCache sequence of the x86 host. Same host signature as x86 GameActivationFn (LPCWSTR, const GUID*, void**) minus stdcall. The call sites pass a literal wide string in r0 (not an HSTRING) and a stack GUID (mostly IActivationFactory 00000035-0000-0000-C000-000000000046) in r1; on failure (r0<0) the caller calls sub_838cc (throws) so un-faked classes that fail are fatal unless the call is guarded by ApiInformation::IsTypePresent. After the rename the fallthrough original is the desktop vccorlib140 export (RVA 0x22C31).",
+   "expected_bytes": "47f6f03cc0f2031cdcf800f0 (thunk 0xB49100); wrapper sub_b48f88: 2de90048eb46bde80048 00f0b5b8",
+   "evidence": [
+    "arm32re imports GetActivationFactoryByPCWSTR -> IAT=00c37bf0 thunk=00b49100; impcallers -> sub_b48f88 (tail-call wrapper); callers b48f88 -> 102",
+    "arm32re func 56e908 -> r0 = L\"Windows.Globalization.GeographicRegion\" (movw/movt wstr), r1 = stack GUID {0x35,0,0xc0,0x46000000}, r2 = &local; error -> bl sub_838cc",
+    "x86 hook constants cluster 0x2aa8..0x2b54 (activation = highest) just like ARM 0xC37B7C..0xC37BF0 (activation = highest cell of the vccorlib block); x86 GameActivationFn typedef is (LPCWSTR,GUID*,void**)",
+    "desktop ARM vccorlib140.dll exports the same mangled name at RVA 0x22C31"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.platform_object_ctor_iat",
+   "x86_symbol": "RVA_128_PLATFORM_OBJECT_CTOR_IAT (GamePlatformObjectCtorFn)",
+   "x86_value": "0x011d2ae4",
+   "kind": "iat",
+   "arm_rva": "0x00c37b90",
+   "summary": "vccorlib140_app.DLL!??0Object@Platform@@Q$AAA@XZ (Platform::Object::Object) IAT cell, thunk 0xB49028, 24 callers.",
+   "arm_signature": "void Platform::Object::Object(void* this /*r0*/)  (callee-saved r4-r11, no stack args, no return value)",
+   "x86_to_arm_notes": "The x86 hook (no-op) was written for Wine's aborting vccorlib stub. The ARM callers behave like the x86 comment says: e.g. sub_ff440 calls the ctor on this+8 and then stores all vtables itself (str [r4], [r4,#4] ...). The native desktop vccorlib140 export (RVA 0x1BEF1) is a real 5-instruction body (stores the Object vtable) so the hook is NOT required on real Windows ARM; keep it only behind a Wine-compat flag.",
+   "expected_bytes": "47f6903cc0f2031cdcf800f0 (thunk 0xB49028)",
+   "evidence": [
+    "arm32re imports ??0Object@Platform -> IAT=00c37b90 thunk=00b49028; impcallers 24 (e.g. 0xff450 in sub_ff440, 0x580854 in sub_580838)",
+    "arm32re dis ff440 -> bl thunk then movw/movt vtable stores to [r4],[r4+4],[r4+8],[r4+0xc],[r4+0x10]",
+    "capstone of desktop ARM vccorlib140.dll @0x1BEF0: push {fp,lr}; mov fp,sp; ldr r3,[pc,#8]; str r3,[r0]; pop {fp,pc}"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.platform_allocate1_iat",
+   "x86_symbol": "RVA_128_PLATFORM_ALLOCATE1_IAT (GamePlatformAllocate1Fn)",
+   "x86_value": "0x011d2aa8",
+   "kind": "iat",
+   "arm_rva": "0x00c37b7c",
+   "summary": "vccorlib140_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXI@Z (Heap::Allocate(size_t)) IAT cell, thunk 0xB48FF8, 4 callers.",
+   "arm_signature": "void* Platform::Details::Heap::Allocate(unsigned size /*r0*/) -> r0",
+   "x86_to_arm_notes": "Same 1-arg signature as GamePlatformAllocate1Fn (UINT)->void*. The x86 hook only zeroes `size` bytes of the result (Wine leaves garbage). Native vccorlib returns usable C++/CX storage; the hook is defensive on ARM (harmless: ZeroMemory of fresh memory). Adjacent-cell order is identical to x86 (Allocate(I) at the lower address, Allocate(II) the next cell).",
+   "expected_bytes": "47f67c3cc0f2031cdcf800f0 (thunk 0xB48FF8)",
+   "evidence": [
+    "arm32re imports Allocate@Heap -> 00c37b7c (SAPAXI@Z, thunk b48ff8, 4 callers) and 00c37b80 (SAPAXII@Z)",
+    "x86: allocate1 cell 0x2aa8 immediately precedes allocate2 cell 0x2aac as 0xC37B7C precedes 0xC37B80",
+    "desktop vccorlib140 exports ?Allocate@Heap@Details@Platform@@SAPAXI@Z at RVA 0x1B701"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.platform_allocate2_iat",
+   "x86_symbol": "RVA_128_PLATFORM_ALLOCATE2_IAT (GamePlatformAllocate2Fn)",
+   "x86_value": "0x011d2aac",
+   "kind": "iat",
+   "arm_rva": "0x00c37b80",
+   "summary": "vccorlib140_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z (Heap::Allocate(object_size, allocation_size)) IAT cell, thunk 0xB49004, 114 callers (every ref-class `ref new`).",
+   "arm_signature": "void* Platform::Details::Heap::Allocate(unsigned objectSize /*r0*/, unsigned allocationSize /*r1*/) -> r0",
+   "x86_to_arm_notes": "Callers pass (object, object+trailer) e.g. Allocate(0x30,0x48) in main (sub_b4a574) = 0x18-byte hidden tracker cookie after the object, same shape as the x86 comment (zero only object_size bytes, never the cookie). The x86 hook also logs every call with wsprintfA: drop the logging on ARM (114 call sites, hot path). Native desktop vccorlib140 provides the allocator (export RVA 0x1B741), so the hook is only defensive.",
+   "expected_bytes": "47f6803cc0f2031cdcf800f0 (thunk 0xB49004)",
+   "evidence": [
+    "arm32re impcallers Allocate@Heap -> 114 callers for SAPAXII@Z (e.g. 0xff6bc, 0xb4a598 movs r0,#0x30; movs r1,#0x48)",
+    "x86 comment: \"final allocation_size-object_size bytes belong to vccorlib's reference-tracker cookie\"; ARM native Allocate2 @0x1B740 adds 0x18 to the second arg (add.w r0,r1,#0x18) and writes control-block fields"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.get_ibox_array_vtable_iat",
+   "x86_symbol": "RVA_128_GET_IBOX_ARRAY_VTABLE_IAT",
+   "x86_value": "0x011d2acc",
+   "kind": "iat",
+   "arm_rva": "0x00c37b88",
+   "summary": "vccorlib140_app.DLL!?GetIBoxArrayVtable@Details@Platform@@YAPAXPAX@Z IAT cell, thunk 0xB49010, 4 callers (0x1061f2, 0x5852fa, 0x586a2a, 0xb4a480).",
+   "arm_signature": "void* Platform::Details::GetIBoxArrayVtable(void* object /*r0*/) -> r0",
+   "x86_to_arm_notes": "Hook win32_get_ibox_vtable returns ((void**)object)[1]. ARM boxed-value constructors also store the concrete IBox vtable at object+4 immediately before the call (sub_580838: str r3,[r4,#4] ... mov r0,r4; bl thunk), so the same hook body is valid on ARM (pointer size unchanged). Not needed with the native desktop vccorlib140 (export RVA 0x66B1 is real); keep only for Wine.",
+   "expected_bytes": "47f6883cc0f2031cdcf800f0 (thunk 0xB49010)",
+   "evidence": [
+    "arm32re imports GetIBoxArrayVtable -> 00c37b88 thunk b49010; impcallers 4"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.get_ibox_vtable_iat",
+   "x86_symbol": "RVA_128_GET_IBOX_VTABLE_IAT",
+   "x86_value": "0x011d2b1c",
+   "kind": "iat",
+   "arm_rva": "0x00c37bc8",
+   "summary": "vccorlib140_app.DLL!?GetIBoxVtable@Details@Platform@@YAPAXPAX@Z IAT cell, thunk 0xB49088, 4 callers (0x5808b2, 0x58096a, 0x580a22, 0x5942a6).",
+   "arm_signature": "void* Platform::Details::GetIBoxVtable(void* object /*r0*/) -> r0",
+   "x86_to_arm_notes": "See get_ibox_array_vtable_iat: object+4 holds the vtable on ARM too (sub_580838 stores vtables at [r4],[r4+4]... then calls GetIBoxVtable(r4)). Native desktop export RVA 0x4711 (returns a constant) exists, so the hook is Wine-only.",
+   "expected_bytes": "47f6c83cc0f2031cdcf800f0 (thunk 0xB49088)",
+   "evidence": [
+    "arm32re impcallers GetIBoxVtable -> 005808b2 sub_580838, 0058096a sub_5808f0, 00580a22 sub_5809a8, 005942a6 sub_59422c",
+    "arm32re dis 580838 -> str r3,[r4,#4] before call at 0x5808b2"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.vccorlib_hooks_necessity",
+   "x86_symbol": "install_vccorlib_compat (5 cells, one VirtualProtect span first_rva..last_rva)",
+   "x86_value": "span 0x011d2aa8..0x011d2b1c",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "All five hooked vccorlib cells exist on ARM and are matched BY NAME (ARM-mangled `Q$AAA`/`YAPAX...`/`SAPAX..` = identical function identities as the x86 ones). They are contiguous inside the 63-cell vccorlib block 0xC37AF8..0xC37BF4: Allocate(I) 0xC37B7C, Allocate(II) 0xC37B80, GetIBoxArrayVtable 0xC37B88, Object ctor 0xC37B90, GetIBoxVtable 0xC37BC8 (+ activation 0xC37BF0).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Recommended ARM behaviour: install_vccorlib_compat becomes optional (Wine/odd-runtime compatibility only). On real Windows RT 8.1 / Win10 ARM32 the desktop vccorlib140.dll in onecore\\arm\\Microsoft.VC143.CRT exports all 63 imported symbols with real bodies (verified). If kept, protect the span with ONE VirtualProtect of [min(rva), max(rva)+4) exactly like x86 (0xC37B7C..0xC37BCB; all 4-byte cells in .rdata), hooks have no stdcall: plain C functions.",
+   "expected_bytes": null,
+   "evidence": [
+    "desktop ARM vccorlib140.dll coff-exports: ?GetIBoxVtable (0x4711) ?GetIBoxArrayVtable (0x66B1) ?Allocate (0x1B701/0x1B741) ??0Object (0x1BEF1) ?GetActivationFactoryByPCWSTR (0x22C31) all present; all 63 ARM exe vccorlib imports found (cmp script: missing=0)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "pe_imports.d3d_compile_iat",
+   "x86_symbol": "RVA_128_D3D_COMPILE_IAT (GameD3DCompileFn, install_d3d_compile_trace)",
+   "x86_value": "0x011d20b4",
+   "kind": "iat",
+   "arm_rva": "0x00c370b4",
+   "summary": "D3DCOMPILER_47.dll!D3DCompile IAT cell (thunk 0xA3B944, 1 caller 0x5be4ba in mce::ShaderProgramDX11::compileShaderProgram). The same function first calls D3DPreprocess (cell 0xC370B0, thunk 0xA3B938, caller 0x5be19e) with the game's own ID3DInclude object; D3DReflect cell 0xC370B8.",
+   "arm_signature": "HRESULT D3DCompile(LPCVOID src r0, SIZE_T size r1, LPCSTR srcName r2, const D3D_SHADER_MACRO* defines r3, ID3DInclude* [sp], LPCSTR entry [sp+4], LPCSTR target [sp+8], UINT f1 [sp+12], UINT f2 [sp+16], ID3DBlob** code [sp+20], ID3DBlob** errors [sp+24])",
+   "x86_to_arm_notes": "Hook the cell exactly like x86 (win32_d3d_compile). D3DPreprocess is not hooked by the x86 host and need not be hooked on ARM (preprocess already resolves includes; the compile call receives the preprocessed text; entry is the literal \"main\", target flags 0x8000). D3DCOMPILER_47.dll is a system DLL on RT 8.1 and Win10, no redirect needed. ARM passes the first 4 arguments in r0-r3 and the remaining 7 on the stack (11 arguments total, same order as x86).",
+   "expected_bytes": "47f2b40cc0f2031cdcf800f0 (thunk 0xA3B944)",
+   "evidence": [
+    "arm32re imports D3DCOMPILER -> D3DPreprocess 00c370b0, D3DCompile 00c370b4, D3DReflect 00c370b8; impcallers -> 005be19e / 005be4ba / 005b8f1a",
+    "arm32re dis 5be480 -> 7 stack args stored [sp..sp+0x18], \"main\" string, 0x8000 flags, bl thunk a3b944"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.d3d11_create_device_iat",
+   "x86_symbol": "RVA_128_D3D11_CREATE_DEVICE_IAT (GameD3D11CreateDeviceFn, install_d3d11_device_compat)",
+   "x86_value": "0x011d2a44",
+   "kind": "iat",
+   "arm_rva": "0x00c37a50",
+   "summary": "d3d11.dll!D3D11CreateDevice IAT cell (thunk 0xA3B968, 2 callers 0x5bc3a0/0x5bc3ec in gfx:GameOwner::InitDevice).",
+   "arm_signature": "HRESULT D3D11CreateDevice(adapter r0, driverType r1, software r2, flags r3, featureLevels [sp], count [sp+4], sdk [sp+8], ppDevice [sp+12], pFeatureLevel [sp+16], ppContext [sp+20])",
+   "x86_to_arm_notes": "Same hook semantics. 10 args: x86 stdcall -> ARM r0-r3 + 6 stack words; typedef must not use __stdcall. host_is_windows7 is always FALSE on ARM, so the 11_1 stripping branch never runs; BGRA flag OR (0x20) and the WARP fallback (driver type 1 -> 5) remain useful.",
+   "expected_bytes": "47f6502cc0f2031cdcf800f0 (thunk 0xA3B968)",
+   "evidence": [
+    "arm32re imports D3D11CreateDevice -> IAT=00c37a50 thunk=00a3b968; impcallers 2"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.tcui_show_profile_iat",
+   "x86_symbol": "RVA_128_TCUI_SHOW_PROFILE_IAT (slots[1])",
+   "x86_value": "0x01724400",
+   "kind": "iat",
+   "arm_rva": "0x015121fc",
+   "summary": "api-ms-win-gaming-tcui-l1-1-0.dll!ShowProfileCardUI DELAY-import cell (.data). Thunk 0xB4A2DC; initial cell value VA 0x00F4A2CD = lazy stub sub_b4a2cc. Single caller: xbox:ShowProfileCard wrapper at 0xA3E0BE.",
+   "arm_signature": "HRESULT ShowProfileCardUI(HSTRING xuid /*r0*/, void(*completion)(HRESULT,void*) /*r1*/, void* context /*r2 = &local struct*/) -> r0",
+   "x86_to_arm_notes": "ARM cell is slots[0] of the host table (x86 had ProcessPending first): ARM order is ShowProfileCardUI 0x15121FC, ProcessPendingGameUI 0x1512200, 0x1512204 = NULL terminator of descriptor 0, ShowProfileCardUIForUser 0x1512208. Return E_NOTIMPL (0x80004001): the wrapper treats only S_OK/E_PENDING (0x8000000A) as \"go on to ProcessPendingGameUI and wait on a Concurrency::event\", every other negative HRESULT takes the ordinary failure path (same reasoning as the x86 comment). x86 named the params (xuid, context, callback); the ARM call passes callback in r1 and context in r2 (ignored by the no-op).",
+   "expected_bytes": "42f2fc1cc0f2911cdcf800f0 (thunk 0xB4A2DC)",
+   "evidence": [
+    "arm32re impcallers ShowProfileCardUI -> 00a3e0be call in xbox:ShowProfileCard wrapper; dis a3e0b0 -> r1=fn sub_a3e678 (callback), r2=&[r7+0x30], r0=xuid then bl b4a2dc",
+    "arm32re ptrs 15121fc -> 00f4a2cd (lazy stub); delay descriptor 0 IAT=0x15121fc",
+    "wrapper code: cmp r4,#0; bge; mov.w r3,#0x80000000; adds r3,#0xa; cmp r4,r3 -> E_PENDING compare"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.tcui_process_pending_iat",
+   "x86_symbol": "RVA_128_TCUI_PROCESS_PENDING_IAT (slots[0])",
+   "x86_value": "0x017243fc",
+   "kind": "iat",
+   "arm_rva": "0x01512200",
+   "summary": "api-ms-win-gaming-tcui-l1-1-0.dll!ProcessPendingGameUI delay-import cell (.data), thunk 0xB4A2F8, initial value VA 0x00F4A2E9 = lazy stub sub_b4a2e8. Caller: 0xA3E0D4 with r0=1 (wait=TRUE).",
+   "arm_signature": "HRESULT ProcessPendingGameUI(BOOL wait /*r0*/) -> r0",
+   "x86_to_arm_notes": "ARM cell is slots[1] of the host table (x86 slots[0]). Return S_OK like x86 (the wrapper then waits on its event with INFINITE (mvn r1,#0) only if ShowProfileCardUI returned S_OK/E_PENDING, which the no-ops never do).",
+   "expected_bytes": "42f2002cc0f2911cdcf800f0 (thunk 0xB4A2F8)",
+   "evidence": [
+    "arm32re impcallers ProcessPendingGameUI -> 00a3e0d4; dis a3e0d2: movs r0,#1; bl b4a2f8; cmp r4,#0; blt"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.tcui_show_profile_user_iat",
+   "x86_symbol": "RVA_128_TCUI_SHOW_PROFILE_USER_IAT (slots[3])",
+   "x86_value": "0x01724408",
+   "kind": "iat",
+   "arm_rva": "0x01512208",
+   "summary": "api-ms-win-gaming-tcui-l1-1-2.dll!ShowProfileCardUIForUser delay-import cell (.data, descriptor 1), thunk 0xB4A33C, initial value VA 0x00F4A32D = lazy stub sub_b4a32c. Caller 0xA3E0AA.",
+   "arm_signature": "HRESULT ShowProfileCardUIForUser(void* user /*r0 = [this+0x18]*/, HSTRING xuid /*r1*/, void(*cb)(HRESULT,void*) /*r2*/, void* ctx /*r3*/) -> r0",
+   "x86_to_arm_notes": "Return E_NOTIMPL. Slot index 3 in the host array is unchanged (0x1512208 = 0x15121FC + 12) even though the neighbours swap places; slot [2] (0x1512204) is the zero terminator between the two delay IATs and must NOT be written (x86 skipped it too).",
+   "expected_bytes": "42f2082cc0f2911cdcf800f0 (thunk 0xB4A33C)",
+   "evidence": [
+    "arm32re impcallers ShowProfileCardUIForUser -> 00a3e0aa; dis a3e094..a3e0aa: r0=[r4+0x18], r1=r5 (xuid), r2=callback sub_a3e678, r3=&[r7+0x30]",
+    "arm32re ptrs 1512204 -> 0 ; 1512208 -> 00f4a32d"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.tcui_cell_layout",
+   "x86_symbol": "install_xbox_tcui_noops_128: slots[0]=process, slots[1]=show_profile, slots[3]=show_profile_for_user, one VirtualProtect(4 cells)",
+   "x86_value": "4 cells at 0x017243fc",
+   "kind": "offset",
+   "arm_rva": "0x015121fc",
+   "summary": "ARM 4-cell block base 0x015121FC (.data): [0]=ShowProfileCardUI, [1]=ProcessPendingGameUI, [2]=0 (terminator), [3]=ShowProfileCardUIForUser. Block size 0x10; all 4 cells in one page of .data.",
+   "arm_signature": "void** slots = (void**)(image + 0x015121fc); slots[0]=show_profile_card_noop; slots[1]=process_pending_game_ui_noop; slots[3]=show_profile_card_for_user_noop;",
+   "x86_to_arm_notes": "Only the slot/function assignment is swapped relative to x86 (slots[0]/slots[1]); base RVA, count (4) and the skip of slot [2] stay structurally identical. Install this BEFORE any code can reach the delay thunks (bootstrap runs before the game, fine). Add a sanity check that slots[0] == image+0xB4A2CD, slots[1] == image+0xB4A2E9, slots[3] == image+0xB4A32D (lazy stubs, Thumb bit set) and slots[2]==0.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re ptrs 15121fc 5 -> 00f4a2cd, 00f4a2e9, 0, 00f4a32d, 0"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.tcui_noop_abi",
+   "x86_symbol": "win32_process_pending_game_ui_noop / win32_show_profile_card_noop / win32_show_profile_card_for_user_noop (WINAPI)",
+   "x86_value": "stdcall HRESULT",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "ARM no-ops are plain AAPCS functions: HRESULT f(r0..r3) -> r0; no callee cleanup. They must be Thumb code (C functions are).",
+   "arm_signature": "HRESULT process_pending(BOOL); HRESULT show_profile(HSTRING, void*, void*); HRESULT show_profile_user(void*, HSTRING, void*, void*)",
+   "x86_to_arm_notes": "Remove WINAPI from the three prototypes (harmless on ARM but warns). Return values unchanged (S_OK, E_NOTIMPL, E_NOTIMPL). log_line inside them still fine.",
+   "expected_bytes": null,
+   "evidence": [
+    "see tcui_show_profile_iat / tcui_process_pending_iat / tcui_show_profile_user_iat evidence"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.resolve_fmod_delay_imports",
+   "x86_symbol": "resolve_fmod_delay_imports_128 (descriptor search \"fmod.dll\", count<128, LoadLibraryW(L\"fmod.dll\"), fill IAT by name)",
+   "x86_value": "fmod.dll delay descriptor, attributes==1",
+   "kind": "function",
+   "arm_rva": null,
+   "summary": "NO LONGER NEEDED on ARM: fmod_ARM.dll is a normal import resolved by the PE loader (IAT 0xC37A58..0xC37AF0, 39 cells, filled before WinMain). There is no delay descriptor named fmod.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Delete the call from the ARM bootstrap (it would fail with \"FMOD delay descriptor mismatch\" and, in the x86 flow, return FALSE). Replace by an optional diagnostic: GetModuleHandleW(L\"fmod_ARM.dll\") and log it. The only remaining FMOD risk is whether fmod_ARM.dll itself loads/initialises in a desktop process (see pe_imports.fmod_arm_dll_load).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re imports fmod -> 39 cells, all under normal import fmod_ARM.dll; delay descriptors = tcui only (python parse of dd[13])"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.fmod_iat_cells",
+   "x86_symbol": "FMOD delay IAT (address_table) filled by GetProcAddress",
+   "x86_value": "delay cells",
+   "kind": "iat",
+   "arm_rva": "0x00c37a58",
+   "summary": "fmod_ARM.dll IAT: 0xC37A58 .. 0xC37AF0 (39 x 4 bytes; first ?getVersion@System@FMOD, last ?setPitch@ChannelControl@FMOD, FMOD_System_Create at 0xC37ACC). All 39 mangled C++ names (ARM `QAA`) exist in fmod_ARM.dll exports (1087 exports, 0 missing).",
+   "arm_signature": "FMOD C++ members use plain AAPCS: this=r0, FMOD_RESULT in r0",
+   "x86_to_arm_notes": "These are loader-resolved; the host does not touch them. Names are ARM-mangled (QAA) so they cannot be fed to an x86 fmod.dll.",
+   "expected_bytes": null,
+   "evidence": [
+    "llvm-readobj --coff-exports fmod_ARM.dll vs exe import names -> 0 missing (python set diff)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.delay_load_plumbing",
+   "x86_symbol": "win32craft.def: ResolveDelayLoadedAPI/ResolveDelayLoadsFromDll/DelayLoadFailureHook stubs (return NULL/FALSE)",
+   "x86_value": "_Win32CraftResolveDelayLoadedAPI@24 etc.",
+   "kind": "function",
+   "arm_rva": "0x00b4a3f0",
+   "summary": "ARM delay-load plumbing = MSVC __delayLoadHelper2 equivalent sub_b4a3f0 (named delay:__delayLoadHelper2): each delay IAT cell initially points (Thumb) to a 16-byte lazy stub (movw ip,<cell>;movt;ldr.w pc,[pool]) which jumps to sub_b4a2a4 (tcui-l1-1-0, descriptor VA 0x171F20C) or sub_b4a304 (tcui-l1-1-2, descriptor VA 0x171F22C); they save r0-r3/d0-d7, call sub_b4a3f0(desc r0, cell r1) which calls ResolveDelayLoadedAPI(0x400000, desc, FailureDllHook=*[VA 0x10FBB48]=0, FailureSystemHook=&thunk DelayLoadFailureHook (0xB4A610), ThunkAddress=cell, Flags=*[VA 0x10FBB44]=0) and then `bx` to the resolved address.",
+   "arm_signature": "PVOID ResolveDelayLoadedAPI(PVOID parentBase r0, PCIMAGE_DELAYLOAD_DESCRIPTOR r1, PDELAYLOAD_FAILURE_DLL_CALLBACK r2, PDELAYLOAD_FAILURE_SYSTEM_ROUTINE r3, PIMAGE_THUNK_DATA [sp], ULONG flags [sp+4])",
+   "x86_to_arm_notes": "Win32CraftResolveDelayLoadedAPI-style stubs are NOT required: (a) the APIs come from api-ms-win-core-delayload-l1-1-1/-l1-1-0 which are native; (b) once the three TCUI cells are overwritten with no-ops (tcui_cell_layout) the lazy path is never entered (the only ResolveDelayLoadedAPI caller is sub_b4a3f0 and the only delay thunks are the 3 TCUI ones); (c) the x86 NULL-returning stub would turn an accidental lazy load into `bx 0` (crash) whereas the real function raises a clean delay-load exception. DelayLoadFailureHook has zero call sites (only its address is passed). ResolveDelayLoadsFromDll is not imported at all. Remove the three Win32Craft* exports from the ARM .def (or keep unused).",
+   "expected_bytes": "2de90c480df1080b094b0a4600921b68 (first 16 bytes of sub_b4a3f0)",
+   "evidence": [
+    "arm32re func b4a3f0 -> loads descriptor, [0x10fbb44], [0x10fbb48], 0x400000, bl thunk[api-ms-win-core-delayload-l1-1-1.dll!ResolveDelayLoadedAPI]; pool at 0xb4a414 = 0x00f4a611 = thunk DelayLoadFailureHook",
+    "arm32re impcallers ResolveDelayLoadedAPI -> 1 call (0xb4a40c in sub_b4a3f0); callers b4a610 -> none; delay IAT initial values 0xf4a2cd/0xf4a2e9/0xf4a32d (lazy stubs)",
+    "bytes at VA 0x10fbb44 / 0x10fbb48 (RVA 0xcfbb44/0xcfbb48) read from the file: 0 / 0"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.winmain_call_site",
+   "x86_symbol": "tools/1.2.8-patcher.py: file+0x10293A2 `50 57 68 00 00 40 00 e8 58 0d 00 00` -> `ff 15 <IAT Win32Bootstrap> 90*6` (WinMain call in CRT startup)",
+   "x86_value": "file+0x10293A2",
+   "kind": "hook_site",
+   "arm_rva": "0x00b49aca",
+   "summary": "ARM equivalent: the single `bl sub_b4a424` (WinMain stub; bytes 00 f0 ab fc, file offset 0xB48ECA) inside sub_b49a24 = __scrt_common_main_seh, preceded by r0=0x400000 (hInstance), r1=0, r2=_get_narrow_winmain_command_line(), r3=nShowCmd. sub_b4a424 tail-calls sub_b4a574 (C++/CX main(Array<String^>^), uses vccorlib GetCmdArguments). Return value (exit code) is taken from r0 at 0xB49ACE (mov r4,r0). The CRT init that runs BEFORE this site already calls RoInitialize(1) via IAT 0xC3776C (sub_b49cd0 = __scrt_initialize_winrt).",
+   "arm_signature": "int Win32Bootstrap(void) -> r0; arguments r0-r3 are ignored (WinMain args are dead after the replacement)",
+   "x86_to_arm_notes": "Detailed trampoline/patch plan belongs to the winmain area (arm32/facts/winmain.md, winmain_verify.py: trampoline in .text slack 0xC36EA0 + BL range check). Imports-side requirement: win32craft.dll must export `Win32Bootstrap` (undecorated) and the patcher adds an import for it. BL cannot go through an IAT cell, so a 12-byte stub (movw ip/movt ip/ldr.w pc,[ip] or a PIC `ldr.w ip,[pc,#x]; add ip,pc; ldr.w pc,[ip]`) is required; absolute movw/movt needs a type-7 reloc entry, the PIC form does not. Because RoInitialize(MTA) already ran in the CRT, the bootstrap RoInitialize returns S_FALSE: log_hresult only.",
+   "expected_bytes": "00f0abfc",
+   "evidence": [
+    "arm32re func b49a24 -> 0xb49aca: bl #0xb4a424 after movw pool 0x400000 / _get_narrow_winmain_command_line; arm32re callers b4a424 -> only 0xb49aca",
+    "arm32re func b4a574 -> bl thunk GetCmdArguments, Allocate(0x30,0x48), WindowsDeleteString (main(Array<String^>^))",
+    "entry 0xb49b29 -> sub_b49b28 -> b.w sub_b49a24"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.win32bootstrap_abi",
+   "x86_symbol": "Win32Bootstrap(): image=GetModuleHandleW(NULL); pe_offset=*(DWORD*)(image+0x3c); image_size=*(DWORD*)(image+pe_offset+0x50); IMAGE_SIZE_128_PATCHED==0x01923000; GetVersion()==6.1 => host_is_windows7",
+   "x86_value": "0x3c, +0x50, 0x01923000",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "ARM Win32Bootstrap: e_lfanew at +0x3C (unchanged, ARM exe e_lfanew=0x140), SizeOfImage at pe+0x50 (PE32 optional header, same offset), build id = SizeOfImage == 0x01731000 (see patcher_new_section). host_is_windows7 is always FALSE (ARM Windows >= 8: GetVersion never reports 6.1). Win32Bootstrap(void) uses WINAPI on x86 (_Win32Bootstrap@0); on ARM it is the plain AAPCS function `int Win32Bootstrap(void)`.",
+   "arm_signature": "int Win32Bootstrap(void)",
+   "x86_to_arm_notes": "Port: (1) add the ARM image-size constant and branch `host_is_128 = image_size == IMAGE_SIZE_128_ARM_PATCHED`; (2) remove the 1.16/0.15/1.1.5 image-size branches from the ARM build; (3) bootstrap calls that are x86-only and must be skipped or replaced for ARM: patch_win7_* (Win7 DXGI/DiscardView byte patches, x86 opcodes 0xa1/0xc3), install_create_file2_compat, resolve_fmod_delay_imports_128 (other areas own the rest). (4) Keep RegisterClassExW/CreateWindowExW/message loop unchanged (pure Win32). (5) The 1.2.8 window class name/ title strings are host-side only.",
+   "expected_bytes": null,
+   "evidence": [
+    "own PE parse: e_lfanew=0x140 -> SizeOfImage at 0x140+0x50 = file 0x190 (value 0x1730000 before patching)",
+    "win32_host.c:14870-14883 read; GetVersion check line 14886-14891"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.win7_dxgi_device3_iid",
+   "x86_symbol": "RVA_128_DXGI_DEVICE3_IID (patch_win7_dxgi_device3_query_to_base)",
+   "x86_value": "0x012d8b28",
+   "kind": "iid",
+   "arm_rva": null,
+   "summary": "Win7-only patch (guarded by host_is_windows7): overwrites one IDXGIDevice3 GUID instance {6007896c-3244-4afd-bf18-a6d3beda5023} in the exe with IID_IDXGIDevice so the Win7 QI succeeds. NO LONGER NEEDED on ARM: IDXGIDevice3 exists on RT 8.1 / Win10, host_is_windows7 is never true on ARM. For reference the ARM exe has the GUID once at RVA 0xDBC2C4, shared by 5 code sites (queryAdapterInfo 0x5b9f96, createWindowSizeDependentResources 0x5bb79a, trim 0x5bb948, InitDevice 0x5bc426, ...), so a per-instance rewrite would not even be possible.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Do not port (skip call). If ever needed, the GUID is shared, patch the callers instead.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re guid 6007896c-3244-4afd-bf18-a6d3beda5023 -> 00dbc2c4 refs=5",
+    "win32_host.c:9870-9914: `if (!host_is_windows7 || ...) return TRUE;`"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.win7_discard_views",
+   "x86_symbol": "RVA_128_DISCARD_WINDOW_VIEWS patch (patch_win7_discard_views): first byte 0xa1 (x86 mov eax,[abs]) or 0xc3 -> write 0xc3 (ret)",
+   "x86_value": "0xa1/0xc3 at RVA_128_DISCARD_WINDOW_VIEWS",
+   "kind": "hook_site",
+   "arm_rva": null,
+   "summary": "Win7-only x86 byte patch (guarded by `if (!host_is_windows7) return TRUE`): makes Renderer::discardWindowSizeDependentResources return immediately because D3D11.1 DiscardView is unavailable on Win7. NO LONGER NEEDED on ARM (D3D 11.1+ present on 8.1/10, host_is_windows7 always FALSE); the x86 opcode bytes 0xa1/0xc3 are meaningless in Thumb-2 code.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Skip the call on ARM. The corresponding ARM function lives in the gfx areas (not needed for a Win8+ OS).",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c:9916-9960 read"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.exports_required",
+   "x86_symbol": "win32craft.def (130 lines; decorated stdcall names _Name@N)",
+   "x86_value": "EXPORTS list",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "win32craft.dll (ARM) must export, with undecorated names: Win32Bootstrap + XInputGetState (REQUIRED, XINPUTUAP redirect) + 24 optional-parity names (com: IIDFromString CoGetContextToken CoCreateGuid CoCreateFreeThreadedMarshaler StringFromGUID2 CoCreateInstanceFromApp CoTaskMemFree CoTaskMemAlloc; eventing: EventWriteTransfer EventUnregister EventRegister EventSetInformation; winrt-error: RoFailFastWithErrorContext SetRestrictedErrorInfo RoReportUnhandledError; winrt: RoInitialize; winrt-string: WindowsCreateString WindowsDeleteString WindowsIsStringEmpty WindowsCompareStringOrdinal WindowsDuplicateString WindowsCreateStringReference WindowsGetStringRawBuffer WindowsConcatString). Every function imported from a redirected DLL has a matching export in the existing win32craft.def (0 missing).",
+   "arm_signature": "ARM .def lines: `Win32Bootstrap`, `XInputGetState=Win32CraftXInputGetState`, `CoCreateFreeThreadedMarshaler=Win32CraftCoCreateFreeThreadedMarshaler`, `CoCreateGuid=Win32CraftCoCreateGuid`, `CoCreateInstanceFromApp=Win32CraftCoCreateInstanceFromApp`, `CoGetContextToken=Win32CraftCoGetContextToken`, `CoTaskMemAlloc=Win32CraftCoTaskMemAlloc`, `CoTaskMemFree=Win32CraftCoTaskMemFree`, `IIDFromString=Win32CraftIIDFromString`, `StringFromGUID2=Win32CraftStringFromGUID2`, `EventRegister=Win32CraftEventRegister`, `EventSetInformation=Win32CraftEventSetInformation`, `EventUnregister=Win32CraftEventUnregister`, `EventWriteTransfer=Win32CraftEventWriteTransfer`, and the Ro*/Windows*/RestrictedErrorInfo names mapped to the same-named C functions (already undecorated in api_compat.c).",
+   "x86_to_arm_notes": "x86 .def maps `Name=_Symbol@N` (stdcall decoration). On ARM there is no decoration: drop the `_`/`@N` parts (`Name=Symbol`, or __declspec(dllexport)), delete `Win32Bootstrap@0=` and all other x86-only forwarders. Not needed on ARM (keep unused if convenient): D3D11CreateDevice/CreateDirect3D11DeviceFromDXGIDevice/CreateDXGIFactory2 (d3d11/dxgi not redirected), ResolveDelayLoadedAPI/ResolveDelayLoadsFromDll/DelayLoadFailureHook, CreateFile2, KERNEL32/OLE32 forwarders (CoInitializeEx, Fls*, file/synch/thread forwarders...), Ro* activation stubs, ProcessPendingGameUI/ShowGameInviteUI/ShowProfileCardUI/ShowTitleAchievementsUI, JsStartDebugging, LoadPackagedLibrary. Parameter ABI: all prototypes keep their C types; the 64-bit REGHANDLE/ULONGLONG parameters of EventWriteTransfer/EventRegister/EventUnregister/EventSetInformation are passed in even register pairs (r0:r1) by AAPCS - correct automatically if declared ULONGLONG as in api_compat.c.",
+   "expected_bytes": null,
+   "evidence": [
+    "python: for each ARM import of the 7 API-set DLLs, name looked up in win32craft.def -> 25/25 found (XInputGetState + 24)",
+    "api_compat.c lines 111-134 (Event* ULONGLONG handles), 400-466 (Ro*/RestrictedError)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.hstring_world",
+   "x86_symbol": "api_compat.c native_hstring_proc(): forwards WindowsXxx to combase only when SizeOfImage==0x02db1000 (1.16); otherwise fake Win32CraftHString (magic 0x48535452)",
+   "x86_value": "0x02db1000 gate",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "On ARM Windows the REAL combase HSTRING implementation is present and is used by: desktop vccorlib140.dll (its own api-ms-win-core-winrt-string/winrt/com imports are NOT redirected), fmod_ARM.dll, and any real WinRT object reached through the vccorlib fallback activation. The fake HSTRING shims (api_compat.c) return an EMPTY string for a non-magic (real) HSTRING (WindowsGetStringRawBuffer returns empty_string) and would crash real WinRT with fake handles.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "REQUIRED for ARM whenever any HSTRING export of win32craft.dll is reachable (redirect applied OR host-internal calls to its own WindowsCreateString etc.): extend native_hstring_proc to forward to combase.dll on ARM (gate on `_M_ARM`/the ARM image size 0x01731000 or simply on \"combase.dll exports the function\"), so the whole process lives in one real HSTRING world. Platform::String values produced inside vccorlib140 (Guid::ToString, int32::ToString, uint32/uint64::ToString, Object::ToString - all imported by the ARM exe) are real HSTRINGs and would read as \"\" through the fake WindowsGetStringRawBuffer. The fake mode only made sense when vccorlib itself was fed by the repo's api-ms-win-core-winrt-*.def stub DLLs (Win7).",
+   "expected_bytes": null,
+   "evidence": [
+    "api_compat.c:150-300 read: native_hstring_proc gate = (*(DWORD*)(image+pe+0x50)==0x02db1000); fake WindowsGetStringRawBuffer returns empty_string for magic mismatch",
+    "llvm-readobj --coff-imports of desktop ARM vccorlib140.dll: imports api-ms-win-core-winrt-string-l1-1-0, -com-l1-1-0, -winrt-error-l1-1-0, -winrt-l1-1-0 (real contracts)",
+    "ARM exe imports ?ToString@Guid/int32/uint32/uint64/Boolean/Enum@Platform and __abi_ObjectToString from vccorlib (imports_table.json)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.desktop_crt_compare",
+   "x86_symbol": "patcher DLL renames _APP -> desktop (assumes same exports)",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "All imported symbols are exported by the desktop ARM redistributables in VC/Redist/MSVC/14.44.35112/onecore/arm/Microsoft.VC143.CRT: vccorlib140.dll 63/63 (256 exports), msvcp140.dll 258/258 (1493), concrt140.dll 43/43 (291), vcruntime140.dll 19/19 (71). MISSING: none.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "No shims needed. The desktop DLLs import only low-version contracts (l1-1-0 .. l1-2-0) plus api-ms-win-crt-* (UCRT must be installed on Windows RT 8.1: KB2999226 package; inbox on Win10). vccorlib140.dll additionally imports VCRUNTIME140.dll/MSVCP140.dll/OLEAUT32.dll, concrt140.dll imports MSVCP140.dll/VCRUNTIME140.dll: load all four from the same directory/version set (the exe must not mix _APP and desktop runtimes).",
+   "expected_bytes": null,
+   "evidence": [
+    "llvm-readobj --coff-exports <dll> for the 4 DLLs, python set-difference vs arm32/facts/imports_table.json names -> missing=0 for each (cmp.json)",
+    "llvm-readobj --coff-imports of the 4 desktop DLLs: contracts used listed in .md"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.fmod_arm_dll_load",
+   "x86_symbol": "fmod_X86.dll replaced by desktop fmod.dll (x86); n/a on ARM",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "fmod_ARM.dll (sha256 5f92f5ac..., DllCharacteristics 0x1140 = APPCONTAINER|NX|DYNAMIC_BASE, has TLS directory, no delay imports) is a UWP build. Its 27 import descriptors (129 functions) resolve on desktop EXCEPT ONE: VCRUNTIME140_APP.dll (11 symbols; all exist in desktop vcruntime140.dll incl. __std_type_info_destroy_list). Other imports: WS2_32, MMDevAPI.DLL, MFPlat.DLL, MFReadWrite.dll, api-ms-win-core-{winrt-l1-1-0 (RoGetActivationFactory/RoInitialize/RoUninitialize), winrt-string, com-l1-1-1, file-l1-2-1, file-l2-1-1, libraryloader-l1-2-0, libraryloader-l2-1-0 (LoadPackagedLibrary), processthreads-l1-1-2, synch-l1-2-0, ...}, api-ms-win-crt-*: all contracts exist on Win10 (apiset schema) and every name is exported.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "LOAD: yes on Win10 ARM32 desktop once \"VCRUNTIME140_APP.dll\" is made resolvable: either (a) binary-patch the single name string in fmod_ARM.dll to \"VCRUNTIME140.dll\" (file offset 1022106 = 0xF989A, shorter name, NUL-pad) - recommended, because the exe also uses the desktop vcruntime140 and two CRT runtimes in one process break exceptions/RTTI; or (b) ship VCRUNTIME140_APP.dll beside it (not available in the VS redist folder). Optionally also clear APPCONTAINER (0x1000) in its DllCharacteristics (DLLs are normally unaffected). RUN-TIME RISK (open): FMOD output init function 0x79300 (called from 0x89024 <- 0x945c4) activates Windows.Media.Devices.MediaDevice, Windows.Devices.Enumeration.DeviceInformation, Windows.ApplicationModel.Package and Windows.Storage.ApplicationData through the REAL RoGetActivationFactory; in an un-packaged desktop process the last two fail with APPMODEL_ERROR_NO_PACKAGE (0x80073D54) and the function returns FMOD_ERR_INTERNAL (0x1c) on that failure path => System::init would fail unless the process has package identity or fmod_ARM.dll is patched (e.g. repoint its api-ms-win-core-winrt-l1-1-0 / -string descriptors at win32craft.dll fakes, or skip the call at fmod_ARM.dll RVA 0x8905C). LoadPackagedLibrary is only used by FMOD_OS_Library_Load (plugin loading; the exe imports no plugin API) so it is harmless. Media Foundation (MFPlat/MFReadWrite) and MMDevAPI exist on RT 8.1/Win10 (not on Win10 N editions without the Media Feature Pack).",
+   "expected_bytes": null,
+   "evidence": [
+    "python import parse of fmod_ARM.dll: 27 descriptors/129 functions; VCRUNTIME140_APP.dll string found once at offset 1022106; names vs desktop vcruntime140 exports -> all present",
+    "fmod_ARM.dll exports 1087 names, all 39 exe-imported names present",
+    "wide strings in fmod_ARM.dll: Windows.ApplicationModel.Package (0xdd718), Windows.Devices.Enumeration.DeviceInformation, Windows.Media.Devices.MediaDevice, Windows.Storage.ApplicationData (0xdd880); the Package/ApplicationData refs are both in func 0x79300 (len 0x6c8)",
+    "fmod_ARM.dll 0x79652 (Package) -> bl 0x78618 ... cmp r0,#0; it lt; movlt r4,#0x1c; blt.w 0x79954 (error exit); caller chain 0x79300 <- 0x89024 (bl at 0x8905c, bne -> return error) <- 0x945c4",
+    "no LoadPackagedLibrary use outside FMOD_OS library wrapper 0x79a5c (arm32re index of fmod_ARM.dll)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "pe_imports.native_api_set_availability",
+   "x86_symbol": "x86 redirect motivated by Win7 (no api-ms-win-core-winrt*, no Windows 8 KernelBase APIs)",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "Every normal import of the ARM exe other than the 4 _APP runtimes, fmod_ARM.dll and XINPUTUAP.dll resolves to an existing export on current Windows: all api-ms-win-* contracts have a compatible family in the Win11 apiset schema (kernelbase/kernel32/combase/ucrtbase targets, 0 missing names), WS2_32/IPHLPAPI/D3DCOMPILER_47/d3d11 export every imported name. XINPUTUAP.dll exists in System32 on Win10 (exports XInputGetState...) but is the UWP/brokered flavour and is absent on Windows RT 8.1.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Verified locally only for Win10/11 (this machine). For Windows RT 8.1 the following contracts are the ones to test first because they are the highest-versioned requests (knowledge-based, NOT verifiable here): api-ms-win-core-winrt-error-l1-1-1 (RoReportUnhandledError), api-ms-win-core-delayload-l1-1-1, api-ms-win-core-datetime-l1-1-1, api-ms-win-core-sysinfo-l1-2-0, api-ms-win-core-processthreads-l1-1-1, api-ms-win-core-file-l1-2-0/l2-1-0, api-ms-win-core-localization-l1-2-0, api-ms-win-core-synch-l1-2-0, api-ms-win-core-com-l1-1-0 (CoCreateInstanceFromApp). Contingency (if the loader reports a missing contract): add that DLL to the redirect set. win32craft.def already provides exports for the winrt-error/eventing/com/delayload/file-l1-2-0 members; for the generic kernel contracts it provides KERNEL32 forwarders for most but NOT for: K32GetProcessMemoryInfo, GlobalMemoryStatusEx, GetLocalTime, GetNativeSystemInfo, MultiByteToWideChar, WideCharToMultiByte, GetDiskFreeSpaceExW, LocalFree, CloseHandle, QueryPerformanceFrequency, SystemTimeToFileTime, FileTimeToSystemTime, DecodePointer (see imports_table.json / .md contingency list). The UCRT (api-ms-win-crt-*, 10 contracts, 159 functions) cannot be shimmed by win32craft: Windows RT 8.1 needs the Universal CRT update installed.",
+   "expected_bytes": null,
+   "evidence": [
+    "python avail.py: each ARM import name looked up in System32 kernelbase/kernel32/combase/ucrtbase/ws2_32/iphlpapi/d3d11/d3dcompiler_47/gamingtcui export tables via the apiset schema parsed from C:\\Windows\\System32\\apisetschema.dll -> missing=[] everywhere",
+    "AppxManifest.xml: TargetDeviceFamily Windows.Universal MinVersion 10.0.10000.0 (the binary was built for Win10 UWP, so Win10 contracts are the baseline)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "pe_imports.activation_class_set",
+   "x86_symbol": "install_activation_redirect / win32_get_activation_factory class-name dispatch",
+   "x86_value": "32 class names tested via lstrcmpW in win32_host.c:7517-7836",
+   "kind": "string",
+   "arm_rva": "0x00b48f88",
+   "summary": "The ARM exe activates 67 distinct runtime classes through GetActivationFactoryByPCWSTR (102 call sites). 27 of them are classes the x86 host fakes (ApplicationModel.Core.CoreApplication, ApplicationModel.Package, ApplicationModel.Resources.Core.ResourceContext, ApplicationModel.Store.CurrentApp, Devices.Input.MouseDevice, Foundation.Metadata.ApiInformation, Globalization.ApplicationLanguages, Globalization.GeographicRegion ...). 40 are NOT faked by the x86 host and fall through to the real desktop vccorlib/combase (full list in `activation_classes_not_faked`). 5 classes faked by x86 are never requested by the ARM exe (ResourceManager, Gamepad, ThreadPool, Xaml.Application, Xaml.Window).",
+   "arm_signature": "wrapper sub_b48f88: HRESULT(const wchar_t* r0, const GUID* r1, void** r2)",
+   "x86_to_arm_notes": "Class-name strings are plain wide literals, so lstrcmpW dispatch ports unchanged. On a desktop OS the not-faked set splits into: harmless real classes (Foundation.Uri, WwwFormUrlDecoder, Calendar, PropertyValue, DataTransfer.*, Cryptography.*, Web.Http.*, Storage.Streams.DataWriter/RandomAccessStream, FileIO, Logging*, XmlDocument ...), phone/mobile-only (Windows.Phone.Devices.Notification.VibrationDevice, UI.ViewManagement.StatusBar) that will return REGDB_E_CLASSNOTREG (callers throw unless guarded by ApiInformation::IsTypePresent, which the host fakes), and package-identity dependent (Storage.AccessCache.StorageApplicationPermissions, System.User/UserPicker, Security.Authentication.Web.Core.*, System.UserProfile.AdvertisingManager). The host must be reviewed class by class against the runtime fallback log lines.",
+   "expected_bytes": null,
+   "evidence": [
+    "scripted scan: for each of the 102 callers of sub_b48f88, the movw/movt wide-string literal Windows.* in the preceding 20 instructions -> 67 distinct names (arm32/facts/pe_imports.json activation_classes)",
+    "x86 handled set parsed from win32_host.c:7517-7836 (L\"Windows.*\" literals)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "pe_imports.reloc_aslr_rule",
+   "x86_symbol": "x86 patcher clears DYNAMIC_BASE (0x9140->0x8100) and writes absolute IAT address into patched code",
+   "x86_value": "file+0x10293A2",
+   "kind": "pe",
+   "arm_rva": "0x01674000",
+   "summary": "ARM exe has a full base-relocation directory (RVA 0x1674000, size 0xBBD28, .reloc raw size 0xBBE00 => 0xD8 spare bytes). movw/movt absolute VAs use IMAGE_REL_BASED_ARM_MOV32T (type 7), literal pools use HIGHLOW (type 3).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Any code or data the ARM patcher writes that contains an absolute VA needs a reloc entry (append a block to .reloc and bump dd[5].size within the 0xD8 slack, or enlarge the section) OR must be position independent. IAT-cell runtime hooks written by the host after load need nothing. Never assume ImageBase 0x400000 in host code.",
+   "expected_bytes": null,
+   "evidence": [
+    "section table: .reloc vs=0xbbd28 rs=0xbbe00; arm32re ctx idx.mov32 built from type-7 relocs (thunk movw/movt pairs are listed as mov32)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_imports.exe_exports_irrelevant",
+   "x86_symbol": "n/a (x86 exe export directory)",
+   "x86_value": "n/a",
+   "kind": "pe",
+   "arm_rva": "0x0131f2e0",
+   "summary": "The ARM exe carries an export directory (RVA 0x131F2E0, size 0x76C8, 284 symbols) that exports statically linked cpprestsdk (web::http/json/uri) C++ symbols; it has no connection to win32craft and needs no handling.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Ignore. (The export directory does not affect the patcher; only the import directory is rewritten.)",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re exports | wc -l -> 284; first entries ??0http_client@client@http@web@@QAA... (cpprest)"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "IAT hooks keep their structure (VirtualProtect cell -> save original -> store hook -> restore protection -> FlushInstructionCache); only the RVA constants change. ARM constants (all RVAs, image-relative): CXX_THROW 0x00C374E4, CREATE_FILE2 0x00C3765C (hook no longer needed), ACTIVATION_FACTORY 0x00C37BF0, PLATFORM_OBJECT_CTOR 0x00C37B90, PLATFORM_ALLOCATE1 0x00C37B7C, PLATFORM_ALLOCATE2 0x00C37B80, GET_IBOX_ARRAY_VTABLE 0x00C37B88, GET_IBOX_VTABLE 0x00C37BC8, D3D_COMPILE 0x00C370B4, D3D11_CREATE_DEVICE 0x00C37A50, TCUI block base 0x015121FC.",
+  "Replace #define RVA_128_* by ARM names (e.g. RVA_ARM128_*) rather than reusing the x86 numbers; derive them at runtime by NAME if you prefer: walk the import descriptors (IMAGE_DIRECTORY_ENTRY_IMPORT) and match dll+function, then no constants can go stale (the descriptor RVAs are unchanged by the patcher because only the name RVA of selected descriptors is rewritten).",
+  "Remove __stdcall/WINAPI/__cdecl from every hook/original function-pointer typedef (GameActivationFn, GameCxxThrowFn, GameD3DCompileFn, GameD3D11CreateDeviceFn, GamePlatform*Fn, tcui no-ops) - ARM has one calling convention (AAPCS-VFP). Hook parameter lists stay identical (see arm_signature of each fact). Function pointers written into IAT cells must be Thumb (bit0 set) - automatic for compiled C.",
+  "install_exception_trace(image, 0x00C374E4): unchanged logic; RtlCaptureStackBackTrace works on ARM32. install_activation_redirect(image, 0x00C37BF0): unchanged logic; the 3-arg function is identical (const wchar_t* class, const GUID* iid, void** out).",
+  "install_create_file2_compat: delete on ARM (CreateFile2 is native on 8.1/10; the exe passes NULL extended parameters). install_vccorlib_compat: make it optional (off by default); if kept, keep one VirtualProtect span 0xC37B7C..0xC37BCB and drop the per-allocation wsprintfA logging.",
+  "install_xbox_tcui_noops_128 on ARM: `slots = image + 0x015121FC; slots[0] = show_profile_card_noop; slots[1] = process_pending_game_ui_noop; slots[3] = show_profile_card_for_user_noop;` (slot 2 stays 0). Optional check: slots[0]==image+0xB4A2CD, slots[1]==image+0xB4A2E9, slots[3]==image+0xB4A32D before overwriting.",
+  "resolve_fmod_delay_imports_128: do not call on ARM (fmod_ARM.dll is a normal import). No Win32CraftResolveDelayLoadedAPI/ResolveDelayLoadsFromDll/DelayLoadFailureHook exports are required.",
+  "Win32Bootstrap ARM: SizeOfImage gate 0x01731000; host_is_windows7=FALSE; skip patch_win7_*/DiscardView byte patches; RoInitialize(RO_INIT_MULTITHREADED) will return S_FALSE because the CRT already initialised the MTA before WinMain (not an error).",
+  "win32craft.dll ARM export list (undecorated): Win32Bootstrap, XInputGetState (REQUIRED); optional parity: IIDFromString CoGetContextToken CoCreateGuid CoCreateFreeThreadedMarshaler StringFromGUID2 CoCreateInstanceFromApp CoTaskMemFree CoTaskMemAlloc EventWriteTransfer EventUnregister EventRegister EventSetInformation RoFailFastWithErrorContext SetRestrictedErrorInfo RoReportUnhandledError RoInitialize WindowsCreateString WindowsDeleteString WindowsIsStringEmpty WindowsCompareStringOrdinal WindowsDuplicateString WindowsCreateStringReference WindowsGetStringRawBuffer WindowsConcatString. Build with clang --target=thumbv7-windows-msvc and a .def without decoration.",
+  "MANDATORY host change when any HSTRING/Ro export is reachable: make api_compat.c native_hstring_proc() forward to combase on ARM (gate on `#if defined(_M_ARM)` or on the ARM image size), otherwise Platform::String from the native desktop vccorlib140.dll reads as empty through the fake WindowsGetStringRawBuffer.",
+  "ARM patcher (python) changes vs tools/1.2.8-patcher.py: new SHA-256 b01d5f12...fcfcf8; DllCharacteristics 0x9140->0x8140 (clear only APPCONTAINER); no LAA/OS/subsystem edits; same 4 name renames (count 1 each); no kernel32/compat placeholder logic; descriptors must be 50 (size 0x3fc); redirect XINPUTUAP.dll (+ optional six API sets) by repointing descriptor name RVA to \"win32craft.dll\" in a new section (RVA 0x1730000, file 0x1680A00; new import dir = (50+1+1)*20 bytes; new Win32Bootstrap descriptor with its own IAT); update SizeOfImage -> 0x01731000, import dir RVA/size, NumberOfSections, SizeOfInitializedData; call-site patch per winmain area (bl at 0xB49ACA); no dxgi/d3d11 redirect. Do NOT touch the IAT directory (0xC37000/0xBF8) or any cell RVA.",
+  "Also patch fmod_ARM.dll: rename its import string \"VCRUNTIME140_APP.dll\" (file offset 1022106) to \"VCRUNTIME140.dll\" so both modules share the desktop vcruntime140.dll; clear APPCONTAINER in its DllCharacteristics (optional).",
+  "Ship alongside the exe (same directory or loader path): onecore\\arm desktop vccorlib140.dll, msvcp140.dll, concrt140.dll, vcruntime140.dll (VC 14.44) plus the UCRT on RT 8.1; D3DCOMPILER_47.dll, d3d11.dll, ws2_32, iphlpapi, MF*, MMDevAPI are system DLLs."
+ ],
+ "open_questions": [
+  "fmod_ARM.dll runtime: the WinRT part of its output init (function 0x79300) needs Windows.ApplicationModel.Package/Windows.Storage.ApplicationData, which fail without package identity -> FMOD_ERR_INTERNAL. Needs a run test; fixes: patch fmod_ARM.dll (skip/redirect) or fake those factories for fmod's own RoGetActivationFactory import (requires converting its real HSTRING class name).",
+  "Windows RT 8.1: which of the exe's high-versioned api-set contracts exist there (winrt-error-l1-1-1, delayload-l1-1-1, datetime-l1-1-1, sysinfo-l1-2-0, ...) could not be verified locally (only a Win11 schema is available). Contingency list is in the facts.",
+  "Whether the x86 vccorlib allocator hooks (zeroing) are required with the real desktop ARM vccorlib140: the native Heap::Allocate body (0x1B380 custom allocator) was not traced to a HeapAlloc(HEAP_ZERO_MEMORY); keep the defensive ZeroMemory wrappers until a run confirms.",
+  "Whether leaving the six API-set DLLs un-redirected is better than x86 parity: both work only if the HSTRING shims forward to combase (hstring_world); a run test of both modes is advisable.",
+  "40 runtime classes are not faked by the x86 host (activation_class_set); the ARM game requests them on code paths the x86 1.2.8 exe also had or not: verify per class with the host's \"WinRT fallback ...\" log lines.",
+  "APPCONTAINER-flagged DLL (fmod_ARM.dll) loading in a non-AppContainer process: believed fine (flag only matters for exes) but not tested."
+ ],
+ "activation_classes": {
+  "Windows.ApplicationModel.Core.CoreApplication": 8,
+  "Windows.ApplicationModel.DataTransfer.Clipboard": 2,
+  "Windows.ApplicationModel.DataTransfer.DataPackage": 1,
+  "Windows.ApplicationModel.DataTransfer.DataTransferManager": 1,
+  "Windows.ApplicationModel.DataTransfer.StandardDataFormats": 1,
+  "Windows.ApplicationModel.Package": 1,
+  "Windows.ApplicationModel.Resources.Core.ResourceContext": 1,
+  "Windows.ApplicationModel.Store.CurrentApp": 8,
+  "Windows.Data.Xml.Dom.XmlDocument": 1,
+  "Windows.Devices.Enumeration.Pnp.PnpObject": 2,
+  "Windows.Devices.Input.MouseDevice": 1,
+  "Windows.Foundation.Diagnostics.LoggingChannel": 1,
+  "Windows.Foundation.Diagnostics.LoggingChannelOptions": 1,
+  "Windows.Foundation.Diagnostics.LoggingFields": 1,
+  "Windows.Foundation.Diagnostics.LoggingOptions": 1,
+  "Windows.Foundation.Metadata.ApiInformation": 4,
+  "Windows.Foundation.PropertyValue": 1,
+  "Windows.Foundation.Uri": 1,
+  "Windows.Foundation.WwwFormUrlDecoder": 1,
+  "Windows.Globalization.ApplicationLanguages": 1,
+  "Windows.Globalization.Calendar": 1,
+  "Windows.Globalization.GeographicRegion": 1,
+  "Windows.Graphics.Display.DisplayInformation": 1,
+  "Windows.Media.Audio.AudioGraph": 1,
+  "Windows.Media.Audio.AudioGraphSettings": 1,
+  "Windows.Media.SpeechSynthesis.SpeechSynthesizer": 2,
+  "Windows.Networking.Connectivity.NetworkInformation": 3,
+  "Windows.Networking.PushNotifications.PushNotificationChannelManager": 1,
+  "Windows.Networking.Sockets.MessageWebSocket": 1,
+  "Windows.Phone.Devices.Notification.VibrationDevice": 1,
+  "Windows.Security.Authentication.Web.Core.WebAuthenticationCoreManager": 5,
+  "Windows.Security.Authentication.Web.Core.WebTokenRequest": 1,
+  "Windows.Security.Credentials.PasswordCredential": 1,
+  "Windows.Security.Cryptography.Core.CryptographicEngine": 1,
+  "Windows.Security.Cryptography.Core.MacAlgorithmNames": 1,
+  "Windows.Security.Cryptography.Core.MacAlgorithmProvider": 1,
+  "Windows.Security.Cryptography.CryptographicBuffer": 4,
+  "Windows.Security.Cryptography.DataProtection.DataProtectionProvider": 2,
+  "Windows.Storage.AccessCache.StorageApplicationPermissions": 1,
+  "Windows.Storage.ApplicationData": 1,
+  "Windows.Storage.CachedFileManager": 2,
+  "Windows.Storage.FileIO": 2,
+  "Windows.Storage.Pickers.FileOpenPicker": 1,
+  "Windows.Storage.Pickers.FileSavePicker": 1,
+  "Windows.Storage.Streams.DataReader": 1,
+  "Windows.Storage.Streams.DataWriter": 1,
+  "Windows.Storage.Streams.RandomAccessStream": 1,
+  "Windows.System.Launcher": 1,
+  "Windows.System.LauncherOptions": 1,
+  "Windows.System.MemoryManager": 2,
+  "Windows.System.Profile.AnalyticsInfo": 2,
+  "Windows.System.Profile.HardwareIdentification": 1,
+  "Windows.System.Threading.ThreadPoolTimer": 1,
+  "Windows.System.User": 1,
+  "Windows.System.UserPicker": 1,
+  "Windows.System.UserProfile.AdvertisingManager": 1,
+  "Windows.UI.Core.CoreCursor": 1,
+  "Windows.UI.Core.CoreWindow": 1,
+  "Windows.UI.Core.SystemNavigationManager": 1,
+  "Windows.UI.Input.PointerVisualizationSettings": 1,
+  "Windows.UI.Text.Core.CoreTextServicesManager": 1,
+  "Windows.UI.ViewManagement.ApplicationView": 2,
+  "Windows.UI.ViewManagement.ApplicationViewScaling": 1,
+  "Windows.UI.ViewManagement.InputPane": 1,
+  "Windows.UI.ViewManagement.StatusBar": 1,
+  "Windows.Web.Http.HttpClient": 1,
+  "Windows.Web.Http.HttpStringContent": 1
+ },
+ "activation_classes_not_faked": [
+  "Windows.ApplicationModel.DataTransfer.Clipboard",
+  "Windows.ApplicationModel.DataTransfer.DataPackage",
+  "Windows.ApplicationModel.DataTransfer.DataTransferManager",
+  "Windows.ApplicationModel.DataTransfer.StandardDataFormats",
+  "Windows.Data.Xml.Dom.XmlDocument",
+  "Windows.Devices.Enumeration.Pnp.PnpObject",
+  "Windows.Foundation.Diagnostics.LoggingChannel",
+  "Windows.Foundation.Diagnostics.LoggingChannelOptions",
+  "Windows.Foundation.Diagnostics.LoggingFields",
+  "Windows.Foundation.Diagnostics.LoggingOptions",
+  "Windows.Foundation.PropertyValue",
+  "Windows.Foundation.Uri",
+  "Windows.Foundation.WwwFormUrlDecoder",
+  "Windows.Globalization.Calendar",
+  "Windows.Networking.PushNotifications.PushNotificationChannelManager",
+  "Windows.Networking.Sockets.MessageWebSocket",
+  "Windows.Phone.Devices.Notification.VibrationDevice",
+  "Windows.Security.Authentication.Web.Core.WebAuthenticationCoreManager",
+  "Windows.Security.Authentication.Web.Core.WebTokenRequest",
+  "Windows.Security.Credentials.PasswordCredential",
+  "Windows.Security.Cryptography.Core.CryptographicEngine",
+  "Windows.Security.Cryptography.Core.MacAlgorithmNames",
+  "Windows.Security.Cryptography.Core.MacAlgorithmProvider",
+  "Windows.Security.Cryptography.DataProtection.DataProtectionProvider",
+  "Windows.Storage.AccessCache.StorageApplicationPermissions",
+  "Windows.Storage.FileIO",
+  "Windows.Storage.Streams.DataWriter",
+  "Windows.Storage.Streams.RandomAccessStream",
+  "Windows.System.Threading.ThreadPoolTimer",
+  "Windows.System.User",
+  "Windows.System.UserPicker",
+  "Windows.System.UserProfile.AdvertisingManager",
+  "Windows.UI.Core.CoreCursor",
+  "Windows.UI.Core.SystemNavigationManager",
+  "Windows.UI.Input.PointerVisualizationSettings",
+  "Windows.UI.ViewManagement.ApplicationViewScaling",
+  "Windows.UI.ViewManagement.InputPane",
+  "Windows.UI.ViewManagement.StatusBar",
+  "Windows.Web.Http.HttpClient",
+  "Windows.Web.Http.HttpStringContent"
+ ],
+ "activation_classes_faked_by_x86_host": [
+  "Windows.ApplicationModel.Core.CoreApplication",
+  "Windows.ApplicationModel.Package",
+  "Windows.ApplicationModel.Resources.Core.ResourceContext",
+  "Windows.ApplicationModel.Store.CurrentApp",
+  "Windows.Devices.Input.MouseDevice",
+  "Windows.Foundation.Metadata.ApiInformation",
+  "Windows.Globalization.ApplicationLanguages",
+  "Windows.Globalization.GeographicRegion",
+  "Windows.Graphics.Display.DisplayInformation",
+  "Windows.Media.Audio.AudioGraph",
+  "Windows.Media.Audio.AudioGraphSettings",
+  "Windows.Media.SpeechSynthesis.SpeechSynthesizer",
+  "Windows.Networking.Connectivity.NetworkInformation",
+  "Windows.Security.Cryptography.CryptographicBuffer",
+  "Windows.Storage.ApplicationData",
+  "Windows.Storage.CachedFileManager",
+  "Windows.Storage.Pickers.FileOpenPicker",
+  "Windows.Storage.Pickers.FileSavePicker",
+  "Windows.Storage.Streams.DataReader",
+  "Windows.System.Launcher",
+  "Windows.System.LauncherOptions",
+  "Windows.System.MemoryManager",
+  "Windows.System.Profile.AnalyticsInfo",
+  "Windows.System.Profile.HardwareIdentification",
+  "Windows.UI.Core.CoreWindow",
+  "Windows.UI.Text.Core.CoreTextServicesManager",
+  "Windows.UI.ViewManagement.ApplicationView"
+ ],
+ "desktop_crt_compare": {
+  "vccorlib140_app.DLL": {
+   "imports": 63,
+   "desktop_exports": 256,
+   "missing": []
+  },
+  "MSVCP140_APP.dll": {
+   "imports": 258,
+   "desktop_exports": 1493,
+   "missing": []
+  },
+  "CONCRT140_APP.dll": {
+   "imports": 43,
+   "desktop_exports": 291,
+   "missing": []
+  },
+  "VCRUNTIME140_APP.dll": {
+   "imports": 19,
+   "desktop_exports": 71,
+   "missing": []
+  }
+ },
+ "exports_required_detail": {
+  "required": [
+   {
+    "dll": "XINPUTUAP.dll",
+    "export": "XInputGetState",
+    "x86_def_rhs": "_Win32CraftXInputGetState@8",
+    "iat_rva": "0x00c375b0",
+    "tier": "required"
+   }
+  ],
+  "parity": [
+   {
+    "dll": "api-ms-win-core-com-l1-1-0.dll",
+    "export": "IIDFromString",
+    "x86_def_rhs": "_Win32CraftIIDFromString@8",
+    "iat_rva": "0x00c375b8",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-com-l1-1-0.dll",
+    "export": "CoGetContextToken",
+    "x86_def_rhs": "_Win32CraftCoGetContextToken@4",
+    "iat_rva": "0x00c375bc",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-com-l1-1-0.dll",
+    "export": "CoCreateGuid",
+    "x86_def_rhs": "_Win32CraftCoCreateGuid@4",
+    "iat_rva": "0x00c375c0",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-com-l1-1-0.dll",
+    "export": "CoCreateFreeThreadedMarshaler",
+    "x86_def_rhs": "_Win32CraftCoCreateFreeThreadedMarshaler@8",
+    "iat_rva": "0x00c375c4",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-com-l1-1-0.dll",
+    "export": "StringFromGUID2",
+    "x86_def_rhs": "_Win32CraftStringFromGUID2@12",
+    "iat_rva": "0x00c375c8",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-com-l1-1-0.dll",
+    "export": "CoCreateInstanceFromApp",
+    "x86_def_rhs": "_Win32CraftCoCreateInstanceFromApp@20",
+    "iat_rva": "0x00c375cc",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-com-l1-1-0.dll",
+    "export": "CoTaskMemFree",
+    "x86_def_rhs": "_Win32CraftCoTaskMemFree@4",
+    "iat_rva": "0x00c375d0",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-com-l1-1-0.dll",
+    "export": "CoTaskMemAlloc",
+    "x86_def_rhs": "_Win32CraftCoTaskMemAlloc@4",
+    "iat_rva": "0x00c375d4",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-eventing-provider-l1-1-0.dll",
+    "export": "EventWriteTransfer",
+    "x86_def_rhs": "_Win32CraftEventWriteTransfer@28",
+    "iat_rva": "0x00c37a3c",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-eventing-provider-l1-1-0.dll",
+    "export": "EventUnregister",
+    "x86_def_rhs": "_Win32CraftEventUnregister@8",
+    "iat_rva": "0x00c37a40",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-eventing-provider-l1-1-0.dll",
+    "export": "EventRegister",
+    "x86_def_rhs": "_Win32CraftEventRegister@16",
+    "iat_rva": "0x00c37a44",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-eventing-provider-l1-1-0.dll",
+    "export": "EventSetInformation",
+    "x86_def_rhs": "_Win32CraftEventSetInformation@20",
+    "iat_rva": "0x00c37a48",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-error-l1-1-0.dll",
+    "export": "RoFailFastWithErrorContext",
+    "x86_def_rhs": "_RoFailFastWithErrorContext@4",
+    "iat_rva": "0x00c37758",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-error-l1-1-0.dll",
+    "export": "SetRestrictedErrorInfo",
+    "x86_def_rhs": "_SetRestrictedErrorInfo@4",
+    "iat_rva": "0x00c3775c",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-error-l1-1-1.dll",
+    "export": "RoReportUnhandledError",
+    "x86_def_rhs": "_RoReportUnhandledError@4",
+    "iat_rva": "0x00c37764",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "export": "WindowsCreateString",
+    "x86_def_rhs": "_WindowsCreateString@12",
+    "iat_rva": "0x00c37774",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "export": "WindowsDeleteString",
+    "x86_def_rhs": "_WindowsDeleteString@4",
+    "iat_rva": "0x00c37778",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "export": "WindowsIsStringEmpty",
+    "x86_def_rhs": "_WindowsIsStringEmpty@4",
+    "iat_rva": "0x00c3777c",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "export": "WindowsCompareStringOrdinal",
+    "x86_def_rhs": "_WindowsCompareStringOrdinal@12",
+    "iat_rva": "0x00c37780",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "export": "WindowsDuplicateString",
+    "x86_def_rhs": "_WindowsDuplicateString@8",
+    "iat_rva": "0x00c37784",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "export": "WindowsCreateStringReference",
+    "x86_def_rhs": "_WindowsCreateStringReference@16",
+    "iat_rva": "0x00c37788",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "export": "WindowsGetStringRawBuffer",
+    "x86_def_rhs": "_WindowsGetStringRawBuffer@8",
+    "iat_rva": "0x00c3778c",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "export": "WindowsConcatString",
+    "x86_def_rhs": "_WindowsConcatString@12",
+    "iat_rva": "0x00c37790",
+    "tier": "parity"
+   },
+   {
+    "dll": "api-ms-win-core-winrt-l1-1-0.dll",
+    "export": "RoInitialize",
+    "x86_def_rhs": "_RoInitialize@4",
+    "iat_rva": "0x00c3776c",
+    "tier": "parity"
+   }
+  ]
+ },
+ "api_set_contingency_not_in_def": {
+  "api-ms-win-core-psapi-l1-1-0.dll": [
+   "K32GetProcessMemoryInfo"
+  ],
+  "api-ms-win-core-sysinfo-l1-1-0.dll": [
+   "GlobalMemoryStatusEx",
+   "GetLocalTime"
+  ],
+  "api-ms-win-core-sysinfo-l1-2-0.dll": [
+   "GetNativeSystemInfo"
+  ],
+  "api-ms-win-core-string-l1-1-0.dll": [
+   "MultiByteToWideChar",
+   "WideCharToMultiByte"
+  ],
+  "api-ms-win-core-file-l1-1-0.dll": [
+   "GetDiskFreeSpaceExW"
+  ],
+  "api-ms-win-core-heap-l2-1-0.dll": [
+   "LocalFree"
+  ],
+  "api-ms-win-core-handle-l1-1-0.dll": [
+   "CloseHandle"
+  ],
+  "api-ms-win-core-profile-l1-1-0.dll": [
+   "QueryPerformanceFrequency"
+  ],
+  "api-ms-win-core-timezone-l1-1-0.dll": [
+   "SystemTimeToFileTime",
+   "FileTimeToSystemTime"
+  ],
+  "api-ms-win-core-util-l1-1-0.dll": [
+   "DecodePointer"
+  ]
+ },
+ "files": [
+  "arm32/facts/pe_imports.json",
+  "arm32/facts/pe_imports.md",
+  "arm32/facts/imports_table.json"
+ ]
+}

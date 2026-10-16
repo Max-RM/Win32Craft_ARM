@@ -1,0 +1,20 @@
+    if (!game_app_main || !game_image || !game_renderer || !game_context || !game_target ||
+        !game_swap_chain) {
+        static BOOL missing_logged;
+        if (!missing_logged) {
+            missing_logged = TRUE;
+            wsprintfA(line, "Minecraft 1.2.8 frame skipped: AppMain %p image %p renderer %p context %p target %p "
+                      "swap chain %p (logged once)", game_app_main, (void *)game_image, game_renderer,
+                      (void *)game_context, (void *)game_target, (void *)game_swap_chain);
+            log_line(line);
+        }
+        return 0;
+    }
+    if (!game_window || !GetClientRect(game_window, &client)) {   /* window already destroyed (WM_CLOSE in flight) */
+        static BOOL window_gone_logged;
+        if (!window_gone_logged) {
+            window_gone_logged = TRUE;
+            log_line("Minecraft 1.2.8 frame skipped: game window is gone (logged once)");
+        }
+        return 0;
+    }

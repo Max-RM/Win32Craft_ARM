@@ -1,0 +1,1 @@
+ARM32: log (bounded) every IID that the generic QueryInterface answers with the object itself.

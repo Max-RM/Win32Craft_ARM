@@ -1,0 +1,6 @@
+            (unsigned long)codepoint, length, (unsigned)sequence_flag);
+        log_line(line);
+        ++logged_text_events;
+    }
+    return TRUE;
+}

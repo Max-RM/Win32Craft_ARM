@@ -1,0 +1,559 @@
+{
+ "area": "fl91",
+ "facts": [
+  {
+   "id": "fl91.createdevice_callsites",
+   "x86_symbol": "D3D11CreateDevice IAT users (x86: single InitDevice 0x0082cff0)",
+   "x86_value": "0x0082cff0",
+   "kind": "hook_site",
+   "arm_rva": "0x005bc258",
+   "summary": "ONLY callers of D3D11CreateDevice in the ARM exe: gfx:GameOwner::InitDevice (0x5bc258), BL sites 0x5bc3a0 (first try) and 0x5bc3ec (WARP retry). Both go through thunk 0xa3b968 -> IAT cell 0x00c37a50.",
+   "arm_signature": "HRESULT D3D11CreateDevice(IDXGIAdapter* pAdapter /*r0 = *(owner+0xc4), always NULL on the host path*/, UINT DriverType /*r1*/, HMODULE Software /*r2=0*/, UINT Flags /*r3*/, [sp+0x00] const D3D_FEATURE_LEVEL* pFeatureLevels, [sp+0x04] UINT FeatureLevels, [sp+0x08] UINT SDKVersion=7, [sp+0x0c] ID3D11Device** ppDevice=&owner[0xc0], [sp+0x10] D3D_FEATURE_LEVEL* pFeatureLevel=&owner[0xb8], [sp+0x14] ID3D11DeviceContext** ppImmediateContext=&renderer[0x110]) -> r0",
+   "x86_to_arm_notes": "Same argument order as the x86 stdcall hook; on ARM every parameter is 4 bytes so r0-r3 + 6 stack words, plain AAPCS (WINAPI == default). A C hook with the exact x86 prototype works unchanged.",
+   "expected_bytes": "2d e9 f0 4f 0d f1 1c 0b 44 f6 cc f7",
+   "evidence": [
+    "arm32re.py impcallers D3D11CreateDevice -> 005bc3a0, 005bc3ec both 'call in gfx:GameOwner::InitDevice'",
+    "arm32re.py imports D3D11CreateDevice -> IAT=00c37a50 thunk=00a3b968 (thunk bytes 47 f6 50 2c c0 f2 03 1c dc f8 00 f0 = movw/movt ip,&IAT; ldr.w pc,[ip])",
+    "dis 5bc3a0: stack args str r8->[sp] (levels ptr), r3->[sp+4] (count), 7->[sp+8], r6=owner+0xc0->[sp+0xc], owner+0xb8->[sp+0x10], r4=renderer+0x110->[sp+0x14]",
+    "x86 host win32_host.c:14953 install_d3d11_device_compat hooks the same single IAT slot; initialize_game_d3d (11412) calls init_device() so the game's own CreateDevice runs through the hook"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.createdevice_levels_flags_driver",
+   "x86_symbol": "feature level array {0xB100,0xB000,0xA100,0xA000,0x9300,0x9200,0x9100} (x86 Win7 filter drops 0xB100)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": "0x005bc258",
+   "summary": "InitDevice builds a std::vector<UINT> (push_back helper sub_c7b4c) on its stack, NOT a static array: default list {0xB100,0xB000,0xA100,0xA000,0x9300,0x9200,0x9100} (count 7, bytes written at 0x5bc288..0x5bc2ea). If byte [owner+0xbc]!=0 the vector is rebuilt as {0xB100,0xB000,0xA100,0xA000} (no 9_x) with Flags=0x20 and, when [owner+0xc4]!=0, DriverType=0 (UNKNOWN). Otherwise Flags=0, DriverType=1 (HARDWARE), pAdapter=NULL. On FAILED(hr) it Releases device/context and retries ONCE with DriverType=5 (WARP), same list/flags; the retry result is only logged (0x9d1058), a failure then crashes at 0x5bc406 (null context deref) - nothing checks it.",
+   "arm_signature": "int InitDevice(owner r0, renderer r1) ; owner+0xbc is a byte, default 0 from make_owner 0x13f2d6 (strb r6=0)",
+   "x86_to_arm_notes": "owner+0xbc is never set to non-zero by the host (x86 host has no write either) -> the default 7-level list + flags 0 + HARDWARE is what the game passes. The ARM host hook adds flags|=0x20 (BGRA) and clamps the list. x86 constants are runtime-identical (same source); only the encoding differs (movs/movw per element instead of an x86 immediate push).",
+   "expected_bytes": null,
+   "evidence": [
+    "dis 5bc288..5bc2f6: mov r4,#0xb100; r6=#0xb000; r8=#0xa100; #0xa000; #0x9300; #0x9200; #0x9100 each followed by 'adds r0,r7,#0x10; mov r1,r7; bl 0xc7b4c' (vector push_back)",
+    "dis 5bc2fa-5bc34a: ldrb [sb+0xbc] -> cbz skip; else strd {0xb100,0x20}; vector.end=begin; push B100,B000,A100,A000; ldr [sb+0xc4] -> sl=0 if non-null",
+    "dis 5bc376-5bc3a0: count=(end-begin)>>2 -> [sp+4]; SDKVersion movs r2,#7 -> [sp+8]; r1=sl (driver type 1 default)",
+    "dis 5bc3ac-5bc3ec: on hr<0 release ctx/device, movs r1,#5 (WARP), same args -> second thunk call; hr only passed to logHResult",
+    "gfx_device.md: make_owner(0x13f2a0) writes +0xb8=0x9100, +0xbc=0 -> dis 13f2ce: mov.w r3,#0x9100; str.w r3,[r4,#0xb8]; strb.w r6,[r4,#0xbc]"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.owner_feature_level_field",
+   "x86_symbol": "owner + featureLevel (x86 1.2.8 owner layout, same numbers)",
+   "x86_value": "0xb8",
+   "kind": "offset",
+   "arm_rva": "0xb8",
+   "summary": "GameOwner+0xb8 (UINT D3D_FEATURE_LEVEL): initialised to 0x9100 by make_owner (0x13f2a0), passed as pFeatureLevel to D3D11CreateDevice so the runtime overwrites it with the SELECTED level. It is the single source of truth for every feature-level decision in the game: readers are hasFeature (0x5bc524: ids 0,5,6,8), compileShaderProgram 0x5bdecc (VERSION macro + target), sub_5bcf90 (vertex formats), sub_5bc5b8 (sampler), sub_4a3ab4/sub_4a3df0 (colour quantisation), sub_5b9e90 (name string). Readers reach it as *(*(*(g_owner 0x15b86ac)+0xac /*renderer*/)+0x108 /*owner back-ptr*/)+0xb8 or directly from owner.",
+   "arm_signature": "uint32 at owner+0xb8; reads via ldr.w r3,[r3,#0xb8]",
+   "x86_to_arm_notes": "Offsets 0xac (renderer), 0x108 (renderer->owner back pointer) and 0xb8 are identical to x86 1.2.8 and confirmed in ARM code by the readers listed.",
+   "expected_bytes": null,
+   "evidence": [
+    "imm 0x9100/0x9200/0x9300/0xa000/0xa100/0xb000/0xb100 -> all cmp.w sites: 5bc542, 5bc576 (hasFeature), 5bcfe0, 5bd002 (sub_5bcf90), 5bc66e (sampler), 4a3c86, 4a3e1c, 5b9e90.., 5bdd16.. (suffix), 5be2ea..5be350 (compile)",
+    "dis 5bdf18-5bdf24: ldr g_owner; +0xac; +0x108; ldr r5,[r3,#0xb8] (feature level used for VERSION)",
+    "dis 5bc2f6+: InitDevice passes owner+0xb8 as [sp+0x10] pFeatureLevel (add.w r2,sb,#0xb8; str r2,[sp,#0x10])"
+   ],
+   "confidence": "high",
+   "verifier_correction": "owner+0xb8 is NOT write-once: GameOwner::releaseDevice (0x5bf7ac, store at 0x5bf7e4) zeroes it when Present returns DEVICE_REMOVED/RESET and createWindowSizeDependentResources may too. The D3D11CreateDevice clamp hook must stay installed for the whole process and the host must let the game re-run InitDevice; until then the compile target string is vs_-1_-1."
+  },
+  {
+   "id": "fl91.no_getfeaturelevel",
+   "x86_symbol": "ID3D11Device::GetFeatureLevel (vtable slot 37, +0x94)",
+   "x86_value": "n/a",
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "The game never calls ID3D11Device::GetFeatureLevel: no device-vtable +0x94 call exists in any device-touching function. All device consumers get the device through gfx:Renderer::getDevice_addref_copy (0x5bb8ac, callers 0x56ca04,0x5b917c,0x5b9588,0x5b9804,0x5b9a00,0x5b9f4c,0x5bb3bc,0x5bc5b8,0x5bcd14,0x5bd440,0x5bdecc,0x5bee74) and none of them issues slot 37. The only other 'device capability' queries are CheckFormatSupport (slot 29, in sub_5bcafc), CheckMultisampleQualityLevels (slot 30, sub_5bf800) and CheckFeatureSupport (slot 33: OPTIONS3 in sub_5b9cdc, only reached through the skipped queryAdapterInfo). => clamping the list passed to D3D11CreateDevice is SUFFICIENT; the stored owner+0xb8 will read 0x9100 everywhere.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "No ARM-side GetFeatureLevel hook is required.",
+   "expected_bytes": null,
+   "evidence": [
+    "custom capstone scan (arm32/tests scratch) of every function for 'ldr rX,[rY,#0x94]; blx rX' -> 42 hits, none in 0x5b0000-0x5e0000 or any function that touches the device; all are game-logic vtable calls (ClientInstance::tick, AnvilScreenController, block entities ...)",
+    "impcallers/callers 5bb8ac lists the complete set of device users; scan2 of those functions shows device slots 3,5,6,7,9,10,11,12,13,15,20,21,22,23,24,29,30,33(only 5b9d06) - never 37",
+    "owner+0xb8 is the only FL storage (see fl91.owner_feature_level_field)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.iat_d3d11createdevice",
+   "x86_symbol": "RVA_128_D3D11_CREATE_DEVICE_IAT",
+   "x86_value": "0x011d2a44",
+   "kind": "iat",
+   "arm_rva": "0x00c37a50",
+   "summary": "IAT cell of d3d11.dll!D3D11CreateDevice (unbound image value 0x01328488 = hint/name RVA, the loader fills the real address). Patch with VirtualProtect(PAGE_READWRITE) exactly like the x86 host; thunk 0xa3b968 loads it via 'ldr.w pc,[ip]' (interworking, value must have bit0 set = Thumb function pointer).",
+   "arm_signature": "void* cell; hook must be a Thumb function (C function pointer already has bit0 set)",
+   "x86_to_arm_notes": "Same mechanism as x86 install_d3d11_device_compat; win32craft.dll also EXPORTS a pass-through D3D11CreateDevice (win32_host.c:15124) - only used if the exe imports it from win32craft.dll (not the case for the ARM exe: it imports d3d11.dll directly), so patch the IAT.",
+   "expected_bytes": "88 84 32 01",
+   "evidence": [
+    "imports D3D11CreateDevice -> IAT=00c37a50; bytes at c37a50 = 88 84 32 01",
+    "gfx_compat.md lists the same cell"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.hook_force_fl91",
+   "x86_symbol": "win32_d3d11_create_device (win32_host.c:9714-9834)",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x00c37a50",
+   "summary": "What the ARM D3D11CreateDevice hook must do: (1) flags |= 0x20 (BGRA); (2) replace the game's 7-entry list by the entries <= cap (default cap 0x9100 => exactly {0x9100}, count 1); (3) pass pFeatureLevel/ppDevice/ppContext through untouched (game relies on them); (4) on failure just return the HRESULT (game retries WARP itself via the same hook; WARP also supports 9_1). Verified offline: D3D11CreateDevice(levels={0x9100}) succeeds on hardware and WARP and returns selected=0x9100 / GetFeatureLevel=0x9100.",
+   "arm_signature": "same prototype as game call (see fl91.createdevice_callsites)",
+   "x86_to_arm_notes": "Drop from the x86 hook: host_is_windows7 branch (11_1 filter), captured_base_device/context bookkeeping, host_is_116 swap-chain code, host-side WARP retry (the game retries itself; keeping it is harmless but then the game never sees the failure).",
+   "expected_bytes": null,
+   "evidence": [
+    "shader_probe.py --device: hardware and WARP D3D11CreateDevice({0x9100}, flags 0x20) -> hr=S_OK, selected 0x9100, GetFeatureLevel 0x9100",
+    "ARM exe has no GetFeatureLevel use and reads owner+0xb8 only (fl91.no_getfeaturelevel)",
+    "x86 hook behaviour: win32_host.c:9723 adjusted_flags=flags|0x20; 9729-9741 Win7 filter; 9759-9774 WARP retry"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.override_option",
+   "x86_symbol": "(new) --feature-level / WIN32CRAFT_FEATURE_LEVEL",
+   "x86_value": "n/a",
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "Advisable and cheap: accept --feature-level=9_1|9_2|9_3|10_0|10_1|11_0|11_1|game (+ env WIN32CRAFT_FEATURE_LEVEL), default 9_1 on ARM, 'game' = no clamp. Everything downstream (VERSION macro, target profile, vertex-format/sampler/colour paths) follows owner+0xb8 automatically, so no other host change is needed when the cap changes. Cap semantic: keep the game's own list order, drop entries > cap, if empty use {cap}. Examples: 9_1 -> {9100}; 9_3 -> {9300,9200,9100}; 10_0 -> {A000,9300,9200,9100}.",
+   "arm_signature": "host-side C only",
+   "x86_to_arm_notes": "x86 host has no such option (it only filters 0xB100 on Win7).",
+   "expected_bytes": null,
+   "evidence": [
+    "every FL decision derives from owner+0xb8 (fl91.owner_feature_level_field) so a cap in the hook is the only knob",
+    "level>=10 on a desktop dev box is useful for A/B comparison with the x86 build; values above 9_3 only change shader profile (4_0 / 4_1 / 5_0) and the format/sampler paths listed in fl91.hasfeature_table"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.d3d9_not_possible",
+   "x86_symbol": "user note: ARM32 'use d3d9 and fl 9_1'",
+   "x86_value": "n/a",
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "There is no D3D9 renderer in the exe: only a D3D11 backend (all render classes are *DX11, imports are d3d11/D3DCOMPILER_47 only, no d3d9.dll / Direct3DCreate9). The 'D3D9-class' path is D3D11 feature level 9_1: the runtime then drives the GPU through the WDDM D3D9-class DDI, shaders must be level_9_x blobs (plain 4_0 bytecode is rejected on a 9_x device: CreateVertexShader/PixelShader -> E_INVALIDARG 0x80070057 - tested), and the game already compiles them with 'vs/ps_4_0_level_9_1'.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Do not try to emulate D3D9; clamp to {0x9100}.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports d3d -> only D3DCOMPILER_47.dll!{D3DPreprocess,D3DCompile,D3DReflect} and d3d11.dll!D3D11CreateDevice; str -i d3d9 / Direct3DCreate9 -> no results",
+    "RTTI: only ShaderConstantDX11 / ShaderProgramDX11 families (no OGL/DX9 classes in this exe)",
+    "shader_probe.py: vs_4_0 / ps_4_0 blob -> CreateVertexShader/PixelShader on an FL9_1 device = 0x80070057, vs/ps_4_0_level_9_1 and _9_3 blobs = S_OK"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.featurelevel_to_target_suffix",
+   "x86_symbol": "(not in x86 host: game-internal)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005bdd0c",
+   "summary": "gfx:featureLevel_to_target_suffix: std::string* fn(std::string* out /*r0*/, UINT featureLevel /*r1*/). Mapping: 0x9100 and 0x9200 -> \"_level_9_1\" (len 10, string 0x00dbc464); 0x9300 -> \"_level_9_3\" (0x00dbc44c); 0xa000/0xa100/0xb000/0xb100 -> \"\" (empty, 0x010fbf90); anything else -> assign(NULL,0)=\"\". NOTE 9_2 maps to the 9_1 suffix.",
+   "arm_signature": "std::string* f(std::string* out /*r0*/, unsigned fl /*r1*/) -> r0 (out); MSVC SSO string (ptr/buf@0, size@0x10, cap@0x14)",
+   "x86_to_arm_notes": "No x86 counterpart in the host; informational.",
+   "expected_bytes": "2d e9 18 48 0d f1 08 0b 00 22 b1 f5",
+   "evidence": [
+    "dis 5bdd16-5bdd9c: cmp 0xa000 / 0x9100 / 0x9200 / 0x9300 -> loads 0x011bc464 (len 0xa) or 0x011bc44c; 0xa100/0xb000/0xb100 -> empty",
+    "str at 0xdbc464 '_level_9_1', 0xdbc44c '_level_9_3' (task statement + arm32re.py str)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.shadertype_to_target_prefix",
+   "x86_symbol": "(game-internal)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005bdda0",
+   "summary": "gfx:shaderType_to_target_prefix(std::string* out /*r0*/, byte stage /*r1*/): 0 -> \"vs\" (0x00dbc460), 1 -> \"ps\" (0x00dbc45c), 2 -> \"gs\" (0x00dbc458), other -> \"\". No compute/hull/domain stages exist.",
+   "arm_signature": "std::string* f(std::string* out, int stage)",
+   "x86_to_arm_notes": "informational",
+   "expected_bytes": "2d e9 18 48 0d f1 08 0b 04 46 00 22",
+   "evidence": [
+    "dis 5bddb0-5bde24: cbz r1 -> 0xdbc460, cmp 1 -> 0xdbc45c, cmp 2 -> 0xdbc458; bytes at dbc458: 'gs\\0\\0ps\\0\\0vs\\0\\0'"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.compile_target_string",
+   "x86_symbol": "win32_d3d_compile target arg (x86 hook just forwards)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005bdecc",
+   "summary": "mce::ShaderProgramDX11::compileShaderProgram(program r0, const std::string* nameKey r1): builds target = prefix(this+0x30 stage byte) + \"_\" + major + \"_\" + minor + suffix. major/minor by FL (0x5be2ea-0x5be35e): 9_1/9_2/9_3/10_0 -> 4_0; 10_1 -> 4_1; 11_0/11_1 -> 5_0; unknown -> -1_-1. With FL 0x9100 the target is exactly \"vs_4_0_level_9_1\" / \"ps_4_0_level_9_1\" (gs: \"gs_4_0_level_9_1\" which does not exist - never compiled, see geometry fact). At FL 0x9300: \"vs_4_0_level_9_3\"/\"ps_4_0_level_9_3\".",
+   "arm_signature": "void f(ShaderProgramDX11* this /*r0*/, const std::string* key /*r1*/); early-outs if [this+0x50]!=0 (already compiled) or source size [this+0x68]==0 (sets [this+0x31]=0)",
+   "x86_to_arm_notes": "x86 hook only logs/forwards; ARM identical.",
+   "expected_bytes": "2d e9 f0 4f 0d f1 1c 0b 43 f6 92 f1",
+   "evidence": [
+    "dis 5be2ea-5be35e (cmp r5,#0xa000/0x9100/0x9200/0x9300/0xa100/0xb000/0xb100 -> r4=major(4/5), r8=minor(0/1))",
+    "dis 5be366-5be3c0: calls 5bdd0c(suffix) then 5bdda0(prefix), 1140d4 itoa(minor), itoa(major), joins with string 0x0118dd78='_' (str verified)",
+    "gfx_compat.md: 9_x -> 4_0_level_9_x, 10_0 -> 4_0, 10_1 -> 4_1, 11_x -> 5_0 (independent agent, same result)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.d3dcompile_call_args",
+   "x86_symbol": "win32_d3d_compile(source,size,name,defines,include,entry,target,f1,f2,code,errors)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": "0x005be4ba",
+   "summary": "Single D3DCompile call (BL 0x5be4ba via thunk 0xa3b944, IAT 0x00c370b4): pSrcData=*(this+0x58) (std::string, ptr at +0x58 or inline), SrcDataSize=[this+0x68], pSourceName=std::string built from (program name + hash text), pDefines = stack array {{\"VERSION\", <decimal FL>}, {NULL,NULL}} ONLY ONE macro, pInclude=stack object vptr HeaderInclude (0x0136b164; Open 0x5bb180, Close no-op), pEntrypoint=\"main\" (0x011bc52c), pTarget=<see compile_target_string>, Flags1=0x8000 (D3DCOMPILE_OPTIMIZATION_LEVEL3), Flags2=0, ppCode, ppErrorMsgs. A D3DPreprocess call with the same define/include precedes it (used only for the cache hash). The old guess 'flags2=sb' is wrong: sb is zeroed at 0x5be2b8.",
+   "arm_signature": "D3DCompile: r0=src r1=size r2=name r3=defines; stack [sp]=include [sp+4]=entry [sp+8]=target [sp+0xc]=flags1 [sp+0x10]=flags2 [sp+0x14]=&code [sp+0x18]=&errors",
+   "x86_to_arm_notes": "Hook signature on ARM = x86 signature (all 4-byte args).",
+   "expected_bytes": null,
+   "evidence": [
+    "dis 5be484-5be4ba: str [sp+0x18]=0x1578 (errors) [sp+0x14]=0x1580 (code) [sp+0xc]=0x8000 ; main -> [sp+4]; r3=&macros(0x1728); [sp]=&HeaderInclude(0x1590)",
+    "dis 5bdf0a-5bdf5e: macro[0].Name=str 'VERSION' (0x011bc534), macro[0].Def=decimal string of owner+0xb8; strd zero at +0x1730 terminates the array",
+    "dis 5be2b8: mov.w sb,#0 before use at 5be4b6 (flags2=0); gfx_compat.md says flags2=0 too"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.version_macro",
+   "x86_symbol": "(game-internal)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": "0x011bc534",
+   "summary": "The only macro passed to D3DCompile/D3DPreprocess is VERSION = decimal(owner+0xb8) via (ptr)*(*(*g_owner+0xac)+0x108)+0xb8. FL 9_1 -> VERSION=37120 (0x9100), 9_3 -> 37632, 10_0 -> 40960. HLSL uses it in 5 places: TEXEL_AA guards in entity.fragment/renderchunk.fragment/texture_ccolor.fragment/texture_raw_alphatest.fragment ('VERSION < 0xa000' => plain Sample, no CalculateLevelOfDetailUnclamped path) and ShaderConstants.fxh (TEXTURE_0 is a Texture2DArray only when (USE_STEREO_TEXTURE_ARRAY||ARRAY_TEXTURE_0) && VERSION >= 0xa000).",
+   "arm_signature": "string at 0x011bc534 'VERSION'",
+   "x86_to_arm_notes": "needs g_owner (0x15b86ac) populated before the first compile - the host already publishes it.",
+   "expected_bytes": null,
+   "evidence": [
+    "grep VERSION data/shaders/hlsl -> entity.fragment:58, renderchunk.fragment:35, ShaderConstants.fxh:3, texture_ccolor.fragment:17, texture_raw_alphatest.fragment:17",
+    "dis 5bdf2e: movw r3,#0xc534 -> 'VERSION'"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.shader_defines_text",
+   "x86_symbol": "(game-internal)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005c1f1c",
+   "summary": "gfx:ShaderDefines_build adds text macros that are prepended to the HLSL as '#define NAME' lines (string '#define ' at 0x00dbc8e4): R8G8B8A8_SNORM_UNSUPPORTED when !hasFeature(6) (FL<10_0 => ALWAYS defined at 9_x); MSAA_FRAMEBUFFER_ENABLED when hasFeature(1) && displaySettings+0xc>1 (default 1 => off); VR_MODE / INSTANCEDSTEREO when *(0x15b86a4)+0xd==1 (VR, off); then VERTEXSHADER_INSTANCEDSTEREO if hasFeature(10) else GEOMETRY_INSTANCEDSTEREO; TEXEL_AA_FEATURE when displaySettings+0x31 (default 0 => off). Plus the per-material 'defines' from *.material.",
+   "arm_signature": "void f(ShaderDefines* out /*r0*/, ..., map* materialDefines /*r2*/)",
+   "x86_to_arm_notes": "n/a",
+   "expected_bytes": "2d e9 f0 4f 0d f1 1c 0b 3f f6 6a f1",
+   "evidence": [
+    "dis 5c1f4c-5c20a2: movs r1,#6 -> hasFeature -> 'R8G8B8A8_SNORM_UNSUPPORTED' (0x11bcab8); #1 -> 'MSAA_FRAMEBUFFER_ENABLED'; [g+0xd]==1 -> 'VR_MODE','INSTANCEDSTEREO'; #0xa -> 'VERTEXSHADER_INSTANCEDSTEREO' else 'GEOMETRY_INSTANCEDSTEREO'; [disp+0x31] -> 'TEXEL_AA_FEATURE'",
+    "make_displaySettings 0x13ef14: +0xc=1, +0x30=1, +0x31=0 (dis 13ef36/13ef5a/13ef5e)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.hlsl_source_and_includes",
+   "x86_symbol": "shader_include_directory / win32_include (x86 STANDARD_FILE_INCLUDE branch)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": "0x005c0ca8",
+   "summary": "Source files are resolved by the game's resource system as 'shaders/hlsl/<name>.hlsl' ('/hlsl' 0x011b2080 + '.hlsl' 0x00dbcbf4 in sub_5c0ca8; first path component 'shaders' 0x00dc3ed0) from the material fields vertexShader/fragmentShader/vrGeometryShader/geometryShader ('shaders/renderchunk.vertex' etc.); includes come from the custom HeaderInclude object ('ShaderConstants.fxh', 'Util.fxh'/'util.fxh' both used - resolved case-insensitively by the game's file layer). There are NO per-FL variants: data/shaders contains hlsl/, glsl/, gnm/ and nine GUID-named override directories (7f4ba1a2..., 884ecfc8..., 98330b0a..., b8de1e1e..., bd49c9c7..., ce292d20..., d10c2615..., d1bea604..., d725e15d...) that each hold one replacement fragment shader (entity.fragment.hlsl; ce292d20 festive_foliage.fragment.hlsl) for specific resource packs. All 9 overrides also compile at ps_4_0_level_9_1. Material index files vanilla/materials/{common,fancy,sad}.json (and vanilla_base) list material files plus extra defines (FANCY, FOG, ALWAYS_LIT) and a tag suffix; materials use 'child:parent' inheritance.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "No ID3DInclude STANDARD_FILE_INCLUDE (1) is ever passed by the ARM game (always its HeaderInclude), so win32_include_open/close and shader_include_directory are dead code on ARM.",
+   "expected_bytes": null,
+   "evidence": [
+    "strx .hlsl -> sub_5c0ca8 (movw 0xcbf4 '.hlsl'), strx hlsl -w/str '/hlsl' 0xdb2080; find data/shaders -> 68 *.hlsl files + 9 GUID dirs",
+    "resource_packs/vanilla/materials/*.material + common/fancy/sad.json parsed by shader_probe.py -> 569 entries, 197 unique (vs,fs,defines) variants"
+   ],
+   "confidence": "medium",
+   "verifier_correction": "59 .hlsl files in data/shaders/hlsl plus 9 in GUID dirs = 68; only vanilla and vanilla_base packs contain *.material."
+  },
+  {
+   "id": "fl91.geometry_shaders_vr_only",
+   "x86_symbol": "n/a (x86: patch_win7_* none)",
+   "x86_value": "n/a",
+   "kind": "other",
+   "arm_rva": "0x005c0d58",
+   "summary": "Geometry shaders are only ever loaded for VR: all 111 'geometry' material keys are 'vrGeometryShader' (no 'geometryShader' key in any material, although the code also parses that key at 0x011bcae8). sub_5c0d58 loads the VR geometry shader only if *(0x15b86a4)+0xd (VR mode) is set, otherwise it clears the GS source (assign empty 0x10fbf90). A program with empty GS source makes compileShaderProgram return immediately (source size [this+0x68]==0) and the reflect step is skipped when [gs+0x31]==0 (0x5bd422) - so with FL<10 and non-VR NO geometry shader is compiled or created. 'gs_4_0_level_9_1' is not a valid target (tested X3506) and SV_InstanceID / SV_RenderTargetArrayIndex are rejected by the 9_x compilers (X4016), so VR/instanced-stereo cannot work at 9_1.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Host must keep VR/stereo disabled (display.stereo=0, *(0x15b86a4)+0xd=0) - the x86 host already does.",
+   "expected_bytes": null,
+   "evidence": [
+    "grep -rho '\"[A-Za-z]*GeometryShader\"' resource_packs -> 111x vrGeometryShader only",
+    "dis 5c189a-5c18bc: [g_vr 0x15b86a4]+0xd==0 -> branch 5c1914 which assigns empty string; hasFeature(10) checked only inside VR branch",
+    "dis 5bdefc-5bdf06 (source size [this+0x68]==0 -> strb 0,[this+0x31]; return); 5bd422 ldrb [gs+0x31] guards the GS reflect",
+    "shader_probe.py extras: gs_4_0_level_9_1 FAIL 'unrecognized compiler target'; renderchunk.vertex with INSTANCEDSTEREO defines FAIL at 9_1 and 9_3: 'SV_InstanceID semantic cannot be used with 10Level9 targets' (compiles at 10_0)"
+   ],
+   "confidence": "high",
+   "verifier_correction": "sub_5c0d58 reads both geometryShader and vrGeometryShader keys; with VR off the plain geometryShader key is still honoured (0x5c1914) and would be compiled as gs_4_0_level_9_1 (fails). No vanilla material uses that key; resource packs that do will fail at 9_1."
+  },
+  {
+   "id": "fl91.shader_cache_stale_risk",
+   "x86_symbol": "(none)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": "0x00dbfc40",
+   "summary": "compileShaderProgram has an on-disk compiled-shader cache: after D3DPreprocess it hashes the preprocessed text (sub_9db99c), builds the file name <programName><hash-hex> (sub_8ce14) under a cache folder named 'ShaderCache2' (global string 0x00dbfc40, initialiser sub_4dbec; base folder from AppPlatform_Winrt 'cacheFolder'), reads it back (sub_9d3fb4 -> this+0x40) and only calls D3DCompile on a miss; on success it writes the blob (ostream::write at 0x5be724). The key does NOT include the target profile or FL: it is only the preprocessed source, which differs between FLs only where the source actually uses VERSION. A cache populated by a run at FL>=10 (plain vs_4_0/ps_4_0 blobs, or an x86 run) is therefore reused for shaders whose preprocessed text is FL-independent and then fails at CreateVertexShader/CreatePixelShader on a 9_x device (E_INVALIDARG, tested).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "On ARM start with an empty cache; when the clamp/cap changes (or the build id changes) wipe '<cacheFolder>/ShaderCache2'. A simple host marker file 'ShaderCache2/fl_<cap>.txt' written on first run is enough.",
+   "expected_bytes": null,
+   "evidence": [
+    "strx ShaderCache2 -> sub_4dbec static initialiser; dis 5be1ce-5be2b6: hash(preprocessed) -> name+hex -> read -> if hit skip compile; 5be6c8-5be740: ofstream write of blob",
+    "shader_probe.py: vs_4_0 blob (900 B) on FL9_1 device -> 0x80070057; vs_4_0_level_9_1 (1112 B) -> S_OK"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "fl91.hasfeature_table",
+   "x86_symbol": "(game-internal)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005bc524",
+   "summary": "gfx:GameOwner::hasFeature(owner r0, id r1) -> bool. tbb table (11 entries, bytes at 0x5bc532: 06 0e 2c 0b 0b 06 06 19 20 2c 28): id0,5,6 = [owner+0xb8]>=0xa000 (FL>=10_0); id1 = !(*(*owner?:g 0x135743c(+4))) byte (default true, not FL related); id2,9 = false; id3,4 = true; id7 = byte [owner+0x90]==1 (tearing); id8 = [owner+0xb8]>=0x9300 (FL>=9_3); id10 = byte [owner+0x91] (VPAndRTArrayIndex, VR only). Static callers: id1: sub_5bf800, sub_5c1f1c; id3: sub_4a86d0; id6: ShaderDefines_build; id7: swap-chain desc builder 0x5beaac, resizeSwapChain 0x5bec54, present 0x5bed3c; id8: sub_5bcf90, sub_5cac88; id9: sub_5c05c0,sub_5c0630,sub_5c06c8; id10: ShaderDefines_build, sub_5c0d58; id2: sub_5c0d58; id0/id5: no static caller found.",
+   "arm_signature": "bool f(GameOwner* /*r0*/, int id /*r1*/) -> r0 (0/1)",
+   "x86_to_arm_notes": "Table identical in meaning to x86 (same source); at FL 9_1: ids 0,5,6,8 false; at 9_3: only 8 true; at 10_0: all FL ids true.",
+   "expected_bytes": "2d e9 00 48 eb 46 0a 29 2d d8 df e8",
+   "evidence": [
+    "dis 5bc524-5bc58c + bytes 5bc532 (tbb table) decoded target by target; thresholds #0xa000 (5bc542) and #0x9300 (5bc576)",
+    "callers 5bc524 + 'movs r1,#N' before each call site (dis -14 bytes)",
+    "ShaderDefines_build strings tie id6 to R8G8B8A8_SNORM_UNSUPPORTED and id10 to *_INSTANCEDSTEREO"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.vertex_format_by_fl",
+   "x86_symbol": "(game-internal)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005bcf90",
+   "summary": "sub_5bcf90 (named fl91:vertexAttrType_to_DXGI): vertex attribute type byte -> DXGI_FORMAT used for the input layout. type0 (position): hasFeature(8)(FL>=9_3) ? 10 (R16G16B16A16_FLOAT) : 6 (R32G32B32_FLOAT); type1: 28 (R8G8B8A8_UNORM); type2: FL>=10 ? 31 (R8G8B8A8_SNORM) : 28; types 3,4,5: FL>=10 ? 35 (R16G16_UNORM) : 37 (R16G16_SNORM). This is exactly the set that the D3D11 runtime accepts as vertex formats at each level (probe: FL9_1/9_2: fmt6 VB, fmt10 NOT supported, fmt35 NOT supported, fmt31 no VB, fmt37 VB; FL9_3: fmt10 VB; FL10: all VB). Position stride: sub_5cac88 returns 8 if (hasFeature(8) cached && arg flag [r6+8]) else 0x10 (sub_5cacf4 / sub_5c1dbc layout builders) - hasFeature(8) is the only FL input.",
+   "arm_signature": "uint f(const uint8* attr /*r0*/) -> r0 DXGI_FORMAT",
+   "x86_to_arm_notes": "ARM behaviour = x86 behaviour; nothing for the host to patch. At 9_1 the game takes the float3 position + R16G16_SNORM path automatically.",
+   "expected_bytes": "2d e9 00 48 eb 46 02 78 05 2a 3b d8",
+   "evidence": [
+    "dis 5bcf90-5bd016 + tbb bytes at 5bcfa0 (03 12 15 26 26 26) -> results 6/10, 0x1c, 0x1c/0x1f, 0x25/0x23",
+    "shader_probe.py --device CheckFormatSupport at {0x9100,0x9200,0x9300,0xA000}: R32G32B32_FLOAT VB at all; R16G16B16A16_FLOAT VB only >=9_3 (E_FAIL at 9_1/9_2); R16G16_UNORM VB only >=10; R16G16_SNORM VB at all; R8G8B8A8_SNORM VB only >=10",
+    "hasFeature(8) call at 5bcfb2 (movs r1,#8) and 5cace2 (movs r1,#8)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.sampler_texelaa_by_fl",
+   "x86_symbol": "(game-internal)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005bc5b8",
+   "summary": "sub_5bc5b8 (CreateSamplerState, device slot 23): material textureFilter enum {0 Point -> D3D11_FILTER 0, 1 Bilinear -> 0x14, 2 -> 1 (MIN_MAG_POINT_MIP_LINEAR), 3 TexelAA -> 0x15}. Filter value 3 (TexelAA) is demoted to 2 when displaySettings+0x31==0 (default) OR FL<10_0. So at 9_x TexelAA is never used (matches HLSL VERSION<0xa000 guard); all remaining filters are legal at 9_1.",
+   "arm_signature": "void f(Sampler* out r0, ..., const SamplerDesc* r2 (byte0 filter, byte1 address mode), uint16 r3)",
+   "x86_to_arm_notes": "same as x86",
+   "expected_bytes": "2d e9 f0 4b 0d f1 18 0b 44 f6 1c f6",
+   "evidence": [
+    "dis 5bc64c-5bc67c: ldrb [disp+0x31] cbz -> clamp; else cmp FL,#0xa000 bge skip; cmp r1,#3 moveq r1,#2; tbb {0,0x14,1,0x15}",
+    "HLSL: util.fxh texture2D_AA uses CalculateLevelOfDetailUnclamped; entity.fragment:58 guards it with VERSION<0xa000"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "fl91.colour_quantisation_by_fl",
+   "x86_symbol": "(game-internal)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x004a3df0",
+   "summary": "sub_4a3df0 / sub_4a3ab4: CPU float->byte colour conversion; when FL<10_0 (cmp.w #0xa000 at 0x4a3e1c / 0x4a3c86) they use ceil((v+bias)*scale1)*scale2 style quantisation, else ceil(v*255). Only affects rounding of vertex/uniform colours on 9_x; harmless.",
+   "arm_signature": "void f(Colour* this /*r0*/, float r s0, float g s1, float b s2)",
+   "x86_to_arm_notes": "none",
+   "expected_bytes": "2d e9 18 48 0d f1 08 0b 2d ed 06 8b",
+   "evidence": [
+    "dis 4a3e00-4a3e30 and 4a3e7c-4a3ec8: ceilf thunk, strb to +0x84..0x87; two arms split on FL cmp #0xa000"
+   ],
+   "confidence": "low"
+  },
+  {
+   "id": "fl91.draw_instancing",
+   "x86_symbol": "(game-internal)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005c012c",
+   "summary": "sub_5c012c is the draw submit: topology via IASetPrimitiveTopology (slot 24, table 0x011160a8), index/vertex binding via sub_5b94fc, then DrawIndexed (slot 12, +0x30) or Draw (slot 13, +0x34); the INSTANCED variants DrawIndexedInstanced (slot 20, +0x50) and DrawInstanced (slot 21, +0x54) are taken only when the draw-call instance count byte [this+0x3f] > 1 (cmp.w r8,#1; bls plain at 0x5c031c / 0x5c03b2). The count is >1 only for instanced-stereo/VR, so ordinary rendering at FL9_1 never issues an instanced draw (FL9_1/9_2 do not allow InstanceCount>1; 9_3 only with simple instancing).",
+   "arm_signature": "void f(DrawState* this r0, ...)",
+   "x86_to_arm_notes": "n/a",
+   "expected_bytes": null,
+   "evidence": [
+    "dis 5c0360 (ldr [r4,#0x50] DrawIndexedInstanced), 5c03a8 ([#0x30] DrawIndexed), 5c03f2 ([#0x54]), 5c042c ([#0x34] Draw)",
+    "all SV_InstanceID uses in data/shaders/hlsl are under INSTANCEDSTEREO (VR) per grep (58 occurrences in vertex/geometry stages)"
+   ],
+   "confidence": "medium",
+   "verifier_correction": "UNVERIFIABLE that instance count > 1 occurs only in VR/stereo (no writer of a value > 1 to [state+0x3f] found); treat DrawInstanced at 9_1 as unsupported."
+  },
+  {
+   "id": "fl91.buffer_formats_and_usage",
+   "x86_symbol": "(game-internal)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005b9588",
+   "summary": "Buffer creation (sub_5b9588): index element size 1/2/4 -> DXGI format 0x3e (R8_UINT, invalid for IASetIndexBuffer, never expected), 0x39 (R16_UINT), 0x2a (R32_UINT); dynamic flag -> Usage DYNAMIC(2) + CPUAccess WRITE (0x10000). Vertex/index buffers are mapped with MAP_WRITE/DISCARD/NO_OVERWRITE (sub_5b9680; NO_OVERWRITE on VB/IB is legal at 9_x). Constant buffers (sub_5b9804): BindFlags 4, Usage DEFAULT, updated by UpdateSubresource (sub_5b9790, slot 48) - legal at 9_x (no Map-NO_OVERWRITE on constant buffers). RISK: R32_UINT index buffers need FL>=9_2 and max index 2^20-1 (9_1: 16-bit indices, max 65534/65535 primitives); the game decides the element size per mesh, not per FL.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "none",
+   "expected_bytes": null,
+   "evidence": [
+    "dis 5b95b2-5b95cc: r2(size)==1 -> 0x3e, 2 -> 0x39, 4 -> 0x2a stored at [this+0x18]; 5b95e8-5b95f6: dynamic -> 0x10000/2",
+    "dis 5b9804-5b986a: BindFlags #4, usage 0; 5b97de ldr [ctx,#0xc0] (UpdateSubresource)",
+    "dis 5b96b6 tbb: map types 1,2,-1,4,5"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "fl91.init_targets_formats",
+   "x86_symbol": "gfx_device.init_targets / depth texture in InitTargets",
+   "x86_value": "0x0082cd90",
+   "kind": "function",
+   "arm_rva": "0x005bc0cc",
+   "summary": "InitTargets creates the depth buffer as Texture2D format 0x2d (D24_UNORM_S8_UINT), MipLevels 1, ArraySize = display.stereo ? 2 : 1, SampleDesc 1, BindFlags 0x40 (DSV) via device slot 5 (+0x14) at 0x5bc1fc; RTV of the swap-chain backbuffer via slot 9. Tested on an FL9_1 device: D24S8 DSV ok, D32_FLOAT rejected, ArraySize 2 rejected (E_INVALIDARG) -> the host must keep display.stereo (byte +0x19) = 0, which it does.",
+   "arm_signature": "void f(owner r0, Display* r1, renderer r2)",
+   "x86_to_arm_notes": "same display descriptor as x86 (see gfx_device)",
+   "expected_bytes": "2de9f04b0df1180b",
+   "evidence": [
+    "dis 5bc1b0-5bc1fc: ldrb [r8,#0x19] stereo -> movne r1,#2 / moveq #1; movs r3,#0x2d format; movs r3,#0x40 bind",
+    "shader_probe.py --host: CreateTexture2D D24S8 S_OK, CreateDepthStencilView S_OK, D32_FLOAT 0x80070057; separate probe: ArraySize=2 RGBA8/D24S8 -> 0x80070057 at 9_1/9_3, ok at 10_0"
+   ],
+   "confidence": "high",
+   "verifier_correction": "expected_bytes corrected by verifier: actual bytes at 0x5bc0cc are 2d e9 f0 4b 0d f1 18 0b. The depth buffer size comes from the display struct, so the 2048 clamp (FL9_1/9_2) must be applied to display width/height, not only to the swap chain."
+  },
+  {
+   "id": "fl91.msaa_gate",
+   "x86_symbol": "n/a",
+   "x86_value": "n/a",
+   "kind": "other",
+   "arm_rva": "0x005bf800",
+   "summary": "MSAA: displaySettings+0xc (sample count) defaults to 1 (make_displaySettings 0x13ef36). sub_5bf800 (hasFeature(1) + device CheckMultisampleQualityLevels slot 30) and sub_5bcafc (CheckFormatSupport & MULTISAMPLE_RENDERTARGET 0x40000, ResolveSubresource slot 57) only matter if the user raises it. Real 9_1 GPUs (Tegra 3) expose no MSAA; leave the option at 1 / hide it. The MSAA_FRAMEBUFFER_ENABLED define is not FL gated, only count gated.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "n/a",
+   "expected_bytes": null,
+   "evidence": [
+    "dis 13ef36: strd r3(=1),r5 -> [r0,#0xc]; 5c1fa8-5c1fc0: hasFeature(1) && [disp+0xc]>1 -> MSAA_FRAMEBUFFER_ENABLED",
+    "dis 5bcbc8/5bcbd4: ldr [ctx? dev,#0x74]=CheckFormatSupport then tst #0x40000"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "fl91.queryadapterinfo_skipped",
+   "x86_symbol": "gfx_device note",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x005b9f4c",
+   "summary": "queryAdapterInfo (0x5b9f4c, only caller sub_134d40) fills owner+0x90 (adapter GetParent(IID_IDXGIFactory4 0x00dbc294) -> QI IID_IDXGIFactory5 0x00dbc2b4 -> CheckFeatureSupport(ALLOW_TEARING) via sub_5b9c20) and owner+0x91 (D3D11_FEATURE_D3D11_OPTIONS3 VPAndRTArrayIndexFromAnyShaderFeedingRasterizer via sub_5b9cdc, feature 0xf) and logs the FL name via sub_5b9e90 ('DirectX 9.1' etc.). The host path publishes g_owner and never runs it, so +0x90/+0x91 stay 0: hasFeature(7) false (Present(1,0), no tearing) and hasFeature(10) false. Nothing here needs changing for FL9_1. (Probe: OPTIONS3 reports TRUE on this desktop even at FL9_1 - irrelevant because VR is off.)",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "do not call (see gfx_device)",
+   "expected_bytes": null,
+   "evidence": [
+    "callers 5b9f4c -> 00134eb2 sub_134d40 only",
+    "dis 5b9fe8 strb r0,[r5,#0x90]; 5ba002 strb r0,[r5,#0x91]; 5b9d04 movs r1,#0xf; ldr [r4,#0x84]"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.hlsl_helpers_x86",
+   "x86_symbol": "patch_hlsl_lod_intrinsic / patch_hlsl_root_signature / win32_include_* / install_d3d_compile_trace / win32_d3d_compile",
+   "x86_value": "win32_host.c:1061,1088,1115,1190,9623,9695",
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "patch_hlsl_lod_intrinsic: text-replaces 'tex.CalculateLevelOfDetailUnclamped(TextureSampler0, uv)' with '(0.0f)' inside INCLUDED files only (util.fxh:8); the string exists once in data but the function texture2D_AA is only called when VERSION>=0xa000 && TEXEL_AA_FEATURE, and an un-called function containing it compiles fine at ps_4_0_level_9_1 (all 197 variants incl. those that include Util.fxh compile with real d3dcompiler_47) => NOT needed at 9_1. patch_hlsl_root_signature: string absent in 1.2.8 data => no-op. win32_include_open/close: only for D3D_COMPILE_STANDARD_FILE_INCLUDE (never passed) => dead. win32_include_proxy_*: wraps the game's HeaderInclude to run the two text patches => unnecessary. win32_d3d_compile/install_d3d_compile_trace: keep ONLY a pass-through that logs failures (source name, entry, target, HRESULT, error blob) - essential for diagnosing 9_1 failures on real hardware.",
+   "arm_signature": "D3DCompile hook (ARM): HRESULT WINAPI(LPCVOID,SIZE_T,LPCSTR,const D3D_SHADER_MACRO*,ID3DInclude*,LPCSTR,LPCSTR,UINT,UINT,ID3DBlob**,ID3DBlob**)",
+   "x86_to_arm_notes": "Hook IAT 0x00c370b4 if logging is wanted; otherwise leave the game talking to the system D3DCOMPILER_47.dll directly (present in System32 on Windows RT 8.1 / Win10 ARM32).",
+   "expected_bytes": null,
+   "evidence": [
+    "data/shaders/hlsl/util.fxh:8 (unguarded definition), entity.fragment.hlsl:58 guards the call with VERSION<0xa000",
+    "shader_probe.py: 197/197 vs + ps variants compile at *_4_0_level_9_1 with the unpatched sources through d3dcompiler_47.dll; extras: TEXEL_AA_FEATURE defined also OK",
+    "grep '#define ROOT_SIGNATURE' data -> none"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.shader_compile_matrix",
+   "x86_symbol": "n/a",
+   "x86_value": "n/a",
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "Offline compile of every material variant (shader_probe.py: 569 material entries from vanilla+vanilla_base common/fancy/sad index files => 197 unique (vs,fs,defines) variants; sources built like the game: '#define X' lines + file with includes inlined; VERSION macro; main; flags 0x8000): vs_4_0_level_9_1 197/197 OK, ps_4_0_level_9_1 197/197 OK, vs/ps_4_0_level_9_3 197/197 OK, vs/ps_4_0 (10_0 baseline) 197/197 OK; SDK fxc.exe (10.0.19041) agrees on 1 variant per file (all OK). Largest shaders at 9_1 (SM4 instruction count from D3DReflect): vs entity.vertex 49, rain_snow.vertex 47, end_portal.vertex 44, renderchunk.vertex 42; ps text.fragment 43 (largest ps, text/MSDF family), entity.fragment 20, rain_snow.fragment 20, renderchunk.fragment 14; max 6 VS outputs / 6 PS inputs. CreateVertexShader/CreatePixelShader of all 394 blobs on a real FL9_1 device (hardware and WARP) -> S_OK. Failures at 9_1 only for VR/instanced-stereo defines (SV_InstanceID, SV_RenderTargetArrayIndex) and gs_4_0_level_9_1 - both unreachable in non-VR play.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "none",
+   "expected_bytes": null,
+   "evidence": [
+    "python arm32/tests/shader_probe.py --fxc --device --host -> arm32/tests/shader_probe_last_run.txt, results json arm32/tests/shader_probe_results.json",
+    "negative control (undefined symbol) correctly FAILs; 9 GUID-dir override shaders also OK at 9_1"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.host_swapchain_fl91",
+   "x86_symbol": "initialize_game_d3d (win32_host.c:11331-11593)",
+   "x86_value": "n/a",
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "Host swap chain: IDXGIFactory::CreateSwapChain(HWND, B8G8R8A8_UNORM, BufferCount 2, SwapEffect DISCARD, windowed, sample 1) then game InitTargets (D24S8 depth, RTV on backbuffer) then Present hook. Validated on an FL9_1 device (hardware + WARP): QI IDXGIDevice3/ID3D11DeviceContext1/2/ID3DUserDefinedAnnotation/IDXGIAdapter3 all S_OK, CreateSwapChain S_OK, backbuffer RTV S_OK, D24S8 DSV S_OK, Present(1,0) S_OK. Nothing in this path is invalid at FL9_1. Constraints to respect on real 9_1 HW: max render target / texture size 2048 (9_1/9_2) or 4096 (9_3) -> clamp the HWND client size (backbuffer+depth) to <=2048 on each axis (desktop probe allowed 4096 only because drivers are lenient); keep stereo=0; no MSAA; no D32_FLOAT.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Same code as x86 (DISCARD, 2 buffers); drop the Win7 branches (BufferCount 1, RGBA fallback).",
+   "expected_bytes": null,
+   "evidence": [
+    "shader_probe.py --host output (arm32/tests/shader_probe_last_run.txt)",
+    "win32_host.c:11495-11505 swap-chain description",
+    "CheckFormatSupport(87) = TEX2D+MIP+SAMPLE+RTV+BLEND+MSAA_RT at FL9_1"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "fl91.host_draw_scissor_present",
+   "x86_symbol": "install_scissor_fix, install_draw_trace, win32_present",
+   "x86_value": "win32_host.c:1312,1439,9980",
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "install_scissor_fix patches context vtable slot 45 (RSSetScissorRects, +0xb4) - same slot/semantics on FL9_1, ScissorEnable is legal at 9_x, keep. install_draw_trace patches vtable slots 9..53 incl. DrawInstanced - dead code (no caller), drop. win32_present hooks swap chain vtable slot 8 (Present) - FL independent; the game uses Present(1,0) (hasFeature(7) false) so the Present1/tearing path is never taken; keep the ALLOW_TEARING masking only as insurance. No ID3D11DeviceContext method used by the game is unavailable at 9_1 (Draw/DrawIndexed, Map(DISCARD/NO_OVERWRITE on VB/IB), UpdateSubresource, ClearRTV/DSV, CopyResource/ResolveSubresource, OMSetRenderTargets, RS*, ID3D11DeviceContext2::DiscardView).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "none beyond the ARM vtable-patch mechanics (VirtualProtect PAGE_READWRITE on the vtable page)",
+   "expected_bytes": null,
+   "evidence": [
+    "scan of ldr [vtbl,#slot*4]+blx in 0x5b0000-0x5e0000 (context): DrawIndexed/Draw/DrawIndexedInstanced/DrawInstanced, Map/Unmap, IASetInputLayout/VB/IB/Topology, VS/PS/GSSetShader/ConstantBuffers/Resources/Samplers, OMSetRenderTargets/BlendState/DepthStencilState, RSSetState/Viewports/ScissorRects, CopyResource/CopySubresourceRegion/ResolveSubresource/UpdateSubresource, ClearRTV/ClearDSV, GenerateMips - all legal at 9_x",
+    "gfx_compat.md: scissor single call site 0x5bb560 vtbl+0xb4"
+   ],
+   "confidence": "medium",
+   "verifier_correction": "Present(1,0) (slot 8) is chosen by the vsync byte displaySettings+0x30; with vsync off the game calls Present1 (slot 22) and needs a real IDXGISwapChain1 (QI from the host swap chain). The game rasterizer desc uses DepthClipEnable=1 (FALSE fails at FL9_1 with 0x8007000e)."
+  },
+  {
+   "id": "fl91.texture_limits_risk",
+   "x86_symbol": "n/a",
+   "x86_value": "n/a",
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "Texture limits at FL9_x (D3D11 spec): max Texture2D 2048 (9_1/9_2), 4096 (9_3); no texture arrays (ArraySize>1 -> E_INVALIDARG, tested); NPOT only conditional (no mips + clamp) on real 9_x hardware (runtime accepts creation: tested NPOT with full mip chain OK). Vanilla data: 2687 PNGs, largest non-VR 1938x472 (title), 808 have a non-power-of-2 side; dynamic terrain atlas size is computed at runtime (terrain_texture.json padding 8, num_mip_levels 4). Expect possible NPOT+mip sampling artefacts on real 9_1 GPUs, nothing the host can fix except keeping packs small.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "none",
+   "expected_bytes": null,
+   "evidence": [
+    "python scan of resource_packs/vanilla/**/*.png headers",
+    "probe: CreateTexture2D 4096 RGBA8 at 0x9100 accepted on this desktop driver (spec limit 2048) - do not rely on it"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "fl91.x86_host_accounting",
+   "x86_symbol": "RVA_128_D3D_COMPILE_IAT, RVA_128_D3D11_CREATE_DEVICE_IAT, RVA_128_INIT_DEVICE, RVA_128_DXGI_DEVICE3_IID, RVA_128_D3D_CONTEXT_IID, RVA_128_D3D_ANNOTATION_IID",
+   "x86_value": "0x011d20b4 / 0x011d2a44 / 0x0082cff0 / 0x012d8b28 / 0x012d8c7c / 0x012d8c4c",
+   "kind": "other",
+   "arm_rva": null,
+   "summary": "ARM equivalents: D3DCompile IAT 0x00c370b4, D3D11CreateDevice IAT 0x00c37a50, InitDevice 0x005bc258, IID_IDXGIDevice3 0x00dbc2c4, IID_ID3D11DeviceContext2 0x00dbc3fc, IID_ID3DUserDefinedAnnotation 0x00dbc3dc (see gfx_device/gfx_compat). Every x86 assumption in win32_host.c 9714-9980 (hook flow, Win7 filters, captured base device/context, discard-views patch, DXGI device3 IID downgrade) is either not needed (Windows RT 8.1 / Win10 ARM have D3D11.2/DXGI1.3) or replaced by the single FL clamp hook of this area.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "see port_instructions",
+   "expected_bytes": null,
+   "evidence": [
+    "gfx_compat.json / gfx_device.json agree on the IAT cells and IIDs",
+    "win32_host.c:14937-14956 install order"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "1. Replace install_d3d11_device_compat for ARM with a clamp hook on IAT cell 0x00C37A50 (VirtualProtect PAGE_READWRITE, write the hook's Thumb function pointer, FlushInstructionCache) installed BEFORE the call to the game's InitDevice (0x005BC258). Keep the x86 prototype: HRESULT WINAPI hook(void* adapter, UINT driver_type, HMODULE software, UINT flags, const UINT* levels, UINT count, UINT sdk_version, ID3D11Device** dev, UINT* selected, ID3D11DeviceContext** ctx). On ARM this is plain AAPCS (r0-r3 + 6 stack words).",
+  "2. Hook body (default cap 0x9100): `static UINT g_fl_cap = 0x9100; UINT out[8], n = 0; flags |= 0x20; if (g_fl_cap) { if (levels && count) for (i = 0; i < count && n < 8; ++i) if (levels[i] <= g_fl_cap) out[n++] = levels[i]; if (!n) out[n++] = g_fl_cap; levels = out; count = n; } hr = real_CreateDevice(adapter, driver_type, software, flags, levels, count, sdk_version, dev, selected, ctx); log hr + (selected ? *selected : 0); return hr;` With the game's list {B100,B000,A100,A000,9300,9200,9100} and cap 0x9100 this passes exactly {0x9100}, count 1. Do NOT touch pFeatureLevel (&owner[0xb8]) / ppDevice (&owner[0xc0]) / ppContext (&renderer[0x110]) - the game stores them itself and reads the level back only from owner+0xb8.",
+  "3. Do not implement host-side WARP retry: InitDevice itself retries once with DriverType=5 (WARP) through the same hook (0x5BC3EC) and WARP supports 9_1. But the game never checks the second result (null context => crash at 0x5BC406): after init_device() returns, check owner+0xc0 (device) and renderer+0x110 (context) for NULL exactly like initialize_game_d3d does and fail cleanly with a log line. Also log *(UINT*)(owner+0xb8) and expect 0x9100.",
+  "4. Override option: parse `--feature-level=<9_1|9_2|9_3|10_0|10_1|11_0|11_1|game>` and env WIN32CRAFT_FEATURE_LEVEL (value -> 0x9100,0x9200,0x9300,0xA000,0xA100,0xB000,0xB100; 'game' -> g_fl_cap = 0 = no clamp). Default on ARM = 9_1. The cap is the only knob: VERSION macro, shader target suffix, vertex formats, sampler filters and colour rounding all derive from owner+0xb8.",
+  "5. D3DCompile (IAT 0x00C370B4): NO text patches, NO include proxy on ARM. Keep an optional pass-through hook that, on FAILED(hr), logs source_name, target and the error blob (same prototype as the x86 win32_d3d_compile minus the include handling). Drop patch_hlsl_lod_intrinsic, patch_hlsl_root_signature, win32_include_*, shader_include_directory. The game already requests vs/ps_4_0_level_9_1 with VERSION=37120 once the device is 9_1; no profile override is needed.",
+  "6. Shader cache: the game keeps compiled blobs in <AppPlatform cacheFolder>/ShaderCache2 keyed by hash(preprocessed source) only (no FL/target in the key). Start ARM with an empty cache and wipe it whenever the effective FL cap changes (marker file e.g. ShaderCache2/fl_9100.txt) - blobs compiled for FL>=10 (plain 4_0/5_0) are rejected by FL9_1 devices (E_INVALIDARG).",
+  "7. Keep VR/stereo OFF: display descriptor stereo byte (+0x19)=0 (InitTargets would create an ArraySize-2 depth texture, invalid at 9_x), *(0x015B86A4)+0xd must stay 0, MSAA count (displaySettings+0xc) stays 1, TEXEL_AA (displaySettings+0x31) stays 0. Instanced/geometry-shader paths and 'SV_InstanceID' shaders do not compile at 9_1 (X4016).",
+  "8. Swap chain/targets (initialize_game_d3d): keep IDXGIFactory::CreateSwapChain B8G8R8A8_UNORM, BufferCount 2, DISCARD, windowed; clamp the client size used for the swap chain to <=2048 per axis (9_1/9_2 texture limit; 4096 for 9_3). Drop host_is_windows7 branches (BufferCount 1, RGBA fallback), patch_win7_*, captured_base_*. Keep install_scissor_fix (slot 45) and the Present hook (slot 8) unchanged.",
+  "9. Optional diagnostics: after InitDevice log owner+0xb8 and, via ID3D11Device::GetFeatureLevel (slot 37), the real level; call CheckFormatSupport for DXGI 87/28/37/45 to print a one-line capability summary (see arm32/tests/shader_probe.py --device for the exact calls).",
+  "10. Calling-convention note for all hooks: no thiscall/stdcall distinction on ARM; define hooks with WINAPI-less plain C signatures and make sure stack args are read as 4-byte values (UINT/pointers) in the exact order of fl91.createdevice_callsites / fl91.d3dcompile_call_args."
+ ],
+ "open_questions": [
+  "Who (if anyone) sets GameOwner+0xbc (byte) to non-zero? Only make_owner (=0) writes it among owner users; non-zero would restrict the list to {B100..A000} and force FL>=10 - confirm no UWP path (HoloLens/VR) sets it on the host path.",
+  "Where exactly is [this+0x3f] (draw-call instance count) written? Assumed >1 only in instanced-stereo; not traced.",
+  "Real FL9_1 hardware behaviour (Tegra 3) could not be tested here: desktop drivers accept 4096 textures, R32 index buffers, NPOT+mips that the 9_1 spec restricts; ARM device logs are needed (use the D3DCompile/CreateDevice logging hooks).",
+  "ShaderCache2 base folder resolution (AppPlatform_Winrt::vf53 'cacheFolder') and whether the cache is also read before D3DPreprocess are only partially traced (read path via sub_9d3fb4 seen, write via ostream at 0x5be724).",
+  "hasFeature ids 0 and 5 have no static caller with a constant id (possibly dead); dynamic callers with a computed id were not enumerated.",
+  "Material 'defines' merge semantics for child:parent inheritance were assumed to be a union (the probe's 197 variants); an exact reproduction of MaterialDefinition flattening was not decompiled."
+ ]
+}

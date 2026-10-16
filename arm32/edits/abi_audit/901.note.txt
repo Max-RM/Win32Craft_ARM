@@ -1,0 +1,1 @@
+ARM32 reviewer fix: coreapp_vtable had 12 entries but the ARM exe calls ICoreApplication slots 12 (GetCurrentView) and 13 (Run).

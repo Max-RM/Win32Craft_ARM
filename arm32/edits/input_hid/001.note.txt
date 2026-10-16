@@ -1,0 +1,1 @@
+Closes the #else/#endif opened by 001 after the original game_requests_relative_mouse.

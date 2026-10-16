@@ -1,0 +1,1 @@
+ARM32: unimplemented-slot trap, IID-specific factories (ApplicationView statics3, CurrentApp2 statics) and activation logging.

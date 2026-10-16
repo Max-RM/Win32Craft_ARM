@@ -1,0 +1,5 @@
+BOOL WINAPI RoOriginateErrorW(HRESULT error, UINT32 length, LPCWSTR message)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(BOOL, "RoOriginateErrorW", (HRESULT, UINT32, LPCWSTR), (error, length, message));
+#endif

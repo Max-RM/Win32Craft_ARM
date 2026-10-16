@@ -1,0 +1,1 @@
+ARM32 log_115_termination_stack (game range from the real image size, RVA printed); x86 kept under #else.

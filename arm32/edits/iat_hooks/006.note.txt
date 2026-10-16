@@ -1,0 +1,1 @@
+ARM32 _CxxThrowException trace (tail call into the original), D3DCompile/D3DPreprocess pass-through loggers, D3D11CreateDevice hook (BGRA flag + feature level clamp); x86 originals kept under #else.

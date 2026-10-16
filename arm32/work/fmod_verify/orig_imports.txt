@@ -1,0 +1,269 @@
+
+File: ../../../Minecraft_1.2.8.0_ARM32/fmod_ARM.dll
+Format: COFF-ARM
+Arch: thumb
+AddressSize: 32bit
+Import {
+  Name: WS2_32.dll
+  ImportLookupTableRVA: 0xFA5C8
+  ImportAddressTableRVA: 0xB1068
+  Symbol: freeaddrinfo (149)
+  Symbol: getaddrinfo (150)
+  Symbol: WSAIoctl (58)
+  Symbol:  (111)
+  Symbol:  (116)
+  Symbol:  (115)
+  Symbol:  (23)
+  Symbol:  (22)
+  Symbol:  (1)
+  Symbol:  (21)
+  Symbol:  (19)
+  Symbol:  (18)
+  Symbol:  (16)
+  Symbol:  (13)
+  Symbol:  (9)
+  Symbol:  (8)
+  Symbol:  (7)
+  Symbol:  (10)
+  Symbol:  (4)
+  Symbol:  (3)
+  Symbol:  (2)
+}
+Import {
+  Name: api-ms-win-core-winrt-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA6EC
+  ImportAddressTableRVA: 0xB118C
+  Symbol: RoGetActivationFactory (1)
+  Symbol: RoUninitialize (7)
+  Symbol: RoInitialize (3)
+}
+Import {
+  Name: api-ms-win-core-winrt-string-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA6FC
+  ImportAddressTableRVA: 0xB119C
+  Symbol: WindowsCompareStringOrdinal (4)
+  Symbol: WindowsCreateStringReference (7)
+  Symbol: WindowsGetStringRawBuffer (12)
+}
+Import {
+  Name: MMDevAPI.DLL
+  ImportLookupTableRVA: 0xFA590
+  ImportAddressTableRVA: 0xB1030
+  Symbol:  (17)
+}
+Import {
+  Name: MFPlat.DLL
+  ImportLookupTableRVA: 0xFA560
+  ImportAddressTableRVA: 0xB1000
+  Symbol: MFCreateAsyncResult (35)
+  Symbol: MFStartup (174)
+  Symbol: MFShutdown (173)
+  Symbol: MFInvokeCallback (143)
+  Symbol: MFCreateMediaType (59)
+  Symbol: MFGetSystemTime (123)
+  Symbol: MFLockSharedWorkQueue (151)
+  Symbol: MFUnlockWorkQueue (190)
+  Symbol: MFPutWaitingWorkItem (157)
+}
+Import {
+  Name: MFReadWrite.dll
+  ImportLookupTableRVA: 0xFA588
+  ImportAddressTableRVA: 0xB1028
+  Symbol: MFCreateSourceReaderFromByteStream (4)
+}
+Import {
+  Name: api-ms-win-core-com-l1-1-1.dll
+  ImportLookupTableRVA: 0xFA620
+  ImportAddressTableRVA: 0xB10C0
+  Symbol: CoTaskMemFree (63)
+  Symbol: PropVariantClear (76)
+  Symbol: CoCreateFreeThreadedMarshaler (6)
+}
+Import {
+  Name: api-ms-win-core-file-l1-2-1.dll
+  ImportLookupTableRVA: 0xFA63C
+  ImportAddressTableRVA: 0xB10DC
+  Symbol: ReadFile (71)
+  Symbol: CreateFile2 (4)
+  Symbol: SetFilePointerEx (84)
+}
+Import {
+  Name: api-ms-win-core-handle-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA654
+  ImportAddressTableRVA: 0xB10F4
+  Symbol: CloseHandle (0)
+}
+Import {
+  Name: api-ms-win-core-errorhandling-l1-1-1.dll
+  ImportLookupTableRVA: 0xFA630
+  ImportAddressTableRVA: 0xB10D0
+  Symbol: RaiseException (7)
+  Symbol: GetLastError (5)
+}
+Import {
+  Name: api-ms-win-core-profile-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA694
+  ImportAddressTableRVA: 0xB1134
+  Symbol: QueryPerformanceCounter (0)
+  Symbol: QueryPerformanceFrequency (1)
+}
+Import {
+  Name: api-ms-win-core-synch-l1-2-0.dll
+  ImportLookupTableRVA: 0xFA6AC
+  ImportAddressTableRVA: 0xB114C
+  Symbol: CreateSemaphoreExW (11)
+  Symbol: InitializeCriticalSectionEx (26)
+  Symbol: LeaveCriticalSection (29)
+  Symbol: EnterCriticalSection (17)
+  Symbol: CreateEventExW (5)
+  Symbol: WaitForSingleObjectEx (55)
+  Symbol: ReleaseSemaphore (38)
+  Symbol: SetEvent (41)
+  Symbol: DeleteCriticalSection (15)
+  Symbol: ResetEvent (39)
+  Symbol: SleepConditionVariableCS (46)
+  Symbol: WakeAllConditionVariable (57)
+  Symbol: InitializeConditionVariable (23)
+}
+Import {
+  Name: api-ms-win-core-processthreads-l1-1-2.dll
+  ImportLookupTableRVA: 0xFA67C
+  ImportAddressTableRVA: 0xB111C
+  Symbol: CreateThread (6)
+  Symbol: SetThreadPriority (68)
+  Symbol: GetCurrentThreadId (17)
+  Symbol: GetCurrentProcessId (13)
+  Symbol: IsProcessorFeaturePresent (46)
+}
+Import {
+  Name: api-ms-win-core-libraryloader-l1-2-0.dll
+  ImportLookupTableRVA: 0xFA664
+  ImportAddressTableRVA: 0xB1104
+  Symbol: FreeLibrary (11)
+  Symbol: GetProcAddress (20)
+  Symbol: DisableThreadLibraryCalls (1)
+}
+Import {
+  Name: api-ms-win-core-libraryloader-l2-1-0.dll
+  ImportLookupTableRVA: 0xFA674
+  ImportAddressTableRVA: 0xB1114
+  Symbol: LoadPackagedLibrary (0)
+}
+Import {
+  Name: api-ms-win-core-file-l2-1-1.dll
+  ImportLookupTableRVA: 0xFA64C
+  ImportAddressTableRVA: 0xB10EC
+  Symbol: GetFileInformationByHandleEx (7)
+}
+Import {
+  Name: api-ms-win-core-string-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA6A0
+  ImportAddressTableRVA: 0xB1140
+  Symbol: WideCharToMultiByte (7)
+  Symbol: MultiByteToWideChar (6)
+}
+Import {
+  Name: VCRUNTIME140_APP.dll
+  ImportLookupTableRVA: 0xFA598
+  ImportAddressTableRVA: 0xB1038
+  Symbol: memcmp (59)
+  Symbol: __CxxFrameHandler3 (14)
+  Symbol: memcpy (60)
+  Symbol: _purecall (54)
+  Symbol: __C_specific_handler (8)
+  Symbol: __std_type_info_destroy_list (38)
+  Symbol: __std_exception_copy (34)
+  Symbol: __std_exception_destroy (35)
+  Symbol: memset (62)
+  Symbol: _CxxThrowException (1)
+  Symbol: memmove (61)
+}
+Import {
+  Name: api-ms-win-crt-utility-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA7C8
+  ImportAddressTableRVA: 0xB1268
+  Symbol: qsort (25)
+}
+Import {
+  Name: api-ms-win-crt-math-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA730
+  ImportAddressTableRVA: 0xB11D0
+  Symbol: log (214)
+  Symbol: log10f (216)
+  Symbol: powf (251)
+  Symbol: expf (177)
+  Symbol: logf (226)
+  Symbol: atanf (82)
+  Symbol: tanf (277)
+  Symbol: atan2f (81)
+  Symbol: sinf (271)
+  Symbol: cosf (140)
+  Symbol: asinf (75)
+  Symbol: acosf (70)
+  Symbol: floorf (187)
+  Symbol: ldexp (204)
+}
+Import {
+  Name: api-ms-win-crt-stdio-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA79C
+  ImportAddressTableRVA: 0xB123C
+  Symbol: fwrite (138)
+  Symbol: __stdio_common_vsscanf (16)
+  Symbol: __stdio_common_vsprintf (13)
+  Symbol: __acrt_iob_func (0)
+  Symbol: fopen (125)
+  Symbol: fseek (135)
+  Symbol: fclose (116)
+}
+Import {
+  Name: api-ms-win-crt-string-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA7BC
+  ImportAddressTableRVA: 0xB125C
+  Symbol: strncpy (143)
+  Symbol: strncmp (142)
+}
+Import {
+  Name: api-ms-win-crt-convert-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA70C
+  ImportAddressTableRVA: 0xB11AC
+  Symbol: wcstoul (115)
+  Symbol: atoi (80)
+}
+Import {
+  Name: api-ms-win-crt-heap-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA718
+  ImportAddressTableRVA: 0xB11B8
+  Symbol: calloc (23)
+  Symbol: realloc (26)
+  Symbol: free (24)
+  Symbol: malloc (25)
+  Symbol: _callnewh (8)
+}
+Import {
+  Name: api-ms-win-crt-runtime-l1-1-0.dll
+  ImportLookupTableRVA: 0xFA76C
+  ImportAddressTableRVA: 0xB120C
+  Symbol: _initialize_narrow_environment (51)
+  Symbol: _initialize_onexit_table (52)
+  Symbol: _register_onexit_function (60)
+  Symbol: _execute_onexit_table (34)
+  Symbol: _crt_atexit (30)
+  Symbol: _cexit (22)
+  Symbol: _initterm (54)
+  Symbol: _initterm_e (55)
+  Symbol: _seh_filter_dll (63)
+  Symbol: _errno (33)
+  Symbol: _configure_narrow_argv (24)
+}
+Import {
+  Name: api-ms-win-core-sysinfo-l1-2-1.dll
+  ImportLookupTableRVA: 0xFA6E4
+  ImportAddressTableRVA: 0xB1184
+  Symbol: GetSystemTimeAsFileTime (20)
+}
+Import {
+  Name: api-ms-win-core-interlocked-l1-2-0.dll
+  ImportLookupTableRVA: 0xFA65C
+  ImportAddressTableRVA: 0xB10FC
+  Symbol: InitializeSListHead (0)
+}

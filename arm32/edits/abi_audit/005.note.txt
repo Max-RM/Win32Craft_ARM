@@ -1,0 +1,1 @@
+ARM32: GetResults of the CurrentApp2 (customer id) operation yields an empty string.

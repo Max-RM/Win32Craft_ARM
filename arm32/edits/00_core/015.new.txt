@@ -1,0 +1,4 @@
+        "call *0x4(%ecx)\n\t"
+        "ret\n\t");
+}
+#endif

@@ -1,0 +1,3 @@
+static BOOL initialize_game_app_128(BYTE *image)
+{
+    static BYTE startup_context[0x40];

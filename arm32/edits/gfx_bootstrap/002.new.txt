@@ -1,0 +1,4 @@
+    log_line("swap-chain Present vtable hook installed");
+    return TRUE;
+}
+#endif /* WIN32CRAFT_ARM32 gfx_bootstrap present hooks */

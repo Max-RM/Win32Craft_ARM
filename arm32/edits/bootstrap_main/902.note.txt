@@ -1,0 +1,1 @@
+Reviewer fix: when win32craft.log is not writable in the exe directory the bootstrap moved the process working directory to %TEMP% for the whole run; restore it right after the first log_line has opened (and keeps) the log FILE.

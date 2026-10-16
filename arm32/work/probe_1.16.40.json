@@ -1,0 +1,426 @@
+{
+ "variants": {
+  "color.vertex + stars.fragment []": {
+   "materials": [
+    "vanilla/common.json|stars|sky.material"
+   ],
+   "vs": {
+    "9_1": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0_level_9_1",
+     "error": "",
+     "bytes": 1112,
+     "refl": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "9_3": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0_level_9_3",
+     "error": "",
+     "bytes": 1112,
+     "refl": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "10_0": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0",
+     "error": "",
+     "bytes": 900,
+     "refl": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    }
+   },
+   "ps": {
+    "9_1": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0_level_9_1",
+     "error": "",
+     "bytes": 1060,
+     "refl": {
+      "instr": 4,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "9_3": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0_level_9_3",
+     "error": "",
+     "bytes": 1060,
+     "refl": {
+      "instr": 4,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "10_0": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0",
+     "error": "",
+     "bytes": 924,
+     "refl": {
+      "instr": 4,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 0
+     }
+    }
+   }
+  },
+  "sky.vertex + color.fragment []": {
+   "materials": [
+    "vanilla/common.json|skyplane|sky.material"
+   ],
+   "vs": {
+    "9_1": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0_level_9_1",
+     "error": "",
+     "bytes": 1960,
+     "refl": {
+      "instr": 7,
+      "cb": 3,
+      "res": 3,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "9_3": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0_level_9_3",
+     "error": "",
+     "bytes": 1960,
+     "refl": {
+      "instr": 7,
+      "cb": 3,
+      "res": 3,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "10_0": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0",
+     "error": "",
+     "bytes": 1688,
+     "refl": {
+      "instr": 7,
+      "cb": 3,
+      "res": 3,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    }
+   },
+   "ps": {
+    "9_1": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0_level_9_1",
+     "error": "",
+     "bytes": 532,
+     "refl": {
+      "instr": 2,
+      "cb": 0,
+      "res": 0,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     }
+    },
+    "9_3": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0_level_9_3",
+     "error": "",
+     "bytes": 532,
+     "refl": {
+      "instr": 2,
+      "cb": 0,
+      "res": 0,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     }
+    },
+    "10_0": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0",
+     "error": "",
+     "bytes": 452,
+     "refl": {
+      "instr": 2,
+      "cb": 0,
+      "res": 0,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     }
+    }
+   }
+  },
+  "uv.vertex + texture_ccolor.fragment []": {
+   "materials": [
+    "vanilla/common.json|sun_moon|sky.material",
+    "vanilla/common.json|cubemap|sky.material"
+   ],
+   "vs": {
+    "9_1": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0_level_9_1",
+     "error": "",
+     "bytes": 1120,
+     "refl": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "9_3": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0_level_9_3",
+     "error": "",
+     "bytes": 1120,
+     "refl": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "10_0": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0",
+     "error": "",
+     "bytes": 908,
+     "refl": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    }
+   },
+   "ps": {
+    "9_1": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0_level_9_1",
+     "error": "",
+     "bytes": 1176,
+     "refl": {
+      "instr": 3,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     }
+    },
+    "9_3": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0_level_9_3",
+     "error": "",
+     "bytes": 1176,
+     "refl": {
+      "instr": 3,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     }
+    },
+    "10_0": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0",
+     "error": "",
+     "bytes": 1036,
+     "refl": {
+      "instr": 3,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     }
+    }
+   }
+  },
+  "uv_repeat.vertex + texture_ccolor.fragment []": {
+   "materials": [
+    "vanilla/common.json|end_sky|sky.material"
+   ],
+   "vs": {
+    "9_1": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0_level_9_1",
+     "error": "",
+     "bytes": 1652,
+     "refl": {
+      "instr": 8,
+      "cb": 2,
+      "res": 2,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "9_3": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0_level_9_3",
+     "error": "",
+     "bytes": 1652,
+     "refl": {
+      "instr": 8,
+      "cb": 2,
+      "res": 2,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    },
+    "10_0": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "vs_4_0",
+     "error": "",
+     "bytes": 1376,
+     "refl": {
+      "instr": 8,
+      "cb": 2,
+      "res": 2,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     }
+    }
+   },
+   "ps": {
+    "9_1": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0_level_9_1",
+     "error": "",
+     "bytes": 1176,
+     "refl": {
+      "instr": 3,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     }
+    },
+    "9_3": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0_level_9_3",
+     "error": "",
+     "bytes": 1176,
+     "refl": {
+      "instr": 3,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     }
+    },
+    "10_0": {
+     "ok": true,
+     "hr": "0x00000000",
+     "target": "ps_4_0",
+     "error": "",
+     "bytes": 1036,
+     "refl": {
+      "instr": 3,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     }
+    }
+   }
+  }
+ },
+ "device": null
+}

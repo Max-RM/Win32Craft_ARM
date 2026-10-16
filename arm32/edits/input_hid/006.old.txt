@@ -1,0 +1,4 @@
+/* Reuse the 0.15.10 HIDController key handlers. They perform the exact
+ * VirtualKey mapping, construct KeyItem, enqueue it, and update held state. */
+static BOOL queue_keyboard_event(BYTE virtual_key, DWORD state)
+{

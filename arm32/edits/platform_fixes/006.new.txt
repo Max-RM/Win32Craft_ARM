@@ -1,0 +1,70 @@
+#ifdef WIN32CRAFT_ARM32
+/* The only 1.2.8 code hook: AppPlatform_Winrt vtable (0x013695A4) slot 35 = pickFile.  Pure data-cell patch, no code is
+ * rewritten (facts platform_fixes.pick_file_vtable_cell).  The cell must still hold real_base + 0x5830F8 + 1. */
+static BOOL install_win32_platform_fixes_128(BYTE *image)
+{
+    void **cell;
+
+    if (!image) return FALSE;
+    cell = (void **)(image + ARM_PLATFORM_FIXES_PICK_FILE_VTABLE_CELL);
+    if (!IsBadReadPtr(cell, sizeof(*cell)) && *cell == (void *)win32_pick_custom_skin_128) {
+        log_line("Minecraft 1.2.8 ARM32 custom-skin picker already installed");
+        return TRUE;
+    }
+    if (!arm32_check_bytes(image + ARM_PLATFORM_FIXES_PICK_FILE_HOOK_SITE_BYTES,
+                           ARM_PLATFORM_FIXES_PICK_FILE_HOOK_SITE_BYTES_EXPECTED,
+                           sizeof(ARM_PLATFORM_FIXES_PICK_FILE_HOOK_SITE_BYTES_EXPECTED),
+                           "AppPlatform_Winrt::pickFile entry") ||
+        !arm32_patch_cell(cell, ARM_CODE(image, ARM_PLATFORM_FIXES_PICK_FILE_FN),
+                          (void *)win32_pick_custom_skin_128, NULL,
+                          "AppPlatform_Winrt::pickFile vtable[35]")) {
+        log_line("Minecraft 1.2.8 ARM32 custom-skin picker hook failed");
+        return FALSE;
+    }
+    log_line("Minecraft 1.2.8 ARM32 Win32 custom-skin picker installed");
+    return TRUE;
+}
+
+/* Contract entry point (arm32/PORT_RULES.md): pickFile cell, getAsset overrides (directory + zip strategies) and the Xbox
+ * sign-in string patches.  Call it once, before the game's AppMain / screen controllers are constructed.  Every piece is
+ * optional (the game runs without any of them), so each failure is logged with the cell/bytes it found and the function
+ * only reports FALSE for an unusable image pointer.  The TCUI delay-IAT no-ops are installed by install_arm32_iat_hooks. */
+static BOOL install_arm32_platform_fixes(BYTE *image)
+{
+    BOOL picker;
+    BOOL overrides;
+    BOOL xbox;
+    char line[200];
+
+    if (!image) {
+        log_line("ARM32 platform fixes: image pointer is NULL");
+        return FALSE;
+    }
+    wsprintfA(line, "ARM32 platform fixes: installing on image %p", (void *)image);
+    log_line(line);
+    picker = install_win32_platform_fixes_128(image);
+    overrides = install_128_zip_resource_overrides(image);
+    xbox = patch_xbox_actions_noop(image);
+    patch_chat_textbox_compat(image);
+    wsprintfA(line, "ARM32 platform fixes: pickFile=%s getAsset-overrides=%s xbox-signin=%s",
+              picker ? "ok" : "FAILED", overrides ? "ok" : "FAILED", xbox ? "ok" : "FAILED");
+    log_line(line);
+    return TRUE;
+}
+#else
+static BOOL install_win32_platform_fixes_128(BYTE *image)
+{
+    static const BYTE picker_expected[10] = {
+        0x55, 0x8b, 0xec, 0x6a, 0xff, 0x68, 0xf8, 0xcf, 0x4c, 0x01
+    };
+    BYTE *picker_site = image + RVA_128_PICK_FILE;
+
+    if (memcmp(picker_site, picker_expected, sizeof(picker_expected)) != 0 ||
+        !write_relative_jump(picker_site, win32_pick_custom_skin_128)) {
+        log_line("Minecraft 1.2.8 custom-skin picker hook failed");
+        return FALSE;
+    }
+    log_line("Minecraft 1.2.8 Win32 custom-skin picker installed");
+    return TRUE;
+}
+#endif /* WIN32CRAFT_ARM32 */

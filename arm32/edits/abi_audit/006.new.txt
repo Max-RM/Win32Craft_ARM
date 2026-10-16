@@ -1,0 +1,47 @@
+#ifdef WIN32CRAFT_ARM32
+/* ARM32 AAPCS-VFP: Windows.Foundation.Size is {float Width, float Height}, a homogeneous floating-point aggregate that
+ * the game passes in s0/s1.  The x86 declaration (a 64-bit integer) would be read from r2:r3, and the BYTE* result
+ * that follows would be fetched from the stack instead of r1 (a write through a garbage pointer).  Verified on the
+ * ARM exe: IApplicationView3 slot 13 (0x34) is called as `vmov s0,s17; vmov s1,s16; r1=&bool; blx` (0x587458). */
+static HRESULT WINAPI fake_application_view_try_resize(
+    FakeInspectable *object, Win32Float2 size, BYTE *result)
+{
+    static volatile LONG logged;
+    (void)object;
+    if (!result) return E_POINTER;
+    if (InterlockedIncrement(&logged) <= 8) {
+        char line[96];
+        wsprintfA(line, "ApplicationView.TryResizeView(%d x %d) accepted (host window unchanged)",
+                  (int)size.x, (int)size.y);
+        log_line(line);
+    }
+    *result = TRUE;
+    return S_OK;
+}
+
+static HRESULT WINAPI fake_application_view_set_size(
+    FakeInspectable *object, Win32Float2 size)
+{
+    (void)object;
+    (void)size;
+    return S_OK;
+}
+#else
+static HRESULT WINAPI fake_application_view_try_resize(
+    FakeInspectable *object, LONGLONG size, BYTE *result)
+{
+    (void)object;
+    (void)size;
+    if (!result) return E_POINTER;
+    *result = TRUE;
+    return S_OK;
+}
+
+static HRESULT WINAPI fake_application_view_set_size(
+    FakeInspectable *object, LONGLONG size)
+{
+    (void)object;
+    (void)size;
+    return S_OK;
+}
+#endif

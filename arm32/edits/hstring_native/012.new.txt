@@ -1,0 +1,7 @@
+HRESULT WINAPI WindowsPromoteStringBuffer(void *handle, HSTRING *result)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "WindowsPromoteStringBuffer", (void *, HSTRING *), (handle, result));
+    /* the fallback below builds shim-layout handles: never mix them with native ones */
+    if (native_hstring_proc("WindowsCreateString")) return E_NOTIMPL;
+#endif

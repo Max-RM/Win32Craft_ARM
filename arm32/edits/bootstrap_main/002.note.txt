@@ -1,0 +1,1 @@
+create_user_data: ARM32 first-run options.txt defaults (stale 0.15.10 keys dropped, old_game_version omitted, MSAA/TexelAA off for FL9_1); x86 literal kept under #else.

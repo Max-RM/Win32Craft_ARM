@@ -1,7 +1,12 @@
-# Win32Craft - A UWP wrapper designed to run "Minecraft: Windows 10 Edition" on Windows RT (8.1), Windows 10 ARM32 15035 and Windows 10/11 ARM64 as a Win32 app.
+# Win32Craft - A UWP wrapper designed to run "Minecraft: Windows 10 Edition" on Windows 7/8/8.1 as well as Wine
 
-## Supported Versions (UWP ARM32)
-- 1.2.8 (Experimental)
+## Supported Versions (UWP x86)
+- 0.13.2
+- 0.14.2
+- 0.15.10
+- 1.1.5
+- 1.2.8
+- 1.16.20.03 (Experimental)
 
 ## Build
 Platform|Script
@@ -23,6 +28,9 @@ Win32 FMOD archive|https://www.mediafire.com/file/36ylad9xcz8s7xg/fmod-archive.7
 
 ## FMOD
 FMOD|Versions
+---|---
+FMOD 1.06.07|0.13.2-1.1.5 support
+FMOD 1.09.04|1.2.8+ support
 
-## Donate to the original Author (Deltaxur)
+## Donate
 BTC: `bc1qkkckr4d8f9l4me5efnd3e5sf4q6akfhe26lpjy`

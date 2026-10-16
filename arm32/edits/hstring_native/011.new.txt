@@ -1,0 +1,8 @@
+HRESULT WINAPI WindowsPreallocateStringBuffer(
+    UINT32 length, WCHAR **buffer, void **handle)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "WindowsPreallocateStringBuffer", (UINT32, WCHAR **, void **), (length, buffer, handle));
+    /* the fallback below builds shim-layout handles: never mix them with native ones */
+    if (native_hstring_proc("WindowsCreateString")) return E_NOTIMPL;
+#endif

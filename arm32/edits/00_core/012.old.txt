@@ -1,0 +1,2 @@
+static void log_115_termination_stack(const char *reason)
+{

@@ -1,0 +1,3 @@
+static BOOL queue_mouse_event(int x, int y, DWORD payload,
+                              BYTE action, BYTE pressed)
+{

@@ -1,0 +1,440 @@
+{
+ "area": "client_state",
+ "facts": [
+  {
+   "id": "client_state.clientinstance_vtable_primary",
+   "x86_symbol": "RVA_128_CLIENT_INSTANCE_VTABLE",
+   "x86_value": "0x01549354",
+   "kind": "vtable",
+   "arm_rva": "0x0133a758",
+   "summary": "ClientInstance primary vtable (vptr at object+0). 7 virtual slots (0..6) followed by the RTTI COL pointer at +0x1c. Lives in .data (va 0x132f000..0x15bd580), i.e. already writable but still use VirtualProtect for safety.",
+   "arm_signature": "n/a (data)",
+   "x86_to_arm_notes": "Value differs from x86 (x86 RVA must NOT be reused). Layout is identical in shape: 7 slots, COL at +0x1c, second vtable follows at +0x20. Slot contents in the file are absolute VAs with the Thumb bit set (0x0051a281 for slot 3 = imagebase 0x400000 + 0x11a280 + 1); after the loader applies base relocations the runtime value is image + 0x11a281. Compare against (image + RVA + 1) not (image + RVA).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re rtti .?AVClientInstance@@ -> vtable rva=0133a758 (this-adjust offset 0) and 0133a778 (offset 4)",
+    "ClientInstance::ctor 0x1179ec: movw/movt 0xa758/0x173 -> str [this,#0]; movw/movt 0xa778/0x173 -> str [this,#4] (xref 133a758 hits ctor 0x1179ec+0x30 and dtor 0x117db8+0x16)",
+    "arm32re ptrs 133a758 -> slots: vf0 0x517c15, vf1 0x51a475, vf2 0x51a669, vf3 0x51a281, vf4 0x51a6c1, vf5 0x51a721, vf6 0x51a799, [+0x1c] COL ptr 0x159f8d4"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.clientinstance_vtable_secondary",
+   "x86_symbol": "RVA_128_CLIENT_INSTANCE_VTABLE + 0x20 (plausible_client_instance_128 checks *(client+4))",
+   "x86_value": "0x01549374",
+   "kind": "vtable",
+   "arm_rva": "0x0133a778",
+   "summary": "Second vtable (secondary base subobject) stored at ClientInstance+4. Distance from the primary vtable is 0x20 on both x86 and ARM.",
+   "arm_signature": "n/a (data)",
+   "x86_to_arm_notes": "UNCHANGED relation: secondary == primary + 0x20, stored at object+4. Compare *(void**)(client+4) == image + 0x133a778 (no Thumb bit: this is a data vtable address, not a code address).",
+   "expected_bytes": null,
+   "evidence": [
+    "ClientInstance::ctor 0x1179ec @0x117a2c: movw r4,#0xa778; movt r4,#0x173; str r4,[r0,#4]",
+    "ClientInstance::dtor 0x117db8 @0x117ddc..0x117de6: same store of 0x173a778 to [r4,#4]",
+    "0x133a778 - 0x133a758 = 0x20"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.clientinstance_size",
+   "x86_symbol": "IsBadReadPtr(client, 0x378) in plausible_client_instance_128",
+   "x86_value": "0x378",
+   "kind": "offset",
+   "arm_rva": "0x378",
+   "summary": "sizeof(ClientInstance) = 0x378 on ARM, identical to the x86 lower-bound constant.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "UNCHANGED: 0x378 is the exact object size, so IsBadReadPtr(client, 0x378) is valid on ARM. Every offset the host uses (max 0x2c0+4) is well inside.",
+   "expected_bytes": null,
+   "evidence": [
+    "ClientInstance::vf0 (deleting dtor) 0x117c14: 'mov.w r1,#0x378; bl operator_delete_sized' after ClientInstance::dtor",
+    "make_shared<ClientInstance> wrapper 0x13c698: operator_new(0x388) = 0x10-byte _Ref_count_obj header + 0x378 object; ctor called with this = block+0x10",
+    "ctor 0x1179ec / dtor 0x117db8 touch offsets up to 0x2c4 only"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.clientinstance_off_0x04_vtable2",
+   "x86_symbol": "*(void**)(client + 4)",
+   "x86_value": "+0x04",
+   "kind": "offset",
+   "arm_rva": "0x04",
+   "summary": "ClientInstance+0x04 holds the second vtable pointer (see clientinstance_vtable_secondary).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "UNCHANGED offset (4-byte pointers on both).",
+   "expected_bytes": null,
+   "evidence": [
+    "ctor 0x1179ec str r4,[r0,#4] with 0x173a778; dtor 0x117db8 same"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.clientinstance_off_0x18_owner",
+   "x86_symbol": "owner = *(BYTE**)(client + 0x18)",
+   "x86_value": "+0x18",
+   "kind": "offset",
+   "arm_rva": "0x18",
+   "summary": "ClientInstance+0x18 = MinecraftGame* (owner/app). Used by the host to reach the global SceneStack at MinecraftGame+0x6c.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "UNCHANGED offset. Type is the complete MinecraftGame object (not the +0x10 IMinecraftApp-style subobject, which is stored at +0x14).",
+   "expected_bytes": null,
+   "evidence": [
+    "ClientInstance::ctor 0x1179ec @0x117a28: str r1,[r0,#0x18] (r1 = 2nd ctor arg); @0x117a24 strd sb,r2,[r0,#0x10] (+0x14 = r2)",
+    "make_shared wrapper 0x13c698 is called from MinecraftGame::vf27 @0x12ad68 with r1 = r2 = r8 = MinecraftGame this (same r8 also used as [r8+0xd0] client map and [r8+0x6c] stack)",
+    "getTopScene 0x11be24: ldr r3,[r4,#0x18]; ldr r3,[r3,#0x6c] -> MinecraftGame stack; tick 0x11a280 does ldr r3,[r4,#0x18]; ldr r3,[r3,#0x6c]"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.clientinstance_off_0x28_levelrenderer",
+   "x86_symbol": "level_renderer = *(BYTE**)(client + 0x28)",
+   "x86_value": "+0x28",
+   "kind": "offset",
+   "arm_rva": "0x28",
+   "summary": "ClientInstance+0x28 = std::unique_ptr<LevelRenderer>: non-NULL only while a world/level is being rendered (created when InGamePlayScreen starts, reset to NULL on world teardown). This is what client_world_active_128 tests.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "UNCHANGED offset; the pointee's first dword is the LevelRenderer PRIMARY vtable 0x13636c8 (see levelrenderer_vtable). Null-check semantics identical.",
+   "expected_bytes": null,
+   "evidence": [
+    "ClientInstance:initLevelRenderer 0x11b974 (called from InGamePlayScreen::vf1 0x2de66e): result of LevelRenderer make wrapper 0x120be8 is moved into [this+0x28] (add.w r1,r4,#0x28; str r3,[r1]) and the old value is deleted via vtable[0](obj,1)",
+    "0x118b58 (world teardown): ldr r3,[r4,#0x28]; str 0,[r4,#0x28]; deleting-dtor call -> field returns to NULL when the world is left",
+    "tick 0x11a280 reads r6=[r4,#0x28], skips the whole world-update block when it is 0 and uses [r6+0x608] tick counter / [r6+0x620] LevelRendererPlayer"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.clientinstance_off_0x44_keyboard",
+   "x86_symbol": "keyboard = *(BYTE**)(client + 0x44)",
+   "x86_value": "+0x44",
+   "kind": "offset",
+   "arm_rva": "0x44",
+   "summary": "ClientInstance+0x44 = std::unique_ptr<MinecraftKeyboardManager> (object is 0x68 bytes, allocated in the ClientInstance ctor).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "UNCHANGED offset. IsBadReadPtr(keyboard, 6) is fine (object is 0x68 bytes).",
+   "expected_bytes": null,
+   "evidence": [
+    "ClientInstance::ctor 0x1179ec @0x117a5e: adds r0,#0x44 (this+0x44); mov r1,r8; bl 0x1201b4",
+    "0x1201b4: operator_new(0x68); str 0x175cfcc(vtable MinecraftKeyboardManager),[r0]; str r0,[r5] (unique_ptr store)",
+    "0x118b88 (teardown): ldr r3,[r4,#0x44]; vtable slot 0x28 call = MinecraftKeyboardManager::vf10 on the same field"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.clientinstance_off_0x2c0_scenestack",
+   "x86_symbol": "*(BYTE**)(client + 0x2c0)",
+   "x86_value": "+0x2c0",
+   "kind": "offset",
+   "arm_rva": "0x2c0",
+   "summary": "ClientInstance+0x2c0 = std::unique_ptr<SceneStack> (local screen stack, object size 0xc0).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "UNCHANGED offset.",
+   "expected_bytes": null,
+   "evidence": [
+    "ClientInstance::dtor 0x117db8 @0x117e36..0x117e4a: ldr r5,[r4,#0x2c0]; SceneStack::dtor 0x34b854(r5); operator_delete_sized(r5,0xc0)",
+    "ClientInstance::getTopScene 0x11be24: ldr.w r3,[r4,#0x2c0]; ldrd r2,r3,[r3] (begin,end)",
+    "0x11c458: add.w r2,r5,#0x2c0 receives a freshly created SceneStack (move-assign with delete of old, size 0xc0)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.render_slot3_function",
+   "x86_symbol": "original render fn (called by win32_client_render_128)",
+   "x86_value": "0x0015a080",
+   "kind": "function",
+   "arm_rva": "0x0011a280",
+   "summary": "ClientInstance::vf3 (primary vtable slot 3): per-tick/per-frame update of the client. Sets MinecraftGame's current client ([[this+0x18]+0x30]+0x70 = this), steps LevelRenderer (64-bit counter at [LevelRenderer+0x608], LevelRendererPlayer at +0x620) and dispatches AbstractScene vtable slot 12 (offset 0x30) with two ints (r2,r3) to every scene via ClientInstance::forEachScene (0x11bf30, lambda _Func_impl 0x133a6b8). Returns void, no stack args.",
+   "arm_signature": "void ClientInstance_vf3(void* this /*r0*/, uint32_t r1_unused /*r1: homed by push{r0-r3} but never read*/, int32_t a /*r2: forwarded to scene vf12 arg1, compared with b*/, int32_t b /*r3: scene vf12 arg2*/) -> void; prologue push {r0-r3}; push.w {r4-r8,fp,lr}; sub sp,#0x30; NO stack-passed args are read ([sp+0x5c..] never accessed).",
+   "x86_to_arm_notes": "x86 hook has exactly 2 stack args (self, argument1, argument2) with thiscall. On ARM the target consumes THREE register args after this: r1 (never read) and r2/r3 (the two ints). The ARM hook must therefore be declared 'void hook(void* self, uintptr_t r1, uintptr_t r2, uintptr_t r3)' and forward all four registers unchanged to the original; declaring only (self,a,b) would leave r3 undefined in the callee and break the scene-tick equality test (a==b at 0x11a3aa). No __attribute__((thiscall)) and no callee-pop concerns. Hook only needs to record 'self' (r0).",
+   "expected_bytes": "0fb42de9f0490df1140be6f6",
+   "evidence": [
+    "arm32re func 11a280 -> push {r0,r1,r2,r3} / push.w {r4-r8,fp,lr} / add.w fp,sp,#0x14 / bl sub_11fc / sub sp,#0x30; mov r4,r0",
+    "args: only [sp,#0x54] (=r2) and [sp,#0x58] (=r3) are used: @0x11a428 add r1,sp,#0x58; add r2,sp,#0x54 -> captured by address in lambda object {vtable 0x133a6b8, &r2, &r3}; @0x11a3a6 ldr r2,[sp,#0x58]; ldr r3,[sp,#0x54]; cmp r3,r2 (a==b test); [sp,#0x50] (r1 slot) is never read",
+    "lambda _Do_call 0x121a78: ldr r3,[r0,#8]; ldr r2,[r3]; ldr r3,[r0,#4]; ldr r1,[r3]; ldr r3,[r4]; ldr r3,[r3,#0x30]; blx r3 = scene->vf12(*cap1=r2, *cap2=r3)",
+    "InGamePlayScreen::vf12 0x2df4e0 consumes (this,r1,r2) with 'cmp r1,r2' (tick index vs tick count) = same pair semantics",
+    "slot value in file: 0x0051a281 at RVA 0x133a764; no direct bl callers (arm32re callers 11a280 -> none), only reachable through the vtable",
+    "could not locate the virtual call site of slot 3 (searched all 'ldr rX,[rY,#0xc]; blx rX' sites with r2/r3 set, none was a ClientInstance) - see open_questions"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "client_state.render_hook_slot",
+   "x86_symbol": "slot = (void**)(image + RVA_128_CLIENT_INSTANCE_VTABLE) + 3",
+   "x86_value": "0x01549360",
+   "kind": "hook_site",
+   "arm_rva": "0x0133a764",
+   "summary": "Vtable cell holding the pointer to ClientInstance::vf3; the host overwrites this single cell. Validation: current value must equal image+0x11a280+1.",
+   "arm_signature": "void** slot = (void**)(image + 0x0133a758) + 3;  if (*slot != (void*)(image + 0x0011a280 + 1)) fail;  *slot = (void*)hook; /* hook is a Thumb function => bit0 already set by compiler */",
+   "x86_to_arm_notes": "x86 compared *slot with image+0x0015a080. ARM: compare with image + 0x0011a280 + 1 (Thumb bit set in stored code pointers; relocation adds the image base to the stored 0x0051a281). Cell is in .data (writable) but keep VirtualProtect(PAGE_READWRITE). No FlushInstructionCache needed for a data cell. The replacement pointer must be a Thumb function pointer (MSVC/clang thumbv7-windows-msvc functions have bit0 set automatically; if the hook is written in ARM mode it would crash). The ClientInstance primary vtable is shared by all ClientInstance objects so one patch suffices.",
+   "expected_bytes": "slot cell bytes (file, pre-relocation): 81 a2 51 00 (0x0051a281); target fn bytes: 0fb42de9f0490df1140b",
+   "evidence": [
+    "arm32re ptrs 133a758 10 -> 0133a764: 0051a281 fn ClientInstance::vf3",
+    "image base 0x400000 -> 0x51a281 - 0x400000 = 0x11a281 = RVA 0x11a280 | Thumb bit",
+    "slot index 3 => 0x133a758 + 3*4 = 0x133a764"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.render_original_call_abi",
+   "x86_symbol": "RenderFn = void (__attribute__((thiscall)) *)(void*,void*,void*) ; ((RenderFn)(game_image+0x0015a080))(self,a1,a2)",
+   "x86_value": "thiscall + 2 stack args",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Call chaining from the hook into the original function.",
+   "arm_signature": "void (*orig)(void* self, uintptr_t r1, uintptr_t r2, uintptr_t r3) = (void*)(game_image + 0x0011a280 + 1); orig(self, r1, r2, r3);",
+   "x86_to_arm_notes": "thiscall attribute and callee stack cleanup disappear (AAPCS: this=r0, args r1-r3). Call through a Thumb pointer (bit0 set) so the compiler emits blx to Thumb state. Do NOT call by a raw even address. The original reads no stack arguments, so a plain C call with 4 register args is complete.",
+   "expected_bytes": null,
+   "evidence": [
+    "see render_slot3_function: no [sp,#0x5c+] reads, only r0-r3 homed by push {r0-r3}"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.levelrenderer_vtable",
+   "x86_symbol": "RVA_128_LEVEL_RENDERER_VTABLE",
+   "x86_value": "0x01570574",
+   "kind": "vtable",
+   "arm_rva": "0x013636c8",
+   "summary": "LevelRenderer PRIMARY vtable (vptr at LevelRenderer+0): the value *(void**)level_renderer must equal. LevelRenderer derives from LevelListener (+0) and AppPlatformListener (+4); its secondary vtable (this-adjust offset 4, adjustor thunks 'subs r0,#4; b ...') sits just BELOW the primary at 0x1363694 (size 0x34).",
+   "arm_signature": "n/a (data)",
+   "x86_to_arm_notes": "DO NOT derive this by adding the x86->ARM region delta: 0x01570574 + (-0x20cee0) = 0x1363694, which is the SECONDARY (offset-4) vtable on ARM. The object's [0] is the primary 0x13636c8 (= pair start + 0x34). Compare *(void**)level_renderer == image + 0x13636c8. (x86's emission order of the vtable pair evidently differs, or x86's constant is the pair start; irrelevant for ARM.)",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re rtti .?AVLevelRenderer@@ -> 013636c8 (this-adjust offset 0) and 01363694 (offset 4)",
+    "LevelRenderer::ctor 0x4873ec @0x487438-0x48747a: [r5]=0x173bd3c(LevelListener vtable) then [r5]=0x17636c8 (LevelRenderer primary); [r5,#4]=AppPlatformListener then =0x1763694; ctor returns this in r0",
+    "0x489328 (slot0 of 0x1363694) = 'subs r0,r0,#4; ldr.w ip,[pc,#4]; bx ip' adjustor thunk => it is the offset-4 subobject vtable",
+    "0x11b974 stores the ctor's return value into ClientInstance+0x28, so ClientInstance+0x28 -> object whose [0] == 0x13636c8"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.keyboardmanager_vtable",
+   "x86_symbol": "image + 0x01569eac (inline literal in refresh_relative_mouse_from_client_128)",
+   "x86_value": "0x01569eac",
+   "kind": "vtable",
+   "arm_rva": "0x0135cfcc",
+   "summary": "MinecraftKeyboardManager vtable (single, offset 0). Compared against *(void**)keyboard before reading the focus byte.",
+   "arm_signature": "n/a (data)",
+   "x86_to_arm_notes": "Different value; x86->ARM region delta for this vtable is 0x20cee0 (0x01569eac - 0x0135cfcc), the same delta as UIScene and the lower LevelRenderer vtable, which independently corroborates it. Only one RTTI vtable exists (derived TestKeyboardManager has its own, irrelevant).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re rtti MinecraftKeyboardManager -> vtable rva=0135cfcc (this-adjust 0)",
+    "0x1201b4 (ClientInstance +0x44 init): str vtable 0x175cfcc into [new obj+0]; 0x395498 (dtor) stores the same vtable then calls MinecraftKeyboardManager::hide",
+    "0x1569eac - 0x135cfcc == 0x15684b8 - 0x135b5d8 == 0x1570574 - 0x1363694 == 0x20cee0"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.keyboardmanager_focus_byte",
+   "x86_symbol": "keyboard[5] & 2",
+   "x86_value": "byte +5, mask 0x02",
+   "kind": "offset",
+   "arm_rva": "0x05",
+   "summary": "Byte at MinecraftKeyboardManager+5, bit 1 (mask 0x02) = 'text input focused'. Set by MinecraftKeyboardManager::show (even when no on-screen keyboard is needed), cleared by ::hide, read back by slot 5 (isFocused). Bit 0 (mask 1) = on-screen keyboard visible, bit 2 (mask 4) = hidden/dismissed flag.",
+   "arm_signature": "bool focused = keyboard && !IsBadReadPtr(keyboard,6) && *(void**)keyboard == image+0x135cfcc && (((uint8_t*)keyboard)[5] & 2);",
+   "x86_to_arm_notes": "UNCHANGED: same byte offset and same mask. ARM exposes a getter too: vtable slot 5 (+0x14) = 0x395854 returns (byte5 & 2) >> 1; the host may keep the raw byte read.",
+   "expected_bytes": "395854: 2de90048eb46437903f00203 (isFocused getter)",
+   "evidence": [
+    "MinecraftKeyboardManager vf5 0x395854: ldrb r3,[r0,#5]; and r3,r3,#2; lsrs r0,r3,#1  (returns focus bit)",
+    "show 0x395504 @0x3955c2: ldrb r3,[r5,#5]; orr r3,r3,#2; strb r3,[r5,#5] (reached both with and without on-screen keyboard: vf4 result 0 jumps straight here)",
+    "hide 0x395620 @0x395680..0x39568c: ldrb; tst #2; and r3,r3,#0xfd; strb [r4,#5]",
+    "ctor 0x1201b4: ldrb r3,[r0,#5]; and r3,r3,#0xf8; strb => bits 0-2 start cleared",
+    "x86 comment 'show/hide maintain bit 1' matches"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.keyboardmanager_show_hide",
+   "x86_symbol": "MinecraftKeyboardManager::show/hide RVAs 0x4e06d0 / 0x4e07d0 (comment only)",
+   "x86_value": "0x004e06d0 / 0x004e07d0",
+   "kind": "function",
+   "arm_rva": "0x00395504 / 0x00395620",
+   "summary": "show = vtable slot 1 (0x395504), hide = vtable slot 3 (0x395620). The host does not call or hook them (comment only), so nothing needs porting.",
+   "arm_signature": "show: bool(this, r1,r2,r3,+stack) ; hide: void(this)",
+   "x86_to_arm_notes": "Comment-level only: update numbers in the ARM source comment. No code depends on them.",
+   "expected_bytes": "show 2de9f0490df1140b87b00546 ; hide 2de918480df1080b04466379",
+   "evidence": [
+    "labelled via arm32re name: MinecraftKeyboardManager::show 0x395504, ::hide 0x395620, ::isFocused_bit1 0x395854",
+    "show (vf1) sets bit0/bit1, hide (vf3) clears bit1 (and bit0), dtor 0x395498 calls hide"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.uiscene_vtable",
+   "x86_symbol": "image + 0x015684b8 (inline literal)",
+   "x86_value": "0x015684b8",
+   "kind": "vtable",
+   "arm_rva": "0x0135b5d8",
+   "summary": "Exact class whose vtable the host compares: UIScene itself (the JSON-driven screen scene; vtable 0x135b5d8, one RTTI vtable, no HudScreen scene class exists - 'HudScreen' is only HudScreenController, a controller held by a UIScene built from 'hud.hud_screen'). The exact vtable match is a type guard so that vtable slots 41/42 (which only UIScene implements; AbstractScene slots 36-46 are _purecall in the base and other scene classes such as InGamePlayScreen/BaseScreen use shared stub functions or their own unrelated implementations in those slots) are never called on a non-UIScene.",
+   "arm_signature": "n/a (data)",
+   "x86_to_arm_notes": "Different value (same 0x20cee0 region delta as keyboard manager: 0x015684b8 - 0x20cee0 = 0x135b5d8). Compare *(void**)scene == image + 0x135b5d8. If the top scene is any other class (legacy InGamePlayScreen etc.), the host treats it as 'not gameplay' just like on x86.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re rtti .?AVUIScene@@ -> single vtable 0135b5d8; make_shared<UIScene> exists (_Ref_count_obj<UIScene> vtable 0x135a9dc, ctor 0x364790 called only from 0x347f10)",
+    "hud path: 0x328cfc builds screen 'hud.hud_screen' (string 0xda8c90 'hud.hud_screen'), controller creation 0x347b64 -> 0x34af04 make_shared<HudScreenController> (vtable 0x1345ca0)",
+    "scan of every RTTI vtable: only UIScene's vtable has slot 41 == 0x76505d / slot 42 == 0x7650f5 (no subclass overrides or inherits these)",
+    "x86 vs ARM region delta: 0x15684b8 - 0x135b5d8 = 0x20cee0 = 0x1569eac - 0x135cfcc (keyboard manager) = 0x1570574 - 0x1363694"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.uiscene_slot41_is_showing_menu",
+   "x86_symbol": "vtable[0xa4/4] (is_showing_menu)",
+   "x86_value": "slot 41, +0xa4",
+   "kind": "vtable_slot",
+   "arm_rva": "0x0036505c",
+   "summary": "UIScene::vf41 = is_showing_menu: returns bit 4 (mask 0x10) of the screen-definition flag byte (byte at +8 of the definition object found through [this+0x18]+0x74).",
+   "arm_signature": "uint32_t UIScene_is_showing_menu(void* this /*r0*/) -> r0 in {0,1}; no other args; not const-foldable (does an internal lookup and shared_ptr release)",
+   "x86_to_arm_notes": "UNCHANGED slot index and byte offset (0xa4 / 4 byte pointers). Typedef: 'uint8_t (*)(void*)' plain C call; THISCALL attribute removed. Result is already normalised to 0/1 (lsrs).",
+   "expected_bytes": "2de990480df1080b9cf4caf8",
+   "evidence": [
+    "UIScene vtable 0x135b5d8 slot 41 -> 0x76505d (RVA 0x36505c); body: ldr r3,[r0,#0x18]; ldr r0,[r3,#0x74]; bl 0x187d44; bl 0x1840f8; ldrb r3,[r4,#8]; and r3,r3,#0x10; lsrs r0,r3,#4",
+    "JSON parser 0x17e66c: after reading string 'is_showing_menu' (0xd90c60) the value is merged into bit 4: eor.w r3,r3,r0,lsl #4; and r2,r3,#0x10 -> same byte [r4,#8]",
+    "x86 offset 0xa4 -> slot 41 on a 4-byte-pointer layout, identical"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.uiscene_slot42_should_steal_mouse",
+   "x86_symbol": "vtable[0xa8/4] (should_steal_mouse)",
+   "x86_value": "slot 42, +0xa8",
+   "kind": "vtable_slot",
+   "arm_rva": "0x003650f4",
+   "summary": "UIScene::vf42 = should_steal_mouse: returns bit 6 (mask 0x40) of the same flag byte. hud_screen sets it true, meaning 'capture the pointer for gameplay'.",
+   "arm_signature": "uint32_t UIScene_should_steal_mouse(void* this /*r0*/) -> r0 in {0,1}",
+   "x86_to_arm_notes": "UNCHANGED slot index. Same plain-C typedef note. NOTE slot 40 (+0xa0, 0x3650a8) is is_modal (bit 5) - not used by the host.",
+   "expected_bytes": "2de990480df1080b9cf47ef8",
+   "evidence": [
+    "UIScene vtable slot 42 -> 0x7650f5 (RVA 0x3650f4): ldrb r3,[r4,#8]; and r3,r3,#0x40; lsrs r0,r3,#6",
+    "JSON parser 0x17e66c: string 'should_steal_mouse' (0xd90cd4) value stored with 'eor.w r3,r3,r0,lsl #6; and r2,r3,#0x40'",
+    "full bit map from the parser: b0 screen_not_flushable, b1 always_accepts_input, b2 render_game_behind, b3 absorbs_input, b4 is_showing_menu, b5 is_modal, b6 should_steal_mouse, b7 low_frequency_rendering"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.uiscene_flag_json_names",
+   "x86_symbol": "comment: UIScene +0xa4 is_showing_menu; +0xa8 should_steal_mouse (JSON screen flags)",
+   "x86_value": "strings",
+   "kind": "string",
+   "arm_rva": "0x00d90c60 / 0x00d90cd4",
+   "summary": "ASCII strings 'is_showing_menu' (0xd90c60) and 'should_steal_mouse' (0xd90cd4) confirm the semantic names; both referenced only by the JSON screen-flag parser 0x17e66c.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "No porting needed. Gameplay-capture condition on ARM is unchanged: !is_showing_menu && should_steal_mouse && !text_input_active.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re strx is_showing_menu -> 0xd90c60 refs=1 in sub_17e66c+0x1ec; strx should_steal_mouse -> 0xd90cd4 refs=1 in sub_17e66c+0x2c8"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.minecraftgame_off_0x6c_scenestack",
+   "x86_symbol": "owner + 0x6c (MinecraftGame stack)",
+   "x86_value": "+0x6c",
+   "kind": "offset",
+   "arm_rva": "0x6c",
+   "summary": "MinecraftGame+0x6c = std::unique_ptr<SceneStack> (global screen stack, object size 0xc0).",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "UNCHANGED offset. Still only used when the ClientInstance-local stack is empty.",
+   "expected_bytes": null,
+   "evidence": [
+    "MinecraftGame::dtor 0x128178 @0x12833a: ldr r5,[r4,#0x6c]; str 0,[r4,#0x6c]; SceneStack::dtor 0x34b854(r5); operator_delete_sized(r5,0xc0)",
+    "MinecraftGame ctor 0x1279c8 @0x127aa6 zero-initialises [r4,#0x6c]",
+    "ClientInstance::getTopScene 0x11be24 @0x11be56: ldr r3,[r4,#0x18]; ldr r3,[r3,#0x6c]; ldr r3,[r3,#4] (stack end)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.scenestack_layout",
+   "x86_symbol": "SceneStack vector begin/end at +0/+4, element stride 8 (shared_ptr<AbstractScene>)",
+   "x86_value": "begin@0 end@4 stride 8",
+   "kind": "offset",
+   "arm_rva": "0x00",
+   "summary": "SceneStack starts with std::vector<std::shared_ptr<AbstractScene>>: begin at +0, end at +4 (cap at +8). Element = shared_ptr {T* ptr at +0, _Ref_count_base* ctrl at +4}, stride 8. Top scene raw pointer = *(AbstractScene**)(end - 8) (element at end-8, its first dword).",
+   "arm_signature": "AbstractScene* top = (begin != end) ? *(AbstractScene**)(end - 8) : NULL;",
+   "x86_to_arm_notes": "UNCHANGED: pointers are 4 bytes on ARM32 so vector<shared_ptr> layout is identical (MSVC vector: _Myfirst,_Mylast,_Myend; shared_ptr: _Ptr,_Rep). Host code top_scene_128 (including (end-begin)%8 check and IsBadReadPtr(end-8,8)) works unchanged. SceneStack total size 0xc0 (not needed by host).",
+   "expected_bytes": null,
+   "evidence": [
+    "ClientInstance::getTopScene 0x11be24: ldrd r2,r3,[stack] (begin,end), cmp; ... ldr r3,[r3,#4] (end); ldr r0,[r3,#-8] (element at end-8, first dword)",
+    "SceneStack::dtor 0x34b854: ldrd r3,r2,[r5] (begin,end); loop: ldr r6,[r2,#-4] (ctrl of last element), refcount ops at ctrl+4/ctrl+8, 'subs r3,#8; str r3,[r5,#4]' (end -= 8) until begin==end",
+    "vtable of the ref-count block for elements: ctrl+0 vtable, +4 uses, +8 weaks (ldrex/strex on r6+4 and r6+8)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.getTopScene_function",
+   "x86_symbol": "ClientInstance::getTopScene (RVA 0x15c740, comment)",
+   "x86_value": "0x0015c740",
+   "kind": "function",
+   "arm_rva": "0x0011be24",
+   "summary": "ClientInstance::getTopScene: returns local-stack top, except when this client is the primary client in MinecraftGame's client map ([game+0xd0]) AND its local stack is empty, in which case it returns MinecraftGame's stack top. The host reimplements a simplified version (local first, then game stack).",
+   "arm_signature": "AbstractScene* ClientInstance_getTopScene(ClientInstance* this /*r0*/) -> r0",
+   "x86_to_arm_notes": "Host does not call it (reimplements it), so only the RVA in comments changes. Host's reimplementation is semantically equivalent for the single-client case because ARM falls back to the game stack only when the local stack is empty.",
+   "expected_bytes": "2de91e480df1100b00230446",
+   "evidence": [
+    "0x11be24: ldr.w r3,[r4,#0x2c0]; ldrd r2,r3,[r3]; cmp r2,r3; bne local; ldr r3,[r4,#0x18]; ldr r3,[r3,#0x6c]; ldr r3,[r3,#4]; ldr r0,[r3,#-8]",
+    "callers include tick 0x11a280 @0x11a38e (then vtable slot 0x94 call), MinecraftGame::vf28 0x12e1da (handleBack-like), many lambdas 0x393f94.. -> widely used accessor"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.thiscall_attribute_scenefn",
+   "x86_symbol": "SceneFlagFn = BYTE (__attribute__((thiscall)) *)(void*)",
+   "x86_value": "thiscall(this in ecx)",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Calls to UIScene slots 41/42 from the host.",
+   "arm_signature": "typedef uint32_t (*SceneFlagFn)(void* this_); /* this in r0, result in r0 */",
+   "x86_to_arm_notes": "Remove __attribute__((thiscall)). Result is a full register 0/1; read as uint8_t or mask with 0xff. Functions use __chkstk (bl 0x11fc) internally: call on a normal thread stack only (host frame loop is fine).",
+   "expected_bytes": null,
+   "evidence": [
+    "UIScene::vf41/vf42 prologue push.w {r4,r7,fp,lr}; bl 0x11fc; this=r0 only, no other register or stack args"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.pointer_width_assumptions",
+   "x86_symbol": "IsBadReadPtr(ptr, sizeof(void*)), (ULONG_PTR) arithmetic, '% 8' stride, +4 end pointer",
+   "x86_value": "32-bit pointers",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "All pointer-width dependent logic in this region (vector end at +4, shared_ptr stride 8, vtable slot byte offset = slot*4) is valid on ARM32 because pointers are 4 bytes.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Nothing to change. Keep BYTE*/ULONG_PTR arithmetic as is. Thumb bit: only matters for code pointers (hook slot compare/store), never for data vtable compares.",
+   "expected_bytes": null,
+   "evidence": [
+    "ARM32 PE, ImageBase 0x400000; all offsets verified above use 4-byte pointer fields"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "client_state.world_active_semantics",
+   "x86_symbol": "client_world_active_128()",
+   "x86_value": "plausible client AND *(client+0x28) vptr == LEVEL_RENDERER_VTABLE",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "client_world_active_128 ports 1:1: plausible_client_instance (vptr + second vptr + readable 0x378) and non-NULL LevelRenderer at +0x28 whose [0] == image+0x13636c8.",
+   "arm_signature": "n/a",
+   "x86_to_arm_notes": "Replace the three constants (vtable 0x133a758, +0x20 second vtable, LevelRenderer 0x13636c8) and keep logic. Also used by the WM_KEYDOWN ESC handler (pending_main_menu_exit_confirmation = !client_world_active_128()).",
+   "expected_bytes": null,
+   "evidence": [
+    "see clientinstance_off_0x28_levelrenderer and levelrenderer_vtable evidence"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "port_instructions": [
+  "Constants (ARM, RVAs relative to image base): CLIENT_INSTANCE_VTABLE=0x0133a758 (second vtable = +0x20 = 0x0133a778); RENDER_FN=0x0011a280 (stored in the vtable cell with bit0 set); LEVEL_RENDERER_VTABLE=0x013636c8 (primary, NOT 0x1363694); KEYBOARD_MANAGER_VTABLE=0x0135cfcc; UISCENE_VTABLE=0x0135b5d8.",
+  "install_client_state_hook: slot=(void**)(image+0x0133a758)+3 (cell RVA 0x0133a764). Validate *slot == (void*)(image+0x0011a280+1) (Thumb bit!). VirtualProtect(PAGE_READWRITE), *slot=(void*)hook, restore protection. Hook must be a Thumb function (default for thumbv7-windows-msvc).",
+  "Hook signature: void win32_client_render_128(void* self, uintptr_t r1, uintptr_t r2, uintptr_t r3) { client_instance_128=(BYTE*)self; ((void(*)(void*,uintptr_t,uintptr_t,uintptr_t))(game_image+0x0011a280+1))(self,r1,r2,r3); } -- forward all four register args; no thiscall attribute. (x86 forwarded only two stack args; ARM target reads r2/r3 and ignores r1.)",
+  "plausible_client_instance_128: unchanged logic; IsBadReadPtr(client,0x378) is exact sizeof; *(void**)client==image+0x133a758 and *(void**)(client+4)==image+0x133a778.",
+  "client_world_active_128: unchanged logic with client+0x28 and vtable image+0x13636c8.",
+  "top_scene_128: unchanged (begin@0,end@4,stride 8, top=*(end-8), %8 check).",
+  "refresh_relative_mouse_from_client_128: offsets client+0x44 (keyboard), +0x18 (owner), +0x2c0 (scene stack), owner+0x6c all unchanged. Replace keyboard vtable literal with image+0x0135cfcc, scene vtable literal with image+0x0135b5d8; keyboard[5]&2 unchanged. Call vtable[0xa4/4] and vtable[0xa8/4] (slots 41/42) as plain C functions taking only 'scene'.",
+  "Comment-only updates: getTopScene = 0x11be24, keyboard show/hide = 0x395504/0x395620.",
+  "No byte-pattern patches, no IAT cells and no x86 machine code are involved in this area (the only 'patch' is one vtable cell write)."
+ ],
+ "open_questions": [
+  "Argument mismatch: ARM ClientInstance::vf3 reads r2/r3 (r1 unused) i.e. three non-this register args, while the x86 hook forwards exactly two stack args. Possible explanations (unverifiable without the x86 binary): the x86 function takes a 2-int tick(a,b) and the ARM build has an extra leading unused parameter, or the x86 function also has an unused leading stack parameter that the x86 host does not declare. The ARM hook is safe because it forwards r0-r3 verbatim, but the porter should not assume r1/r2 are the 'two arguments'.",
+  "Could not find the virtual call site of ClientInstance slot 3 (no direct bl; searched indirect 'ldr rX,[rY,#0xc]; blx rX' sites). Which game function drives it (and its exact frequency: per tick vs per frame) is unconfirmed; role inferred from the body (scene tick dispatch with a==b test, LevelRenderer tick counter).",
+  "hud_screen.json default value of should_steal_mouse=true is an asset (not in the exe); only the flag plumbing (JSON key -> bit 6 -> UIScene::vf42) is verified on ARM.",
+  "ARM LevelRenderer pair is ordered [secondary 0x1363694][primary 0x13636c8]; x86 host constant corresponds to the pair start. Treated as irrelevant because the ARM ctor writes 0x13636c8 at [0], but if runtime logging ever shows a different vptr, check this first."
+ ]
+}

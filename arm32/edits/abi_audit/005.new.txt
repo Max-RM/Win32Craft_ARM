@@ -1,0 +1,8 @@
+    if (!result) return E_POINTER;
+#ifdef WIN32CRAFT_ARM32
+    if (object && object->kind == ARM32_FAKE_KIND_EMPTY_STRING_ASYNC) {
+        log_line("ARM32 CurrentApp2 async GetResults returned an empty HSTRING");
+        return WindowsCreateString(L"", 0, (HSTRING *)result);
+    }
+#endif
+    if (object && object->kind == FAKE_ASYNC_STRING) {

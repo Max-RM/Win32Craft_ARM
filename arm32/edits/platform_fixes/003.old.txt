@@ -1,0 +1,97 @@
+static BOOL patch_xbox_actions_noop(BYTE *image)
+{
+    /*
+     * Keep the stock Xbox buttons and their JSON visibility rules intact, but
+     * replace the action-thunk used by each Xbox control with the normal
+     * ScreenController callback result (8).  This is safer than allowing the
+     * callback to enter WebAuthenticationCoreManager/Xbox TCUI on an HWND
+     * process, where the UWP runtime class is absent and C++/CX raises
+     * Platform::ClassNotRegisteredException.
+     *
+     * The wrappers below are the vtable invoke slots registered for:
+     *   0.15.10: button.menu_xbox_signin and all three button.xbl_signin paths
+     *   1.1.5 : button.save_to_xbl, StoreScreen button.signin, and all
+     *             three button.xbl_signin paths
+     * Achievements, Invite Player, profile-card TCUI and the 1.1.5 background
+     * Xbox work item remain covered by their existing import/internal no-ops.
+     */
+    static const BYTE return_handled[8] = {
+        0xb8, 0x08, 0x00, 0x00, 0x00, /* mov eax,8 */
+        0xc2, 0x04, 0x00              /* ret 4 */
+    };
+    static const BYTE event_name_b = 'b';
+    static const BYTE event_name_disabled = '!';
+    static const BYTE expected_01510_menu_signin[8] = {
+        0x55, 0x8b, 0xec, 0x51, 0x83, 0xec, 0x28, 0x8b
+    };
+    static const BYTE expected_01510_signin_a[8] = {
+        0x55, 0x8b, 0xec, 0x51, 0x83, 0xec, 0x28, 0x8b
+    };
+    static const BYTE expected_01510_signin_b[8] = {
+        0x83, 0xc1, 0x04, 0xe9, 0x48, 0xfb, 0xff, 0xff
+    };
+    static const BYTE expected_01510_signin_c[8] = {
+        0x83, 0xc1, 0x08, 0xe9, 0xd8, 0xf9, 0xff, 0xff
+    };
+    static const BYTE expected_115_save_to_xbl[8] = {
+        0x83, 0xc1, 0x04, 0xe9, 0x18, 0xf1, 0xff, 0xff
+    };
+    static const BYTE expected_115_store_signin[8] = {
+        0x83, 0xc1, 0x04, 0xe9, 0xb8, 0xe7, 0xff, 0xff
+    };
+    static const BYTE expected_115_signin_a[8] = {
+        0x83, 0xc1, 0x04, 0xe9, 0x08, 0xee, 0xff, 0xff
+    };
+    static const BYTE expected_115_signin_b[8] = {
+        0x55, 0x8b, 0xec, 0x8b, 0x41, 0x04, 0x83, 0xc1
+    };
+    static const BYTE expected_115_signin_c[8] = {
+        0x83, 0xc1, 0x08, 0xe9, 0x38, 0xf8, 0xff, 0xff
+    };
+    static const RuntimeBytePatch patches_01510[] = {
+        { 0x000f3520, expected_01510_menu_signin, return_handled, 8,
+          "Minecraft 0.15.10 menu Xbox sign-in no-op patch failed" },
+        { 0x00127a70, expected_01510_signin_a, return_handled, 8,
+          "Minecraft 0.15.10 Xbox sign-in callback A no-op patch failed" },
+        { 0x001316c0, expected_01510_signin_b, return_handled, 8,
+          "Minecraft 0.15.10 Xbox sign-in callback B no-op patch failed" },
+        { 0x001331c0, expected_01510_signin_c, return_handled, 8,
+          "Minecraft 0.15.10 Xbox sign-in callback C no-op patch failed" }
+    };
+    static const RuntimeBytePatch patches_115[] = {
+        { 0x001e1c70, expected_115_save_to_xbl, return_handled, 8,
+          "Minecraft 1.1.5 save-to-Xbox callback no-op patch failed" },
+        { 0x002fca30, expected_115_store_signin, return_handled, 8,
+          "Minecraft 1.1.5 Store Sign In callback no-op patch failed" },
+        { 0x002ea600, expected_115_signin_a, return_handled, 8,
+          "Minecraft 1.1.5 Xbox sign-in callback A no-op patch failed" },
+        { 0x0033f090, expected_115_signin_b, return_handled, 8,
+          "Minecraft 1.1.5 Xbox sign-in callback B no-op patch failed" },
+        { 0x00341970, expected_115_signin_c, return_handled, 8,
+          "Minecraft 1.1.5 Xbox sign-in callback C no-op patch failed" }
+    };
+    /* 1.2.8 shares each event-name string between all of its controller
+     * registrations.  Rename only the two Xbox sign-in keys so JSON button
+     * presses cannot resolve an action at all; this avoids touching the
+     * adjacent visibility/property lambdas that use different ABIs. */
+    static const RuntimeBytePatch patches_128[] = {
+        { 0x012b64b4, &event_name_b, &event_name_disabled, 1,
+          "Minecraft 1.2.8 button.signin no-op patch failed" },
+        { 0x012bfbcc, &event_name_b, &event_name_disabled, 1,
+          "Minecraft 1.2.8 button.xbl_signin no-op patch failed" }
+    };
+    const RuntimeBytePatch *patches = host_is_128
+        ? patches_128 : (host_is_115 ? patches_115 : patches_01510);
+    SIZE_T count = host_is_128
+        ? ARRAYSIZE(patches_128)
+        : (host_is_115 ? ARRAYSIZE(patches_115)
+                       : ARRAYSIZE(patches_01510));
+
+    if (!apply_runtime_patches(image, patches, count)) return FALSE;
+    log_line(host_is_128
+        ? "Minecraft 1.2.8 Xbox sign-in events disabled"
+        : (host_is_115
+            ? "Minecraft 1.1.5 Xbox buttons retained with no-op actions"
+            : "Minecraft 0.15.10 Xbox buttons retained with no-op actions"));
+    return TRUE;
+}

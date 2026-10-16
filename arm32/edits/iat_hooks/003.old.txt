@@ -1,0 +1,1 @@
+    slot = (D3DSetScissorRectsFn *)&context->lpVtbl[45];

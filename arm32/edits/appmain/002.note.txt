@@ -1,0 +1,1 @@
+closes #else/#endif of current_app_platform.

@@ -1,0 +1,1 @@
+ARM: CoGetContextToken is a real COM call (the fake constant token is an x86/Wine-era shim); falls back to the shim when ole32 lacks it.

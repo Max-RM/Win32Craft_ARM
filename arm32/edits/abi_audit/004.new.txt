@@ -1,0 +1,8 @@
+#ifdef WIN32CRAFT_ARM32
+            ARM32_MEMORY_BARRIER(); /* publish rtl_gen_random before the "resolved" flag */
+#endif
+            random_resolved = TRUE;
+        }
+#ifdef WIN32CRAFT_ARM32
+        ARM32_MEMORY_BARRIER(); /* a thread that saw the flag set must also see rtl_gen_random */
+#endif

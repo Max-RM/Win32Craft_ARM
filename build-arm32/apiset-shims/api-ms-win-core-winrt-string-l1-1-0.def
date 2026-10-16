@@ -1,0 +1,12 @@
+LIBRARY api-ms-win-core-winrt-string-l1-1-0.dll
+EXPORTS
+WindowsCompareStringOrdinal=COMBASE.WindowsCompareStringOrdinal
+WindowsConcatString=COMBASE.WindowsConcatString
+WindowsCreateString=COMBASE.WindowsCreateString
+WindowsCreateStringReference=COMBASE.WindowsCreateStringReference
+WindowsDeleteString=COMBASE.WindowsDeleteString
+WindowsDuplicateString=COMBASE.WindowsDuplicateString
+WindowsGetStringLen=COMBASE.WindowsGetStringLen
+WindowsGetStringRawBuffer=COMBASE.WindowsGetStringRawBuffer
+WindowsIsStringEmpty=COMBASE.WindowsIsStringEmpty
+WindowsStringHasEmbeddedNull=COMBASE.WindowsStringHasEmbeddedNull

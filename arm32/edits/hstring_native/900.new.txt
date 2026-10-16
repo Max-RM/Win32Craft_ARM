@@ -1,0 +1,10 @@
+HRESULT WINAPI Win32CraftCoCreateInstanceFromApp(
+    const GUID *class_id, void *outer, DWORD context,
+#ifdef WIN32CRAFT_ARM32
+    void *reserved,   /* the real prototype has 6 parameters (docs + exe call at fmod/exe 0x9561BA: r3 = 0 reserved, [sp] = count, [sp+4] = MULTI_QI*) */
+#endif
+    ULONG query_count, D3CraftMultiQi *queries)
+{
+#ifdef WIN32CRAFT_ARM32
+    (void)reserved;
+#endif

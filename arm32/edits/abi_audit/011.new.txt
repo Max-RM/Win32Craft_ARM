@@ -1,0 +1,7 @@
+    if (!result) return E_POINTER;
+    *result = NULL;
+#ifdef WIN32CRAFT_ARM32
+    if (arm32_activation_override(class_name, iid, result)) return S_OK;
+#endif
+    if (class_name &&
+        lstrcmpW(class_name, L"Windows.ApplicationModel.Package") == 0) {

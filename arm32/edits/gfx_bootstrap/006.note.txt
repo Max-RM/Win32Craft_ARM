@@ -1,0 +1,1 @@
+closes #else/#endif of resize_game_window.

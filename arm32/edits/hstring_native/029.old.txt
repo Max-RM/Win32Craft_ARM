@@ -1,0 +1,2 @@
+BOOL WINAPI RoTransformError(HRESULT old_error, HRESULT new_error, HSTRING message)
+{

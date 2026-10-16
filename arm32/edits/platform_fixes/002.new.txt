@@ -1,0 +1,50 @@
+#ifdef WIN32CRAFT_ARM32
+/* ARM32: only data bytes are ever patched through this table (facts platform_fixes.protection_note), so the pages are
+ * flipped to PAGE_READWRITE, never executable (Windows RT may refuse RWX).  A mismatch logs what the bytes really were. */
+static BOOL apply_runtime_patches(BYTE *image,
+                                  const RuntimeBytePatch *patches,
+                                  SIZE_T count)
+{
+    SIZE_T index;
+
+    for (index = 0; index < count; ++index) {
+        BYTE *site = image + patches[index].rva;
+        DWORD old_protection;
+        DWORD ignored;
+
+        if (!arm32_check_bytes(site, patches[index].expected, patches[index].size, patches[index].failure) ||
+            !VirtualProtect(site, patches[index].size, PAGE_READWRITE, &old_protection)) {
+            log_line(patches[index].failure);
+            return FALSE;
+        }
+        CopyMemory(site, patches[index].replacement, patches[index].size);
+        VirtualProtect(site, patches[index].size, old_protection, &ignored);
+        FlushInstructionCache(GetCurrentProcess(), site, patches[index].size);
+    }
+    return TRUE;
+}
+#else
+static BOOL apply_runtime_patches(BYTE *image,
+                                  const RuntimeBytePatch *patches,
+                                  SIZE_T count)
+{
+    SIZE_T index;
+
+    for (index = 0; index < count; ++index) {
+        BYTE *site = image + patches[index].rva;
+        DWORD old_protection;
+        DWORD ignored;
+
+        if (memcmp(site, patches[index].expected, patches[index].size) != 0 ||
+            !VirtualProtect(site, patches[index].size,
+                            PAGE_EXECUTE_READWRITE, &old_protection)) {
+            log_line(patches[index].failure);
+            return FALSE;
+        }
+        CopyMemory(site, patches[index].replacement, patches[index].size);
+        VirtualProtect(site, patches[index].size, old_protection, &ignored);
+        FlushInstructionCache(GetCurrentProcess(), site, patches[index].size);
+    }
+    return TRUE;
+}
+#endif /* WIN32CRAFT_ARM32 */

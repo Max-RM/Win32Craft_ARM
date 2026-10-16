@@ -1,0 +1,1 @@
+ARM32 resize_game_window (FL9_x clamp, DXGI resize sequence, float resize arg, owner+0x94/+0x98 mirroring); x86 original kept under #else.

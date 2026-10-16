@@ -1,0 +1,6 @@
+HRESULT WINAPI WindowsReplaceString(
+    HSTRING string, HSTRING search, HSTRING replacement, HSTRING *result)
+{
+#ifdef WIN32CRAFT_ARM32
+    NATIVE_FORWARD(HRESULT, "WindowsReplaceString", (HSTRING, HSTRING, HSTRING, HSTRING *), (string, search, replacement, result));
+#endif

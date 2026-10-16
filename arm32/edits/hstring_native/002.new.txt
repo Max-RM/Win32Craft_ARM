@@ -1,0 +1,256 @@
+#ifdef WIN32CRAFT_ARM32
+/* ---- ARM32: forward every HSTRING / Ro* / error-info export to the genuine combase.dll ----
+ * (facts pe_imports.hstring_world + fmod.hstring_world, PORT_RULES #8).  On ARM the desktop vccorlib140.dll and
+ * fmod_ARM.dll use REAL HSTRINGs, so the image-size gate of the x86 build (0x02db1000 = 1.16 only) does not apply:
+ * the shim below is used only for exports combase really lacks (never the case on Windows 8.1 RT / Windows 10). */
+
+/* Cross-unit hook (assigned by unit iat_hooks).  Return S_OK with a non-NULL *result to claim the class; any other
+ * result makes RoGetActivationFactory fall back to the real combase one.  Lets fmod_ARM.dll's WinRT activation
+ * (IAT cell RVA 0xB118C := RoGetActivationFactory below) reach the host fakes. */
+typedef HRESULT (*Win32CraftActivationFn)(LPCWSTR class_name, const GUID *iid, void **result);
+Win32CraftActivationFn Win32CraftActivationDispatcher;
+
+/* The log is shared with win32_host.c (same file, same WIN32CRAFT_DEBUG gate); api_compat.c has no access to the
+ * static log_line, so it appends to ".\win32craft.log" itself (FILE_APPEND_DATA = 4, share read|write = 3,
+ * OPEN_ALWAYS = 4, FILE_ATTRIBUTE_NORMAL = 0x80). */
+static void compat_log(const char *text)
+{
+    char line[640];
+    DWORD length = 0, written = 0;
+    HANDLE file;
+    if (!text || !GetEnvironmentVariableA("WIN32CRAFT_DEBUG", NULL, 0)) return;
+    while (text[length] && length < sizeof(line) - 3) {
+        line[length] = text[length];
+        ++length;
+    }
+    line[length++] = '\r';
+    line[length++] = '\n';
+    file = CreateFileW(L"win32craft.log", 4, 3, NULL, 4, 0x80, NULL);
+    if (file != INVALID_HANDLE_VALUE) {
+        WriteFile(file, line, length, &written, NULL);
+        CloseHandle(file);
+    }
+    OutputDebugStringA(text);
+    OutputDebugStringA("\n");
+}
+
+typedef struct Win32CraftNativeExport {
+    const char *name;
+    void *proc;
+} Win32CraftNativeExport;
+
+/* Every export of api_compat.c that has a genuine counterpart in combase.dll (RoGetBufferMarshaler lives in
+ * wintypes.dll, the robuffer api-set host).  RoInitialize/RoUninitialize resolve combase themselves. */
+static Win32CraftNativeExport native_exports[] = {
+    {"WindowsCreateString", NULL}, {"WindowsCreateStringReference", NULL},
+    {"WindowsDeleteString", NULL}, {"WindowsDuplicateString", NULL},
+    {"WindowsGetStringLen", NULL}, {"WindowsGetStringRawBuffer", NULL},
+    {"WindowsIsStringEmpty", NULL}, {"WindowsCompareStringOrdinal", NULL},
+    {"WindowsConcatString", NULL}, {"WindowsSubstring", NULL},
+    {"WindowsSubstringWithSpecifiedLength", NULL},
+    {"WindowsStringHasEmbeddedNull", NULL}, {"WindowsReplaceString", NULL},
+    {"WindowsTrimStringStart", NULL}, {"WindowsTrimStringEnd", NULL},
+    {"WindowsPreallocateStringBuffer", NULL},
+    {"WindowsPromoteStringBuffer", NULL}, {"WindowsDeleteStringBuffer", NULL},
+    {"RoActivateInstance", NULL}, {"RoGetActivationFactory", NULL},
+    {"RoGetApartmentIdentifier", NULL}, {"RoGetBufferMarshaler", NULL},
+    {"RoGetParameterizedTypeInstanceIID", NULL},
+    {"RoFreeParameterizedTypeExtra", NULL},
+    {"RoRegisterActivationFactories", NULL},
+    {"RoRevokeActivationFactories", NULL},
+    {"RoRegisterForApartmentShutdown", NULL},
+    {"RoUnregisterForApartmentShutdown", NULL},
+    {"GetRestrictedErrorInfo", NULL}, {"SetRestrictedErrorInfo", NULL},
+    {"RoOriginateError", NULL}, {"RoOriginateErrorW", NULL},
+    {"RoTransformError", NULL}, {"RoCaptureErrorContext", NULL},
+    {"RoFailFastWithErrorContext", NULL}, {"RoGetErrorReportingFlags", NULL},
+    {"RoSetErrorReportingFlags", NULL}, {"RoReportFailedDelegate", NULL},
+    {"RoReportUnhandledError", NULL}
+};
+#define NATIVE_EXPORT_COUNT ((UINT)ARRAYSIZE(native_exports))
+
+static volatile LONG native_state; /* 0 = not resolved, 1 = resolving, 2 = ready */
+static void native_hstring_self_test(void);
+
+static BOOL native_name_equals(const char *left, const char *right)
+{
+    while (*left && *left == *right) { ++left; ++right; }
+    return *left == *right;
+}
+
+static BOOL native_name_has_prefix(const char *name, const char *prefix)
+{
+    while (*prefix && *name == *prefix) { ++name; ++prefix; }
+    return *prefix == 0;
+}
+
+static void native_init_exports(void)
+{
+    MEMORY_BASIC_INFORMATION own, found;
+    HMODULE combase, wintypes = NULL;
+    BOOL wintypes_tried = FALSE;
+    UINT index, resolved = 0, missing = 0, missing_length = 0;
+    char missing_list[420];
+    char line[640];
+
+    missing_list[0] = 0;
+    ZeroMemory(&own, sizeof(own));
+    VirtualQuery((LPCVOID)native_init_exports, &own, sizeof(own));
+    combase = LoadLibraryW(L"combase.dll");
+    for (index = 0; index < NATIVE_EXPORT_COUNT; ++index) {
+        void *proc = combase ? GetProcAddress(combase, native_exports[index].name) : NULL;
+        if (!proc) {
+            if (!wintypes_tried) {
+                wintypes_tried = TRUE;
+                wintypes = LoadLibraryW(L"wintypes.dll");
+            }
+            proc = wintypes ? GetProcAddress(wintypes, native_exports[index].name) : NULL;
+        }
+        if (proc) {
+            /* never forward into ourselves (a forwarder loop would recurse forever) */
+            ZeroMemory(&found, sizeof(found));
+            if (VirtualQuery(proc, &found, sizeof(found)) &&
+                own.AllocationBase && found.AllocationBase == own.AllocationBase) {
+                wsprintfA(line, "api_compat ARM32: native %s resolves into win32craft.dll itself - ignored",
+                          native_exports[index].name);
+                compat_log(line);
+                proc = NULL;
+            }
+        }
+        native_exports[index].proc = proc;
+        if (proc) {
+            ++resolved;
+        } else {
+            ++missing;
+            if (missing_length < sizeof(missing_list) - 48) {
+                const char *text = native_exports[index].name;
+                while (*text) missing_list[missing_length++] = *text++;
+                missing_list[missing_length++] = ' ';
+                missing_list[missing_length] = 0;
+            }
+        }
+    }
+    /* A HSTRING is either entirely native or entirely shim: without a native WindowsCreateString every
+     * Windows* export must use the shim (their handles are not interchangeable). */
+    if (!native_exports[0].proc) { /* [0] is WindowsCreateString */
+        for (index = 0; index < NATIVE_EXPORT_COUNT; ++index)
+            if (native_name_has_prefix(native_exports[index].name, "Windows"))
+                native_exports[index].proc = NULL;
+        compat_log("api_compat ARM32: combase has no WindowsCreateString - USING THE FAKE HSTRING SHIM (fmod/vccorlib will break)");
+    }
+    wsprintfA(line, "api_compat ARM32: combase.dll=%p wintypes.dll=%p native exports resolved %u/%u (%u missing): %s",
+              combase, wintypes, resolved, (UINT)NATIVE_EXPORT_COUNT, missing, missing_list);
+    compat_log(line);
+}
+
+static void native_ensure_ready(void)
+{
+    if (__sync_val_compare_and_swap(&native_state, 0, 1) == 0) {
+        native_init_exports();
+        __sync_synchronize();
+        native_state = 2;
+        native_hstring_self_test();
+    } else {
+        while (native_state != 2) Sleep(1);
+    }
+}
+
+/* Same contract as the x86 version (named combase export or NULL), but ALWAYS native on ARM. */
+static void *native_hstring_proc(const char *name)
+{
+    UINT index;
+    if (native_state != 2) native_ensure_ready();
+    for (index = 0; index < NATIVE_EXPORT_COUNT; ++index)
+        if (native_exports[index].name == name) return native_exports[index].proc;
+    for (index = 0; index < NATIVE_EXPORT_COUNT; ++index)
+        if (native_name_equals(native_exports[index].name, name)) return native_exports[index].proc;
+    return NULL;
+}
+
+/* Forward to the native export when it exists; otherwise fall through to the code that follows the macro. */
+#define NATIVE_FORWARD(RETURN, EXPORT, PARAMS, ARGS) \
+    do { \
+        typedef RETURN (WINAPI *NativeForwardFn) PARAMS; \
+        NativeForwardFn native_forward = (NativeForwardFn)native_hstring_proc(EXPORT); \
+        if (native_forward) return native_forward ARGS; \
+    } while (0)
+#define NATIVE_FORWARD_VOID(EXPORT, PARAMS, ARGS) \
+    do { \
+        typedef void (WINAPI *NativeForwardFn) PARAMS; \
+        NativeForwardFn native_forward = (NativeForwardFn)native_hstring_proc(EXPORT); \
+        if (native_forward) { native_forward ARGS; return; } \
+    } while (0)
+
+static void compat_class_utf8(LPCWSTR class_name, char *text, int capacity)
+{
+    text[0] = 0;
+    if (class_name)
+        WideCharToMultiByte(CP_UTF8, 0, class_name, -1, text, capacity, NULL, NULL);
+    text[capacity - 1] = 0;
+}
+
+/* RoGetActivationFactory: host fakes first (Win32CraftActivationDispatcher), then the real combase export.
+ * use_dispatcher == FALSE is the combase-only entry (Win32CraftNativeRoGetActivationFactory). */
+static HRESULT arm32_ro_get_activation_factory(
+    HSTRING name, const GUID *iid, void **factory, BOOL use_dispatcher)
+{
+    typedef HRESULT (WINAPI *NativeFn)(HSTRING, const GUID *, void **);
+    NativeFn native = (NativeFn)native_hstring_proc("RoGetActivationFactory");
+    Win32CraftActivationFn dispatcher = use_dispatcher ? Win32CraftActivationDispatcher : NULL;
+    LPCWSTR class_name = NULL;
+    UINT32 length = 0;
+    HRESULT result;
+    char class_utf8[200];
+    char line[420];
+
+    if (name) class_name = WindowsGetStringRawBuffer(name, &length);
+    compat_class_utf8(length ? class_name : NULL, class_utf8, sizeof(class_utf8));
+    if (dispatcher && factory && class_name && length) {
+        void *object = NULL;
+        result = dispatcher(class_name, iid, &object);
+        if (SUCCEEDED(result) && object) {
+            *factory = object;
+            wsprintfA(line, "RoGetActivationFactory(%s) IID %08lx: served by the host dispatcher -> %p",
+                      class_utf8, iid ? (unsigned long)iid->Data1 : 0UL, object);
+            compat_log(line);
+            return result;
+        }
+        wsprintfA(line, "RoGetActivationFactory(%s): dispatcher returned 0x%08lx object=%p - trying combase",
+                  class_utf8, (unsigned long)result, object);
+        compat_log(line);
+    }
+    if (native) {
+        result = native(name, iid, factory);
+        wsprintfA(line, "RoGetActivationFactory(%s) IID %08lx: combase HRESULT 0x%08lx factory=%p",
+                  class_utf8, iid ? (unsigned long)iid->Data1 : 0UL, (unsigned long)result,
+                  factory ? *factory : NULL);
+        compat_log(line);
+        return result;
+    }
+    compat_log("RoGetActivationFactory: combase export missing and the dispatcher did not serve the class");
+    if (factory) *factory = NULL;
+    return REGDB_E_CLASSNOTREG;
+}
+
+/* Combase-only entry for host code (e.g. a filtered fmod_ARM.dll IAT hook that serves Package/ApplicationData from the
+ * fakes and sends every other class here): never consults Win32CraftActivationDispatcher. */
+HRESULT WINAPI Win32CraftNativeRoGetActivationFactory(HSTRING name, const GUID *iid, void **factory)
+{
+    return arm32_ro_get_activation_factory(name, iid, factory, FALSE);
+}
+#else
+static void *native_hstring_proc(const char *name)
+{
+    static HMODULE combase;
+    BYTE *image = (BYTE *)GetModuleHandleW(NULL);
+    DWORD pe_offset;
+    if (!image || IsBadReadPtr(image, 0x40)) return NULL;
+    pe_offset = *(DWORD *)(image + 0x3c);
+    if (pe_offset >= 0x1000 || IsBadReadPtr(image + pe_offset, 0x54) ||
+        *(DWORD *)(image + pe_offset) != 0x00004550 ||
+        *(DWORD *)(image + pe_offset + 0x50) != 0x02db1000)
+        return NULL;
+    if (!combase) combase = LoadLibraryW(L"combase.dll");
+    return combase ? GetProcAddress(combase, name) : NULL;
+}
+#endif

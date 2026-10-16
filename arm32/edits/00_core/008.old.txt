@@ -1,0 +1,2 @@
+static LONG CALLBACK win32_vectored_exception(EXCEPTION_POINTERS *details)
+{
