@@ -2,7 +2,8 @@
 
 ## Supported Versions (UWP x86)
 - 1.2.8 (Experimental)
-- ![Uploading image.png…]()
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9eba6997-24c7-47db-9494-64d9cbbe2ed5" />
+
 
 
 ## Build
