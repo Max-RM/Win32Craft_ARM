@@ -1,3 +1,0 @@
-LIBRARY api-ms-win-core-heap-l2-1-0
-EXPORTS
-LocalFree=win32craft_LocalFree

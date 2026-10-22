@@ -1,0 +1,209 @@
+{
+ "area": "input_text",
+ "verdicts": [
+  {
+   "id": "input_text.hid_class",
+   "verdict": "CONFIRMED",
+   "note": "arm32re rtti HIDController -> 4 vtables db8780/db879c/db87b8/db87d0; the ctor stores exactly those four (+0/+4/+8/+0xc) and the creating call site (0x49526: movs r1,#0x68; movs r0,#0x5c; bl Allocate; bl 0x1103fc) shows object size 0x68. 0x1103fc is a pdata start; bytes match."
+  },
+  {
+   "id": "input_text.hid_ctor",
+   "verdict": "CONFIRMED",
+   "note": "pdata start, bytes 03b42de9be480df1 match. Disasm: owner stored at +0x10, +0x20=2, +0x48 map head via 0x19eb0, +0x60=-1, +0x44/+0x45/+0x58 zeroed. Only caller is 0x49536 in the AppPlatform_Winrt ctor."
+  },
+  {
+   "id": "input_text.platform_ctor",
+   "verdict": "CONFIRMED",
+   "note": "0x494c0 pdata start, bytes match; it initialises critical_section at +0x50 and a deque at +0x70, allocates the HID and stores it at this+0x2c (ldr r3,[r6,#0x2c] after bl 0x1103fc). Caller is AppMain::createApp 0x1d9e30."
+  },
+  {
+   "id": "input_text.hid_layout",
+   "verdict": "CONFIRMED",
+   "note": "Field offsets re-derived through two or more accessors each: +0x10 platform (queueInputEvent r0=[HID+0x10] in all handlers), +0x14 Agile (resolve 0x1112f4 / ctor 0x114194), +0x24 IAsyncAction and +0x28 input source (lambda 0x110940), +0x2c TextBox/+0x30 focus ctl/+0x34 delegate/+0x38 token (Initialize, onTextChanged, 0x110be8, 0x1108d4), +0x40 HSTRING, +0x44 (onKeyDown/Up, onTextChanged, both lambdas), +0x45/+0x46 (Pressed/Released), +0x48 map (allocPointerSlot, Moved, Released), +0x50/+0x54 scale (all three pointer handlers), +0x58 (onTextChanged, lambda 0x11079c, diff 0x1115b0). Agile state at +0x20: 1 = IAgileObject answered, 0 = QI failed (marshal path), 2 = initial/empty."
+  },
+  {
+   "id": "input_text.init_chain",
+   "verdict": "CONFIRMED",
+   "note": "callers 0x111c1c -> only 0x4b586 (initInput) <- 0x1da6b0 (attachUi) <- 0x1df94c (OnTick). OnTick (0x1df8a4): IsAppInitialized (AppMain+0x3c, 0x1da310) -> stop timer -> put_Visibility -> attachUi(AppMain, MainPage+0x5c, +0x64, +0x68) -> StartRenderLoop 0x1da8a8, so input is attached BEFORE the render loop starts. MainPage ctor (0x1dcf5c) creates DX::DeviceResources AFTER registering BackPressed/InputPane and BEFORE creating the 50 ms timer."
+  },
+  {
+   "id": "input_text.init_args",
+   "verdict": "CONFIRMED",
+   "note": "Prologue + body: r0=HID, r1=CoreWindow (->sl, Agile via 0x114194), r2=SwapChainPanel (->sb, tested with cmp.w sb,#0), r3=TextBox (->r6), 5th arg ldr.w r8,[r7,#0x58] = first stack arg (focus control). Verified GUIDs in .rdata: 0x247df0 = ITextBox e48f5a8b, 0x247e00 = ITextBox2 f7168c00; slots 0x78 (add_TextChanged), 0x3c on ITextBox2 with r1=0, 0x4c on ITextBox with r1=1. KeyDown slot 0x88, KeyUp 0x90 registered always. Extra not in the fact: initInput (0x4b55c) itself, right after Initialize, reads IDisplayInformation slots 12/13 (RawDpiX/RawDpiY) and ISwapChainPanel slot 6 (get_CompositionScaleX) - see missing[]."
+  },
+  {
+   "id": "input_text.delegate_invoke",
+   "verdict": "CONFIRMED",
+   "note": "vtable db87ec (TypedEventHandler<Object,PointerEventArgs>) slot 3 = 0x115508; it checks the object's own vtable, then forwards r1/r2 unchanged into functor->vtable[1] (0x112364: this-adjust r0=functor+[+4]+[+0xc], blx [functor+8]) = fn(HID,sender,args). Pointer given to add_* is the delegate object itself, so ((HRESULT(*)(void*,void*,void*))(*(void***)h)[3])(h,sender,args) is correct. Sender is never read (r1 untouched in 0x113010)."
+  },
+  {
+   "id": "input_text.reg_pointer_corewindow",
+   "verdict": "CONFIRMED",
+   "note": "Initialize null-panel branch: delegate ctor 0x10fae8 with fn 0x113001/0x112b01/0x1136c1 (stubs 0x113000/0x112b00/0x1136c0 are push/pop + b.w to 0x113010/0x112b10/0x1136d0, verified by dis); added through ICoreWindow vtable +0xb8/+0xb0/+0xc0 = slots 46/44/48 (confirmed against Windows SDK 19041 windows.ui.core.h). 0x113010 pdata start, bytes match."
+  },
+  {
+   "id": "input_text.reg_pointer_inputsource",
+   "verdict": "CONFIRMED",
+   "note": "Lambda 0x110940 (FunctorCapture lambda_f3db, called from vtable stub 0x1122ac): QI captured panel for c589644f (checked at 0x20fbf8), slot 0x28 (=10) CreateCoreIndependentInputSource(7,&out), stores the result at HID+0x28, QI bbf1bb18 (checked at 0x247dd0), add_PointerPressed +0x50 / Moved +0x48 / Released +0x58 (slots 20/18/22), then sub_1157e0(HID+0x28) = slot 6 (+0x18) get_Dispatcher called DIRECTLY on the returned source (no QI) and ProcessEvents slot 7 (+0x1c) with r1=2. Registered from the work item, not from Initialize: the fake ThreadPool must really run the work item (RunWithPriorityAndOptionsAsync, IThreadPoolStatics slot 8 via 0x114078, priority 1 options 1) and ProcessEvents(2) must not block the thread that has to drive the game."
+  },
+  {
+   "id": "input_text.reg_key",
+   "verdict": "CONFIRMED",
+   "note": "Initialize tail 0x111ff6-0x112078: delegate ctor 0x10f9cc with fn 0x1128b9/0x112a31, ICoreWindow vtable +0x88 (slot 34 add_KeyDown) and +0x90 (slot 36 add_KeyUp), verified with SDK header numbering. Both handlers pdata starts, bytes match."
+  },
+  {
+   "id": "input_text.pointer_args_vcalls",
+   "verdict": "CONFIRMED",
+   "note": "Re-derived from the three handlers' call lists: only helper 0x115784 (args slot 6 +0x18), 0x115898 (IPointerPoint slot 6), 0x1158f4 (slot 13 +0x34), direct [point]+0x24 (slot 9 get_PointerId), +0x1c (slot 7 get_Position, 8-byte Point written to r1 buffer: X at +0, Y at +4), IPointerDevice +0x18 (slot 6), IPointerPointProperties +0x40 (slot 16 get_IsLeftButtonPressed, 1 byte). SDK headers (windows.ui.input.h / windows.devices.input.h) give identical numbering. No QI is done on the args or the point: the raw pointer given to Invoke MUST have the IPointerEventArgs vtable at offset 0 (likewise IPointerPoint for the point)."
+  },
+  {
+   "id": "input_text.pointer_pressed",
+   "verdict": "CONFIRMED",
+   "note": "Order: allocPointerSlot(id) first, device type (slot 6 of device == 2 => mouse), then for mouse: left=IsLeftButtonPressed; cursor-hide only if left && !HID[0x45] (sets 0x45=1, RunAsync lambda 0x112250); HID[0x46]=left; queues MOUSE{type0,x,y,btn=(0x46?1:2),down=1} and, only if 0x46, TOUCH{type1,btn=1,down=1,slot}. Touch/pen (branch 0x1133a4): MOUSE{btn=1,down=1} then TOUCH{btn=1,down=1,slot} (sb forced to 1 at 0x1133ae). x=(int16)trunc(X*HID[0x50]), y=(int16)trunc(Y*HID[0x54]). Matches the fact table."
+  },
+  {
+   "id": "input_text.pointer_moved",
+   "verdict": "CONFIRMED",
+   "note": "Both device branches (0x112bc2 mouse, 0x112d54 touch) queue MOUSE{btn=0,down=0} then TOUCH{btn=0,down=0,slot=map[id]}; the code is duplicated but equivalent. Detail the fact omits: the slot comes from sub_110718 = std::map::operator[] (lower_bound + insert), so a Moved with a PointerId that has no Pressed (mouse hover) INSERTS a map node (value 0) that is only erased by a Released of that id. Moved never reads IsLeftButtonPressed."
+  },
+  {
+   "id": "input_text.pointer_released",
+   "verdict": "CONFIRMED",
+   "note": "Mouse branch: left=IsLeftButtonPressed; if (!left && HID[0x45]) { HID[0x45]=0; restore arrow cursor via RunAsync (lambda 0x10f4fc) } (0x1137b0-0x1137c0 disasm); MOUSE{btn=(HID[0x46]?1:2),down=0}; TOUCH{btn=1,down=0,slot} only if HID[0x46]; touch branch MOUSE{1,0}+TOUCH{1,0,slot}; map erase at the tail (0x114530/0x10fe3c/0x19b08). Host consequence confirmed: Released must report IsLeftButtonPressed=FALSE for the left button or the cursor is never restored."
+  },
+  {
+   "id": "input_text.pointer_event_struct",
+   "verdict": "CONFIRMED",
+   "note": "pollInputEvent 0x4b300 dispatch (tbb on ev[0]): MOUSE feeds Mouse::feed(r0=[6],r1=[7],r2=s16[2],r3=s16[4]); TOUCH Multitouch::feed(same, stack=[8]) and Multitouch::feed clamps slot to 0..11 (cmp r4,#0xc; movge #0xb); KEY Keyboard::feed(ev[1], s32 ev[4]); TEXT Keyboard::feedText(string at ev+4, ev[0x1c]); BACK: RTDynamicCast(client+0x6c screen, Screen->Touch::StartMenuScreen), if not start menu client vtable[0x60] (slot 24) with 0. Layouts/sizes confirmed from the allocations in the handlers (new(8), new(0xa), new(8) key, new(0x20) text) and the stores. pumpInput's only caller is AppMain::updateFrame 0x1da1f8."
+  },
+  {
+   "id": "input_text.pointer_scale",
+   "verdict": "CONFIRMED",
+   "note": "0x111e02-0x111e14: DX::DeviceResources::get() (0x4b054, global 0xe2afc4, throws runtime_error if NULL) -> [+0x60]->HID+0x50, [+0x64]->HID+0x54; SetCompositionScale 0x1dbbcc is a writer of DR+0x60/+0x64. Null-panel path: LogicalDpi (IDisplayInformation slot 11, checked against SDK) / 96.0 (double in literal pool). Upgrade to high. Note initInput separately derives platform+0x38/0x3c/0x40 (RawDpiX/RawDpiY + panel CompositionScaleX); platform+0x40 and the GUI-scale global 0x340d40 scale the InputPane height in SetKeyboardHeight (double scaling)."
+  },
+  {
+   "id": "input_text.pointer_id_map",
+   "verdict": "CONFIRMED",
+   "note": "allocPointerSlot 0x1111fc: walks the std::map<uint32,int8> in order, increments candidate r4 whenever a node already holds it, then map[id]=r4 (via 0x110718) - smallest free slot. There is NO 12-cap here; the clamp is in Multitouch::feed (0..11). Caveat: the pointer's own stale node (from hover/previous press) counts as occupying its old slot, so a mouse that hovered at slot 0 ends up at slot 1 after Pressed. Use stable PointerIds."
+  },
+  {
+   "id": "input_text.cursor",
+   "verdict": "CONFIRMED",
+   "note": "Lambdas: 0x112250 (FunctorCapture lambda_6dc3..., put_PointerCursor(NULL), slot 15 +0x3c), 0x110868 (CoreCursor(0,0) via factory f6359621 slot 6 then put_PointerCursor). Important host detail the fact only half states: both lambdas obtain the window with CoreWindow.GetForCurrentThread (0x111420, ICoreWindowStatic 4d239005 slot 6) on the dispatcher thread, NOT through the Agile member, so the factory must return the fake CoreWindow on the UI thread. No capture calls anywhere (calls lists of the three handlers)."
+  },
+  {
+   "id": "input_text.key_args_vcalls",
+   "verdict": "CONFIRMED",
+   "note": "onKeyDown/onKeyUp call args vtable +0x18 (slot 6 get_VirtualKey -> int32) and +0x1c (slot 7 get_KeyStatus -> buffer, only first dword compared: cmp r3,#1; bhi skip) directly on the raw args pointer (no QI), SDK windows.ui.core.h IKeyEventArgs {6 get_VirtualKey, 7 get_KeyStatus}. KeyUp's stack buffer is [sp..sp+0xc) for the status and [sp+0xc] for the VK, so writing exactly 12 bytes (CorePhysicalKeyStatus) is safe."
+  },
+  {
+   "id": "input_text.key_map",
+   "verdict": "CONFIRMED",
+   "note": "Decoded the compare tree of 0x1127cc: identity for 8, 0xD, 0x1B, 0x20, 0x25-0x28, 0x70 (F1), 0x71 (F2), 0x72-0x7B (tbb table 0x72..0x7b); 0x21->0x22 and 0x22->0x21 (swap); 0xA0->0x10; everything else 0. pdata start, bytes match."
+  },
+  {
+   "id": "input_text.key_down_up",
+   "verdict": "CONFIRMED",
+   "note": "Both handlers return first if HID[0x44]!=0. KeyDown: vk==0x10 sets byte at RVA 0xde2fef (movw 0x2fef/movt 0x11e = VA 0x11e2fef) and returns (no key event for 0x10; only VK 0xA0 maps to 0x10); mapped key and RepeatCount<=1 -> new(8){2,key,down=1}; unmapped -> tolower(vk) unless shift byte, std::string -> new(0x20){3,string@4,flag 0}. KeyUp: vk==0x10 clears the byte; mapped and RepeatCount<=1 -> {2,key,down=0}; no event for unmapped keys. Note that modifier VKs (Ctrl 0x11, Alt 0x12, CapsLock 0x14, etc.) are unmapped and therefore also become garbage TEXT events on KeyDown while HID[0x44]==0; the host should drop them."
+  },
+  {
+   "id": "input_text.touch_only",
+   "verdict": "CONFIRMED",
+   "note": "Independent chain: AppPlatform_Winrt vtable 0x33fb20 slot 26 cell 0x33fb88 = VA 0x57fd41 -> RVA 0x17fd40 bytes 2de90048eb460120bde80088 = return 1 (note the cell holds a VA, the stub RVA is 0x17fd40, and 0x29ba0 is the return-0 stub, bytes verified). MinecraftClient::init (0x57b84) at 0x58384-0x5839c: platform=vf8; slot 0x68 -> cmp r0,#0 -> moveq/movne -> strb [client+0x150]; bl 0x56420. useTouchscreen 0x5a1d0: Options+0x276 != 0 -> 1; else client+0x150 != 0 -> 0; else 1. With the stub returning 1 client+0x150 = 0 so it returns 1. MinecraftClient vtable cell is 0x34000c (slot 16)."
+  },
+  {
+   "id": "input_text.show_keyboard",
+   "verdict": "CONFIRMED",
+   "note": "0x4fac4 order is HID::ShowKeyboard (bl 0x114220 at 0x4fb38) THEN base showKeyboard 0x47a00 (strb 1,[this+4], verified bytes). Caller TextBox::vf19 0x68d98: if (!this[0x114]) { platform=client->vf8; platform->vtbl[0x7c](text=this+0xe4, maxLen=this[0x118], limit=this[0x11c]!=0); this[0x114]=1 } (slot 31 = +0x7c). TextBox::vf12 0x68ddc calls vf20 when focus is lost. vtable cells 0x340c8c+0x4c/+0x50 = vf19/vf20."
+  },
+  {
+   "id": "input_text.lambda_show",
+   "verdict": "CORRECTED",
+   "note": "Sequence confirmed (0x110be8): HID+0x40=text, put_MaxLength(0xc350 default, slot 15), put_Text (slot 7), Select(len,len) (slot 36/+0x90), IControl::Focus via helper 0x11127c (slot 46/+0xb8), HID[0x44]=1 last. CORRECTION: the FocusState argument is movs r1,#3 = FocusState_Programmatic (Windows SDK: Unfocused 0, Pointer 1, Keyboard 2, Programmatic 3), NOT 'Pointer'. This is why Initialize sets PreventKeyboardDisplayOnProgrammaticFocus=false: a programmatic Focus is what raises the keyboard. Treat the TabTip trigger as Focus(Programmatic) on the TextBox."
+  },
+  {
+   "id": "input_text.hide_keyboard",
+   "verdict": "CORRECTED",
+   "note": "Chain confirmed: 0x4edac -> base 0x47720 (+4=0) -> tail-branch HID::HideKeyboard 0x111b20 -> RunAsync(lambda via vtable 0xdb8a68 -> 0x1108d4): HID[0x44]=0 (strb at 0x1108f2, BEFORE the Focus) then QI HID+0x30 IControl and Focus(r1=3). CORRECTION: FocusState 3 is Programmatic (not Pointer). Only call sites of InputPane statics (0x1de9cc) are the MainPage ctor and OnInputPaneShowing, and no string TryShow/TryHide/TabTip exists in the exe, so the 'no explicit InputPane hide' claim is CONFIRMED."
+  },
+  {
+   "id": "input_text.update_text",
+   "verdict": "CONFIRMED",
+   "note": "0x50f2c -> HID::UpdateText 0x114410 -> lambda 0x11079c: movs r2,#1; strb [HID+0x58] FIRST, then put_Text (slot 7) and Select (+0x90). Important consequence the fact only implies: HID[0x58] is cleared ONLY by the next onTextChanged, so the fake TextBox MUST fire TextChanged after this put_Text (sync or async), otherwise the NEXT real user edit is swallowed as the 'echo'."
+  },
+  {
+   "id": "input_text.text_changed",
+   "verdict": "CORRECTED",
+   "note": "Summary re-derived: returns if HID[0x44]==0; reads text through ITextBox::get_Text(slot 6, wrapper 0x115950); if HID[0x58]==0 runs diff 0x1115b0; ALWAYS clears HID[0x58] afterwards (strb 0 at 0x113e44, i.e. after the diff returns) and mirrors the new text into HID+0x40. Diff: ITextBox::get_MaxLength (slot 14) -> if len==MaxLength (<0xC34F) and last char not 0/CR the last char is dropped; common prefix; 0x1119e0 feedBackspaces for the old suffix; 0x111894 feedChars for the new suffix; then every '\\r\\n' pair (wstring at 0x247e60) is removed from the new text and written back with put_Text and HID[0x58]=1 (the outer handler clears that flag again afterwards). CORRECTIONS to the notes: (1) only an adjacent CR+LF pair is an Enter (feedChars tests ldrh [p]==0xD and [p+2]==0xA, then pushes Keyboard key 0xD down and sets the key-state cell); a lone CR is fed as a TEXT char and is never stripped, so the host must insert L\"\\r\\n\" for Enter, not L'\\r'. (2) The diff does NOT use queueInputEvent/pumpInput: sub_4f5d0/sub_4f648/sub_4d050 are the same static Keyboard vector pushes that Keyboard::feed/feedText make on the render thread, called directly (unlocked) from the thread that fires TextChanged. (3) Because the outer handler clears 0x58 after the diff, TextChanged must be delivered the way XAML does (asynchronously after put_Text returns) and the CRLF-strip path leaves HID+0x40 holding the unstripped text; test Enter in chat on device."
+  },
+  {
+   "id": "input_text.keyboard_visible_flag",
+   "verdict": "CONFIRMED",
+   "note": "0x47740 = ldrb r0,[r0,#4] (bytes verified), vtable 0x33fb20 slot 34 (+0x88) = 0x447741. base showKeyboard/hideKeyboard write the same byte, so it is purely the game's intent flag; no InputPane event influences it."
+  },
+  {
+   "id": "input_text.inputpane",
+   "verdict": "CONFIRMED",
+   "note": "MainPage ctor registers Hiding (+0x20 slot 8, fn 0x1df700) then Showing (+0x18 slot 6, fn 0x1df714) via TypedEventHandler ctor 0x1dc8bc after BackPressed. OnInputPaneShowing re-fetches the InputPane through GetForCurrentView (0x1de9cc), calls get_OccludedRect (slot 10, +0x28 - SDK: add_Showing 6, add_Hiding 8, get_OccludedRect 10), reads Rect.Height (vldr [r7+0x1c]) and calls AppMain::SetKeyboardHeight 0x1da5b4 -> h*platform[+0x40] -> MinecraftClient::setKeyboardHeight 0x59578 which multiplies again by the float at VA 0x740d40 (GUI scale), stores client+0x164 and calls screen->vtbl[0x78]. Args of both delegates are ignored, the fake InputPane returned by GetForCurrentView must be the same object each time."
+  },
+  {
+   "id": "input_text.back_button",
+   "verdict": "CONFIRMED",
+   "note": "MainPage ctor: delegate 0x1dca8c (fn 0x1df4e8) -> helper 0x1e1798 -> HardwareButtons statics (IID 594b8780 built on stack, slot 6 add_BackPressed). OnBackPressed: HandleBack(AppMain+0x7c...) then args->vtbl[0x1c] (slot 7 put_Handled) with r1=result. HandleBack 0x1da248: RTDynamicCast(client[0x6c]) to StartMenuScreen; if the cast FAILS queue BACK (0x4ae2c) and return 1, else return 0. Matches the fact exactly (args are used without QI)."
+  },
+  {
+   "id": "input_text.agile_corewindow",
+   "verdict": "CONFIRMED",
+   "note": "0x114194: QI IAgileObject (GUID verified at 0x243610), S_OK -> Agile+0xc = 1; failure -> 0 and sub_109360 captures the context token. Resolve 0x1112f4: state==1 -> direct; else CoGetContextToken, compare with stored token, GetProxyImpl(ICoreWindow 79b9d5f2 at 0x247e50) only if different. Refinement: a non-agile fake would still work on the creating COM context, but CoGetContextToken fails (-> sub_121dc throws) on a thread without COM init, so answering IAgileObject is the right call. Only the CoreWindow is Agile-wrapped; the dispatcher returned by get_Dispatcher is used directly (RunAsync slot 8), so it does not need IAgileObject."
+  },
+  {
+   "id": "input_text.dispatcher_runasync",
+   "verdict": "CONFIRMED",
+   "note": "Wrapper 0x11401c / the tails in 0x114220, 0x111b20, 0x114410 and the pointer handlers: dispatcher=CoreWindow::get_Dispatcher (0x11583c, ICoreWindow +0x24 = slot 9), then vtbl[0x20] (slot 8) RunAsync(r1=0 priority, r2=DispatchedHandler, r3=&IAsyncAction). SDK ICoreDispatcher: ProcessEvents 7, RunAsync 8. Lambdas are FunctorCapture objects whose vf1 stubs (e.g. 0x112200/0x112240/0x1122c0) b.w to the lambda bodies; Invoke is vtable[3] of the DispatchedHandler. Queue and execute on the UI thread."
+  },
+  {
+   "id": "input_text.activation_factories_input",
+   "verdict": "CONFIRMED",
+   "note": "Verified GUIDs/strings: CoreWindow statics 4d239005 (0x6480c4 wstr), CoreCursor f6359621 (0x64824c), Window statics 93328409 slot 6 + IWindow 3276167d slot 10 get_CoreWindow, InputPane 95f4af3a, HardwareButtons 594b8780, ThreadPool b6bf67dd slot 8, DisplayInformation helper 0x4af58. Not listed: DisplayInformation members actually used (slot 11 LogicalDpi, 12 RawDpiX, 13 RawDpiY by initInput 0x4b55c; 14 add_DpiChanged, 8 add_OrientationChanged by MainPage)."
+  },
+  {
+   "id": "input_text.window_events_noninput",
+   "verdict": "CONFIRMED",
+   "note": "MainPage ctor registrations re-read: VisibilityChanged (+0xe0 slot 56, fn 0x1df9ac), DpiChanged (+0x38 slot 14, 0x1df67c), OrientationChanged (+0x20 slot 8, 0x1df76c), CompositionScaleChanged (0x1df510), SizeChanged (0x1df808), DisplayContentsInvalidated (0x1df618). Delegate-type RTTI/strings show only PointerEventArgs (Object and CoreWindow sender), KeyEventArgs, VisibilityChangedEventArgs, BackPressed and InputPane types - consistent with the 'not found' list."
+  },
+  {
+   "id": "input_text.not_found_inputs",
+   "verdict": "CONFIRMED",
+   "note": "Raw search (ascii and wide) for CharacterReceived, PointerWheel, PointerEntered/Exited, CaptureLost, GotFocus/LostFocus, Accelerator, Tapped, Manipulation*, Gamepad, Windows.Gaming returns nothing, and the only event-args delegate type strings in the image are the PointerEventArgs/KeyEventArgs/VisibilityChanged/BackPressed/InputPane ones. No wheel, no CharacterReceived, no pointer capture, no gamepad."
+  },
+  {
+   "id": "input_text.host_delivery_plan",
+   "verdict": "CORRECTED",
+   "note": "Structure of the plan is sound (MainPage-driven init, capture the delegates, fake args, UI-thread dispatcher). Corrections: (a) Focus is FocusState_Programmatic (3), not Pointer; (b) Enter must be delivered as L\"\\r\\n\" in the fake TextBox text (a lone CR is plain text); (c) after any game put_Text the fake must fire TextChanged once (the game sets HID[0x58] before put_Text and only a TextChanged clears it) and TextChanged should be delivered after the setter returns; (d) the pointer handlers are registered from a ThreadPool work item, so the fake ThreadPool must run it and ProcessEvents(2) must return or run on its own thread; (e) the fake SwapChainPanel must also answer get_CompositionScaleX (slot 6) and IUIElement::get_RenderSize (slot 23, used 3x by attachUi 0x1da634 to set client/platform size), the fake DisplayInformation slots 11/12/13; (f) hardware-keyboard path: drop modifier VKs when HID[0x44]==0."
+  },
+  {
+   "id": "input_text.textbox_slots",
+   "verdict": "CONFIRMED",
+   "note": "Every slot cross-checked against the SDK 19041 header vtables: ITextBox get_Text 6, put_Text 7, get_MaxLength 14 (used only by the diff 0x1115b0), put_MaxLength 15, put_AcceptsReturn 19, add_TextChanged 30, Select 36 (+0x90); ITextBox2 put_PreventKeyboardDisplayOnProgrammaticFocus 15; IControl Focus 46 (+0xb8, helper 0x11127c, args (FocusState, bool* out)). IIDs decoded from .rdata (0x247df0, 0x247e00, 0x247e10). Both XAML objects are used through QI on the stored IInspectable pointers (HID+0x2c/+0x30), so they need a real QueryInterface for those three IIDs; add_TextChanged takes the delegate and an 8-byte token out buffer (stored at HID+0x38)."
+  },
+  {
+   "id": "input_text.open_questions.pumpInput_deadline",
+   "verdict": "REFUTED",
+   "note": "The open question/md section 8 says the AppPlatform_Winrt+0x48/+0x4c GetTickCount64 deadline checked by pumpInput (0x50eac) calls a phone StatusBar. It does not: 0x4aeb8 is VibrationDevice.GetDefault (IVibrationDeviceStatics 332FD2F1, string 'Windows.Phone.Devices.Notification.VibrationDevice' at 0x210140), pumpInput calls IVibrationDevice vtable slot 7 (+0x1c = Cancel) when the deadline expires, and the deadline is armed by AppPlatform_Winrt::vibrate (vtable slot 29, 0x51008 calls 0x4aeb8). A fake VibrationDevice with Vibrate(6)/Cancel(7) is what is needed (no status bar involvement)."
+  }
+ ],
+ "missing": [
+  "initInput (0x4b55c) and AttachUi (0x1da634) dependencies not listed: IDisplayInformation slots 12/13 (RawDpiX/RawDpiY) and ISwapChainPanel slot 6 get_CompositionScaleX feed platform+0x38/+0x3c/+0x40; attachUi QIs the SwapChainPanel for IUIElement 676d0be9 and calls get_RenderSize (slot 23) three times to compute client->vtbl[20] (setSize), AppPlatform_Winrt::setScreenWidth (0x4fa40) and 0x4fa20. A fake panel must return a real RenderSize in DIPs before the render loop is started or the game gets a 0x0 viewport.",
+  "TextChanged semantics: HID[0x58] is only cleared by the next onTextChanged (and always cleared after the diff by the same handler), so a fake TextBox that does not fire TextChanged after a game put_Text makes the next real keystroke vanish; XAML delivers TextChanged asynchronously and the game relies on that ordering (the CRLF-strip put_Text inside the diff sets 0x58 then the outer handler clears it).",
+  "Enter requires an adjacent CR+LF in TextBox.Text (feedChars 0x111894); a lone CR becomes literal text. The finder's plan says L'\\r'.",
+  "Text typed through the TextBox is injected into the static Keyboard vectors directly from the TextChanged thread (sub_4f5d0 key push, sub_4f648 text push, sub_4d050 backspace) without the platform input queue/critical section; fire TextChanged from one consistent thread (the UI thread) - same as XAML.",
+  "FocusState value is Programmatic (3); with PreventKeyboardDisplayOnProgrammaticFocus=false this is the only focus kind the game ever uses, both for show and for hide.",
+  "VibrationDevice (not StatusBar) is touched from pumpInput; the fake needs GetDefault statics + Cancel(slot 7), and vibrate() uses Vibrate(slot 6) - belongs to platform_services but pumpInput runs it every frame once armed.",
+  "The ThreadPool work item that registers pointer handlers (0x110940) ends with ICoreDispatcher::ProcessEvents(ProcessUntilQuit=2) on the dispatcher of the independent input source; the fake must decide whether that call blocks (own thread) or returns, and must not keep the creating thread inside it.",
+  "Moved events with an unknown PointerId insert a std::map node (operator[]); a mouse that only hovers keeps one node for its id. Not harmful but explains stale slot numbers after hover.",
+  "Hardware keyboard while the on-screen keyboard is inactive: every unmapped VK (modifiers, CapsLock, OEM keys) becomes a garbage TEXT event on KeyDown; the host must filter to printable letters/digits (or leave HID[0x44]==1 semantics) - the finder mentioned OEM punctuation only.",
+  "MinecraftClient::setKeyboardHeight scales the InputPane height twice (platform+0x40 in AppMain::SetKeyboardHeight, then GUI-scale global 0x340d40 in 0x59578): the host should report OccludedRect.Height in DIPs (physical px / composition scale) and then check on screen.",
+  "TabTip itself: nothing in the exe talks to TabTip/InputPane.TryShow/TryHide, so show/hide fluctuation must be solved entirely in the host's fake Focus() handling; the level signal available to the host is AppPlatform_Winrt+4 (game intent, set synchronously) vs HID+0x44 (set later inside the UI-thread lambda: 1 after show lambda, 0 at the START of the hide lambda). The two can disagree for one dispatcher round trip; the finder's debounce suggestion is reasonable but unproven."
+ ],
+ "method": "Re-derived with different anchors than the finder: pdata + expected_bytes check for every fact RVA and every 0x1xxxxx RVA in the md; GUID literals decoded from .rdata; vtable slot numbers checked against Windows SDK 19041 headers (windows.ui.core.h, windows.ui.input.h, windows.ui.xaml.controls.h, windows.ui.viewmanagement.h, windows.graphics.display.h) and against the call offsets in the code; handler behaviour by reading the full disassembly of Pressed/Moved/Released/KeyDown/KeyUp, Initialize, the lambdas, onTextChanged and the diff; ordering by reading OnTick/attachUi/initInput/MainPage ctor call sequences; strings by raw ascii/wide search. Area friend_audit was NOT part of this review (the task area is input_text); the only friend_audit statement that touches input (0x1da5b4 is the InputPane keyboard-height setter) was independently confirmed."
+}

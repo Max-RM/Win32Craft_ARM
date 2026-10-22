@@ -1,0 +1,677 @@
+{
+ "area": "input_text",
+ "target": "Minecraft PE 0.10.4.40 WP8.1 ARM32 MCPE.Host.WindowsPhone.exe (ImageBase 0x400000)",
+ "facts": [
+  {
+   "id": "input_text.hid_class",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "vtable",
+   "arm_rva": "0x00db8780",
+   "summary": "HIDController: the C++/CX ref class that owns ALL game input plumbing (pointer, key, TextBox, cursor, keyboard show/hide). Primary vtable RVA 0xdb8780 (4 vtables: 0xdb8780 / +0xdb879c / 0xdb87b8 / 0xdb87d0, this-adjust 0/4/8/12). vf0 = QueryInterface (0x114e54), vf1 AddRef, vf2 Release; the real methods are NOT virtual.",
+   "arm_signature": "ref class; object allocated with Platform::Details::Heap::Allocate(0x5c, 0x68) => object size 0x68; ctor HIDController(HIDController* this /*r0*/, AppPlatform_Winrt* owner /*r1*/) -> r0",
+   "x86_to_arm_notes": "No x86 counterpart: 1.2.8 used a CoreWindow-only HIDController hooked by the host; here it is a normal game class that the host does not need to hook, only to feed.",
+   "expected_bytes": "554e5100b9455100",
+   "evidence": [
+    "arm32re rtti HIDController -> 4 vtables at 0xdb8780/0xdb879c/0xdb87b8/0xdb87d0",
+    "arm32re xref 0xdb8780 -> only the ctor sub_1103fc (0x1103fc) loads it; ctor stores vtables at +0/+4/+8/+0xc",
+    "RTTI strings: ...PointerToMemberCapture@?1???$?0VHIDController@@P80@... for TextChanged, Core PointerEventArgs (Object and CoreWindow sender) and KeyEventArgs delegates = HID is the registrant of all input delegates"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.hid_ctor",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x001103fc",
+   "summary": "HIDController::ctor (labelled HIDController::ctor). Zeroes fields, +0x20 = 2 (Agile state), +0x48 map head created by sub_19eb0, +0x60 = -1, stores owner AppPlatform_Winrt* at +0x10.",
+   "arm_signature": "HIDController* ctor(HIDController* this /*r0*/, AppPlatform_Winrt* owner /*r1*/) -> r0 (stack: push {r0,r1} prologue spill)",
+   "x86_to_arm_notes": "Called once from the AppPlatform_Winrt constructor, so the host never constructs HIDController itself.",
+   "expected_bytes": "03b42de9be480df1",
+   "evidence": [
+    "arm32re callers 0x1103fc -> 0x49536 only in sub_494c0 (AppPlatform_Winrt ctor: Allocate(0x5c,0x68); bl 0x1103fc; str to this+0x2c)",
+    "disasm 0x1103fc: str r4(owner),[r5,#0x10]; movs r3,#2; str r3,[r5,#0x20]; mvns r3,r4 -> str [r5,#0x60]"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.platform_ctor",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x000494c0",
+   "summary": "AppPlatform_Winrt::ctor (vtable RVA 0x33fb20). Creates the HIDController and stores it at AppPlatform_Winrt+0x2c; also initialises the input event queue critical_section at +0x50 and deque at +0x70.",
+   "arm_signature": "AppPlatform_Winrt* ctor(AppPlatform_Winrt* this /*r0*/) -> r0",
+   "x86_to_arm_notes": "The host reaches the HID only through AppPlatform_Winrt+0x2c (read it after the platform exists); +0x10 of the platform is the MinecraftClient*.",
+   "expected_bytes": "2de9f04b0df1180b",
+   "evidence": [
+    "disasm 0x494c0: movw/movt 0x33fb20 (vtable .?AVAppPlatform_Winrt@@) -> str [r6]; critical_section ctor on r6+0x50; sub_48e80(r6+0x70); Allocate(0x5c,0x68); bl 0x1103fc; str r0,[r6,#0x2c]",
+    "AppPlatform_Winrt::vf31/32/33 (0x4fac4/0x4edac/0x50f2c) all load [this+0x2c] as the HID object before calling HID methods"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.hid_layout",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "HIDController field map (offsets from HID*): +0x10 AppPlatform_Winrt*; +0x14..+0x23 Platform::Agile<CoreWindow^> (obj@+0x14, cookie@+0x18, ctx token@+0x1c, state@+0x20: 1=agile 2=empty); +0x24 IAsyncAction (input work item); +0x28 ICoreInputSourceBase (CoreIndependentInputSource, thread path only); +0x2c TextBox (IInspectable*); +0x30 focus-target control (IInspectable*, QI IControl); +0x34 TextChangedEventHandler delegate; +0x38/+0x3c EventRegistrationToken (int64) of TextChanged; +0x40 HSTRING mirror of the TextBox text; +0x44 u8 'keyboard active' (TextBox owns key input); +0x45 u8 'LMB held / cursor hidden'; +0x46 u8 'last press was left button'; +0x48/+0x4c std::map<uint32 pointerId,int8 slot> (head ptr, size); +0x50 float pointer scale X; +0x54 float pointer scale Y; +0x58 u8 'ignore next TextChanged diff'; +0x60 int = -1.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Host may read/write these bytes directly (they are plain fields). Most useful: +0x44 (keyboard intent), +0x50/+0x54 (pointer scale, override after Initialize), +0x2c/+0x30 (the two XAML objects the host must fake).",
+   "expected_bytes": null,
+   "evidence": [
+    "ctor stores listed in HIDController::ctor disasm (str [r5,#0x10..0x60])",
+    "HID::Initialize writes +0x24 (async), +0x2c, +0x30, +0x34, +0x38/+0x3c (token), +0x50/+0x54 (scale); lambda_set_text_select_focus_textbox writes +0x40/+0x44; lambda_unfocus writes +0x44; onPressed/onReleased use +0x45/+0x46; onTextChanged uses +0x2c/+0x40/+0x44/+0x58",
+    "sub_1111fc (allocPointerSlot) walks the rb-tree whose head is [HID+0x48]"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.init_chain",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": "0x001df8a4",
+   "summary": "Who creates the event registrations: MainPage ctor (sub_1dcf5c, RVA 0x1dcf5c) starts a 50 ms DispatcherTimer (Interval 0x7a120 ticks) whose Tick handler MainPage::OnTick (0x1df8a4) waits for AppMain::IsAppInitialized (0x1da310, byte AppMain+0x3c), then stops the timer and calls AppMain::attachUi (0x1da634) -> AppPlatform_Winrt::initInput (0x4b55c) -> HIDController::Initialize (0x111c1c). INPUT IS NEVER REGISTERED IF THIS CHAIN IS BYPASSED (this is what the 'AppMain driven directly' approach misses: no pointer/key/TextChanged delegate exists, so the game sees no input at all).",
+   "arm_signature": "void OnTick(MainPage* this /*r0*/, Object^ sender /*r1*/, Object^ args /*r2*/); void attachUi(AppMain* this, UIElement^ swapChainPanel /*r1*/, UIElement^ textBox /*r2*/, UIElement^ focusCtl /*r3*/); void initInput(AppPlatform_Winrt* this, CoreWindow^ r1, SwapChainPanel^ r2, TextBox^ r3, Control^ [sp])",
+   "x86_to_arm_notes": "Host options: (a) fake MainPage + DispatcherTimer so the game's own OnTick runs this chain, or (b) call attachUi/initInput/HID::Initialize (RVAs below) once AppMain+0x3c is set. In both cases the objects listed in fake-object facts must exist first.",
+   "expected_bytes": "2de9b0480df10c0b",
+   "evidence": [
+    "arm32re callers: sub_1da634 <- sub_1df8a4 (0x1df94c); sub_4b55c <- sub_1da634 (0x1da6b0); sub_111c1c <- sub_4b55c (0x4b586)",
+    "sub_1dcf5c (MainPage ctor): DispatcherTimer IDispatcherTimer IID d160ce46 at [this+0x84]; put_Interval(0x7a120 ticks = 50 ms) slot 7, add_Tick slot 9 with sub_1df8a4, Start slot 11",
+    "sub_1df8a4: bl 0x1da310 (IsAppInitialized) ; if true -> IDispatcherTimer::Stop (slot 12 0x30) ; ... bl 0x1da634(this[0x7c], this[0x5c], this[0x64], this[0x68]) ; bl 0x1da8a8 (StartRenderLoop)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.init_args",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": "0x00111c1c",
+   "summary": "HIDController::Initialize (RVA 0x111c1c, labelled). Args: r0=HID, r1=CoreWindow^ (=Window.Current.CoreWindow via IWindowStatics::get_Current slot 6 then IWindow::get_CoreWindow slot 10 = 0x28), r2=SwapChainPanel^ (MainPage+0x5c; QI'd ISwapChainPanel in ctor) or NULL, r3=TextBox^ (MainPage+0x64 -> stored HID+0x2c), 5th argument on the stack = focus control^ (MainPage+0x68 -> HID+0x30). Steps in order: (1) wrap CoreWindow in Platform::Agile -> HID+0x14 (sub_114194/sub_114380); (2) store TextBox, focus control; (3) create TextChangedEventHandler (sub_10fd20, fn sub_113d8c) and ITextBox::add_TextChanged (slot 30 = +0x78) -> token at HID+0x38; (4) QI ITextBox2 (f7168c00) -> put_PreventKeyboardDisplayOnProgrammaticFocus(false) (slot 15 = +0x3c, r1=0); (5) ITextBox::put_AcceptsReturn(true) (slot 19 = +0x4c, r1=1); (6) if r2!=NULL: scale from DX::DeviceResources::get()+0x60/+0x64 (sub_4b054) and ThreadPool.RunAsync(WorkItemHandler lambda_f3db, High, TimeSliced) -> HID+0x24 (independent-input-source thread path); else scale = DisplayInformation::get_LogicalDpi (slot 11 = 0x2c) / 96.0 for X and Y and register CoreWindow Pressed/Moved/Released; (7) ALWAYS register CoreWindow KeyDown (slot 34 = 0x88, sub_1128b8) and KeyUp (slot 36 = 0x90, sub_112a30).",
+   "arm_signature": "void Initialize(HID* r0, CoreWindow^ r1, SwapChainPanel^ r2, TextBox^ r3, Control^ stack0)",
+   "x86_to_arm_notes": "Pass r2 = a fake SwapChainPanel to get the faithful phone behaviour (pointer events via ICorePointerInputSource), or r2 = NULL to get plain CoreWindow pointer events (no worker thread, no ProcessEvents); both end in the same three handlers.",
+   "expected_bytes": "2de9f04f0df11c0b",
+   "evidence": [
+    "disasm 0x111c1c: cmp.w sb,#0 ; beq 0x111ea6 (null path: sub_4af58 DisplayInformation, vcvt/vdiv d8=96.0, CoreWindow adds at slots 0xb8/0xb0/0xc0) ; non-null path: sub_4b054()+0x60/+0x64 -> [r5+0x50/0x54] then sub_10f7e4 WorkItem + sub_114078 ThreadPool.RunAsync",
+    "literal pool 0x112140 = double 96.0 (python struct unpack)",
+    "slot arithmetic checked with IDL: ICoreWindow add_KeyDown=34(0x88), add_KeyUp=36(0x90), add_PointerMoved=44(0xb0), add_PointerPressed=46(0xb8), add_PointerReleased=48(0xc0); ITextBox add_TextChanged=30(0x78), put_AcceptsReturn=19(0x4c); ITextBox2 put_PreventKeyboardDisplayOnProgrammaticFocus=15(0x3c)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.delegate_invoke",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": "0x00115508",
+   "summary": "How the host fires any input delegate it received in add_*(handler,&token): handler is the object base pointer (vtable0 = e.g. 0xdb87ec). Call vtable[3] (+0xc): HRESULT Invoke(void* handler /*r0*/, void* sender /*r1*/, void* args /*r2*/). That slot (0x115508 for TypedEventHandler<Object,PointerEventArgs>) forwards r1/r2 untouched into functor->vf1 (sub_112364) which adds the captured HID and calls the member function: fn(HID, sender, args). Same convention as win32_host.c uses (vtable[3]).",
+   "arm_signature": "HRESULT Invoke(delegate* r0, IInspectable* sender /*r1*/, IInspectable* args /*r2*/) ; WorkItemHandler/DispatchedHandler: Invoke(delegate*, IAsyncAction*) / Invoke(delegate*)",
+   "x86_to_arm_notes": "The delegate objects are vccorlib objects; AddRef via vtable[1] before keeping them, Release via vtable[2]. A second vtable at obj+8 (0xdb8820) holds an adjustor-thunk Invoke (subs r0,#8; b real) - calling it with obj+8 is equivalent.",
+   "expected_bytes": "2de9b0480df10c0b",
+   "evidence": [
+    "disasm 0x115508: ldr r0,[r0,#0x54] ; ldr r3,[r0] ; ldr r3,[r3,#4] ; blx r3 with r1,r2 never modified",
+    "disasm 0x112364 (functor vf1): r4=[r5,#0xc]; r3=[r5,#4]; r0=r4+r3; r3=[r5,#8]; blx r3 -> member fn(HID, r1, r2)",
+    "sub_10fc04 (delegate ctor) returns the allocation base; sub_110940 passes that pointer straight to add_PointerPressed (mov r1,r5)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.reg_pointer_corewindow",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x00113010",
+   "summary": "CoreWindow pointer registrations (only when Initialize r2 == NULL): delegate type TypedEventHandler<CoreWindow,PointerEventArgs> (vtables 0xdb888c/0xdb88a4/0xdb88c0, ctor 0x10fae8). ICoreWindow::add_PointerPressed (slot 46, +0xb8) <- stub 0x113000 -> HID::onPointerPressed 0x113010; add_PointerMoved (slot 44, +0xb0) <- stub 0x112b00 -> onPointerMoved 0x112b10; add_PointerReleased (slot 48, +0xc0) <- stub 0x1136c0 -> onPointerReleased 0x1136d0. NOT registered: PointerEntered/Exited/CaptureLost/WheelChanged, CharacterReceived, TouchHitTesting.",
+   "arm_signature": "HRESULT add_PointerX(ICoreWindow* r0, void* delegate /*r1*/, EventRegistrationToken* token /*r2*/) -> HRESULT",
+   "x86_to_arm_notes": "The fake ICoreWindow must implement those 3 add_ slots (plus KeyDown/KeyUp) and keep the delegate pointer; returning a non-zero token is fine, remove_ is not called during normal play.",
+   "expected_bytes": "2de9f04f0df11c0b",
+   "evidence": [
+    "disasm 0x111f24..0x111fde: movw r2,#0x3001 (stub 0x113000) / #0x2b01 (stub 0x112b00) / #0x36c1 (stub 0x1136c0); each followed by ldr.w r3,[r3,#0xb8|#0xb0|#0xc0] ; blx",
+    "stubs 0x113000/0x112b00/0x1136c0 are 14-byte 'push; pop; b.w target' trampolines to 0x113010/0x112b10/0x1136d0",
+    "IDL ICoreWindow vtable: 44 add_PointerMoved(0xb0), 46 add_PointerPressed(0xb8), 48 add_PointerReleased(0xc0)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.reg_pointer_inputsource",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x00110940",
+   "summary": "Thread/independent-input path (Initialize r2 != NULL): ThreadPool WorkItemHandler lambda_f3db (body RVA 0x110940, labelled) runs: QI(SwapChainPanel, ISwapChainPanel c589644f) -> ISwapChainPanel::CreateCoreIndependentInputSource(7 = Touch|Pen|Mouse) (slot 10 = +0x28) -> stored at HID+0x28 (ICoreInputSourceBase); QI(HID+0x28, ICorePointerInputSource bbf1bb18) -> add_PointerPressed (slot 20 = +0x50) <- delegate fn 0x113010, add_PointerMoved (slot 18 = +0x48) <- 0x112b10, add_PointerReleased (slot 22 = +0x58) <- 0x1136d0 (delegate type TypedEventHandler<Object,PointerEventArgs>, ctor 0x10fc04, vtables 0xdb87ec/0xdb8804/0xdb8820); then sub_1157e0(HID+0x28) = ICoreInputSourceBase::get_Dispatcher (slot 6 = +0x18) and ICoreDispatcher::ProcessEvents(2 = ProcessUntilQuit) (slot 7 = +0x1c) which blocks that worker thread for the app lifetime.",
+   "arm_signature": "void lambda(WorkItemHandler ctx /*r0: [ctx+4] = SwapChainPanel^*/ ) ; ISwapChainPanel::CreateCoreIndependentInputSource(this, UINT32 deviceTypes=7, ICoreInputSourceBase** out)",
+   "x86_to_arm_notes": "Host fake needed: SwapChainPanel{QI ISwapChainPanel; CreateCoreIndependentInputSource -> fake source}, fake source{QI ICorePointerInputSource with add_PointerMoved/Pressed/Released (store delegates); ICoreInputSourceBase::get_Dispatcher}, fake dispatcher.ProcessEvents may either block (event wait) or return at once - the delegates stay registered and may be invoked from ANY thread later. Handlers only touch HID fields and the platform queue (critical_section protected) so calling them from the Win32 UI thread is safe.",
+   "expected_bytes": "2de9f04b0df1180b",
+   "evidence": [
+    "disasm 0x110940: ldr r3,[r0,#4] ; QI IID 0x20fbf8 (ISwapChainPanel) ; ldr r3,[r3,#0x28] with r1=7 ; QI IID 0x247dd0 (ICorePointerInputSource) ; slot loads #0x50 (fn 0x513011=0x113010), #0x48 (0x512b11=0x112b10), #0x58 (0x5136d1=0x1136d0) ; bl 0x1157e0 ; slot #0x1c with r1=2",
+    "python iid.py: 0x20fbf8 = ISwapChainPanel c589644f-eba8-427a-b75a-9f1f93a11ae9 ; 0x247dd0 = ICorePointerInputSource bbf1bb18-e47a-48eb-8807-f8f8d3ea4551",
+    "IDL: ISwapChainPanel slot 10 CreateCoreIndependentInputSource; ICorePointerInputSource 18/20/22 = Moved/Pressed/Released; ICoreDispatcher 7 = ProcessEvents"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.reg_key",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x001128b8",
+   "summary": "CoreWindow key registrations (always): TypedEventHandler<CoreWindow,KeyEventArgs> (ctor 0x10f9cc, vtables 0xdb883c/..); ICoreWindow::add_KeyDown (slot 34, +0x88) <- HID::onKeyDown 0x1128b8 (direct fn, no stub); ICoreWindow::add_KeyUp (slot 36, +0x90) <- HID::onKeyUp 0x112a30. No CharacterReceived handler exists.",
+   "arm_signature": "HRESULT add_KeyDown(ICoreWindow* r0, delegate* r1, EventRegistrationToken* r2)",
+   "x86_to_arm_notes": "Text typed on a real keyboard reaches the game as KeyDown VirtualKey -> char (see key_text_path), NOT via CharacterReceived. TextBox focus (HID+0x44) disables this path.",
+   "expected_bytes": "2de9f04b0df1180b",
+   "evidence": [
+    "disasm 0x112000..0x112080: movw r2,#0x28b9 (0x1128b8) then ldr.w r3,[r3,#0x88] ; movw r2,#0x2a31 (0x112a30) then ldr.w r3,[r3,#0x90]",
+    "RTTI: only TypedEventHandler<CoreWindow,KeyEventArgs> exists for keys; no CharacterReceived strings in the exe (arm32re str CharacterReceived -> none)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.pointer_args_vcalls",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "vtable_slot",
+   "arm_rva": null,
+   "summary": "Exactly what the three pointer handlers call on the event arguments (fake objects must expose these slots; every returned interface pointer is AddRef'd/Released by the caller, so each needs valid vtable[1]/[2]): args (IPointerEventArgs default interface, passed as the raw pointer): slot 6 (+0x18) get_CurrentPoint(IPointerPoint** out) [helper sub_115784]. IPointerPoint: slot 9 (+0x24) get_PointerId(UINT32*), slot 7 (+0x1c) get_Position(Windows.Foundation.Point* = 2 floats X,Y in DIPs), slot 6 (+0x18) get_PointerDevice(IPointerDevice** out) [helper sub_115898], slot 13 (+0x34) get_Properties(IPointerPointProperties** out) [helper sub_1158f4]. IPointerDevice: slot 6 (+0x18) get_PointerDeviceType(int*) compared with 2 (Touch=0, Pen=1, Mouse=2). IPointerPointProperties: slot 16 (+0x40) get_IsLeftButtonPressed(boolean* - 1 byte). Nothing else is read (no IsRightButtonPressed, no Pressure, no MouseWheelDelta, no Timestamp, no KeyModifiers).",
+   "arm_signature": "HRESULT get_CurrentPoint(args /*r0*/, IPointerPoint** out /*r1*/); get_Position(pt, Point* out): out[0]=X float, out[1]=Y float",
+   "x86_to_arm_notes": "get_CurrentPoint is called up to ~6 times per event (each call creates and releases a PointerPoint), so the fake may return the SAME refcounted object each time. Coordinates: DIPs relative to the SwapChainPanel (thread path) or CoreWindow; the handler multiplies by HID scale (+0x50 X, +0x54 Y).",
+   "expected_bytes": null,
+   "evidence": [
+    "disasm 0x113010 / 0x112b10 / 0x1136d0: sequences 'bl 0x115784; ldr r3,[r0]; ldr r3,[r3,#0x1c|#0x24]' and 'bl 0x115898; ldr r3,[r3,#0x18]; cmp r3,#2' and 'bl 0x1158f4; ldr r3,[r3,#0x40]'",
+    "helpers 0x115784 ([r3,#0x18]), 0x115898 ([r3,#0x18]), 0x1158f4 ([r3,#0x34]) each = 86-byte C++/CX property-get wrappers",
+    "IDL slot tables from windows.ui.input.idl: IPointerPoint 6 PointerDevice,7 Position,9 PointerId,13 Properties; IPointerPointProperties 16 IsLeftButtonPressed"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.pointer_pressed",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x00113010",
+   "summary": "HID::onPointerPressed. Flow: id=pt.PointerId; slot=sub_1111fc(HID,id) (allocates smallest free slot 0..11 in map HID+0x48); isMouse = device type==2. MOUSE: left=Properties.IsLeftButtonPressed; if(left && !HID[0x45]){HID[0x45]=1; run lambda_nocursor (0x112250: CoreWindow.PointerCursor=null) on the CoreWindow dispatcher}; HID[0x46]=left; queue Mouse event {type0,btn=(HID46?1:2),down=1,x,y}; if(HID[0x46]) also queue Touch event {type1,btn=1,down=1,x,y,slot}. TOUCH/PEN: queue Mouse event {type0,btn=1,down=1,x,y} and Touch event {type1,btn=1,down=1,x,y,slot}.",
+   "arm_signature": "HRESULT-less: void onPointerPressed(HID* r0, Object^ sender /*r1, unused*/, PointerEventArgs^ args /*r2*/)",
+   "x86_to_arm_notes": "x = (int16)(Position.X * HID[0x50]) at ev+2, y = (int16)(Position.Y * HID[0x54]) at ev+4. Right/middle button presses only produce the type-0 event (btn=2), no touch pointer. Mouse press hides the cursor (lambda_nocursor via RunAsync) until release.",
+   "expected_bytes": "2de9f04f0df11c0b",
+   "evidence": [
+    "disasm 0x113010: operator new(8) ... strb [r4]=0, [r4,#6]=1/2, [r4,#7]=1 then bl 0x4b290 ; operator new(0xa) ... strb [r4]=1 ; [r4,#8]=slot",
+    "registration order: PointerPressed slot 0x50 gets fn 0x513011 (=0x113010) in sub_110940, slot 0xb8 gets stub 0x113000 in Initialize",
+    "vldr s1,[r6,#0x54] * Y and vldr s1,[r6,#0x50] * X multiply seen at 0x11321c/0x113252"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.pointer_moved",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x00112b10",
+   "summary": "HID::onPointerMoved. slot = *map[pointerId] (lookup via sub_110718, a std::map::operator[]-style accessor; an unknown id would silently get slot 0). For BOTH mouse and touch it queues Mouse event {type0,btn=0,down=0,x,y} then Touch event {type1,btn=0,down=0,x,y,slot}. Hover moves of a mouse (no button) therefore also produce a touch-move event with slot 0.",
+   "arm_signature": "void onPointerMoved(HID* r0, Object^ sender /*r1*/, PointerEventArgs^ args /*r2*/)",
+   "x86_to_arm_notes": "Host should deliver moves for a pointer id only between its Pressed and Released (touch), mouse moves always.",
+   "expected_bytes": "2de9f04f0df11c0b",
+   "evidence": [
+    "disasm 0x112b10: bl 0x110718 (map operator[]) ; both branches (0x112bc2 mouse, 0x112d54 touch) emit new(8) with [r5]=0,[6]=0,[7]=0 and new(0xa) with [r5]=1,[6]=0,[7]=0,[8]=slot",
+    "registration: slot 0x48 add_PointerMoved fn 0x512b11 in sub_110940 ; slot 0xb0 stub 0x112b00 in Initialize"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.pointer_released",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x001136d0",
+   "summary": "HID::onPointerReleased. Looks up slot, then (mouse) if HID[0x45] && !IsLeftButtonPressed: HID[0x45]=0 and RunAsync lambda_arrow (0x110868: CoreWindow.PointerCursor = new CoreCursor(Arrow=0, id 0)); queues Mouse event {type0,btn=(HID46?1:2),down=0,x,y} and, if HID46, Touch event {type1,btn=1,down=0,x,y,slot}; (touch) Mouse event {type0,btn=1,down=0} + Touch event {type1,btn=1,down=0,slot}. Erases the pointerId->slot mapping (sub_114530).",
+   "arm_signature": "void onPointerReleased(HID* r0, Object^ sender /*r1*/, PointerEventArgs^ args /*r2*/)",
+   "x86_to_arm_notes": "The host must send a Released for every Pressed (also for cancelled touches) or slots 0..11 leak (map never cleared).",
+   "expected_bytes": "2de9f04f0df11c0b",
+   "evidence": [
+    "disasm 0x1136d0: cmp r3,#2 (device type) ; ldrb.w r3,[r6,#0x45] ; strb.w r3,[r6,#0x45] ; bl 0x10f4fc (lambda_arrow delegate) ; bl 0x11401c (RunAsync wrapper) ; new(8) strb [r5,#7]=0",
+    "registration: slot 0x58 add_PointerReleased fn 0x5136d1 in sub_110940 ; slot 0xc0 stub 0x1136c0 in Initialize"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.pointer_event_struct",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": null,
+   "summary": "Event records pushed by all handlers with AppPlatform_Winrt::queueInputEvent(platform, ev*) (0x4b290: locks critical_section platform+0x50, deque push_back at platform+0x70) and consumed on the render thread by pumpInput (0x50eac -> pollInputEvent 0x4b300 in a loop). Events are msvcr120_app operator new blocks freed with operator delete after dispatch. Layouts: type0 MOUSE (8 bytes): u8 type@0=0, s16 x@2, s16 y@4, s8 btn@6 (0 none/move,1 left,2 right/middle), s8 down@7 -> Mouse::feed(btn,down,x,y) (0x115f84). type1 TOUCH (10 bytes): same + s8 slot@8 (0..11) -> Multitouch::feed(btn,down,x,y,slot) (0x116444). type2 KEY (8 bytes): u8 type@0=2, u8 key@1, s32 down@4 (1/0) -> Keyboard::feed(key,down) (0x4e568). type3 TEXT (0x20 bytes): u8 type@0=3, std::string (MSVC120 layout: buf[16]@4, size@0x14, cap@0x18) @4, u8 flag@0x1c -> Keyboard::feedText(string&,flag) (0x4e598). type4 BACK (1 byte) -> client->handleBack(false) unless the current screen is Touch::StartMenuScreen.",
+   "arm_signature": "void AppPlatform_Winrt::queueInputEvent(AppPlatform_Winrt* r0, void* ev /*r1*/) ; bool pollInputEvent(AppPlatform_Winrt* r0) -> r0=1 if an event was handled ; pumpInput(AppPlatform_Winrt* r0)",
+   "x86_to_arm_notes": "If the host injects events itself (instead of invoking delegates) it MUST allocate them with the game's CRT operator new (msvcr120_app!??2@YAPAXI@Z, IAT) and with these exact sizes, because pollInputEvent frees them with msvcr120_app operator delete (??3@YAXPAX@Z). Preferred: invoke the pointer/key delegates with fake args instead.",
+   "expected_bytes": "03b42de990480df1",
+   "evidence": [
+    "disasm 0x4b300: ldrsb r2,[r4] ; cmp r2,#4 ; tbb dispatch: case0 ldrsh [r4,#4],[r4,#2] ldrsb [r4,#7],[r4,#6] bl 0x115f84 ; case1 ldrsb [r4,#8] ... bl 0x116444 ; case2 ldr [r4,#4], ldrb [r4,#1] bl 0x4e568 ; case3 adds r0,r4,#4 ; ldrb [r4,#0x1c] bl 0x4e598 ; case4 RTDynamicCast + client vf24",
+    "handlers' allocation sizes: movs r0,#8 / #0xa / (0x20 in onKeyDown text branch) before 'bl thunk ??2@YAPAXI@Z'",
+    "disasm 0x50eac: loop 'bl 0x4b300 ; cmp r0,#0 ; bne' then keyboard-timeout StatusBar hide; callers: sub_1da160 (AppMain::updateFrame) at 0x1da1f8"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.pointer_scale",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": null,
+   "summary": "Pointer scale factors HID+0x50 (X) and HID+0x54 (Y), float32, loaded ONCE in Initialize: thread path = DX::DeviceResources::get()+0x60 / +0x64 (composition scale X/Y written by DX::DeviceResources::SetCompositionScale 0x1dbbcc); CoreWindow path = DisplayInformation::get_LogicalDpi/96.0 (twice, X and Y). Game coordinate = (int16)(DIP * scale).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Simplest: report positions to the game in pixels and make the scale 1.0 (set DeviceResources composition scale to 1.0 before Initialize, or write 1.0f to HID+0x50 and HID+0x54 after Initialize). If the fake panel has composition scale s, deliver DIPs = pixel / s.",
+   "expected_bytes": null,
+   "evidence": [
+    "disasm 0x111e02..0x111e14: bl 0x4b054 ; ldr r3,[r0,#0x60] ; str r3,[r5,#0x50] ; bl 0x4b054 ; ldr r3,[r0,#0x64] ; str r3,[r5,#0x54]",
+    "scan: vstr s?,[rX,#0x60] only in DX::DeviceResources::ctor/CreateWindowSizeDependentResources/SetCompositionScale (arm32re funcs scan 0x1d9000..0x1dd000)",
+    "handlers: vldr s1,[r6,#0x54] multiplies Position.Y, vldr s1,[r6,#0x50] multiplies Position.X"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.pointer_id_map",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "data",
+   "arm_rva": "0x001111fc",
+   "summary": "PointerId -> slot map: HID+0x48 std::map<uint32,int8>; sub_1111fc(HID,pointerId) (labelled HID:allocPointerSlot) assigns the smallest unused slot (0,1,2,...), onPointerMoved/Released look it up, sub_114530 erases on release. Multitouch::feed clamps slot to 0..11 (12 simultaneous pointers).",
+   "arm_signature": "int8 allocPointerSlot(HID* r0, uint32 pointerId /*r1*/) -> r0",
+   "x86_to_arm_notes": "Mouse and every touch contact each consume one slot while pressed; give each Win32 pointer a stable PointerId (WM_POINTER id / constant 1 for the mouse).",
+   "expected_bytes": "03b42de930480df1",
+   "evidence": [
+    "disasm 0x1111fc: walks rb-tree from [HID+0x48], first free r4 counter -> strb r4,[map[id]]",
+    "disasm 0x116444: cmp r4,#0xc ; movge r4,#0xb (slot clamp to 11)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.cursor",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": "0x00111420",
+   "summary": "Cursor handling: only CoreWindow.PointerCursor is touched. lambda_nocursor (0x112250) = ICoreWindow::put_PointerCursor(NULL) (slot 15 = +0x3c) when LMB goes down; lambda_arrow (0x110868) creates CoreCursor via the activation factory 'Windows.UI.Core.CoreCursor' (ICoreCursorFactory f6359621 slot 6 CreateCursor(type=0 Arrow, id=0), helper sub_1102e8) and put_PointerCursor(cursor) on release. CoreWindow comes from the 'Windows.UI.Core.CoreWindow' factory (ICoreWindowStatic 4d239005 slot 6 GetForCurrentThread, helper sub_111420). No SetPointerCapture / ReleasePointerCapture, no get_PointerPosition calls.",
+   "arm_signature": "ICoreWindow::put_PointerCursor(this, ICoreCursor* cursor)",
+   "x86_to_arm_notes": "Host: map put_PointerCursor(NULL) -> ShowCursor(FALSE)/SetCursor(NULL), put_PointerCursor(non-null) -> SetCursor(arrow). Run these through the fake dispatcher on the UI thread. The mouse is not captured; dragging outside the window just stops events.",
+   "expected_bytes": "2de990480df1080b",
+   "evidence": [
+    "disasm 0x112250: bl 0x111420 ; ldr r3,[r3,#0x3c] with r1=0 ; disasm 0x110868: bl 0x1102e8(0,0,0,0) ; bl 0x111420 ; ldr r3,[r3,#0x3c] with r1=cursor",
+    "sub_1102e8 loads wstr 'Windows.UI.Core.CoreCursor' (0x64824c) and calls factory slot 6 (+0x18); sub_111420 loads wstr 'Windows.UI.Core.CoreWindow' (0x6480c4) via GetActivationFactoryByPCWSTR thunk 0x2001e4",
+    "IDL: ICoreWindow 15 put_PointerCursor (+0x3c)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.key_args_vcalls",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "vtable_slot",
+   "arm_rva": null,
+   "summary": "KeyEventArgs vcalls (default interface IKeyEventArgs 5ff5e930, raw pointer): slot 6 (+0x18) get_VirtualKey(VirtualKey* int32 out); slot 7 (+0x1c) get_KeyStatus(CorePhysicalKeyStatus* out) - only the first dword RepeatCount is read ('cmp r3,#1; bhi skip' = auto-repeat is dropped). KeyUp supplies only a 16-byte stack buffer: write at most 12 bytes (RepeatCount,ScanCode,4 booleans).",
+   "arm_signature": "HRESULT get_VirtualKey(args, int* out) ; HRESULT get_KeyStatus(args, struct{u32 RepeatCount;u32 ScanCode;u8 IsExtendedKey,IsMenuKeyDown,WasKeyDown,IsKeyReleased;}* out)",
+   "x86_to_arm_notes": "VirtualKey values equal Win32 VK_* codes. Send RepeatCount=1 for the initial press, >1 for auto-repeat (ignored).",
+   "expected_bytes": null,
+   "evidence": [
+    "disasm 0x1128b8: ldr r3,[r4]; ldr r3,[r3,#0x18] (VirtualKey) ; later ldr r3,[r3,#0x1c] then 'ldr r3,[r7,#8]; cmp r3,#1; bhi 0x112a02'",
+    "disasm 0x112a30 (KeyUp): same two vcalls, stack buffer sp (0x10 bytes), RepeatCount at [sp]"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.key_map",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x001127cc",
+   "summary": "HID::mapVirtualKey(HID, vk) (labelled): returns the game key code or 0. Identity for 0x08 Back, 0x0D Enter, 0x1B Esc, 0x20 Space, 0x25-0x28 arrows, 0x70-0x7B F1-F12; PageUp 0x21 -> 0x22 and PageDown 0x22 -> 0x21 (swapped); 0xA0 (LeftShift) -> 0x10; everything else -> 0.",
+   "arm_signature": "uint8 mapVirtualKey(HID* r0, int vk /*r1*/) -> r0",
+   "x86_to_arm_notes": "Game key codes are Win32 VK codes: no translation table is needed on the host side.",
+   "expected_bytes": "2de90048eb467129",
+   "evidence": [
+    "disasm 0x1127cc compare tree: 0x71 pivot, 0x22/0x1b/0x27 sub-trees; tbb for 0x72..0x7b -> movs r0,#0x72..#0x7b ; 0xa0 -> #0x10",
+    "caller onKeyDown 0x112928 / onKeyUp 0x112a86"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.key_down_up",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x001128b8",
+   "summary": "HID::onKeyDown / onKeyUp semantics. Both return immediately if HID[0x44] (TextBox owns the keyboard). KeyDown: vk==0x10 (VK_SHIFT) sets the static shift byte at RVA 0xde2fef; mapped key (mapVirtualKey!=0) and RepeatCount<=1 -> queue type2 {key, down=1}. Unmapped vk -> character: c=(char)vk, c=tolower(c) unless shift byte set -> queue type3 TEXT event (single-char std::string, flag 0) => Keyboard::feedText. KeyUp: vk==0x10 clears the shift byte; mapped key and RepeatCount<=1 -> queue type2 {key, down=0}. There is no unmapped-key up event.",
+   "arm_signature": "void onKeyDown(HID* r0, CoreWindow^ r1, KeyEventArgs^ r2) ; void onKeyUp(HID* r0, CoreWindow^ r1, KeyEventArgs^ r2)",
+   "x86_to_arm_notes": "Letters/digits arrive as lowercase ASCII (VK_A..VK_Z = 'A'..'Z' lowered; digits unchanged); punctuation VKs (VK_OEM_*) become garbage chars, so for real typing rely on the TextBox path or inject type3 events with correct characters. Host must send VK_SHIFT (0x10) down/up for the shift byte.",
+   "expected_bytes": "2de9f04b0df1180b",
+   "evidence": [
+    "disasm 0x1128b8: ldrb.w r3,[r0,#0x44] ; bne skip ; cmp r3,#0x10 -> strb 1,[0x11e2fef] ; bl 0x1127cc ; cbz -> char path with msvcr120_app tolower ; new(8) strb 2,[r1] ; str 1,[r1,#4]",
+    "disasm 0x112a30: ldrb [r0,#0x44]; cmp #0x10 -> strb 0 [0x11e2fef]; new(8) strb 2,[r1]; str 0,[r1,#4]",
+    "sub_4e568 Keyboard::feed(key,state) stores state in static array 0x11e2ff8[key] and pushes to queue 0x11e33f8"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.touch_only",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": "0x0005a1d0",
+   "summary": "The game is TOUCH-ONLY on this platform. InputHolder factory (sub_56420) calls MinecraftClient vtable slot 16 = useTouchscreen (0x5a1d0): returns 1 if Options byte +0x276 (USE_TOUCHSCREEN option) is set OR client+0x150 == 0; client+0x150 is set once in MinecraftClient::vf7 (init) to (platform->vtable[26]() == 0). AppPlatform_Winrt vtable cell RVA 0x33fb88 (slot 26, +0x68) = 0x57fd41 -> function 0x17fd40 'return 1' => client+0x150 = 0 => useTouchscreen() is always TRUE => TouchInputHolder (TouchscreenInput, touch HUD/buttons/joystick). The desktop alternative (CustomInputHolder = MouseBuildInput + MouseTurnInput + KeyboardInput, vtables 0x3400f4/0x340174/0x340164/0x342730) is compiled in but unreachable unless the cell is patched.",
+   "arm_signature": "bool useTouchscreen(MinecraftClient* r0) -> r0 ; InputHolder factory sub_56420(MinecraftClient* r0)",
+   "x86_to_arm_notes": "Do nothing for touch/mouse-as-touch. To experiment with mouse+keyboard play: patch the data cell 0x33fb88 (verify it holds 0x0057fd41) to 0x00429ba1 (stub 0x29ba0 'return 0' bytes 2de90048eb460020bde80088) BEFORE MinecraftClient::vf7 runs, then make sure Options+0x276 is 0 (default unknown). Not required for the goal.",
+   "expected_bytes": "2de90048eb46d0f8",
+   "evidence": [
+    "disasm 0x5a1d0: ldr.w r3,[r0,#0x134]; ldrb.w r3,[r3,#0x276]; cbnz -> 1 ; ldrb.w r3,[r0,#0x150]; cbz -> 1 ; else 0",
+    "disasm 0x57b84 near 0x58384: App::vf8 (getPlatform) ; ldr r3,[r3,#0x68] ; blx ; cmp r0,#0 ; moveq r3,#1 ; movne r3,#0 ; strb.w r3,[r6,#0x150] ; bl 0x56420",
+    "arm32re ptrs 0x33fb88 -> 0x0057fd41 ('AddExternalServerScreen::vf17' = shared 'movs r0,#1; ret' stub at 0x17fd40, verified bytes 2de90048eb460120bde80088)",
+    "arm32re callers 0x551dc (TouchInputHolder ctor) <- 0x56420 only; 0x55644 (CustomInputHolder ctor) <- CustomInputHolder::vf0 and 0x56420"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.show_keyboard",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x0004fac4",
+   "summary": "AppPlatform_Winrt::showKeyboard (vtable slot 31, +0x7c; caller found: the game's TextBox widget focus handler TextBox::vf19 0x68d98 [TextBox+0x114 = focused flag]; hideKeyboard is called from TextBox::vf20 0x68ba4): converts the std::string to an HSTRING and calls HID::ShowKeyboard (0x114220) then the base AppPlatform::showKeyboard (0x47a00: sets platform byte +4 = 1).",
+   "arm_signature": "void showKeyboard(AppPlatform_Winrt* r0, const std::string& text /*r1*/, int maxLen /*r2*/, bool limitLength /*r3*/)",
+   "x86_to_arm_notes": "Level signal for the host: platform+4 (byte) == 1. HID::ShowKeyboard packages {HID, HSTRING text, int maxLen, bool limit} into lambda_set_text_select_focus_textbox and runs it with CoreWindow.Dispatcher.RunAsync (priority 0).",
+   "expected_bytes": "2de9f04b0df1180b",
+   "evidence": [
+    "disasm 0x4fac4: ldr.w r0,[sb,#0x2c] (HID) ; bl 0x114220 ; ... bl 0x47a00",
+    "TextBox::vf19 (0x68d98): ldr r4,[r4,#0x7c]; blx ; strb 1,[r5,#0x114]  (vtable +0x7c = slot 31)",
+    "base vtable 0x33f890 slot 31 = 0x447a01 (sets [this+4]=1)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.lambda_show",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x00110be8",
+   "summary": "DispatchedHandler lambda that actually shows the XAML keyboard (labelled HID:lambda_set_text_select_focus_textbox): HID+0x40 = captured text; maxLength = (limit && n>0) ? n+1 : 50000 (0xC350); QI HID+0x2c -> ITextBox: put_MaxLength (slot 15=+0x3c); put_Text (slot 7=+0x1c, HID+0x40); Select(len,len) (slot 36=+0x90) = caret at end; QI IControl a8912263 -> Focus(FocusState=3 Pointer) (slot 46=+0xb8, helper sub_11127c); HID[0x44]=1.",
+   "arm_signature": "void lambda(ctx /*r0: [ctx]=HID,[ctx+4]=HSTRING text,[ctx+8]=int,[ctx+0xc]=bool*/ )",
+   "x86_to_arm_notes": "THIS is the TabTip trigger: the host's fake TextBox must treat IControl::Focus(Pointer) on the TextBox as 'show on-screen keyboard' and put_Text/Select/put_MaxLength as state setters. put_Text may legitimately fire TextChanged (diff vs HID+0x40 is empty).",
+   "expected_bytes": "2de9f0480df1100b",
+   "evidence": [
+    "disasm 0x110be8: movw r6,#0xc350 default ; QI IID 0x647df0 (ITextBox) slot #0x3c, #0x1c, #0x90 ; QI IID 0x647e10 (IControl) bl 0x11127c(obj,3) ; strb 1,[r3,#0x44]",
+    "sub_11127c: ldr.w r3,[r3,#0xb8] (IControl::Focus slot 46) with r1=state",
+    "iid.py: 0x247df0 = ITextBox e48f5a8b ; 0x247e10 = IControl a8912263"
+   ],
+   "confidence": "high",
+   "verdict": "CORRECTED",
+   "verifier_note": "Sequence confirmed (0x110be8): HID+0x40=text, put_MaxLength(0xc350 default, slot 15), put_Text (slot 7), Select(len,len) (slot 36/+0x90), IControl::Focus via helper 0x11127c (slot 46/+0xb8), HID[0x44]=1 last. CORRECTION: the FocusState argument is movs r1,#3 = FocusState_Programmatic (Windows SDK: Unfocused 0, Pointer 1, Keyboard 2, Programmatic 3), NOT 'Pointer'. This is why Initialize sets PreventKeyboardDisplayOnProgrammaticFocus=false: a programmatic Focus is what raises the keyboard. Treat the TabTip trigger as Focus(Programmatic) on the TextBox."
+  },
+  {
+   "id": "input_text.hide_keyboard",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x0004edac",
+   "summary": "AppPlatform_Winrt::hideKeyboard (vtable slot 32, +0x80): base hide (0x47720: platform byte +4 = 0) then HID::HideKeyboard (0x111b20) which runs lambda_unfocus_textbox_focus_panel (0x1108d4) via CoreWindow.Dispatcher.RunAsync: HID[0x44]=0; QI HID+0x30 -> IControl::Focus(FocusState=3). There is NO explicit InputPane.TryHide: the keyboard closes only because focus moves from the TextBox to the second XAML control.",
+   "arm_signature": "void hideKeyboard(AppPlatform_Winrt* r0)",
+   "x86_to_arm_notes": "THIS is the TabTip hide trigger on the host: Focus(Pointer) on the control stored at HID+0x30 (or platform byte +4 dropping to 0). Because the game never waits for an InputPane Hiding event, a host that keeps TabTip alive after this call leaves the game believing the keyboard is gone (platform+4==0, HID+0x44==0).",
+   "expected_bytes": "2de918480df1080b",
+   "evidence": [
+    "disasm 0x4edac: bl 0x47720 ; ldr r0,[r4,#0x2c] ; b.w 0x111b20",
+    "disasm 0x1108d4: strb 0,[r3,#0x44] ; ldr r3,[r3,#0x30] ; QI IID 0x647e10 ; bl 0x11127c(obj,3)",
+    "sub_111b20 builds lambda via sub_10f5f4 (FunctorCapture lambda_286b6649...) and Dispatcher slot 8 RunAsync(0,handler,&out)"
+   ],
+   "confidence": "high",
+   "verdict": "CORRECTED",
+   "verifier_note": "Chain confirmed: 0x4edac -> base 0x47720 (+4=0) -> tail-branch HID::HideKeyboard 0x111b20 -> RunAsync(lambda via vtable 0xdb8a68 -> 0x1108d4): HID[0x44]=0 (strb at 0x1108f2, BEFORE the Focus) then QI HID+0x30 IControl and Focus(r1=3). CORRECTION: FocusState 3 is Programmatic (not Pointer). Only call sites of InputPane statics (0x1de9cc) are the MainPage ctor and OnInputPaneShowing, and no string TryShow/TryHide/TabTip exists in the exe, so the 'no explicit InputPane hide' claim is CONFIRMED."
+  },
+  {
+   "id": "input_text.update_text",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x00050f2c",
+   "summary": "AppPlatform_Winrt::updateTextBoxText (vtable slot 33, +0x84): std::string -> HSTRING -> HID::UpdateText (0x114410) -> RunAsync lambda_put_text_select_end (0x11079c): HID[0x58]=1 (suppress the diff of the coming TextChanged); QI HID+0x2c ITextBox put_Text (slot 7) ; Select(len,len) (slot 36).",
+   "arm_signature": "void updateTextBoxText(AppPlatform_Winrt* r0, const std::string& text /*r1*/)",
+   "x86_to_arm_notes": "Fake TextBox: set Text and caret; the following TextChanged (if fired) is ignored by the game because HID+0x58==1.",
+   "expected_bytes": "2de9b0480df10c0b",
+   "evidence": [
+    "disasm 0x50f2c..0x50f94: sub_21cc4 string convert ; sub_1edf0 HSTRING ; ldr r0,[r5,#0x2c] ; bl 0x114410",
+    "disasm 0x11079c: strb 1,[r3,#0x58] ; ITextBox slot #0x1c put_Text(capture+4) ; WindowsGetStringLen ; slot #0x90 Select(len,len)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.keyboard_visible_flag",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x00047740",
+   "summary": "Game-side keyboard state, independent of XAML: AppPlatform::isKeyboardVisible (vtable slot 34, +0x88) returns byte platform+4; written only by base showKeyboard 0x47a00 (=1) and hideKeyboard 0x47720 (=0). The host can poll this byte (AppPlatform_Winrt+4) each frame as the authoritative 'keyboard wanted' level signal.",
+   "arm_signature": "bool isKeyboardVisible(AppPlatform_Winrt* r0) -> r0 = [r0+4]",
+   "x86_to_arm_notes": "Robust TabTip design: treat (platform+4) as desired state; show TabTip on 0->1 only if the fake TextBox has focus, hide on 1->0, debounce, and only afterwards raise the InputPane Showing/Hiding delegates.",
+   "expected_bytes": "2de90048eb460079",
+   "evidence": [
+    "disasm 0x47740: ldrb r0,[r0,#4] ; ret ; base vtable 0x33f890 slot 34 = 0x447741",
+    "sub_47a00 strb 1,[r0,#4] ; sub_47720 strb 0,[r0,#4] (only writers found, arm32re callers 0x47a00/0x47720 = AppPlatform_Winrt::vf31/vf32)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.textbox_slots",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "vtable_slot",
+   "arm_rva": null,
+   "summary": "Complete list of vtable slots the game calls on the XAML objects it was handed (fake TextBox / focus control must implement these; QI must succeed for the IIDs): TextBox (HID+0x2c, IInspectable): QI ITextBox e48f5a8b-1dff-4352-a1f4-e516514ec882 -> get_Text 6 (+0x18), put_Text 7 (+0x1c), get_MaxLength 14 (+0x38), put_MaxLength 15 (+0x3c), put_AcceptsReturn 19 (+0x4c), add_TextChanged 30 (+0x78), Select 36 (+0x90). QI ITextBox2 f7168c00-1432-462a-9405-38f385bfc37c -> put_PreventKeyboardDisplayOnProgrammaticFocus 15 (+0x3c). QI IControl a8912263-2951-4f58-a9c5-5a134eaa7f07 -> Focus 46 (+0xb8). Focus control (HID+0x30): QI IControl -> Focus 46. MainPage also QIs both elements for IUIElement 676d0be9 (sub_1dfab8 sets a property on each: see MainPage ctor 0x1dd43e..0x1dd4b8).",
+   "arm_signature": "HRESULT Focus(IControl* r0, FocusState state /*r1*/, boolean* result /*r2*/) ; HRESULT add_TextChanged(ITextBox* r0, TextChangedEventHandler* r1, EventRegistrationToken* r2)",
+   "x86_to_arm_notes": "TextChangedEventHandler Invoke(handler, sender=TextBox, args=TextChangedEventArgs): the game ignores both arguments and re-reads Text through its own stored TextBox pointer.",
+   "expected_bytes": null,
+   "evidence": [
+    "python ann.py on 0x111c1c, 0x113d8c, 0x110be8, 0x11079c, 0x1108d4 with IDL slot names",
+    "sub_115950 (onTextChanged get_Text helper): ldr r3,[r3,#0x18] = ITextBox::get_Text; sub_1115b0 reads get_MaxLength ([r3,#0x38])"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.text_changed",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "function",
+   "arm_rva": "0x00113d8c",
+   "summary": "HID::onTextChanged (delegate TextChangedEventHandler, ctor 0x10fd20). If HID[0x44]==0 -> ignored. Else newText=ITextBox::get_Text(HID+0x2c); if HID[0x58]==0 run diffTextAndFeedKeyboard(HID, oldBuf=HID+0x40, newText) (0x1115b0); HID[0x58]=0; HID+0x40 = duplicate of the new HSTRING. The diff takes the common prefix of old/new: every old char after the prefix => one Backspace press injected into the static Keyboard queue (0x11e33f8, sub_4f5d0 via 0x1119e0); every new char after the prefix => 0x111894 feeds it as text (Enter/CR/LF become key 0x0D events and the CR is stripped back out of the TextBox). So typed text, backspace and Enter all reach the game purely as TextBox.Text changes.",
+   "arm_signature": "void onTextChanged(HID* r0, Object^ sender /*r1*/, TextChangedEventArgs^ args /*r2*/)",
+   "x86_to_arm_notes": "Fake TextBox: keep a std::wstring Text; on WM_CHAR append (L'\\r' for Enter, no insertion for control chars), on Backspace remove last char, then Invoke every TextChanged delegate stored by add_TextChanged. Keep Text equal to the game's last put_Text between calls. Only append/trim at the END is supported by the diff (no caret-in-the-middle editing needed).",
+   "expected_bytes": "2de9f0480df1100b",
+   "evidence": [
+    "disasm 0x113d8c: ldrb [r0,#0x44]; beq skip ; QI 0x647df0 ITextBox ; bl 0x115950 (get_Text) ; ldrb [r4,#0x58] ; bl 0x1115b0 ; strb 0,[r4,#0x58] ; Duplicate HSTRING -> [r4,#0x40]",
+    "disasm 0x1115b0: prefix loop 'ldrh r2,[r8,r5,lsl #1]; ldrh r3,[r3,r5,lsl #1]; cmp; bne' ; bl 0x1119e0 (old tail) ; bl 0x111894 (new tail) ; compares char with 0xd/0xa in 0x111894",
+    "sub_1119e0 references static queue 0x11e33f8 and key array 0x11e2ff8 (sub_4d050/sub_4f5d0 pushes)"
+   ],
+   "confidence": "medium",
+   "verdict": "CORRECTED",
+   "verifier_note": "Summary re-derived: returns if HID[0x44]==0; reads text through ITextBox::get_Text(slot 6, wrapper 0x115950); if HID[0x58]==0 runs diff 0x1115b0; ALWAYS clears HID[0x58] afterwards (strb 0 at 0x113e44, i.e. after the diff returns) and mirrors the new text into HID+0x40. Diff: ITextBox::get_MaxLength (slot 14) -> if len==MaxLength (<0xC34F) and last char not 0/CR the last char is dropped; common prefix; 0x1119e0 feedBackspaces for the old suffix; 0x111894 feedChars for the new suffix; then every '\\r\\n' pair (wstring at 0x247e60) is removed from the new text and written back with put_Text and HID[0x58]=1 (the outer handler clears that flag again afterwards). CORRECTIONS to the notes: (1) only an adjacent CR+LF pair is an Enter (feedChars tests ldrh [p]==0xD and [p+2]==0xA, then pushes Keyboard key 0xD down and sets the key-state cell); a lone CR is fed as a TEXT char and is never stripped, so the host must insert L\"\\r\\n\" for Enter, not L'\\r'. (2) The diff does NOT use queueInputEvent/pumpInput: sub_4f5d0/sub_4f648/sub_4d050 are the same static Keyboard vector pushes that Keyboard::feed/feedText make on the render thread, called directly (unlocked) from the thread that fires TextChanged. (3) Because the outer handler clears 0x58 after the diff, TextChanged must be delivered the way XAML does (asynchronously after put_Text returns) and the CRLF-strip path leaves HID+0x40 holding the unstripped text; test Enter in chat on device."
+  },
+  {
+   "id": "input_text.inputpane",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x001df714",
+   "summary": "InputPane events registered in the MainPage ctor via statics 'Windows.UI.ViewManagement.InputPane' (sub_1de9cc, IInputPaneStatics 95f4af3a slot 6 GetForCurrentView): IInputPane::add_Hiding (slot 8, +0x20) <- MainPage::OnInputPaneHiding 0x1df700 => AppMain::SetKeyboardHeight(0); IInputPane::add_Showing (slot 6, +0x18) <- MainPage::OnInputPaneShowing 0x1df714: re-fetches InputPane, calls IInputPane::get_OccludedRect (slot 10, +0x28, Windows.Foundation.Rect floats X,Y,W,H; Height at +0xC) and calls AppMain::SetKeyboardHeight((int)Height) (0x1da5b4 -> MinecraftClient::setKeyboardHeight 0x59578: client+0x164 = h * scale, then notifies the current screen via screen vtable +0x78). The event args are ignored.",
+   "arm_signature": "void OnInputPaneShowing(MainPage* r0, InputPane^ r1, InputPaneVisibilityEventArgs^ r2) ; void OnInputPaneHiding(...)",
+   "x86_to_arm_notes": "Host: fake InputPane with get_OccludedRect returning the TabTip rectangle (client coords, DIPs) BEFORE invoking the Showing delegate (args may be NULL or any object); invoke Hiding with no rect needed. The game's own show/hide intent never depends on these events.",
+   "expected_bytes": "2de9b0480df10c0b",
+   "evidence": [
+    "disasm 0x1dd2e0..0x1dd38c: sub_1dc8bc(delegate sub_1df700) ; ldr r3,[r3,#0x20] ; sub_1dc8bc(delegate sub_1df714) ; ldr r3,[r3,#0x18]",
+    "disasm 0x1df714: bl 0x1de9cc ; ldr r3,[r3,#0x28] (get_OccludedRect) ; vldr s0,[r7,#0x1c] (Height) ; vcvt.s32.f32 ; bl 0x1da5b4",
+    "disasm 0x1df700: movs r1,#0 ; b.w 0x1da5b4",
+    "IDL IInputPane: 6 add_Showing, 8 add_Hiding, 10 get_OccludedRect ; wstr 'Windows.UI.ViewManagement.InputPane' at 0x2e2938"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.back_button",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x001df4e8",
+   "summary": "Back button: MainPage ctor registers EventHandler<BackPressedEventArgs> (delegate ctor sub_1dca8c, handler MainPage::OnBackPressed 0x1df4e8) through helper sub_1e1798 = HardwareButtons::add_BackPressed (activation factory 'Windows.Phone.UI.Input.HardwareButtons', IID {594B8780-DA66-4FD8-A776-7506BD0CBFA7} built on the stack, factory vtable slot 6 add_BackPressed). Handler: handled = AppMain::HandleBack (0x1da248) ; args->put_Handled(handled) (IBackPressedEventArgs slot 7, +0x1c). HandleBack: under AppMain critical_section, if RTDynamicCast(client->[0x6c] (current screen), Screen -> Touch::StartMenuScreen) fails (i.e. NOT on the start menu) it queues a type4 event (0x4ae2c) and returns TRUE; on the start menu returns FALSE (OS default = leave the app). The type4 event is dispatched in pollInputEvent to MinecraftClient::handleBack(false) (vtable slot 24, 0x575bc).",
+   "arm_signature": "void OnBackPressed(MainPage* r0, Object^ sender /*r1*/, BackPressedEventArgs^ args /*r2*/) ; HRESULT put_Handled(args, boolean)",
+   "x86_to_arm_notes": "Host: provide the HardwareButtons statics factory (add_BackPressed slot 6) and a fake BackPressedEventArgs with put_Handled(1)/get_Handled(0) slots; map Esc/Alt+Left/Browser-Back (and optionally the Windows RT back gesture) to Invoke(handler, NULL, args); if Handled stays FALSE do the default (close/minimise).",
+   "expected_bytes": "2de918480df1080b",
+   "evidence": [
+    "disasm 0x1df4e8: ldr r0,[r0,#0x7c]; bl 0x1da248; ldr r3,[r4]; ldr r3,[r3,#0x1c] (put_Handled)",
+    "disasm 0x1da248: __RTDynamicCast(client+0x6c, Screen td 0xdcb110, Touch::StartMenuScreen td 0xdcb128) ; cbnz -> return 0 ; else bl 0x4ae2c ; return 1",
+    "disasm 0x4b3fa (poll case 4): ldr r3,[r5,#0x10]; RTDynamicCast ; ldr r3,[r3,#0x60]; blx (MinecraftClient vtable 0x33ffcc slot 24 = 0x4575bd)",
+    "RTTI string 'Windows.Foundation.EventHandler`1<Windows.Phone.UI.Input.BackPressedEventArgs>' at 0x2e2740"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.agile_corewindow",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": "0x00114194",
+   "summary": "HID stores the CoreWindow in Platform::Agile<CoreWindow^> (HID+0x14). Agile ctor (sub_114194) QIs the object for IAgileObject {94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90}; if it succeeds the state flag (+0xc of the Agile = HID+0x20) is set to 1 and Resolve (sub_1112f4) returns the pointer directly; otherwise the Agile takes the cross-apartment path (sub_109360 prepares a marshalling cookie; Resolve compares CoGetContextToken with the stored token and calls vccorlib GetProxyImpl(obj, ICoreWindow 79b9d5f2) when the context differs). Every RunAsync wrapper (ShowKeyboard/HideKeyboard/UpdateText/cursor lambdas) resolves the CoreWindow this way before calling get_Dispatcher (sub_11583c = ICoreWindow slot 9 +0x24) and Dispatcher.RunAsync (slot 8 +0x20, priority 0).",
+   "arm_signature": "Platform::Agile<CoreWindow^>: ctor sub_114194(Agile* r0, CoreWindow^ r1); resolve sub_1112f4(Agile* r0) -> CoreWindow^",
+   "x86_to_arm_notes": "The fake CoreWindow (and any fake dispatcher it returns) MUST answer QueryInterface(IAgileObject) with S_OK, otherwise the game tries to marshal a non-COM fake and keyboard show/hide, cursor changes and text updates silently fail.",
+   "expected_bytes": "2de9b0480df10c0b",
+   "evidence": [
+    "python iid.py: rdata 0x243610 = 94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90 (IAgileObject) used in sub_114194 (movw r1,#0x3610/movt #0x64) ; 'cbz r0 -> str 1,[r4,#0xc]'",
+    "disasm 0x1112f4: ldr r3,[r5,#0xc]; cmp r3,#1; beq return-direct ; CoGetContextToken IAT 0x60b078 ; GetProxyImpl IAT 0x60b654 with IID 0x647e50 (ICoreWindow)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.dispatcher_runasync",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": "0x0011401c",
+   "summary": "All UI-thread work from the HID goes through ICoreDispatcher (IID 60db2fa8): CoreWindow::get_Dispatcher (slot 9) then ICoreDispatcher::RunAsync(CoreDispatcherPriority priority=0, DispatchedHandler* handler, IAsyncAction** out) (slot 8 +0x20) [wrappers sub_11401c, sub_114220, sub_111b20, sub_114410, onPointer*]; ICoreDispatcher::ProcessEvents(CoreProcessEventsOption=2) (slot 7) on the input worker thread. The host dispatcher should AddRef the handler, queue it and later call handler vtable[3] Invoke(handler) on the thread that owns the fake XAML objects (UI thread); the returned IAsyncAction may be a trivial completed fake.",
+   "arm_signature": "HRESULT RunAsync(ICoreDispatcher* r0, int priority /*r1*/, DispatchedHandler* handler /*r2*/, IAsyncAction** out /*r3*/)",
+   "x86_to_arm_notes": "win32_host.c already has this pattern (fake_core_dispatcher_run_async / vtable[3] invoke); reuse the idea but not the x86 code. Do NOT run these lambdas synchronously inside RunAsync from within the game thread that called showKeyboard if the lambda touches the keyboard window (TabTip) - queue them to the Win32 message thread.",
+   "expected_bytes": "2de990480df1080b",
+   "evidence": [
+    "disasm 0x114220 tail: ldr r4,[r0]; ldr r4,[r4,#0x20]; r1=0,r2=handler,r3=&out ; blx r4",
+    "disasm 0x110b60..0x110b78 (sub_1157e0 + ldr r3,[r3,#0x1c] with r1=2) = ProcessEvents(2)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.activation_factories_input",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Activation factories requested by the input code (all via vccorlib GetActivationFactoryByPCWSTR, thunk RVA 0x2001e4): 'Windows.UI.Core.CoreWindow' (ICoreWindowStatic 4d239005-3c2a-41b1-9022-536bb9cf93b1 slot 6 GetForCurrentThread - sub_111420), 'Windows.UI.Core.CoreCursor' (ICoreCursorFactory f6359621-a79d-4ed3-8c32-a9ef9d6b76a4 slot 6 CreateCursor), 'Windows.UI.Xaml.Window' (IWindowStatics 93328409-4ea1-4afa-83dc-0c4e73e88bb1 slot 6 get_Current - sub_1dac80; IWindow 3276167d slot 10 get_CoreWindow - sub_1daacc), 'Windows.UI.ViewManagement.InputPane' (IInputPaneStatics 95f4af3a slot 6 GetForCurrentView - sub_1de9cc), 'Windows.Phone.UI.Input.HardwareButtons' (IHardwareButtonsStatics 594b8780-da66-4fd8-a776-7506bd0cbfa7 slot 6 add_BackPressed - sub_1e1798), 'Windows.System.Threading.ThreadPool' (IThreadPoolStatics b6bf67dd slot 8 RunAsync(handler,priority,options) - sub_114078), 'Windows.Graphics.Display.DisplayInformation' (IDisplayInformation bed112ae via statics GetForCurrentView - sub_4af58).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Every one of these must be answered by the host's activation redirect; CoreWindow and InputPane objects are process-wide singletons here (the game calls GetForCurrentThread/GetForCurrentView from several threads).",
+   "expected_bytes": null,
+   "evidence": [
+    "wstr xrefs: 0x6480c4 'Windows.UI.Core.CoreWindow' in sub_111420; 0x64824c 'Windows.UI.Core.CoreCursor' in sub_1102e8; 0x6e2938 InputPane in sub_1de9cc; 0x6e27e0 HardwareButtons in sub_1e1798; 0x6de670 'Windows.UI.Xaml.Window' in sub_1dac80; 0x6481c0 ThreadPool in sub_114078",
+    "iid.py against SDK headers resolved the factory/interface IIDs"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.window_events_noninput",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "hook_site",
+   "arm_rva": "0x001df9ac",
+   "summary": "Other window/display events registered by the MainPage ctor (for completeness, owned by other areas): CoreWindow::add_VisibilityChanged (slot 56, +0xe0) <- 0x1df9ac (start/stop render loop); DisplayInformation::add_DpiChanged (slot 14, +0x38) <- 0x1df67c (DeviceResources::SetDpi); add_OrientationChanged (slot 8, +0x20) <- 0x1df76c; DisplayContentsInvalidated <- 0x1df618; SwapChainPanel::add_CompositionScaleChanged (slot 8) <- 0x1df510; FrameworkElement::add_SizeChanged <- 0x1df808. None of them feeds input except the DPI/composition scale numbers the pointer scale reads at Initialize time.",
+   "arm_signature": null,
+   "x86_to_arm_notes": null,
+   "expected_bytes": "2de990480df1080b",
+   "evidence": [
+    "disasm 0x1dcf5c (MainPage ctor) slot loads #0xe0, #0x38, #0x20 and the delegate function pointers movw r2,#0xf9ad/#0xf67d/#0xf76d/#0xf619/#0xf511/#0xf809"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.not_found_inputs",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "NOT present in 0.10.4: mouse wheel (no PointerWheelChanged), CharacterReceived, PointerEntered/Exited/CaptureLost, SetPointerCapture, gamepad/Windows.Gaming.Input, ICoreWindow GetAsyncKeyState/GetKeyState (slots 20/21, not used by HID or MainPage), XAML UIElement pointer routed events, UIElement KeyDown. Pen is treated as touch (device type != 2). Right/middle mouse buttons never create touch contacts.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Do not implement wheel or character events in the host; they would never be delivered.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re str CharacterReceived / WheelChanged -> no matches; registration inventory of HID::Initialize and sub_110940 lists only Pressed/Moved/Released/KeyDown/KeyUp/TextChanged"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "input_text.host_delivery_plan",
+   "x86_symbol": "n/a (0.10.4 XAML build, no x86 analogue)",
+   "x86_value": "n/a",
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Ordered host plan (see .md for details): 1) provide fakes (Window.Current.CoreWindow, SwapChainPanel, TextBox, focus Control, InputPane, HardwareButtons statics, CoreCursor factory, ThreadPool, DispatcherTimer) - all objects must be QI-able for the IIDs listed; CoreWindow/dispatcher must answer IAgileObject. 2) let the game run MainPage::OnTick/attachUi/initInput so HID::Initialize registers delegates (or call 0x111c1c yourself after AppMain+0x3c). 3) capture the delegates passed to add_* (pointer x3, key x2, TextChanged, BackPressed, InputPane Showing/Hiding). 4) from WM_POINTER/WM_LBUTTON... build fake PointerEventArgs and Invoke vtable[3]; from WM_KEYDOWN/KEYUP build fake KeyEventArgs; from WM_CHAR/backspace drive the fake TextBox Text + TextChanged while HID[0x44]==1. 5) run RunAsync queue on the Win32 UI thread; on TextBox Focus show TabTip, on Focus(HID+0x30) hide it, reconcile with platform+4, then raise InputPane Showing/Hiding. 6) pumpInput runs on the game's own render loop - nothing to do.",
+   "arm_signature": null,
+   "x86_to_arm_notes": null,
+   "expected_bytes": null,
+   "evidence": [
+    "synthesis of the facts above"
+   ],
+   "confidence": "medium",
+   "verdict": "CORRECTED",
+   "verifier_note": "Structure of the plan is sound (MainPage-driven init, capture the delegates, fake args, UI-thread dispatcher). Corrections: (a) Focus is FocusState_Programmatic (3), not Pointer; (b) Enter must be delivered as L\"\\r\\n\" in the fake TextBox text (a lone CR is plain text); (c) after any game put_Text the fake must fire TextChanged once (the game sets HID[0x58] before put_Text and only a TextChanged clears it) and TextChanged should be delivered after the setter returns; (d) the pointer handlers are registered from a ThreadPool work item, so the fake ThreadPool must run it and ProcessEvents(2) must return or run on its own thread; (e) the fake SwapChainPanel must also answer get_CompositionScaleX (slot 6) and IUIElement::get_RenderSize (slot 23, used 3x by attachUi 0x1da634 to set client/platform size), the fake DisplayInformation slots 11/12/13; (f) hardware-keyboard path: drop modifier VKs when HID[0x44]==0."
+  }
+ ],
+ "port_instructions": [
+  "Do NOT bypass MainPage: input exists only after HIDController::Initialize (0x111c1c) has run. It is reached from MainPage::OnTick (0x1df8a4) -> AppMain::attachUi (0x1da634) -> AppPlatform_Winrt::initInput (0x4b55c) once AppMain+0x3c (IsAppInitialized, 0x1da310) is non-zero. Either fake MainPage+DispatcherTimer (50 ms) faithfully or call those functions yourself with the fake objects.",
+  "Build these fakes (every object needs working QueryInterface/AddRef/Release plus the slots listed in input_text.* facts): CoreWindow (ICoreWindow 79b9d5f2 + IAgileObject): get_Dispatcher(9), put_PointerCursor(15), add_KeyDown(34), add_KeyUp(36), add_PointerMoved(44), add_PointerPressed(46), add_PointerReleased(48), add_VisibilityChanged(56). Window.Current: IWindow get_CoreWindow(10). SwapChainPanel (ISwapChainPanel c589644f): CreateCoreIndependentInputSource(10) -> source with ICoreInputSourceBase::get_Dispatcher(6) and ICorePointerInputSource add_PointerMoved(18)/Pressed(20)/Released(22). TextBox: ITextBox (get_Text 6, put_Text 7, get_MaxLength 14, put_MaxLength 15, put_AcceptsReturn 19, add_TextChanged 30, Select 36) + ITextBox2 (put_PreventKeyboardDisplayOnProgrammaticFocus 15) + IControl (Focus 46) + IUIElement. Focus control: IControl (Focus 46) + IUIElement.",
+  "Delivering input: invoke the captured delegates with ((HRESULT(*)(void*,void*,void*))(*(void***)h)[3])(h, sender, args). Pointer args object: slot 6 get_CurrentPoint -> PointerPoint{6 get_PointerDevice, 7 get_Position(float X,Y), 9 get_PointerId, 13 get_Properties}; PointerDevice{6 get_PointerDeviceType: 0 touch,1 pen,2 mouse}; Properties{16 get_IsLeftButtonPressed}. Key args: slot 6 get_VirtualKey (Win32 VK), slot 7 get_KeyStatus (RepeatCount first dword, <=12 bytes).",
+  "Mouse: PointerDeviceType=2, send Pressed/Moved/Released with IsLeftButtonPressed reflecting the left button (Released must report 0). Touch: type 0, unique PointerId per contact, always send Released. Positions in DIPs; with composition scale 1.0 (DeviceResources+0x60/+0x64) or HID+0x50/+0x54 = 1.0f DIPs = pixels.",
+  "Text: while HID[0x44]==1 (set by the game's show lambda) key events are ignored by the game - drive the fake TextBox instead: WM_CHAR -> append to Text, backspace -> trim, Enter -> L'\\r', then Invoke TextChanged delegates. Honour put_Text/Select/put_MaxLength from the game. After updateTextBoxText the game sets HID+0x58 so the echo is ignored.",
+  "Keyboard show/hide: Focus(Pointer) on the TextBox = show (platform byte +4 becomes 1 at the same time), Focus(Pointer) on HID+0x30 = hide (+4 becomes 0). Prefer a level-triggered reconcile loop on AppPlatform_Winrt+4 (and HID+0x44) with debounce over reacting to single calls; raise InputPane Showing (set OccludedRect first) / Hiding only after the keyboard really changed.",
+  "Back: add_BackPressed handler is MainPage::OnBackPressed; call it with a fake BackPressedEventArgs (put_Handled slot 7). If Handled==FALSE (start menu) perform the default exit/minimise.",
+  "Optional: force mouse+keyboard UI by patching the vtable cell 0x33fb88 to 0x00429ba1 before MinecraftClient init (verify original 0x0057fd41) - NOT needed, the touch UI works with mouse-as-touch."
+ ],
+ "open_questions": [
+  "Default of Options byte +0x276 (USE_TOUCHSCREEN) is unknown: only two writers found (sub_a20dc toggle, sub_a230c options load). Matters only for the optional mouse-mode patch.",
+  "AppPlatform_Winrt+0x48/+0x4c (64-bit GetTickCount64 deadline checked in pumpInput 0x50eac which then calls StatusBar::GetForCurrentView (sub_4aeb8) vtable slot 7): who arms the deadline and what the call does (likely HideAsync of the phone status bar after the keyboard closes) was not traced; a no-op fake StatusBar is probably enough.",
+  "Exact semantics of sub_1da634's remaining body (sizes of the SwapChainPanel/TextBox elements, uses of AppMain+0x34/+0x38) were not decoded; only the HID::Initialize hand-off is certain.",
+  "The text diff (0x1115b0/0x111894/0x1119e0) was read at control-flow level only: max-length handling (get_MaxLength compared with 0xC34E+1) and which chars are treated as Enter (0x0D/0x0A) are medium confidence; test with the chat box.",
+  "Whether the real Platform::Agile marshalling fallback could work with a hand-written COM fake that lacks IAgileObject was not tested; the fix (answer IAgileObject) is straightforward and recommended.",
+  "Hardware keyboard repeat: onKeyDown drops RepeatCount>1; held WASD/arrow keys therefore produce a single press (fine for touch UI, relevant only if mouse mode is enabled)."
+ ]
+}

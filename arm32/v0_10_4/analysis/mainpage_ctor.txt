@@ -1,0 +1,701 @@
+﻿function sub_1dcf5c  [001dcf5c..001dd6bc) len=1888
+001dcf5c: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+001dcf60: 0df11c0b add.w    fp, sp, #0x1c               
+001dcf64: 2ded028b vpush    {d8}                        
+001dcf68: 24f676fa bl       #0x1458                       ; sub_1458
+001dcf6c: a8b0     sub      sp, #0xa0                   
+001dcf6e: 6f46     mov      r7, sp                      
+001dcf70: 82b0     sub      sp, #8                      
+001dcf72: 6ff00103 mvn      r3, #1                      
+001dcf76: c7e90a33 strd     r3, r3, [r7, #0x28]         
+001dcf7a: 48f6f823 movw     r3, #0x8af8                   ; -> 0x011c8af8 vtable .?AVMainPage@MCPE_Host@@
+001dcf7e: c0f21c13 movt     r3, #0x11c                  
+001dcf82: 0546     mov      r5, r0                      
+001dcf84: 4ff00008 mov.w    r8, #0                      
+001dcf88: 2b60     str      r3, [r5]                    
+001dcf8a: 48f62c33 movw     r3, #0x8b2c                   ; -> 0x011c8b2c vtable .?AVMainPage@MCPE_Host@@
+001dcf8e: c0f21c13 movt     r3, #0x11c                  
+001dcf92: fd60     str      r5, [r7, #0xc]              
+001dcf94: 6b60     str      r3, [r5, #4]                
+001dcf96: 48f65033 movw     r3, #0x8b50                   ; -> 0x011c8b50 vtable .?AVMainPage@MCPE_Host@@
+001dcf9a: c0f21c13 movt     r3, #0x11c                  
+001dcf9e: c0f85c80 str.w    r8, [r0, #0x5c]             
+001dcfa2: 2b62     str      r3, [r5, #0x20]             
+001dcfa4: 48f66c33 movw     r3, #0x8b6c                   ; -> 0x011c8b6c vtable .?AVMainPage@MCPE_Host@@
+001dcfa8: c0f21c13 movt     r3, #0x11c                  
+001dcfac: eb60     str      r3, [r5, #0xc]              
+001dcfae: 48f69833 movw     r3, #0x8b98                   ; -> 0x011c8b98 vtable .?AVMainPage@MCPE_Host@@
+001dcfb2: c0f21c13 movt     r3, #0x11c                  
+001dcfb6: ab60     str      r3, [r5, #8]                
+001dcfb8: 48f6ec33 movw     r3, #0x8bec                   ; -> 0x011c8bec vtable .?AVMainPage@MCPE_Host@@
+001dcfbc: c0f21c13 movt     r3, #0x11c                  
+001dcfc0: eb64     str      r3, [r5, #0x4c]             
+001dcfc2: 48f61043 movw     r3, #0x8c10                   ; -> 0x011c8c10 vtable .?AVMainPage@MCPE_Host@@
+001dcfc6: c0f21c13 movt     r3, #0x11c                  
+001dcfca: 2b65     str      r3, [r5, #0x50]             
+001dcfcc: 48f62843 movw     r3, #0x8c28                   ; -> 0x011c8c28 vtable .?AVMainPage@MCPE_Host@@
+001dcfd0: c0f21c13 movt     r3, #0x11c                  
+001dcfd4: 6b65     str      r3, [r5, #0x54]             
+001dcfd6: c0f86080 str.w    r8, [r0, #0x60]             
+001dcfda: c0f86480 str.w    r8, [r0, #0x64]             
+001dcfde: c0f86880 str.w    r8, [r0, #0x68]             
+001dcfe2: c0f86c80 str.w    r8, [r0, #0x6c]             
+001dcfe6: c0f87080 str.w    r8, [r0, #0x70]             
+001dcfea: c0f87480 str.w    r8, [r0, #0x74]             
+001dcfee: c0f87880 str.w    r8, [r0, #0x78]             
+001dcff2: 00f17c0a add.w    sl, r0, #0x7c               
+001dcff6: caf80080 str.w    r8, [sl]                    
+001dcffa: 0123     movs     r3, #1                      
+001dcffc: 80f88030 strb.w   r3, [r0, #0x80]             
+001dd000: c0f88480 str.w    r8, [r0, #0x84]             
+001dd004: 6fea0803 mvn.w    r3, r8                      
+001dd008: c0f88c30 str.w    r3, [r0, #0x8c]             
+001dd00c: 4bf22803 movw     r3, #0xb028                   ; -> 0x0122b028 .data+0xaec028
+001dd010: c0f22213 movt     r3, #0x122                  
+001dd014: 1b68     ldr      r3, [r3]                    
+001dd016: 1bb1     cbz      r3, #0x1dd020               
+001dd018: 1846     mov      r0, r3                      
+001dd01a: 1b68     ldr      r3, [r3]                    
+001dd01c: 1b68     ldr      r3, [r3]                    
+001dd01e: 9847     blx      r3                          
+001dd020: 05f10800 add.w    r0, r5, #8                  
+001dd024: 00f026fc bl       #0x1dd874                     ; sub_1dd874
+001dd028: 2846     mov      r0, r5                      
+001dd02a: 10f0d5fe bl       #0x1eddd8                     ; MCPE_Host::MainPage::vf9
+001dd02e: fdf727fe bl       #0x1dac80                     ; sub_1dac80
+001dd032: 0446     mov      r4, r0                      
+001dd034: c7f88040 str.w    r4, [r7, #0x80]             
+001dd038: fdf748fd bl       #0x1daacc                     ; sub_1daacc
+001dd03c: 0646     mov      r6, r0                      
+001dd03e: 7e60     str      r6, [r7, #4]                
+001dd040: c7f88460 str.w    r6, [r7, #0x84]             
+001dd044: 16b1     cbz      r6, #0x1dd04c               
+001dd046: 3368     ldr      r3, [r6]                    
+001dd048: 5b68     ldr      r3, [r3, #4]                
+001dd04a: 9847     blx      r3                          
+001dd04c: 3e61     str      r6, [r7, #0x10]             
+001dd04e: 1eb1     cbz      r6, #0x1dd058               
+001dd050: 3368     ldr      r3, [r6]                    
+001dd052: 3046     mov      r0, r6                      
+001dd054: 9b68     ldr      r3, [r3, #8]                
+001dd056: 9847     blx      r3                          
+001dd058: 1cb1     cbz      r4, #0x1dd062               
+001dd05a: 2368     ldr      r3, [r4]                    
+001dd05c: 2046     mov      r0, r4                      
+001dd05e: 9b68     ldr      r3, [r3, #8]                
+001dd060: 9847     blx      r3                          
+001dd062: 5821     movs     r1, #0x58                   
+001dd064: 0c20     movs     r0, #0xc                    
+001dd066: 23f0e3f8 bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd06a: c7f88000 str.w    r0, [r7, #0x80]             
+001dd06e: 4ff6ad12 movw     r2, #0xf9ad                   ; -> 0x005df9ad fn sub_1df9ac
+001dd072: c0f25d02 movt     r2, #0x5d                   
+001dd076: 0221     movs     r1, #2                      
+001dd078: 0091     str      r1, [sp]                    
+001dd07a: 2946     mov      r1, r5                      
+001dd07c: 0023     movs     r3, #0                      
+001dd07e: cdf80480 str.w    r8, [sp, #4]                
+001dd082: fff733fb bl       #0x1dc6ec                     ; sub_1dc6ec
+001dd086: 0446     mov      r4, r0                      
+001dd088: c7f88040 str.w    r4, [r7, #0x80]             
+001dd08c: 3368     ldr      r3, [r6]                    
+001dd08e: 0146     mov      r1, r0                      
+001dd090: 17f12002 adds.w   r2, r7, #0x20               
+001dd094: d3f8e030 ldr.w    r3, [r3, #0xe0]             
+001dd098: 3046     mov      r0, r6                      
+001dd09a: 9847     blx      r3                          
+001dd09c: 0028     cmp      r0, #0                      
+001dd09e: 01da     bge      #0x1dd0a4                   
+001dd0a0: 35f69cf8 bl       #0x121dc                      ; sub_121dc
+001dd0a4: 1cb1     cbz      r4, #0x1dd0ae               
+001dd0a6: 2368     ldr      r3, [r4]                    
+001dd0a8: 2046     mov      r0, r4                      
+001dd0aa: 9b68     ldr      r3, [r3, #8]                
+001dd0ac: 9847     blx      r3                          
+001dd0ae: 6df653ff bl       #0x4af58                      ; sub_4af58
+001dd0b2: 8146     mov      sb, r0                      
+001dd0b4: c7f88000 str.w    r0, [r7, #0x80]             
+001dd0b8: 10b1     cbz      r0, #0x1dd0c0               
+001dd0ba: 0368     ldr      r3, [r0]                    
+001dd0bc: 5b68     ldr      r3, [r3, #4]                
+001dd0be: 9847     blx      r3                          
+001dd0c0: c7f82090 str.w    sb, [r7, #0x20]             
+001dd0c4: b9f1000f cmp.w    sb, #0                      
+001dd0c8: 04d0     beq      #0x1dd0d4                   
+001dd0ca: d9f80030 ldr.w    r3, [sb]                    
+001dd0ce: 4846     mov      r0, sb                      
+001dd0d0: 9b68     ldr      r3, [r3, #8]                
+001dd0d2: 9847     blx      r3                          
+001dd0d4: 5821     movs     r1, #0x58                   
+001dd0d6: 0c20     movs     r0, #0xc                    
+001dd0d8: 23f0aaf8 bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd0dc: c7f88000 str.w    r0, [r7, #0x80]             
+001dd0e0: 4ff27d62 movw     r2, #0xf67d                   ; -> 0x005df67d fn sub_1df67c
+001dd0e4: c0f25d02 movt     r2, #0x5d                   
+001dd0e8: 0226     movs     r6, #2                      
+001dd0ea: 0023     movs     r3, #0                      
+001dd0ec: 2946     mov      r1, r5                      
+001dd0ee: cdf80480 str.w    r8, [sp, #4]                
+001dd0f2: 0096     str      r6, [sp]                    
+001dd0f4: fff76efb bl       #0x1dc7d4                     ; sub_1dc7d4
+001dd0f8: 0446     mov      r4, r0                      
+001dd0fa: c7f88040 str.w    r4, [r7, #0x80]             
+001dd0fe: d9f80030 ldr.w    r3, [sb]                    
+001dd102: 0146     mov      r1, r0                      
+001dd104: 17f15002 adds.w   r2, r7, #0x50               
+001dd108: 9b6b     ldr      r3, [r3, #0x38]             
+001dd10a: 4846     mov      r0, sb                      
+001dd10c: 9847     blx      r3                          
+001dd10e: 0028     cmp      r0, #0                      
+001dd110: 01da     bge      #0x1dd116                   
+001dd112: 35f663f8 bl       #0x121dc                      ; sub_121dc
+001dd116: 1cb1     cbz      r4, #0x1dd120               
+001dd118: 2368     ldr      r3, [r4]                    
+001dd11a: 2046     mov      r0, r4                      
+001dd11c: 9b68     ldr      r3, [r3, #8]                
+001dd11e: 9847     blx      r3                          
+001dd120: 5821     movs     r1, #0x58                   
+001dd122: 0c20     movs     r0, #0xc                    
+001dd124: 23f084f8 bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd128: c7f88000 str.w    r0, [r7, #0x80]             
+001dd12c: 4ff26d72 movw     r2, #0xf76d                   ; -> 0x005df76d fn sub_1df76c
+001dd130: c0f25d02 movt     r2, #0x5d                   
+001dd134: 0023     movs     r3, #0                      
+001dd136: 2946     mov      r1, r5                      
+001dd138: cdf80480 str.w    r8, [sp, #4]                
+001dd13c: 0096     str      r6, [sp]                    
+001dd13e: fff749fb bl       #0x1dc7d4                     ; sub_1dc7d4
+001dd142: 0446     mov      r4, r0                      
+001dd144: c7f88040 str.w    r4, [r7, #0x80]             
+001dd148: d9f80030 ldr.w    r3, [sb]                    
+001dd14c: 0146     mov      r1, r0                      
+001dd14e: 17f17002 adds.w   r2, r7, #0x70               
+001dd152: 1b6a     ldr      r3, [r3, #0x20]             
+001dd154: 4846     mov      r0, sb                      
+001dd156: 9847     blx      r3                          
+001dd158: 0028     cmp      r0, #0                      
+001dd15a: 01da     bge      #0x1dd160                   
+001dd15c: 35f63ef8 bl       #0x121dc                      ; sub_121dc
+001dd160: 1cb1     cbz      r4, #0x1dd16a               
+001dd162: 2368     ldr      r3, [r4]                    
+001dd164: 2046     mov      r0, r4                      
+001dd166: 9b68     ldr      r3, [r3, #8]                
+001dd168: 9847     blx      r3                          
+001dd16a: 5821     movs     r1, #0x58                   
+001dd16c: 0c20     movs     r0, #0xc                    
+001dd16e: 23f05ff8 bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd172: c7f88000 str.w    r0, [r7, #0x80]             
+001dd176: 4ff21962 movw     r2, #0xf619                   ; -> 0x005df619 fn sub_1df618
+001dd17a: c0f25d02 movt     r2, #0x5d                   
+001dd17e: 0023     movs     r3, #0                      
+001dd180: 2946     mov      r1, r5                      
+001dd182: cdf80480 str.w    r8, [sp, #4]                
+001dd186: 0096     str      r6, [sp]                    
+001dd188: fff724fb bl       #0x1dc7d4                     ; sub_1dc7d4
+001dd18c: 0446     mov      r4, r0                      
+001dd18e: c7f88040 str.w    r4, [r7, #0x80]             
+001dd192: 17f13000 adds.w   r0, r7, #0x30               
+001dd196: 2146     mov      r1, r4                      
+001dd198: 04f050fb bl       #0x1e183c                     ; sub_1e183c
+001dd19c: 1cb1     cbz      r4, #0x1dd1a6               
+001dd19e: 2368     ldr      r3, [r4]                    
+001dd1a0: 2046     mov      r0, r4                      
+001dd1a2: 9b68     ldr      r3, [r3, #8]                
+001dd1a4: 9847     blx      r3                          
+001dd1a6: 5821     movs     r1, #0x58                   
+001dd1a8: 0c20     movs     r0, #0xc                    
+001dd1aa: 23f041f8 bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd1ae: c7f88000 str.w    r0, [r7, #0x80]             
+001dd1b2: 4ff21152 movw     r2, #0xf511                   ; -> 0x005df511 fn sub_1df510
+001dd1b6: c0f25d02 movt     r2, #0x5d                   
+001dd1ba: 0023     movs     r3, #0                      
+001dd1bc: 2946     mov      r1, r5                      
+001dd1be: cdf80480 str.w    r8, [sp, #4]                
+001dd1c2: 0096     str      r6, [sp]                    
+001dd1c4: fff7befd bl       #0x1dcd44                     ; sub_1dcd44
+001dd1c8: 0646     mov      r6, r0                      
+001dd1ca: c7f88060 str.w    r6, [r7, #0x80]             
+001dd1ce: eb6d     ldr      r3, [r5, #0x5c]             
+001dd1d0: 0024     movs     r4, #0                      
+001dd1d2: c7f88840 str.w    r4, [r7, #0x88]             
+001dd1d6: 7bb1     cbz      r3, #0x1dd1f8               
+001dd1d8: 1846     mov      r0, r3                      
+001dd1da: 1b68     ldr      r3, [r3]                    
+001dd1dc: 4ff6f831 movw     r1, #0xfbf8                   ; -> 0x0060fbf8 .rdata+0x4bf8
+001dd1e0: c0f26001 movt     r1, #0x60                   
+001dd1e4: 17f18802 adds.w   r2, r7, #0x88               
+001dd1e8: 1b68     ldr      r3, [r3]                    
+001dd1ea: 9847     blx      r3                          
+001dd1ec: 0028     cmp      r0, #0                      
+001dd1ee: 01da     bge      #0x1dd1f4                   
+001dd1f0: 34f6f4ff bl       #0x121dc                      ; sub_121dc
+001dd1f4: d7f88840 ldr.w    r4, [r7, #0x88]             
+001dd1f8: c7f88440 str.w    r4, [r7, #0x84]             
+001dd1fc: 2368     ldr      r3, [r4]                    
+001dd1fe: 17f13802 adds.w   r2, r7, #0x38               
+001dd202: 3146     mov      r1, r6                      
+001dd204: 1b6a     ldr      r3, [r3, #0x20]             
+001dd206: 2046     mov      r0, r4                      
+001dd208: 9847     blx      r3                          
+001dd20a: 0028     cmp      r0, #0                      
+001dd20c: 01da     bge      #0x1dd212                   
+001dd20e: 34f6e5ff bl       #0x121dc                      ; sub_121dc
+001dd212: 2368     ldr      r3, [r4]                    
+001dd214: 2046     mov      r0, r4                      
+001dd216: 9b68     ldr      r3, [r3, #8]                
+001dd218: 9847     blx      r3                          
+001dd21a: 1eb1     cbz      r6, #0x1dd224               
+001dd21c: 3368     ldr      r3, [r6]                    
+001dd21e: 3046     mov      r0, r6                      
+001dd220: 9b68     ldr      r3, [r3, #8]                
+001dd222: 9847     blx      r3                          
+001dd224: 5821     movs     r1, #0x58                   
+001dd226: 0c20     movs     r0, #0xc                    
+001dd228: 23f002f8 bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd22c: c7f88000 str.w    r0, [r7, #0x80]             
+001dd230: 4ff60902 movw     r2, #0xf809                   ; -> 0x005df809 fn sub_1df808
+001dd234: c0f25d02 movt     r2, #0x5d                   
+001dd238: 0221     movs     r1, #2                      
+001dd23a: 0091     str      r1, [sp]                    
+001dd23c: 2946     mov      r1, r5                      
+001dd23e: 0023     movs     r3, #0                      
+001dd240: cdf80480 str.w    r8, [sp, #4]                
+001dd244: fff70afd bl       #0x1dcc5c                     ; sub_1dcc5c
+001dd248: 0646     mov      r6, r0                      
+001dd24a: c7f88060 str.w    r6, [r7, #0x80]             
+001dd24e: eb6d     ldr      r3, [r5, #0x5c]             
+001dd250: 0024     movs     r4, #0                      
+001dd252: c7f88c40 str.w    r4, [r7, #0x8c]             
+001dd256: 7bb1     cbz      r3, #0x1dd278               
+001dd258: 1846     mov      r0, r3                      
+001dd25a: 1b68     ldr      r3, [r3]                    
+001dd25c: 4ff20821 movw     r1, #0xf208                   ; -> 0x006df208 .rdata+0xd4208
+001dd260: c0f26d01 movt     r1, #0x6d                   
+001dd264: 17f18c02 adds.w   r2, r7, #0x8c               
+001dd268: 1b68     ldr      r3, [r3]                    
+001dd26a: 9847     blx      r3                          
+001dd26c: 0028     cmp      r0, #0                      
+001dd26e: 01da     bge      #0x1dd274                   
+001dd270: 34f6b4ff bl       #0x121dc                      ; sub_121dc
+001dd274: d7f88c40 ldr.w    r4, [r7, #0x8c]             
+001dd278: c7f88440 str.w    r4, [r7, #0x84]             
+001dd27c: 17f14801 adds.w   r1, r7, #0x48               
+001dd280: 3246     mov      r2, r6                      
+001dd282: 2046     mov      r0, r4                      
+001dd284: 04f04cfa bl       #0x1e1720                     ; sub_1e1720
+001dd288: 1cb1     cbz      r4, #0x1dd292               
+001dd28a: 2368     ldr      r3, [r4]                    
+001dd28c: 2046     mov      r0, r4                      
+001dd28e: 9b68     ldr      r3, [r3, #8]                
+001dd290: 9847     blx      r3                          
+001dd292: 1eb1     cbz      r6, #0x1dd29c               
+001dd294: 3368     ldr      r3, [r6]                    
+001dd296: 3046     mov      r0, r6                      
+001dd298: 9b68     ldr      r3, [r3, #8]                
+001dd29a: 9847     blx      r3                          
+001dd29c: 5821     movs     r1, #0x58                   
+001dd29e: 0c20     movs     r0, #0xc                    
+001dd2a0: 22f0c6ff bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd2a4: c7f88000 str.w    r0, [r7, #0x80]             
+001dd2a8: 4ff2e942 movw     r2, #0xf4e9                   ; -> 0x005df4e9 fn sub_1df4e8
+001dd2ac: c0f25d02 movt     r2, #0x5d                   
+001dd2b0: 0221     movs     r1, #2                      
+001dd2b2: 0091     str      r1, [sp]                    
+001dd2b4: 2946     mov      r1, r5                      
+001dd2b6: 0023     movs     r3, #0                      
+001dd2b8: cdf80480 str.w    r8, [sp, #4]                
+001dd2bc: fff7e6fb bl       #0x1dca8c                     ; sub_1dca8c
+001dd2c0: 0446     mov      r4, r0                      
+001dd2c2: c7f88040 str.w    r4, [r7, #0x80]             
+001dd2c6: 17f15800 adds.w   r0, r7, #0x58               
+001dd2ca: 2146     mov      r1, r4                      
+001dd2cc: 04f064fa bl       #0x1e1798                     ; sub_1e1798
+001dd2d0: 1cb1     cbz      r4, #0x1dd2da               
+001dd2d2: 2368     ldr      r3, [r4]                    
+001dd2d4: 2046     mov      r0, r4                      
+001dd2d6: 9b68     ldr      r3, [r3, #8]                
+001dd2d8: 9847     blx      r3                          
+001dd2da: 01f077fb bl       #0x1de9cc                     ; sub_1de9cc
+001dd2de: 8046     mov      r8, r0                      
+001dd2e0: c7f88000 str.w    r0, [r7, #0x80]             
+001dd2e4: 10b1     cbz      r0, #0x1dd2ec               
+001dd2e6: 0368     ldr      r3, [r0]                    
+001dd2e8: 5b68     ldr      r3, [r3, #4]                
+001dd2ea: 9847     blx      r3                          
+001dd2ec: c7f88c80 str.w    r8, [r7, #0x8c]             
+001dd2f0: b8f1000f cmp.w    r8, #0                      
+001dd2f4: 04d0     beq      #0x1dd300                   
+001dd2f6: d8f80030 ldr.w    r3, [r8]                    
+001dd2fa: 4046     mov      r0, r8                      
+001dd2fc: 9b68     ldr      r3, [r3, #8]                
+001dd2fe: 9847     blx      r3                          
+001dd300: 5821     movs     r1, #0x58                   
+001dd302: 0c20     movs     r0, #0xc                    
+001dd304: 22f094ff bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd308: c7f88000 str.w    r0, [r7, #0x80]             
+001dd30c: 4ff20172 movw     r2, #0xf701                   ; -> 0x005df701 fn sub_1df700
+001dd310: c0f25d02 movt     r2, #0x5d                   
+001dd314: 0221     movs     r1, #2                      
+001dd316: 0091     str      r1, [sp]                    
+001dd318: 0026     movs     r6, #0                      
+001dd31a: 2946     mov      r1, r5                      
+001dd31c: 0023     movs     r3, #0                      
+001dd31e: 0196     str      r6, [sp, #4]                
+001dd320: fff7ccfa bl       #0x1dc8bc                     ; sub_1dc8bc
+001dd324: 0446     mov      r4, r0                      
+001dd326: c7f88040 str.w    r4, [r7, #0x80]             
+001dd32a: d8f80030 ldr.w    r3, [r8]                    
+001dd32e: 0146     mov      r1, r0                      
+001dd330: 17f16802 adds.w   r2, r7, #0x68               
+001dd334: 1b6a     ldr      r3, [r3, #0x20]             
+001dd336: 4046     mov      r0, r8                      
+001dd338: 9847     blx      r3                          
+001dd33a: 0028     cmp      r0, #0                      
+001dd33c: 01da     bge      #0x1dd342                   
+001dd33e: 34f64dff bl       #0x121dc                      ; sub_121dc
+001dd342: 1cb1     cbz      r4, #0x1dd34c               
+001dd344: 2368     ldr      r3, [r4]                    
+001dd346: 2046     mov      r0, r4                      
+001dd348: 9b68     ldr      r3, [r3, #8]                
+001dd34a: 9847     blx      r3                          
+001dd34c: 5821     movs     r1, #0x58                   
+001dd34e: 0c20     movs     r0, #0xc                    
+001dd350: 22f06eff bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd354: c7f88000 str.w    r0, [r7, #0x80]             
+001dd358: 4ff21572 movw     r2, #0xf715                   ; -> 0x005df715 fn sub_1df714
+001dd35c: c0f25d02 movt     r2, #0x5d                   
+001dd360: 0221     movs     r1, #2                      
+001dd362: 0091     str      r1, [sp]                    
+001dd364: 2946     mov      r1, r5                      
+001dd366: 0023     movs     r3, #0                      
+001dd368: 0196     str      r6, [sp, #4]                
+001dd36a: fff7a7fa bl       #0x1dc8bc                     ; sub_1dc8bc
+001dd36e: 0446     mov      r4, r0                      
+001dd370: c7f88040 str.w    r4, [r7, #0x80]             
+001dd374: d8f80030 ldr.w    r3, [r8]                    
+001dd378: 0146     mov      r1, r0                      
+001dd37a: 17f17802 adds.w   r2, r7, #0x78               
+001dd37e: 9b69     ldr      r3, [r3, #0x18]             
+001dd380: 4046     mov      r0, r8                      
+001dd382: 9847     blx      r3                          
+001dd384: 0028     cmp      r0, #0                      
+001dd386: 01da     bge      #0x1dd38c                   
+001dd388: 34f628ff bl       #0x121dc                      ; sub_121dc
+001dd38c: 1cb1     cbz      r4, #0x1dd396               
+001dd38e: 2368     ldr      r3, [r4]                    
+001dd390: 2046     mov      r0, r4                      
+001dd392: 9b68     ldr      r3, [r3, #8]                
+001dd394: 9847     blx      r3                          
+001dd396: 17f11800 adds.w   r0, r7, #0x18               
+001dd39a: fff747fd bl       #0x1dce2c                     ; sub_1dce2c
+001dd39e: 17f16003 adds.w   r3, r7, #0x60               
+001dd3a2: 0022     movs     r2, #0                      
+001dd3a4: 0021     movs     r1, #0                      
+001dd3a6: 8342     cmp      r3, r0                      
+001dd3a8: 03d0     beq      #0x1dd3b2                   
+001dd3aa: 4168     ldr      r1, [r0, #4]                
+001dd3ac: 4660     str      r6, [r0, #4]                
+001dd3ae: 0268     ldr      r2, [r0]                    
+001dd3b0: 0660     str      r6, [r0]                    
+001dd3b2: a86f     ldr      r0, [r5, #0x78]             
+001dd3b4: a967     str      r1, [r5, #0x78]             
+001dd3b6: 6a67     str      r2, [r5, #0x74]             
+001dd3b8: 08b1     cbz      r0, #0x1dd3be               
+001dd3ba: 6ff60bf9 bl       #0x4c5d4                      ; sub_4c5d4
+001dd3be: f869     ldr      r0, [r7, #0x1c]             
+001dd3c0: 08b1     cbz      r0, #0x1dd3c6               
+001dd3c2: 6ff607f9 bl       #0x4c5d4                      ; sub_4c5d4
+001dd3c6: 5821     movs     r1, #0x58                   
+001dd3c8: 0c20     movs     r0, #0xc                    
+001dd3ca: 22f031ff bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd3ce: 0446     mov      r4, r0                      
+001dd3d0: c7f88040 str.w    r4, [r7, #0x80]             
+001dd3d4: 2b68     ldr      r3, [r5]                    
+001dd3d6: 2846     mov      r0, r5                      
+001dd3d8: 5b68     ldr      r3, [r3, #4]                
+001dd3da: 9847     blx      r3                          
+001dd3dc: 17f10801 adds.w   r1, r7, #8                  
+001dd3e0: 0023     movs     r3, #0                      
+001dd3e2: 0222     movs     r2, #2                      
+001dd3e4: 2046     mov      r0, r4                      
+001dd3e6: bd60     str      r5, [r7, #8]                
+001dd3e8: fff704f9 bl       #0x1dc5f4                     ; sub_1dc5f4
+001dd3ec: 0646     mov      r6, r0                      
+001dd3ee: c7f88060 str.w    r6, [r7, #0x80]             
+001dd3f2: 16b1     cbz      r6, #0x1dd3fa               
+001dd3f4: 3368     ldr      r3, [r6]                    
+001dd3f6: 5b68     ldr      r3, [r3, #4]                
+001dd3f8: 9847     blx      r3                          
+001dd3fa: c7f88860 str.w    r6, [r7, #0x88]             
+001dd3fe: 1eb1     cbz      r6, #0x1dd408               
+001dd400: 3368     ldr      r3, [r6]                    
+001dd402: 3046     mov      r0, r6                      
+001dd404: 9b68     ldr      r3, [r3, #8]                
+001dd406: 9847     blx      r3                          
+001dd408: 0122     movs     r2, #1                      
+001dd40a: 0121     movs     r1, #1                      
+001dd40c: 3046     mov      r0, r6                      
+001dd40e: 36f733fe bl       #0x114078                     ; sub_114078
+001dd412: 0446     mov      r4, r0                      
+001dd414: c7f88040 str.w    r4, [r7, #0x80]             
+001dd418: eb6e     ldr      r3, [r5, #0x6c]             
+001dd41a: 9c42     cmp      r4, r3                      
+001dd41c: 0ad0     beq      #0x1dd434                   
+001dd41e: 14b1     cbz      r4, #0x1dd426               
+001dd420: 2368     ldr      r3, [r4]                    
+001dd422: 5b68     ldr      r3, [r3, #4]                
+001dd424: 9847     blx      r3                          
+001dd426: eb6e     ldr      r3, [r5, #0x6c]             
+001dd428: 1bb1     cbz      r3, #0x1dd432               
+001dd42a: 1846     mov      r0, r3                      
+001dd42c: 1b68     ldr      r3, [r3]                    
+001dd42e: 9b68     ldr      r3, [r3, #8]                
+001dd430: 9847     blx      r3                          
+001dd432: ec66     str      r4, [r5, #0x6c]             
+001dd434: 1cb1     cbz      r4, #0x1dd43e               
+001dd436: 2368     ldr      r3, [r4]                    
+001dd438: 2046     mov      r0, r4                      
+001dd43a: 9b68     ldr      r3, [r3, #8]                
+001dd43c: 9847     blx      r3                          
+001dd43e: 6b6e     ldr      r3, [r5, #0x64]             
+001dd440: 0024     movs     r4, #0                      
+001dd442: c7f89440 str.w    r4, [r7, #0x94]             
+001dd446: 7bb1     cbz      r3, #0x1dd468               
+001dd448: 1846     mov      r0, r3                      
+001dd44a: 1b68     ldr      r3, [r3]                    
+001dd44c: 42f27831 movw     r1, #0x2378                   ; -> 0x006e2378 .rdata+0xd7378
+001dd450: c0f26e01 movt     r1, #0x6e                   
+001dd454: 17f19402 adds.w   r2, r7, #0x94               
+001dd458: 1b68     ldr      r3, [r3]                    
+001dd45a: 9847     blx      r3                          
+001dd45c: 0028     cmp      r0, #0                      
+001dd45e: 01da     bge      #0x1dd464                   
+001dd460: 34f6bcfe bl       #0x121dc                      ; sub_121dc
+001dd464: d7f89440 ldr.w    r4, [r7, #0x94]             
+001dd468: c7f88040 str.w    r4, [r7, #0x80]             
+001dd46c: 9fed248b vldr     d8, [pc, #0x90]             
+001dd470: 2046     mov      r0, r4                      
+001dd472: b0ee480b vmov.f64 d0, d8                      
+001dd476: 02f01ffb bl       #0x1dfab8                     ; sub_1dfab8
+001dd47a: 1cb1     cbz      r4, #0x1dd484               
+001dd47c: 2368     ldr      r3, [r4]                    
+001dd47e: 2046     mov      r0, r4                      
+001dd480: 9b68     ldr      r3, [r3, #8]                
+001dd482: 9847     blx      r3                          
+001dd484: ab6e     ldr      r3, [r5, #0x68]             
+001dd486: 0024     movs     r4, #0                      
+001dd488: c7f89840 str.w    r4, [r7, #0x98]             
+001dd48c: 7bb1     cbz      r3, #0x1dd4ae               
+001dd48e: 1846     mov      r0, r3                      
+001dd490: 1b68     ldr      r3, [r3]                    
+001dd492: 42f27831 movw     r1, #0x2378                   ; -> 0x006e2378 .rdata+0xd7378
+001dd496: c0f26e01 movt     r1, #0x6e                   
+001dd49a: 17f19802 adds.w   r2, r7, #0x98               
+001dd49e: 1b68     ldr      r3, [r3]                    
+001dd4a0: 9847     blx      r3                          
+001dd4a2: 0028     cmp      r0, #0                      
+001dd4a4: 01da     bge      #0x1dd4aa                   
+001dd4a6: 34f699fe bl       #0x121dc                      ; sub_121dc
+001dd4aa: d7f89840 ldr.w    r4, [r7, #0x98]             
+001dd4ae: c7f88040 str.w    r4, [r7, #0x80]             
+001dd4b2: b0ee480b vmov.f64 d0, d8                      
+001dd4b6: 2046     mov      r0, r4                      
+001dd4b8: 02f0fefa bl       #0x1dfab8                     ; sub_1dfab8
+001dd4bc: 1cb1     cbz      r4, #0x1dd4c6               
+001dd4be: 2368     ldr      r3, [r4]                    
+001dd4c0: 2046     mov      r0, r4                      
+001dd4c2: 9b68     ldr      r3, [r3, #8]                
+001dd4c4: 9847     blx      r3                          
+001dd4c6: 4020     movs     r0, #0x40                   
+001dd4c8: 22f0b2ff bl       #0x200430                     ; thunk[msvcr120_app.dll!??2@YAPAXI@Z]
+001dd4cc: c7f88000 str.w    r0, [r7, #0x80]             
+001dd4d0: d0b1     cbz      r0, #0x1dd508               
+001dd4d2: 0023     movs     r3, #0                      
+001dd4d4: 0360     str      r3, [r0]                    
+001dd4d6: 4360     str      r3, [r0, #4]                
+001dd4d8: 8360     str      r3, [r0, #8]                
+001dd4da: c360     str      r3, [r0, #0xc]              
+001dd4dc: 0361     str      r3, [r0, #0x10]             
+001dd4de: 4361     str      r3, [r0, #0x14]             
+001dd4e0: 8361     str      r3, [r0, #0x18]             
+001dd4e2: c361     str      r3, [r0, #0x1c]             
+001dd4e4: 0362     str      r3, [r0, #0x20]             
+001dd4e6: 4362     str      r3, [r0, #0x24]             
+001dd4e8: 8362     str      r3, [r0, #0x28]             
+001dd4ea: c362     str      r3, [r0, #0x2c]             
+001dd4ec: 0363     str      r3, [r0, #0x30]             
+001dd4ee: 4363     str      r3, [r0, #0x34]             
+001dd4f0: 8363     str      r3, [r0, #0x38]             
+001dd4f2: 05f17401 add.w    r1, r5, #0x74               
+001dd4f6: c363     str      r3, [r0, #0x3c]             
+001dd4f8: fcf70cfc bl       #0x1d9d14                     ; sub_1d9d14
+001dd4fc: 0446     mov      r4, r0                      
+001dd4fe: 04e0     b        #0x1dd50a                     ; sub_1dd50a
+001dd500: 0000     movs     r0, r0                      
+001dd502: 0000     movs     r0, r0                      
+001dd504: 0070     strb     r0, [r0]                    
+001dd506: a740     lsls     r7, r4                      
+001dd508: 0024     movs     r4, #0                      
+001dd50a: 3b46     mov      r3, r7                      
+001dd50c: 9a45     cmp      sl, r3                      
+001dd50e: 0ad0     beq      #0x1dd526                   
+001dd510: daf800a0 ldr.w    sl, [sl]                    
+001dd514: ec67     str      r4, [r5, #0x7c]             
+001dd516: baf1000f cmp.w    sl, #0                      
+001dd51a: 0bd0     beq      #0x1dd534                   
+001dd51c: 5046     mov      r0, sl                      
+001dd51e: fcf791fd bl       #0x1da044                     ; sub_1da044
+001dd522: 5046     mov      r0, sl                      
+001dd524: 04e0     b        #0x1dd530                     ; sub_1dd530
+001dd526: 2cb1     cbz      r4, #0x1dd534               
+001dd528: 2046     mov      r0, r4                      
+001dd52a: fcf78bfd bl       #0x1da044                     ; sub_1da044
+001dd52e: 2046     mov      r0, r4                      
+001dd530: 22f084ff bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+001dd534: 0023     movs     r3, #0                      
+001dd536: 3b60     str      r3, [r7]                    
+001dd538: 0020     movs     r0, #0                      
+001dd53a: fff7abfc bl       #0x1dce94                     ; sub_1dce94
+001dd53e: 0446     mov      r4, r0                      
+001dd540: 3c60     str      r4, [r7]                    
+001dd542: d5f88430 ldr.w    r3, [r5, #0x84]             
+001dd546: 9c42     cmp      r4, r3                      
+001dd548: 0cd0     beq      #0x1dd564                   
+001dd54a: 14b1     cbz      r4, #0x1dd552               
+001dd54c: 2368     ldr      r3, [r4]                    
+001dd54e: 5b68     ldr      r3, [r3, #4]                
+001dd550: 9847     blx      r3                          
+001dd552: d5f88430 ldr.w    r3, [r5, #0x84]             
+001dd556: 1bb1     cbz      r3, #0x1dd560               
+001dd558: 1846     mov      r0, r3                      
+001dd55a: 1b68     ldr      r3, [r3]                    
+001dd55c: 9b68     ldr      r3, [r3, #8]                
+001dd55e: 9847     blx      r3                          
+001dd560: c5f88440 str.w    r4, [r5, #0x84]             
+001dd564: 1cb1     cbz      r4, #0x1dd56e               
+001dd566: 2368     ldr      r3, [r4]                    
+001dd568: 2046     mov      r0, r4                      
+001dd56a: 9b68     ldr      r3, [r3, #8]                
+001dd56c: 9847     blx      r3                          
+001dd56e: d5f88430 ldr.w    r3, [r5, #0x84]             
+001dd572: 0024     movs     r4, #0                      
+001dd574: c7f89040 str.w    r4, [r7, #0x90]             
+001dd578: 7bb1     cbz      r3, #0x1dd59a               
+001dd57a: 1846     mov      r0, r3                      
+001dd57c: 1b68     ldr      r3, [r3]                    
+001dd57e: 42f25831 movw     r1, #0x2358                   ; -> 0x006e2358 .rdata+0xd7358
+001dd582: c0f26e01 movt     r1, #0x6e                   
+001dd586: 17f19002 adds.w   r2, r7, #0x90               
+001dd58a: 1b68     ldr      r3, [r3]                    
+001dd58c: 9847     blx      r3                          
+001dd58e: 0028     cmp      r0, #0                      
+001dd590: 01da     bge      #0x1dd596                   
+001dd592: 34f623fe bl       #0x121dc                      ; sub_121dc
+001dd596: d7f89040 ldr.w    r4, [r7, #0x90]             
+001dd59a: 3c60     str      r4, [r7]                    
+001dd59c: 2168     ldr      r1, [r4]                    
+001dd59e: b44a     ldr      r2, [pc, #0x2d0]              ; pool[001dd870]=0x0007a120 
+001dd5a0: 0023     movs     r3, #0                      
+001dd5a2: c969     ldr      r1, [r1, #0x1c]             
+001dd5a4: 2046     mov      r0, r4                      
+001dd5a6: 8847     blx      r1                          
+001dd5a8: 0028     cmp      r0, #0                      
+001dd5aa: 01da     bge      #0x1dd5b0                   
+001dd5ac: 34f616fe bl       #0x121dc                      ; sub_121dc
+001dd5b0: 2368     ldr      r3, [r4]                    
+001dd5b2: 2046     mov      r0, r4                      
+001dd5b4: 9b68     ldr      r3, [r3, #8]                
+001dd5b6: 9847     blx      r3                          
+001dd5b8: 5821     movs     r1, #0x58                   
+001dd5ba: 0c20     movs     r0, #0xc                    
+001dd5bc: 22f038fe bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001dd5c0: 3860     str      r0, [r7]                    
+001dd5c2: 0021     movs     r1, #0                      
+001dd5c4: 0191     str      r1, [sp, #4]                
+001dd5c6: 4ff6a502 movw     r2, #0xf8a5                   ; -> 0x005df8a5 fn sub_1df8a4
+001dd5ca: c0f25d02 movt     r2, #0x5d                   
+001dd5ce: 0221     movs     r1, #2                      
+001dd5d0: 0091     str      r1, [sp]                    
+001dd5d2: 2946     mov      r1, r5                      
+001dd5d4: 0023     movs     r3, #0                      
+001dd5d6: fff7e5f9 bl       #0x1dc9a4                     ; sub_1dc9a4
+001dd5da: 8246     mov      sl, r0                      
+001dd5dc: 3860     str      r0, [r7]                    
+001dd5de: d5f88430 ldr.w    r3, [r5, #0x84]             
+001dd5e2: 0024     movs     r4, #0                      
+001dd5e4: c7f88440 str.w    r4, [r7, #0x84]             
+001dd5e8: 7bb1     cbz      r3, #0x1dd60a               
+001dd5ea: 1846     mov      r0, r3                      
+001dd5ec: 1b68     ldr      r3, [r3]                    
+001dd5ee: 42f25831 movw     r1, #0x2358                   ; -> 0x006e2358 .rdata+0xd7358
+001dd5f2: c0f26e01 movt     r1, #0x6e                   
+001dd5f6: 17f18402 adds.w   r2, r7, #0x84               
+001dd5fa: 1b68     ldr      r3, [r3]                    
+001dd5fc: 9847     blx      r3                          
+001dd5fe: 0028     cmp      r0, #0                      
+001dd600: 01da     bge      #0x1dd606                   
+001dd602: 34f6ebfd bl       #0x121dc                      ; sub_121dc
+001dd606: d7f88440 ldr.w    r4, [r7, #0x84]             
+001dd60a: c7f88040 str.w    r4, [r7, #0x80]             
+001dd60e: 2368     ldr      r3, [r4]                    
+001dd610: 17f14002 adds.w   r2, r7, #0x40               
+001dd614: 5146     mov      r1, sl                      
+001dd616: 5b6a     ldr      r3, [r3, #0x24]             
+001dd618: 2046     mov      r0, r4                      
+001dd61a: 9847     blx      r3                          
+001dd61c: 0028     cmp      r0, #0                      
+001dd61e: 01da     bge      #0x1dd624                   
+001dd620: 34f6dcfd bl       #0x121dc                      ; sub_121dc
+001dd624: 2368     ldr      r3, [r4]                    
+001dd626: 2046     mov      r0, r4                      
+001dd628: 9b68     ldr      r3, [r3, #8]                
+001dd62a: 9847     blx      r3                          
+001dd62c: baf1000f cmp.w    sl, #0                      
+001dd630: 04d0     beq      #0x1dd63c                   
+001dd632: daf80030 ldr.w    r3, [sl]                    
+001dd636: 5046     mov      r0, sl                      
+001dd638: 9b68     ldr      r3, [r3, #8]                
+001dd63a: 9847     blx      r3                          
+001dd63c: d5f88430 ldr.w    r3, [r5, #0x84]             
+001dd640: 0024     movs     r4, #0                      
+001dd642: c7f88040 str.w    r4, [r7, #0x80]             
+001dd646: 7bb1     cbz      r3, #0x1dd668               
+001dd648: 1846     mov      r0, r3                      
+001dd64a: 1b68     ldr      r3, [r3]                    
+001dd64c: 42f25831 movw     r1, #0x2358                   ; -> 0x006e2358 .rdata+0xd7358
+001dd650: c0f26e01 movt     r1, #0x6e                   
+001dd654: 17f18002 adds.w   r2, r7, #0x80               
+001dd658: 1b68     ldr      r3, [r3]                    
+001dd65a: 9847     blx      r3                          
+001dd65c: 0028     cmp      r0, #0                      
+001dd65e: 01da     bge      #0x1dd664                   
+001dd660: 34f6bcfd bl       #0x121dc                      ; sub_121dc
+001dd664: d7f88040 ldr.w    r4, [r7, #0x80]             
+001dd668: 3c60     str      r4, [r7]                    
+001dd66a: 2368     ldr      r3, [r4]                    
+001dd66c: 2046     mov      r0, r4                      
+001dd66e: db6a     ldr      r3, [r3, #0x2c]             
+001dd670: 9847     blx      r3                          
+001dd672: 0028     cmp      r0, #0                      
+001dd674: 01da     bge      #0x1dd67a                   
+001dd676: 34f6b1fd bl       #0x121dc                      ; sub_121dc
+001dd67a: 2368     ldr      r3, [r4]                    
+001dd67c: 2046     mov      r0, r4                      
+001dd67e: 9b68     ldr      r3, [r3, #8]                
+001dd680: 9847     blx      r3                          
+001dd682: 1eb1     cbz      r6, #0x1dd68c               
+001dd684: 3368     ldr      r3, [r6]                    
+001dd686: 3046     mov      r0, r6                      
+001dd688: 9b68     ldr      r3, [r3, #8]                
+001dd68a: 9847     blx      r3                          
+001dd68c: d8f80030 ldr.w    r3, [r8]                    
+001dd690: 4046     mov      r0, r8                      
+001dd692: 9b68     ldr      r3, [r3, #8]                
+001dd694: 9847     blx      r3                          
+001dd696: d9f80030 ldr.w    r3, [sb]                    
+001dd69a: 4846     mov      r0, sb                      
+001dd69c: 9b68     ldr      r3, [r3, #8]                
+001dd69e: 9847     blx      r3                          
+001dd6a0: 7b68     ldr      r3, [r7, #4]                
+001dd6a2: 1846     mov      r0, r3                      
+001dd6a4: 1b68     ldr      r3, [r3]                    

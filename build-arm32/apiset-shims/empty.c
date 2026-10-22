@@ -1,1 +1,0 @@
-int win32craft_apiset_shim_marker;

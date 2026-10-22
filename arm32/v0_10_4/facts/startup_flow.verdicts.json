@@ -1,0 +1,707 @@
+{
+ "area": "startup_flow",
+ "verdicts": [
+  {
+   "id": "startup_flow.pe_entry",
+   "verdict": "CONFIRMED",
+   "note": "Header entry field 0x20095D; 0x20095C is a pdata start; bytes match; bl 0x200e6c then b.w 0x200970. "
+  },
+  {
+   "id": "startup_flow.crt_main",
+   "verdict": "CONFIRMED",
+   "note": "pdata start + bytes match. Raw scan of .text finds exactly one bl to 0x203efc, at 0x200A72, with r0=0x400000 literal, r1=r3=0, result stored to [r4,#4]. _initterm_e/_initterm tables re-read (see initterm_tables)."
+  },
+  {
+   "id": "startup_flow.winmain_call_site",
+   "verdict": "CONFIRMED",
+   "note": "Raw bytes 03 f0 43 fa decode to bl 0x203efc; it is the only caller. In the friend's patched exe the same site (file 0x1FFE72) reads 6d f0 e3 d3 = bl 0xE6E23C, so the site is correct. Not a pdata start (inside crt_main), as expected for a hook site."
+  },
+  {
+   "id": "startup_flow.initterm_tables",
+   "verdict": "CONFIRMED",
+   "note": "ptrs 0x20bda0: {0, 0x200878, 0x2004f8, 0x1ffecc, 0x429ba0(no-op)}. 0x1ffecc loads [0xDC9F5C]=2 (read from the file) and calls vccorlib InitializeData; 0x200878 calls RoInitialize(1) at 0x2008d2 only if [0xE2B03C]!=0 and that word is 0 in the file. Note InitializeData runs in _initterm_e, i.e. BEFORE the C++ static initialisers (_initterm 0x20b6c8..). What apartment InitializeData(2) creates is not decoded (see missing)."
+  },
+  {
+   "id": "startup_flow.winmain_thunk",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. push/pop + b.w 0x20405c."
+  },
+  {
+   "id": "startup_flow.main_wrapper",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Calls GetCmdArguments thunk 0x204180 (bl at 0x204076), Allocate, WindowsDeleteString and bl 0x1f42a4 at 0x2040c6."
+  },
+  {
+   "id": "startup_flow.user_main",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Allocate(0xc,0x58) -> bl 0x1ea914 -> bl 0x1eecbc -> Release via [vtbl+8]. Delegate handle is passed in r0 unchanged to Start."
+  },
+  {
+   "id": "startup_flow.callback_ctor",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Stores vtables 0xDC96C8/0xDC96E0/0xDC96FC at +0/+4/+8 (RTTI names only the first two for the callback class, the +8 one is a third sub-object table), embedded functor (vtable 0xDC9ECC) at +0x14, pointer to it at +0x54. Delegate base ctor is vccorlib Delegate::Delegate (thunk 0x200254)."
+  },
+  {
+   "id": "startup_flow.callback_invoke",
+   "verdict": "CONFIRMED",
+   "note": "ptrs 0xdc96c8 slot3 = 0x5f2f65 (fn 0x1f2f64). 0x1f2f64 compares [this] with 0xDC96C8, then calls functor [this+0x54] vtable slot1; ptrs 0xdc9ecc slot1 = 0x5ee381 (0x1ee380). r1 (params) is never read."
+  },
+  {
+   "id": "startup_flow.callback_lambda",
+   "verdict": "CONFIRMED",
+   "note": "Code facts reproduced: Allocate(0x34,0x40) -> bl 0x1e2b48 -> Release (blx [vtbl+8]) at 0x1ee3aa; no AddRef anywhere in the lambda. The claim that the (real) runtime AddRefs 'outer' is an inference about XAML internals, not provable from the binary. The App2 refcount is a vccorlib ControlBlock at App2+0x34 (Release 0x1e50d8), so over-holding one extra reference in the fake CreateInstance is the safe choice."
+  },
+  {
+   "id": "startup_flow.application_start",
+   "verdict": "CONFIRMED",
+   "note": "Disassembled 0x1eecbc: IID built on stack = 06499997-F7B4-45FE-B763-7577D1D3CB4A, class L\"Windows.UI.Xaml.Application\" via thunk 0x2001e4, call [vtbl+0x1c] (slot 7) with r1=cb, Release at +8 afterwards. SDK 19041 IApplicationStatics order: 6 get_Current, 7 Start, 8 LoadComponent, 9 LoadComponentWithResourceLocation."
+  },
+  {
+   "id": "startup_flow.app2_ctor",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. RTTI .?AVApp2@MCPE_Host@@ has exactly the nine vtables/offsets listed (0,4,12,8,16,24,28,32,36). Stores +0x28=0, +0x30=0, +0x38=-1; CreateInstance via 0x1e2cf0 (outer=this+8, &inner=this+0x14) and add_Suspending/add_Resuming through 0x1e5f50/0x1e5edc. Extra: reference counting uses a vccorlib ControlBlock at +0x34 (not a plain int), +0x3C disposed byte is checked by the OnLaunched ABI thunk."
+  },
+  {
+   "id": "startup_flow.app2_qi_overrides",
+   "verdict": "CONFIRMED",
+   "note": "IID 25F99FF7 (0x6e4f30) is referenced inside the QI function at 0x1e4d9c; vtable 0xDC9230 is the RTTI sub-object at offset 16; SDK IApplicationOverrides order matches (7=OnLaunched)."
+  },
+  {
+   "id": "startup_flow.app2_onlaunched_abi",
+   "verdict": "CONFIRMED",
+   "note": "ptrs 0xdc9230 slot7 = 0x5e54d5 (0x1e54d4): subs r0,#0x10 ; jump 0x1e5480, which tests byte [r0+0x3c] then calls 0x1e3a30. IActivatedEventArgs::get_PreviousExecutionState is slot 7 in the SDK; the result is compared with 3 (Terminated) at 0x1e3af6."
+  },
+  {
+   "id": "startup_flow.app2_onlaunched",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Call order reproduced: StatusBar.GetForCurrentView().HideAsync -> Heap::Allocate + MainPage ctor 0x1dcf5c (only if [App2+0x30]==0) -> QI(args, IActivatedEventArgs) -> [state==3: ApplicationData.LocalSettings.Values -> 0x1df4c4] -> QI(page,IUIElement) -> Window::Current -> put_Content ([vt,#0x24]=slot 9) -> Window::Current -> Activate ([vt,#0x50]=slot 20). Every HRESULT<0 goes to 0x121dc (throws), so each fake must return S_OK (StatusBar included)."
+  },
+  {
+   "id": "startup_flow.app2_onsuspending",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Lambda calls ApplicationData::Current (0x1dab28), 0x1e621c, 0x1e6278 and MainPage 0x1dfa40."
+  },
+  {
+   "id": "startup_flow.app2_onresuming",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Lambda calls the same chain then MainPage 0x1df4c4."
+  },
+  {
+   "id": "startup_flow.mainpage_ctor",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Full call order reproduced from the listing: Page base ctor 0x1dd874 (inner=this+0x24) -> InitializeComponent 0x1eddd8 -> Window.Current.CoreWindow add_VisibilityChanged ([vt,#0xe0]=slot 56) -> DisplayInformation::GetForCurrentView add_DpiChanged (#0x38=14) then add_OrientationChanged (#0x20=8) -> static add_DisplayContentsInvalidated (0x1e183c) -> QI panel ISwapChainPanel add_CompositionScaleChanged (#0x20) -> add_SizeChanged (0x1e1720, slot 47) -> HardwareButtons add_BackPressed (0x1e1798) -> InputPane add_Hiding (#0x20) then add_Showing (#0x18) -> make_shared<DR> 0x1dce2c -> input work item RunWithPriorityAndOptions(1,1) -> Canvas.SetLeft x2 -> new(0x40)+AppMain ctor 0x1d9d14 -> DispatcherTimer (put_Interval #0x1c, add_Tick #0x24, Start #0x2c). Handler-to-event mapping checked for Orientation, DisplayContentsInvalidated, CompositionScale and Tick through the movw of the handler address."
+  },
+  {
+   "id": "startup_flow.mainpage_initcomponent",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Uses L\"ms-appx:///MainPage.xaml\", LoadComponentWithResourceLocation ([vt,#0x24]=slot 9), then QI(this, IFrameworkElement 0x6df208) and FindName ([vt,#0xcc]=slot 51) for L\"swapChainPanel\", L\"Logo\", L\"EditBox\", L\"Button\", each result QI'd to ISwapChainPanel/IImage/ITextBox/IButton and stored at +0x5C/+0x60/+0x64/+0x68. NOTE for the host: the QI(this, IFrameworkElement) is done on the MainPage object itself, so the fake Page inner (IPageFactory::CreateInstance) has to implement FindName."
+  },
+  {
+   "id": "startup_flow.mainpage_handlers",
+   "verdict": "CONFIRMED",
+   "note": "Handler bodies decoded: Visibility 0x1df9ac (args slot 6 get_Visible, writes +0x80, StartRenderLoop only if IsAppInitialized else StopRenderLoop 0x1da9d4), Dpi 0x1df67c (sender slot 11 -> DR::SetDpi), Orientation 0x1df76c (sender slot 6 -> SetCurrentOrientation), CompositionScale 0x1df510 (QI + slots 6/7 -> SetCompositionScale), Hiding 0x1df700 (xor r1; b.w 0x1da5b4), Showing 0x1df714, BackPressed 0x1df4e8 (args slot 7 put_Handled), DisplayContentsInvalidated 0x1df618 -> 0x1dc0b4. All take (this,sender,args) in r0..r2. Dpi/Orientation handlers read the SENDER (DisplayInformation), not the args."
+  },
+  {
+   "id": "startup_flow.mainpage_onsizechanged",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. lock(AppMain+0x10) -> DR::SetSwapChainPanel(dr=[this+0x74], panel=[this+0x5c]) -> args slot 7 (ldr [vt,#0x1c]) get_NewSize into a stack Size -> DR::SetLogicalSize(s0=w,s1=h) -> AppMain::OnWindowSizeChanged(app, sender, args) which calls get_NewSize again. Handler never checks IsAppInitialized (see missing: ordering hazard)."
+  },
+  {
+   "id": "startup_flow.mainpage_ontick",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. IsAppInitialized gate; QI timer with IID at 0x6e2358 (IDispatcherTimer) and call [vt,#0x30]=slot 12 Stop; QI Logo IUIElement + put_Visibility(1) via 0x1e1cf0 ([vt,#0x58]); AttachToPanel(app=[+0x7c], panel=[+0x5c], edit=[+0x64], button=[+0x68]); second put_Visibility; StartRenderLoop. Not ready -> returns with no side effects."
+  },
+  {
+   "id": "startup_flow.mainpage_savestate",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Called from the Suspending lambda 0x1e3da0."
+  },
+  {
+   "id": "startup_flow.mainpage_loadstate",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Called from the Resuming lambda and from OnLaunched when state==3. A second ABI wrapper MainPage::vf8 (0x1e017c, checks disposed byte +0x90) does the same work (IsAppInitialized, 0x1da438, StartRenderLoop); finder missed that MainPage is 0x94 bytes with a disposed byte at +0x90."
+  },
+  {
+   "id": "startup_flow.mainpage_inputthread",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Reproduced: panel at +0x5c, CreateCoreIndependentInputSource ([vt,#0x28]=slot 10, arg 7) stored at +0x70, add_PointerPressed/Moved/Released ([vt,#0x50]/#0x48/#0x58) with delegates whose functor is 0xbf60 / 0x1df7f0 (both empty), then Dispatcher.ProcessEvents. The host fake must block this worker (ProcessEvents(2) = process until quit) or the item can simply sleep."
+  },
+  {
+   "id": "startup_flow.dr_make_shared",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Only caller is MainPage ctor at 0x1dd39a; out[0]=object (control+0xC), out[1]=control block. DR ctor stores this to VA 0x122afc4 (mov32 sites 0x1dae5a and 0x4b060), DeviceResources::get 0x4b054 has 20 callers."
+  },
+  {
+   "id": "startup_flow.dr_create_device",
+   "verdict": "CONFIRMED",
+   "note": "Disassembly 0x1db000..0x1db028: D3D11CreateDevice(adapter=0, driver=1, software=0, flags=0, [sp]=levels, [sp+4]=5, [sp+8]=7, &dev, &DR+0x38, &ctx). Feature level array {0xB100,0xB000,0xA100,0xA000,0x9300} as listed. CAUTION: the port instruction 'clamp to 9_1' is incomplete: with DR+0x38=0x9100 the game's own getShaderModelSuffix (0xD73FC, called from mce::ShaderProgram ctor 0xD6A3C) THROWS 'Unkonwn feature level' on the init thread (see missing m1)."
+  },
+  {
+   "id": "startup_flow.dr_set_panel",
+   "verdict": "CORRECTED",
+   "note": "Everything matches (stores [DR+0x30]=panel; Actual W/H via QI IFrameworkElement slots 13/14 into +0x4C/+0x50; native/current orientation slots 7/6 -> +0x54/+0x58; ISwapChainPanel scale slots 6/7 -> +0x60/+0x64; only caller is 0x1df840 inside the SizeChanged handler) EXCEPT the validity rule: the checker sub_1daed0 raises InvalidArgument only for NEGATIVE values (vcmpe + blo); 0 and NaN pass. 'finite and > 0' is wrong, '>= 0' is right. Scale must still be non-zero for the platform maths."
+  },
+  {
+   "id": "startup_flow.dr_create_wsd",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Gate at 0x1db178 (ldr [r6,#0x30]; cmp #0; beq 0x1db7ae). Two branches: existing swap chain ([DR+0xC]!=0) -> ResizeBuffers ([vt,#0x34], fmt 0x57, 2 buffers) with DEVICE_REMOVED/RESET (0x887A0005/7) -> HandleDeviceLost; else CreateSwapChainForComposition ([vt,#0x60]=24) with DESC1 {W,H = lroundf(DR+0x3C/+0x40), fmt 0x57, SampleDesc 1/0, usage 0x20, buffers 2, scaling 0, FLIP_SEQUENTIAL(3), alpha IGNORE(3), flags 0}, then get_Dispatcher + RunAsync(priority 1) of lambda 0x1daf04 which QIs the panel for ISwapChainPanelNative and calls [vt,#0xc] SetSwapChain(DR+0xC). No ClearRenderTargetView in this function. SetMatrixTransform call at 0x1db578 is [vt,#0x88]=slot 34 of IDXGISwapChain2."
+  },
+  {
+   "id": "startup_flow.dr_present",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Called from the render loop (bl at 0x1da20c); present() uses the swap chain at [DR+0xC], slot 8 Present, sync interval 0."
+  },
+  {
+   "id": "startup_flow.dr_global",
+   "verdict": "CONFIRMED",
+   "note": "Index shows exactly two movw/movt sites for VA 0x122afc4: 0x1dae5a (DR ctor) and 0x4b060 (DeviceResources::get); string 'Device resource object hasn't been created yet' exists."
+  },
+  {
+   "id": "startup_flow.dr_fields",
+   "verdict": "CONFIRMED",
+   "note": "+4/+8 device/context (QI IIDs 9D06DFFA ID3D11Device1, 420D5B32 ID3D11DeviceContext1 verified byte-for-byte), +0 ID3DUserDefinedAnnotation (stored at +0 per the audit, store not separately re-read), +0xC swap chain, +0x30 panel, +0x38 feature level, +0x4C/+0x50 logical size, +0x54/+0x58 orientations, +0x60/+0x64 composition scale, +0x74 listener (setOwner 0x1dbbc0 = str r1,[r0,#0x74]) all reproduced. Not reproduced: +0x34/+0x35 'resolution override' flags and +0x68 table (left unverified). Additional: WSD computes pixel size at +0x3C/+0x40 (logical*scale via lroundf). NOTE the game requires D3D 11.1 interfaces (Device1/Context1/annotation); QI failure -> throw."
+  },
+  {
+   "id": "startup_flow.appmain_ctor",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. [0]=0xDC8830, [+4]/[+8]=shared_ptr copy with atomic increment, +0xC=0, critical_section ctor at +0x10, a float 0.0 is stored at +0x30 (so the lock is 0x20 bytes, not 0x24: the 'critical_section +0x10..+0x33' remark is slightly off), createApp on +0x34, setOwner(DR, app)."
+  },
+  {
+   "id": "startup_flow.appmain_createapp",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Order reproduced: holder new(8) -> platform new(0x88)+memset+ctor 0x494c0 -> client via 0x1d9cc0 -> platform+0x10=client -> ApplicationData.Current.LocalFolder (slot 12) -> IStorageItem.Path (slot 12) narrowed into std::string -> ThreadPool.RunAsync ([vt,#0x18]=slot 6 via 0x1da4a4). Client ctor 0x54e90 zeroes +0x118/+0x11c (str at 0x54efa/0x54efe)."
+  },
+  {
+   "id": "startup_flow.appmain_initjob",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. [this+4]=AppMain+0x34 struct; sub_471e8(client=[s], holder=[s+4]); dmb; strb 1,[s+8]; dmb. 0x471e8: str r1,[r4,#0xc]; call [vt,#0x1c] (slot 7 = init); strb 1,[r4,#8]; tail sub_47bf4. vtable 0xDC8848 slot1 = 0x1da2d8. This is the only writer of AppMain+0x3C."
+  },
+  {
+   "id": "startup_flow.appmain_isready",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. ldrb [r0,#0x3c]; dmb."
+  },
+  {
+   "id": "startup_flow.client_init",
+   "verdict": "CORRECTED",
+   "note": "Function, vtable slot (0x1c) and what it creates are right: textures stored via add r2,r6,#0x118 at 0x57f72 (Textures ctor 0xdbf98), font via add r1,r6,#0x11c at 0x58234 (Font factory 0x548a0), MaterialManager::load (0xcdfcc -> D3DCompile chain verified: 0xd6a3c <- 0xd65cc <- 0xd67bc <- 0xc9cd4 <- 0xcc0e4 <- 0xcd350 <- 0xcdfcc <- 0x57b84), ScreenChooser::setScreen (0x91a3c) for the first screen. CORRECTION to the explanatory note 'The friend never ran this': the friend DID run it implicitly - their host calls the AppMain ctor 0x1d9d14, which starts the init job through the ThreadPool fake (their log shows ThreadPool activation #3 right after the ctor and a second thread T317c starting at 453 ms and crashing at the same pc). The real bug was that the host thread read/used the client and injected a StartMenuScreen + setScreen while the worker was still inside init (data race), and never waited for AppMain+0x3C."
+  },
+  {
+   "id": "startup_flow.appmain_startrender",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Logic polarity checked: if [app+0xC]!=0 and IAsyncInfo.get_Status ([vt,#0x1c]) == 0 (Started) -> skip, else create WorkItemHandler (0x1d9c00) and RunWithPriorityAndOptionsAsync(handler,1,1). Besides Tick/Visibility/Resume also called from MainPage::vf8 (0x1e01aa)."
+  },
+  {
+   "id": "startup_flow.render_loop_body",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Reproduced: QI(op, IAsyncInfo 0x60fbd8) get_Status; return when !=0; lock; if byte [app+0x3c]: pumpInput 0x50eac, client->vtbl[19] ([vt,#0x4c]), DR::present(app[+4]); unlock; loop. The delegate Invoke -> functor slot1 0x1da300 -> adds r0,#4 -> 0x1da160. NOTE: the loop has no sleep: it busy-spins (lock/unlock) from the moment StartRenderLoop is called, and runs unthrottled afterwards (Present(0,0))."
+  },
+  {
+   "id": "startup_flow.appmain_attach",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Caller (0x1df94c) passes r1=panel(+0x5c), r2=edit(+0x64), r3=button(+0x68); calls Window::Current.CoreWindow (0x1daacc, slot 10), AppPlatform_Winrt::initialize 0x4b55c, QI IUIElement get_RenderSize (helper 0x1daa58 slot 23), client->vtbl[20] ([vt,#0x50]) then setScreenWidth/Height (0x4fa40/0x4fa20)."
+  },
+  {
+   "id": "startup_flow.appmain_onsize",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Reads get_NewSize (args slot 7) and calls client->vtbl[20](client, (int)((w+0.5)*platform[+0x3c]), (int)((h+0.5)*platform[+0x40]), s0=0.0f) (pool word at 0x1da434 = 0.0). ADDITION: platform+0x3C/+0x40 are 0 until AppPlatform_Winrt::initialize runs in AttachToPanel (the platform ctor does not set them), so the FIRST SizeChanged calls setSize(0,0) which setSize clamps to 240x140; and setSize -> sub_586ec -> client vf8 -> platform holder dereferences client+0xC, so it crashes if the init job has not yet executed 'str r1,[r4,#0xc]'."
+  },
+  {
+   "id": "startup_flow.appmain_kbheight",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Takes (app, int px): scoped_lock, platform=[[app+0x38]], client->setKeyboardHeight(0x59578)(px*platform[+0x40]) which stores int(px*[0x340d40]) at client+0x164 and calls screen->vtbl[30]. Hiding passes 0, Showing passes (int)InputPane.OccludedRect.Height (DIPs, rect read by calling GetForCurrentView().get_OccludedRect itself, ignoring the event args)."
+  },
+  {
+   "id": "startup_flow.platform_ctor",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Vtable VA 0x73fb20 (RVA 0x33FB20); +0x2C HIDController (Allocate(0x5c,0x68)), +0x30/+0x34 = 0x780/0x438, critical_section at +0x50, Package.Current.InstalledLocation.Path narrowed to std::string at +0x14. +0x38..+0x40 stay zero here."
+  },
+  {
+   "id": "startup_flow.platform_init",
+   "verdict": "CONFIRMED",
+   "note": "Promoted from 'medium'. Decoded fully: HID::Initialize(HID=[this+0x2c], coreWindow, panel, edit, [sp]=button) first; DisplayInformation slots 12/13 (RawDpiX/Y: [vt,#0x30]/#0x34) -> platform+0x38 = ((rawX+rawY)*0.5)/25.4 (pool 0x4b704 = 25.4f); with panel: +0x3C=DR[+0x60], +0x40=DR[+0x64], then +0x38 = +0x38 * (+0x3C / CompositionScaleX of the panel QI'd with ISwapChainPanel); without panel: +0x3C=+0x40=LogicalDpi (slot 11)/96.0 (double pool 0x4b6fc). Answers the open question about the divisors."
+  },
+  {
+   "id": "startup_flow.client_update",
+   "verdict": "CONFIRMED",
+   "note": "RVA is a .pdata function start and the first bytes match expected_bytes (arm32re bytes / pdata scan); behaviour re-derived from the disassembly with different anchors. Loop calls it as client->vtbl[19] ([vt,#0x4c])."
+  },
+  {
+   "id": "startup_flow.getactivationfactory_thunk",
+   "verdict": "CORRECTED",
+   "note": "RVA/bytes/IAT right, but the call-site count is 36 not 38: both the arm32re caller index and an independent raw BL/B.W decode over all of .text find exactly 36 direct bl sites and no tail jumps. The class list in startup_flow.md is complete for those 36 sites (23 distinct classes incl. the lazy ones)."
+  },
+  {
+   "id": "startup_flow.iat_activation",
+   "verdict": "CONFIRMED",
+   "note": "arm32re imports lists 0x20b5fc = vccorlib120_app.DLL!?GetActivationFactoryByPCWSTR; cell bytes 18c33300 (name RVA 0x33c318) match; only one thunk (0x2001e4) uses it."
+  },
+  {
+   "id": "startup_flow.iat_d3d11createdevice",
+   "verdict": "CONFIRMED",
+   "note": "imports: 0x20b1a4 = d3d11.dll!D3D11CreateDevice; single caller at 0x1db028 (thunk 0x1f433c)."
+  },
+  {
+   "id": "startup_flow.iat_createdxgifactory1",
+   "verdict": "CONFIRMED",
+   "note": "imports: 0x20b1ac = dxgi.dll!CreateDXGIFactory1."
+  },
+  {
+   "id": "startup_flow.iat_d3dcompile",
+   "verdict": "CONFIRMED",
+   "note": "imports: 0x20b000 = D3DCOMPILER_47.dll!D3DCompile, 0x20b004 D3DReflect; D3DCompile has a single call site in mce::ShaderProgram ctor (0xd6c94)."
+  },
+  {
+   "id": "startup_flow.timer_interval",
+   "verdict": "CONFIRMED",
+   "note": "Literal 0x7A120 at 0x1dd870 (bytes 20 a1 07 00); put_Interval call [vt,#0x1c] with r2 from that pool and r3=0 at 0x1dd5a6; 500000 x 100 ns = 50 ms."
+  },
+  {
+   "id": "startup_flow.canvas_left_const",
+   "verdict": "CONFIRMED",
+   "note": "Bytes 00 00 00 00 00 70 a7 40 = 3000.0; vldr d8 at 0x1dd46c; passed in d0 to 0x1dfab8 (ICanvasStatics slot 8 SetLeft, SDK-verified)."
+  },
+  {
+   "id": "startup_flow.str_application",
+   "verdict": "CONFIRMED",
+   "note": "UTF-16 'Windows.' at 0x2e4fb0 (movw/movt 0x6e4fb0 in Start and in CreateInstance helper)."
+  },
+  {
+   "id": "startup_flow.iid_iswapchainpanel",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_iframeworkelement",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_iuielement",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_idispatchertimer",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_idependencyobject",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_iactivatedeventargs",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_iapplicationoverrides",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_iapplication",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_icorepointerinputsource",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_iasyncinfo",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_istorageitem",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_iimage",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_itextbox",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_itextbox2",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_ibutton",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at the RVA decode (little-endian GUID) to the SDK 19041 header GUID of this interface (checked against windows.*.h MIDL_INTERFACE); code references the same value."
+  },
+  {
+   "id": "startup_flow.iid_iswapchainpanelnative",
+   "verdict": "CONFIRMED",
+   "note": "Bytes decode to F92F19D2-3ADE-45A6-A20C-F6F1EA90554B (ISwapChainPanelNative; lives in windows.ui.xaml.media.dxinterop.h, not in the winrt idl dir); referenced by the SetSwapChain lambda 0x1daf04 via VA 0x6df238, vtable slot 3 = [vt,#0xc]."
+  },
+  {
+   "id": "startup_flow.slots_app_statics_start",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_app_statics_loadcomponent",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_app_factory_createinstance",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4). Caller sub_1e3228 calls [vt,#0x18](factory, outer, &inner, &instance), AddRefs then Releases the returned instance, so the fake must return a valid IApplication-capable pointer."
+  },
+  {
+   "id": "startup_flow.slots_application_add_suspending",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_window_current",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_window_put_content",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_corewindow_visibility",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_displayinfo_statics",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_displayinfo_instance",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_swapchainpanel_iface",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_framework_element",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_uielement_iface",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_dependencyobject_dispatcher",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_swapchainpanel_native",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_dispatchertimer_factory",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4). CreateInstance is called as (factory, outer=NULL, inner=NULL, &instance)."
+  },
+  {
+   "id": "startup_flow.slots_inputpane",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_threadpool",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_appdata_package",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_statusbar",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_canvas_uri_page",
+   "verdict": "CONFIRMED",
+   "note": "Raw vtable offsets in the game's call sites (ldr [vt,#off]) reproduced and each interface's method order re-read from the SDK 19041 generated headers (slot = offset/4)."
+  },
+  {
+   "id": "startup_flow.slots_hardwarebuttons",
+   "verdict": "CONFIRMED",
+   "note": "Raw offset [vt,#0x18] (slot 6) at 0x1e180e and args put_Handled [vt,#0x1c] (slot 7) at 0x1df4fe reproduced; the interface is not in the SDK so the add_BackPressed=first-method assumption stays medium confidence, as the finder said."
+  },
+  {
+   "id": "friend.exe_identity",
+   "verdict": "CONFIRMED",
+   "note": "sha256 6c0a8adc...b29f3, 14,759,424 bytes, machine 0x1c4, 6 sections, SizeOfImage 0xE6E000, entry 0x20095D, import dir 0x33AC88 size 0x1F4 = 24 descriptors + terminator, OS/subsystem 6.2 - all re-read from the stock exe."
+  },
+  {
+   "id": "friend.patch_dllchars",
+   "verdict": "CONFIRMED",
+   "note": "Stock DllCharacteristics 0x9140 at file 0x17E; friend's patched TEST exe holds 0x8140."
+  },
+  {
+   "id": "friend.patch_section_flags_rwx",
+   "verdict": "CONFIRMED",
+   "note": "Patched exe section table: .d3imp flags 0xE0000060 (RWX) at RVA 0xE6E000, SizeOfImage 0xE6F000, 7 sections, import dir 0xE6E000/0x208; .text is 0x60000020. The RWX concern (RT 8.1) is valid and unproven either way."
+  },
+  {
+   "id": "friend.patch_callsite",
+   "verdict": "CONFIRMED",
+   "note": "Stock bytes at 0x200A72 = 03f043fa (bl 0x203efc); patched exe file offset 0x1FFE72 = 6df0e3d3."
+  },
+  {
+   "id": "friend.iat_d3dcompile",
+   "verdict": "CONFIRMED",
+   "note": "arm32re imports lists exactly this cell/name (0x20b000 D3DCompile, 0x20b004 D3DReflect, 0x20b1a4 D3D11CreateDevice, 0x20b1ac CreateDXGIFactory1, 0x20b5d4 _CxxThrowException, 0x20b5e0 ??2@YAPAXI@Z, 0x20b5fc GetActivationFactoryByPCWSTR)."
+  },
+  {
+   "id": "friend.iat_d3dreflect",
+   "verdict": "CONFIRMED",
+   "note": "arm32re imports lists exactly this cell/name (0x20b000 D3DCompile, 0x20b004 D3DReflect, 0x20b1a4 D3D11CreateDevice, 0x20b1ac CreateDXGIFactory1, 0x20b5d4 _CxxThrowException, 0x20b5e0 ??2@YAPAXI@Z, 0x20b5fc GetActivationFactoryByPCWSTR)."
+  },
+  {
+   "id": "friend.iat_d3d11createdevice",
+   "verdict": "CONFIRMED",
+   "note": "arm32re imports lists exactly this cell/name (0x20b000 D3DCompile, 0x20b004 D3DReflect, 0x20b1a4 D3D11CreateDevice, 0x20b1ac CreateDXGIFactory1, 0x20b5d4 _CxxThrowException, 0x20b5e0 ??2@YAPAXI@Z, 0x20b5fc GetActivationFactoryByPCWSTR)."
+  },
+  {
+   "id": "friend.iat_createdxgifactory1",
+   "verdict": "CONFIRMED",
+   "note": "arm32re imports lists exactly this cell/name (0x20b000 D3DCompile, 0x20b004 D3DReflect, 0x20b1a4 D3D11CreateDevice, 0x20b1ac CreateDXGIFactory1, 0x20b5d4 _CxxThrowException, 0x20b5e0 ??2@YAPAXI@Z, 0x20b5fc GetActivationFactoryByPCWSTR)."
+  },
+  {
+   "id": "friend.iat_cxxthrow",
+   "verdict": "CONFIRMED",
+   "note": "arm32re imports lists exactly this cell/name (0x20b000 D3DCompile, 0x20b004 D3DReflect, 0x20b1a4 D3D11CreateDevice, 0x20b1ac CreateDXGIFactory1, 0x20b5d4 _CxxThrowException, 0x20b5e0 ??2@YAPAXI@Z, 0x20b5fc GetActivationFactoryByPCWSTR)."
+  },
+  {
+   "id": "friend.iat_operator_new",
+   "verdict": "CONFIRMED",
+   "note": "arm32re imports lists exactly this cell/name (0x20b000 D3DCompile, 0x20b004 D3DReflect, 0x20b1a4 D3D11CreateDevice, 0x20b1ac CreateDXGIFactory1, 0x20b5d4 _CxxThrowException, 0x20b5e0 ??2@YAPAXI@Z, 0x20b5fc GetActivationFactoryByPCWSTR)."
+  },
+  {
+   "id": "friend.iat_getactivationfactory",
+   "verdict": "CONFIRMED",
+   "note": "arm32re imports lists exactly this cell/name (0x20b000 D3DCompile, 0x20b004 D3DReflect, 0x20b1a4 D3D11CreateDevice, 0x20b1ac CreateDXGIFactory1, 0x20b5d4 _CxxThrowException, 0x20b5e0 ??2@YAPAXI@Z, 0x20b5fc GetActivationFactoryByPCWSTR)."
+  },
+  {
+   "id": "friend.boot_chain",
+   "verdict": "CONFIRMED",
+   "note": "Entry 0x20095C -> 0x200970 -> bl 0x203efc (0x200a72) -> 0x20405c -> bl 0x1f42a4 (0x2040c6) -> Application::Start; same as startup_flow."
+  },
+  {
+   "id": "friend.app2_vtables",
+   "verdict": "CONFIRMED",
+   "note": "arm32re rtti App2: vtables 0xDC9158(0),0xDC9174(4),0xDC9198(12),0xDC91B4(8),0xDC9230(16),0xDC9294(24),0xDC92C8(28),0xDC92EC(32),0xDC9304(36)."
+  },
+  {
+   "id": "friend.mainpage_vtables",
+   "verdict": "CONFIRMED",
+   "note": "arm32re rtti MainPage: 0xDC8AF8(0),8B2C(4),8B50(32),8B6C(12),8B98(8),8BEC(76),8C10(80),8C28(84); ctor length 1888."
+  },
+  {
+   "id": "friend.mainpage_layout",
+   "verdict": "CONFIRMED",
+   "note": "+0x74/+0x78 shared_ptr pair, +0x7C AppMain, +0x80 visible byte (written by 0x1df9ac), +0x84 DispatcherTimer all reproduced; +0x90 is a disposed byte (MainPage is 0x94)."
+  },
+  {
+   "id": "friend.make_dr",
+   "verdict": "CONFIRMED",
+   "note": "See startup_flow.dr_make_shared."
+  },
+  {
+   "id": "friend.dr_global_singleton",
+   "verdict": "CONFIRMED",
+   "note": "See startup_flow.dr_global."
+  },
+  {
+   "id": "friend.dr_fields",
+   "verdict": "CONFIRMED",
+   "note": "See startup_flow.dr_fields (IID bytes verified)."
+  },
+  {
+   "id": "friend.dr_create_device",
+   "verdict": "CONFIRMED",
+   "note": "See startup_flow.dr_create_device."
+  },
+  {
+   "id": "friend.dr_wsd_role",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right: 0x1db158 has no ClearRenderTargetView ([vt,#0xc8]) call; it resizes or creates the swap chain, then RTV/DSV/viewport, bracketed by OMSetRenderTargets ([vt,#0x84]) at 0x1db190 and 0x1db778."
+  },
+  {
+   "id": "friend.dr_panel_gate",
+   "verdict": "CONFIRMED",
+   "note": "Gate at 0x1db178-0x1db17c reproduced; the friend host really does pre-fill DR+0x30 with a dummy (win32_host.c line 22504) and DR+0xC with its HWND chain, so for the friend the WSD was NOT a no-op (log: RTV/DSV created at 265 ms). This REFUTES the startup_flow headline that their WSD returned immediately."
+  },
+  {
+   "id": "friend.matrix_transform_patch_bytes",
+   "verdict": "CONFIRMED",
+   "note": "Original bytes at 0x1db56c = fb 6b 17 f1 08 01; replacement 00 20 00 f0 19 b8 decodes to movs r0,#0 ; b.w 0x1db5a4 (success path after cmp/bge at 0x1db580)."
+  },
+  {
+   "id": "friend.matrix_transform_reason",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right: call is [vt,#0x88] = slot 34 = IDXGISwapChain2::SetMatrixTransform (SetMaximumFrameLatency is slot 31 = 0x7C on IDXGISwapChain2 and slot 12 on IDXGIDevice1)."
+  },
+  {
+   "id": "friend.swapchain_create_slot",
+   "verdict": "CONFIRMED",
+   "note": "[vt,#0x60] = slot 24 = IDXGIFactory2::CreateSwapChainForComposition; DESC1 fields decoded (see dr_create_wsd)."
+  },
+  {
+   "id": "friend.appmain_ctor",
+   "verdict": "CONFIRMED",
+   "note": "See startup_flow.appmain_ctor."
+  },
+  {
+   "id": "friend.appmain_fields",
+   "verdict": "CONFIRMED",
+   "note": "+0x34 client, +0x38 holder, +0x3C ready byte reproduced (IsAppInitialized 0x1da310)."
+  },
+  {
+   "id": "friend.appmain_ready_setter",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG (a setter exists) is right: init-job lambda 0x1da2d8 does strb 1,[s+8] with s=[this+4]=AppMain+0x34."
+  },
+  {
+   "id": "friend.appmain_tick_role",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right: 0x1da5b4 is onKeyboardHeightChanged(int); callers are only 0x1df70e (Hiding, r1=0) and 0x1df75c (Showing)."
+  },
+  {
+   "id": "friend.client_delta_164",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right: 0x59578 stores int(px*[0x340d40]) at client+0x164 and calls screen->vtbl[30] if client+0x6C != 0."
+  },
+  {
+   "id": "friend.client_vf32_role",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right: 0x58830 resets +0x108/+0x110, creates StartMenuScreen (0x388) or a 0x160 screen depending on arg, setScreen, and tail calls Minecraft leaveGame 0x1d86a4; it is not startup. The real first screen comes from init (ScreenChooser::setScreen 0x91a3c)."
+  },
+  {
+   "id": "friend.client118_setter_5d31c",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right: 0x5d31c is ImageButton::ImageButton (vtable 0x340508), its +0x118/+0x11c stores are ImageButton members; the client's are written by init (0x57f72, 0x58234) and zeroed by the ctor 0x54e90."
+  },
+  {
+   "id": "friend.root_cause_diagnosis",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right and consistent with the friend's own log and host source: AppMain ctor was called (initialize_game_app_0104) -> init job started on a second thread (T317c) -> host thread meanwhile forced client+0x20/+0x24 and flt globals, allocated StartMenuScreen and called setScreen -> crash at 0xdc5f0 on both threads. startup_flow's wording 'never ran MinecraftClient::init' is the part that is wrong."
+  },
+  {
+   "id": "friend.draw0_explanation",
+   "verdict": "CONFIRMED",
+   "note": "Per-frame engine entry is Minecraft::update via client->vtbl[19] from render loop 0x1da160 only."
+  },
+  {
+   "id": "friend.shader_suffix_fl",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right and important: 0xd73fc returns '_level_9_3' for 0x9300, '' for 0xA000/0xA100/0xB000/0xB100, and throws std::runtime_error('Unkonwn feature level') for everything else, incl. 0x9100/0x9200. Its caller 0xd6a3c passes DR[+0x38]."
+  },
+  {
+   "id": "friend.shader_count_45",
+   "verdict": "UNVERIFIABLE",
+   "note": "Agree: the delivered win32craft.log (352 lines) ends in the crash at 406-453 ms and contains no D3DCompile run; only the hook-install lines mention D3DCompile. The WORK_SUMMARY '45 shaders in 3.4 s' comes from an earlier run that is not in the folder. (It is consistent with the code: D3DCompile is reachable only through init -> MaterialManager::load.)"
+  },
+  {
+   "id": "friend.dispatcher_timer_claim",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right: timer is a 50 ms readiness poller (Tick 0x1df8a4 does nothing until IsAppInitialized, then Stop + AttachToPanel + StartRenderLoop)."
+  },
+  {
+   "id": "friend.runframe_role",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right: 0x1da634 is AttachToPanel (one-shot), not a frame function."
+  },
+  {
+   "id": "friend.host_wm_size_and_present",
+   "verdict": "CONFIRMED",
+   "note": "Verdict WRONG is right: Present is issued by the game's render thread through 0x1dbb10 (Present(0,0)) after each Minecraft::update."
+  },
+  {
+   "id": "friend.host_thread_apartment",
+   "verdict": "UNVERIFIABLE",
+   "note": "Agree. The game's CRT asks vccorlib InitializeData(2) and RoInitialize(1) only if [0xE2B03C]!=0 (0 in the file); what apartment type 2 creates inside vccorlib120_app is not decodable from this exe."
+  },
+  {
+   "id": "friend.host_first_clear_and_white",
+   "verdict": "UNVERIFIABLE",
+   "note": "Agree: nothing in the log shows a clear or a Draw; the white surface is explained by no frame ever running (setKeyboardHeight called as the frame function, no render loop, no Minecraft::update), not by a missing clear."
+  },
+  {
+   "id": "friend.missed_init_job",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced (createApp order, init job via ThreadPool.RunAsync)."
+  },
+  {
+   "id": "friend.missed_render_loop",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced (StartRenderLoop 0x1da8a8, RunWithPriorityAndOptions High/TimeSliced, body 0x1da160)."
+  },
+  {
+   "id": "friend.missed_platform_init",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced: +0x3C/+0x40 are zero until AppPlatform_Winrt::initialize (0x4b55c) copies DR+0x60/+0x64; defaults +0x30/+0x34 = 0x780x0x438."
+  },
+  {
+   "id": "friend.next_blocker",
+   "verdict": "CONFIRMED",
+   "note": "Prediction holds: render loop exits as soon as IAsyncInfo.get_Status != 0 (Started)."
+  },
+  {
+   "id": "startup_flow.HEADLINE_blank_cause_1",
+   "verdict": "CONFIRMED",
+   "note": "'Their tick 0x1DA5B4 is really setKeyboardHeight': confirmed (see appmain_kbheight). Calling it with 16 each frame cannot render anything."
+  },
+  {
+   "id": "startup_flow.HEADLINE_blank_cause_2",
+   "verdict": "REFUTED",
+   "note": "'Their windowSizeChanged 0x1DB158 returns immediately while DR+0x30 is NULL': the property of the binary is true, but it is NOT what happened in the friend's run. Their host stores a dummy non-NULL pointer into DR+0x30 and its HWND swap chain into DR+0xC before calling 0x1DB158 (win32_host.c 22503-22504), and the log shows 'DR::windowSizeChanged returned', RTV and DSV non-NULL. startup_flow.md section 7 bullet 3 must be rewritten; the friend's WSD ran and, because DR+0xC was pre-filled, took the existing-swap-chain (ResizeBuffers) branch."
+  },
+  {
+   "id": "startup_flow.HEADLINE_blank_cause_3",
+   "verdict": "CORRECTED",
+   "note": "'They never ran MinecraftClient::init': incorrect as stated. The AppMain ctor (which the friend called) starts the init job via ThreadPool.RunAsync and the friend's ThreadPool fake executed work on a second thread; what they did wrong is use the client (setSize bypass, StartMenuScreen + setScreen on the host thread) before init completed and without waiting for AppMain+0x3C, then never perform AttachToPanel/StartRenderLoop. Correct root causes of the white window: no render loop, no Minecraft::update, no Present from the game, plus the init race."
+  },
+  {
+   "id": "startup_flow.ANSWER_e_faithful_option",
+   "verdict": "CONFIRMED",
+   "note": "MainPage logic after InitializeComponent is thin (ctor 1888 B, ten handlers <=250 B, six AppMain entry points, eight DR setters); everything it touches was re-derived to be getter/adder/fire-and-forget WinRT calls. Option (b) is viable. Conditions the finder did not state: ordering hazards (missing m2/m3), FL 9_1 shader suffix throw (m1) and QI matrix (m5)."
+  }
+ ],
+ "missing": [
+  "m1 (BLOCKER for the FL 9_1 constraint): the finder's instruction to clamp D3D11CreateDevice to {9_1} makes DR[+0x38]=0x9100, and mce::ShaderProgram::ShaderProgram (0xD6A3C) calls getShaderModelSuffix (0xD73FC) with that value; it throws std::runtime_error('Unkonwn feature level') for 9_1/9_2 (only 0x9300 -> '_level_9_3' and >=0xA000 are accepted). That runs on the init thread under MinecraftClient::init -> MaterialManager::load, so AppMain+0x3C is never set and nothing renders (and the exception escapes a WorkItemHandler). A real port needs a game patch/hook so 9_1 is accepted (suffix '_level_9_1', matching D3DCompile profile ps_4_0_level_9_1/vs_4_0_level_9_1, or hook D3DCompile to rewrite the target) AND a check that the shaders fit 9_1 limits. Also getMajor/MinorShaderModel (0xD7230/0xD7314) take the same value.",
+  "m2 (ordering hazard): OnSizeChanged -> AppMain::OnWindowSizeChanged -> client->setSize runs without an isReady check; setSize -> sub_586ec -> client vf8 dereferences client+0xC, which is written only at the start of the init job (0x471e8). If the host raises the first SizeChanged before that store (the real runtime does so after layout, normally later), the process crashes at 0x58718. Host must delay the first SizeChanged until [AppMain+0x34]->+0xC != 0 (or until the job started). The first SizeChanged also calls setSize(0,0) (platform scale +0x3C/+0x40 still zero) -> 240x140 clamp, harmless because rendering has not started.",
+  "m3 (ordering hazard): the first Tick that sees isReady runs AttachToPanel which reads DR+0x60/+0x64 (composition scale) through AppPlatform_Winrt::initialize; SetSwapChainPanel/SetCompositionScale must have run before (i.e. SizeChanged raised before the timer can observe isReady, or after both). The host timer should start ticking only after the first SizeChanged.",
+  "m4: exceptions in worker items. Anything thrown inside the init job (m1, a failing fake HRESULT -> 0x121dc, QI failure) escapes a WorkItemHandler. In the real runtime the threadpool swallows it into the IAsyncAction; the fake ThreadPool must catch (C++/SEH) and log, otherwise the process dies or silently leaves isReady==0. All fakes must return S_OK for every call listed because the game converts any HRESULT<0 into a thrown Platform exception.",
+  "m5: no consolidated QueryInterface matrix. Needed answers (from code): MainPage/Page inner: IFrameworkElement (FindName slot 51) and IUIElement (put_Content); panel: IFrameworkElement(A391D09B), IUIElement(676D0BE9), IDependencyObject(5C526665), ISwapChainPanel(C589644F), ISwapChainPanelNative(F92F19D2); Logo: IImage, IUIElement; EditBox: ITextBox, ITextBox2(F7168C00), IControl(A8912263); Button: IButton, IControl; timer: IDispatcherTimer; render/init operations: IAsyncInfo(00000036); launch args: IActivatedEventArgs(CF651713); StorageFolder objects: IStorageItem(4207A996). Every returned object also needs working AddRef/Release (+ IInspectable slots) because the game uses vccorlib handles.",
+  "m6: AttachToPanel/HID side is only inventoried: ITextBox get/put text and selection calls used by the HID lambdas (0x110be8 sets text and calls Focus on EditBox via IControl slot 46, 0x1108d4 clears HID+0x44 and focuses the BUTTON with FocusState 3 (Programmatic), 0x11079c selection), TextChanged token handling and CoreWindow event args types are not described in startup_flow (belongs to input_text). For the TabTip work: the Showing handler ignores its args and reads GetForCurrentView().get_OccludedRect (DIPs) itself, so the fake InputPane must publish the rect BEFORE raising Showing; Hiding always passes 0.",
+  "m7: render loop pacing. 0x1da160 busy-spins (lock/unlock, no sleep) from StartRenderLoop even while isReady==0, and calls Present(0,0) with no throttle afterwards (relies on SetMaximumFrameLatency(1) of a composition flip chain). The host ThreadPool fake should run it at below-normal priority / yield, and the swap-chain replacement must provide equivalent pacing (vsync or frame-latency waitable).",
+  "m8: composition swap chain on a Win32 window is only mentioned, not specified: WSD requires a real IDXGISwapChain2 from CreateSwapChainForComposition (SetMatrixTransform at 0x1db578 fails on HWND chains), so the host needs dcomp (IDCompositionTarget on the HWND) or an IDXGIFactory2 vtable hook that returns an HWND chain with a wrapper implementing SetMatrixTransform. dcomp.dll availability on Windows RT 8.1 and D3D11.1 (Device1/Context1/ID3DUserDefinedAnnotation QI at 0x1db03e/0x1db086/0x1db0d0) at FL 9_1 are untested assumptions.",
+  "m9: App2 refcount/lifetime: the initial refcount of App2 after the ctor and whether the factory must AddRef 'outer' are not provable from the binary (vccorlib ControlBlock at +0x34). Safe rule: fake CreateInstance AddRefs outer once and the host keeps it until Start returns.",
+  "m10: details that are only partly verified/undecoded: DR+0x34/+0x35/+0x68 (resolution override), vccorlib InitializeData(2) apartment semantics, AppPlatform_Winrt narrow-string conversion of LocalFolder.Path (name says it truncates UTF-16, non-ASCII user paths would break), suspend/resume client helpers 0x4743c/0x4736c/0x473d4/0x474a4."
+ ]
+}

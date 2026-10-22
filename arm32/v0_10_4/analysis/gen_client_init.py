@@ -1,0 +1,364 @@
+# Generates arm32/v0_10_4/facts/client_init.json (expected_bytes are read from the exe).
+import sys, os, json, struct
+sys.path.insert(0, r'D:\repo\Win32Craft-main\tools\arm32')
+os.environ['ARM32_EXE'] = r'D:\repo\win32craft\0.10.4.40\Minecraft Pocket Edition v0.10.4.40 [Winphone Iz]\MCPE.Host.WindowsPhone.exe'
+import arm32re
+pe = arm32re.Pe()
+
+def eb(rva, n=12):
+    return pe.bytes(rva, n).hex()
+
+def u32(rva):
+    return struct.unpack('<I', pe.bytes(rva, 4))[0]
+
+facts = []
+
+def F(id, kind, rva, summary, sig=None, notes=None, evidence=None, conf='high', x86='n/a (0.10.4.40 target; no x86/1.2.8 analogue)', bytes_n=12, bytes_override=None):
+    d = dict(id=id, x86_symbol=x86, x86_value=None, kind=kind,
+             arm_rva=('0x%08x' % rva) if isinstance(rva, int) else rva,
+             summary=summary, arm_signature=sig, x86_to_arm_notes=notes,
+             expected_bytes=None, evidence=evidence or [], confidence=conf)
+    if bytes_override is not None:
+        d['expected_bytes'] = bytes_override
+    elif isinstance(rva, int) and bytes_n:
+        d['expected_bytes'] = eb(rva, bytes_n)
+    facts.append(d)
+
+def slotcell(vt, slot):
+    return vt + 4 * slot
+
+# ---------------------------------------------------------------- identity / conventions
+F('client_init.conventions', 'pe', None,
+  'Address conventions for this exe: ImageBase 0x400000, SizeOfImage 0xE6E000, machine 0x1C4. Every pointer stored in data (vtables, std::function cells, globals) is a VA with the Thumb bit set (value = 0x400000 + rva + 1). RVAs in this file are even code addresses. Toolkit "movw/movt -> 0x0xxxxxxx" annotations are VAs (subtract 0x400000). The friend notes use VAs (sub_5DCE2C = RVA 0x1DCE2C).',
+  None,
+  'VC120 (VS2013) ARM Thumb-2, hard-float AAPCS: this=r0, args r1-r3 then stack, float args in s0-s15, result r0 (r0:r1 for 64-bit). MSVC120 std::string = 16-byte SSO buffer at +0, _Mysize at +0x10, _Myres(capacity) at +0x14 (size 0x18); sret std::string is passed in r1 for member functions (this=r0) - see readAssetFile.',
+  ['arm32re.py info -> machine 0x1c4 base 0x400000 image 0xe6e000', 'vtable MinecraftClient entry [7] reads 0x00457b85 = 0x400000+0x57b84+1'], 'high')
+
+# ---------------------------------------------------------------- class chain / vtables
+F('client_init.rtti.class_chain', 'vtable', 0x33FFCC,
+  'Class chain (single inheritance for the primary vtable): AppPlatformListener -> App -> Minecraft -> MinecraftClient. RTTI vtables (RVA): MinecraftClient 0x33FFCC, Minecraft 0xDC8704, App 0x33F824, AppPlatformListener 0x33F940, AppPlatform 0x33F890, AppPlatform_Winrt 0x33FB20, AppMain(MCPE_Host) 0xDC8830, MainPage 0xDC8AF8, Touch::StartMenuScreen 0x34266C, Gui 0x340D60, Font 0x340CE4, LevelRenderer 0x345118, RakNetInstance ctor 0x101B78, SoundSystemRT 0xDB8028. App slots 1..6 are the AppPlatformListener callbacks (default = empty stub 0x0BF60); MinecraftClient overrides slots 1-5. MinecraftClient is size 0x168 (new(0x168)+memset+ctor 0x54E90).',
+  'MinecraftClient ctor 0x54E90 (this=r0, r1=0, r2=0 are ignored) -> Minecraft::ctor 0x1D7D44 -> App::ctor 0x46F40 (-> AppPlatformListener ctor 0x47B14)',
+  'Multiple-inheritance subvtables follow slot 43 of the MinecraftClient vtable (ITouchScreenModel at +0xB0, IArea, IncludeExcludeArea, IBuildInput, CustomInputHolder...) - they belong to other classes whose RTTI col is placed after the client vtable; the client vtable proper has slots 0..43 (43 = RTTI COL pointer area).',
+  ['arm32re.py rtti MinecraftClient -> vtable rva=0033ffcc', 'MinecraftClient::ctor 0x54e90 stores vtable 0x73ffcc after calling Minecraft::ctor 0x1d7d44 (stores 0x11c8704 after App ctor 0x46f40, which stores 0x73f824)', 'factory 0x1d9cc0: operator new(0x168) + memset 0x168 + ctor 0x54e90', 'friend notes independently say 0x168 and the same ctor chain (re-derived here)'], 'high', bytes_n=12)
+
+CLIENT_VT = 0x33FFCC
+slots = [
+ (0, 0x55F78, 'deleting destructor (calls full dtor 0x55838)'),
+ (1, 0x58D70, 'AppPlatformListener::onLowMemory: Materials cache clear (0xC7DB0 on global 0xDDF594) + tail 0x174A44'),
+ (2, 0x58AF0, 'AppPlatformListener::onAppSuspended: Textures::unloadAll (0xDD6F0), materials release (0xC7D54), client+0x13C=0'),
+ (3, 0x58AA8, 'AppPlatformListener::onAppResumed: reload (0xCB474, platform slot21 -> client+0xB1, client+0x160=0, Textures::reload 0xDD188), client+0x13C=1'),
+ (4, 0x58A50, 'AppPlatformListener::onAppFocusLost: if !platform->isKeyboardVisible() client+0x13C=0; Screen->vf22(0x58)'),
+ (5, 0x58A40, 'AppPlatformListener::onAppFocusGained: client+0x13C=1'),
+ (7, 0x57B84, 'App::init -> MinecraftClient::init (textures, font, options, materials, screen chooser, first screen)'),
+ (8, 0x47210, 'App::getPlatform -> **(client+0xC) or NULL'),
+ (16, 0x5A1D0, 'useTouchscreen: options[0x276] || client[0x150]==0'),
+ (19, 0x1D8A54, 'Minecraft::update (one main-loop iteration; called by the AppMain render loop)'),
+ (20, 0x59738, 'setSize(int width, int height, float guiScaleOverride)'),
+ (21, 0x47240, 'App::quit: this+9 = 1'),
+ (22, 0x47260, 'App::wantToQuit: returns this+9'),
+ (24, 0x575BC, 'handleBack(bool): setScreen(NULL)/ScreenChooser'),
+ (26, 0x593D0, 'create/join world (Minecraft::vf26 0x1D8714 + new 0xE68 object + ProgressScreen-like screens)'),
+ (27, 0x595B4, 'setLevel wrapper (Minecraft::vf27 0x1D8910 installs unique_ptr at +0x68, +0xB0=1)'),
+ (28, 0x59954, 'preUpdate: copies options[0x246] to the byte global RVA 0xE240C0, screen->vtbl[9](0) once per element of the pending deque at +0xF8 (count +0x104) then clears it (0x56CA4), ++(+0xF0), 0x1163E8, _Mtx_lock(client+0x15C)'),
+ (29, 0x5A114, 'render: _Mtx_unlock(+0x15C); GameRenderer::render(partialTicks) when client+0x13C!=0; SoundEngine update'),
+ (30, 0x56BDC, 'postUpdate: platform slot25 hook (empty in Winrt), 0x11634C, world-dependent 0x592EC'),
+ (31, 0x59A8C, 'tick(int i, int n): Minecraft::vf31 0x1D8A00 + screen tick/transition logic'),
+ (32, 0x58830, 'startGame/leaveGame(int a, int b): b!=0 -> a?0x160-screen:StartMenuScreen then Minecraft::vf32 0x1D86A4 (destroy world, +0xB0=0)'),
+ (41, 0x5A1F4, 'vibrate(int ms): if options[0x1E] platform->vibrate(ms) (platform slot 29)'),
+]
+sl_txt = '; '.join('[%d] %s %s' % (s, hex(r), t) for s, r, t in slots)
+F('client_init.vtable.client_slots', 'vtable_slot', CLIENT_VT,
+  'MinecraftClient vtable slots verified by body analysis (slot: function RVA = vtable cell value - 0x400000 - 1): ' + sl_txt + '. Unanalysed slots: 6,9,10,11,12,13-15,17,18,23,25,33-40,42 (see md).',
+  None,
+  'Hard-float: slot 20 takes the float in s0; slot 19/28/29/30 take only this.',
+  ['vtable dump arm32re.py vtable 0x33ffcc 80', 'each slot body disassembled; slot7 call proven at 0x471f6 (ldr r3,[r3,#0x1c]; blx r3 inside runInit)', 'slot19 calls slots 28 (0x70), 31 (0x7c), 29 (0x74), 30 (0x78) at 0x1d8a60/0x1d8abc/0x1d8ae8/0x1d8afc',
+   'listener slots 2/3/4/5 are invoked by AppPlatform::notifyListeners helpers 0x474A4/0x4743C/0x473D4/0x4736C via listener->vtbl[2/3/4/5] (ldr r3,[r3,#8/#0xc/#0x10/#0x14])'],
+  'high', bytes_n=None, bytes_override=None)
+# explicit cell values must match the table above
+for s, r, t in slots:
+    assert u32(slotcell(CLIENT_VT, s)) == 0x400000 + r + 1, (s, hex(u32(slotcell(CLIENT_VT, s))), hex(r))
+facts[-1]['expected_bytes'] = None
+
+for s in (7, 19, 20, 28, 29, 30, 31, 32):
+    cell = slotcell(CLIENT_VT, s)
+    nm = dict((a, c) for a, b, c in slots)[s]
+    F('client_init.vtable.client_slot%d' % s, 'vtable_slot', cell,
+      'MinecraftClient vtable cell for slot %d (+0x%x): %s' % (s, 4 * s, nm.split(':')[0]),
+      None, 'Pointer value = 0x400000+rva+1 (Thumb bit set).',
+      ['cell value 0x%08x' % u32(cell)], 'high', bytes_n=4)
+
+# ---------------------------------------------------------------- client object layout
+F('client_init.client_layout', 'offset', None,
+  'MinecraftClient object layout (size 0x168). [App] +0x00 vtbl; +0x04 AppPlatformListener::platform (=g_platform, set by registerListener 0x47BF4 / base listener ctor); +0x08 byte initDone (set to 1 by runInit after init); +0x09 byte quit flag (App::quit sets, wantToQuit reads); +0x0C AppPlatform** (pointer to the 8-byte cell that holds the AppPlatform_Winrt*; getPlatform = **(+0xC)); +0x10..0x18 vector<string> args. [Minecraft] +0x20 int width (px), +0x24 int height (px) (both 1 after ctor; setSize writes them); +0x28 =0x1267; +0x3C byte paused/"game paused" (read by update/tick; writer not found); +0x40 camera/game-mode-like object (vtbl[5] ticked by Minecraft::vf31, passed to 0x51740(obj,partial) in render); +0x4C RakNetInstance* (new 0x448, ctor 0x101B78); +0x50 LocalPlayer*-like; +0x60 int clientId (from <gameDir>/clientId.txt); +0x64 User/session object (0x30); +0x44/+0x48 shared_ptr (0x90 object, 0xF91FC); +0x68 world object (named "Game" by the friend; owned unique_ptr, NULL in menus, set by Minecraft::vf27 0x1D8910, destroyed by vf25/vf32; GameRenderer only draws the world when non-NULL; probably Level); +0x6C Screen* / +0x70 std::_Ref_count_base* (shared_ptr<Screen>, NO stack); +0x74 byte (cursor/UI-grab state toggled by setScreen); +0x78 std::string localFolder (size@+0x88, cap@+0x8C); +0x90 std::string localFolder copy (size@+0xA0, cap@+0xA4); +0xA8 Timer* (new 0x24: [0]=ticksPerSecond 20.0f, [4] ticks, [8] partialTicks, [0xC]=1.0f); +0xAC FilePathManager* (new 0x38, ctor 0x1A8288(this, &+0x78, &+0x90)); +0xB0 byte hasWorld (set 1 by vf27, 0 by vf32); +0xB1 byte platform->slot21() result; +0xB4 std::string gameDir = localFolder+"/games/com.mojang/minecraftpe" (size@+0xC4, cap@+0xC8); +0xCC frame counter; +0xD1 byte pending-reset flag (Minecraft::vf31 calls vf32(0,0) when set); +0xD8/+0xE0 double frame delta / last time. [MinecraftClient] +0xE8 ScreenChooser* (4-byte object {client}); +0xEC byte; +0xF0 int frame counter; +0xF8..+0x104 std::deque of pending items (map ptr +0xF8, count +0x104; drained in preUpdate); +0x108 LevelRenderer* (0x6A8); +0x10C GameRenderer* (0x130, ctor 0xB86E4); +0x110 object 0xCC4 (ctor 0xA4114, args (client+0x68 value, Textures*)) unidentified; +0x114 object 0x38 (ctor 0x52B30(this,&gameDir)) unidentified; +0x118 Textures* (0xB8, ctor 0xDBF98); +0x11C Font* (0x890, factory 0x548A0); +0x120/+0x128/+0x12C pointers cleared by vf32 (input/mouse helpers); +0x124 InputHolder* (TouchInputHolder 0x340 via 0x551DC or CustomInputHolder, factory 0x56420); +0x130 Gui* (0xC30, ctor 0x6C684); +0x134 Options* (0x2D0, ctor 0x550DC); +0x138 SoundEngine* (0xA2C, ctor 0xEFA00 -> SoundSystemRT, init 0xF03E8(engine,client,options)); +0x13C byte renderEnabled (init 1; 0 while suspended); +0x148 byte inSetScreen guard, +0x149 byte pending flag, +0x14C Screen* pendingScreen; +0x150 byte (= !platform->slot26()); +0x154/+0x158 float*[2] {guiScale, 1/guiScale} pairs; +0x15C _Mtx_t (recursive, locked in preUpdate, unlocked in render); +0x160 byte; +0x164 int keyboardHeight (px*guiInv, written by 0x59578).',
+  None,
+  'The 1.2.8 ClientInstance offsets do not apply; this table is only valid for this exe. Offsets +0x118/+0x11C/+0x6C/+0x68/+0x0C/+0x20/+0x24/+0x164/+0x13C are confirmed by >=2 accessors (init, setScreen, setSize, GameRenderer, tick); the remaining ones carry a single indicator (ctor zeroing + one user).',
+  ['ctor 0x54e90 zero-initialises +0xE8..+0x164 in ascending order (see disassembly) and Minecraft::ctor 0x1d7d44 +0x1C..+0xE0', 'setScreen 0x59638 stores shared_ptr at +0x6c/+0x70, deferred slot +0x148/+0x149/+0x14c', 'GameRenderer::render 0xB9E1C reads [client+0x68] (world gate) and [client+0x6C] (screen)', 'Minecraft::vf32 0x1D86A4 / vf27 0x1D8910 / vf25 0x1D895C manage +0x4C/+0x50/+0x68/+0xB0', 'init 0x57B84 creates +0xE8,+0x108..+0x138 in that program order'],
+  'high')
+
+# ---------------------------------------------------------------- creation chain
+F('client_init.ctor.minecraft_client', 'function', 0x54E90,
+  'MinecraftClient::ctor. Calls Minecraft::ctor (0x1D7D44), writes vtable 0x33FFCC, zeroes +0xE8..+0x164, sets +0x13C=1, creates Options (0x54AC0 -> new 0x2D0, ctor 0x550DC) into +0x134, and two float pairs into +0x154/+0x158. No platform use, no D3D use, NO texture/font creation (+0x118/+0x11C left NULL).',
+  'MinecraftClient* ctor(MinecraftClient* this /*r0*/, int /*r1*/, int /*r2*/, int /*r3*/)  // prologue "push {r0-r3}"; extra args ignored (factory 0x1D9CC0 passes 0,0)',
+  'Allocate 0x168 bytes zeroed (memset) before calling.',
+  ['0x54efa str.w r4,[r5,#0x118] and 0x54efe str.w r4,[r5,#0x11c] (r4=0)', 'factory 0x1d9cc0 passes r1=*(&0), r2=*(&0)', '0x54f4a.. _Mtx_init(client+0x15c, type 2)'], 'high')
+
+F('client_init.ctor.minecraft', 'function', 0x1D7D44,
+  'Minecraft::ctor: App::ctor, vtable 0xDC8704, width=height=1 (+0x20/+0x24), new Timer(0x24) at +0xA8 (ticksPerSecond 20.0f, 1.0f, ms clock via 0x11B054), new 0x448 RakNetInstance at +0x4C, queries _GetConcurrency ("cores" property) and stores platform "cores".',
+  'Minecraft* ctor(Minecraft* this /*r0*/, ...)  // push {r0-r3}',
+  None,
+  ['0x1d7d66 movw/movt vtable 0x11c8704', '0x1d7d78..0x1d7d86 movw r3,#0x1267; str [r4,#0x28]; str 1,[r4,#0x20]; str 1,[r4,#0x24]', '0x1d7da8 mov.w r0,#0x448 -> ctor 0x101b78 (RakNetInstance vtable 0x11b7e18)'], 'high')
+
+F('client_init.ctor.app', 'function', 0x46F40,
+  'App::ctor(this, int argc, char** argv): AppPlatformListener ctor 0x47B14, vtable 0x33F824, +8=0 (initDone), +9=0 (quit), +0xC=0 (platform cell ptr), builds vector<string> from argv at +0x10.',
+  'App* ctor(App* this /*r0*/, int argc /*r1*/, char** argv /*r2*/)', None,
+  ['0x46f66 vtable 0x73f824; 0x46f7a strb [r8,#8]; 0x46f7e strb [r8,#9]; 0x46f82 str [r8,#0xc]', 'App::vf21 0x47240 sets +9=1; vf22 0x47260 returns +9; vf8 0x47210 returns **(+0xC)'], 'high')
+
+F('client_init.app.quit_flag', 'function', 0x47260,
+  'App::wantToQuit (vtable slot 22): returns byte [this+9]; App::quit (slot 21, RVA 0x47240) sets it to 1. This is the "game asked to quit" flag the host should poll after each frame (the AppMain render loop itself never reads it; the Winrt exe lets the OS/back button end the process).',
+  'bool wantToQuit(App* this /*r0*/) -> r0; void quit(App* this /*r0*/) at 0x47240',
+  'Call through the client vtable (slots 22/21).',
+  ['0x47260 ldrb r0,[r0,#9]', '0x47240 strb 1,[r0,#9]', 'no other reader of +9 found in the AppMain loop (0x1da160 does not poll it)'], 'high')
+
+F('client_init.appmain.layout', 'offset', 0x1D9D14,
+  'MCPE_Host::AppMain layout (size 0x40, operator new(0x40) zeroed by MainPage ctor 0x1DD4C8, ctor 0x1D9D14(this, shared_ptr<DeviceResources>* dr)): +0x00 vtbl 0xDC8830 (IDeviceNotify-like: [0],[1] empty stubs 0x0BF60 = OnDeviceLost/OnDeviceRestored); +0x04 DX::DeviceResources* (raw, from dr[0]); +0x08 control block (use-count at ctrl+4 incremented); +0x0C IAsyncAction* of the render loop (NULL until StartRenderLoop 0x1DA8A8); +0x10 Concurrency::critical_section (locked by all event handlers and by every render-loop iteration); +0x30 float 0.0; +0x34 MinecraftClient*; +0x38 AppPlatform** cell holder (8-byte new; cell[0]=AppPlatform_Winrt*); +0x3C byte ready flag (std::atomic<bool>, set to 1 by the init work item after App::init). The ctor then calls createApp(this+0x34) 0x1D9DD4 and DeviceResources::setOwner(dr,this) 0x1DBBC0 (DR+0x74=AppMain).',
+  'AppMain* ctor(AppMain* this /*r0*/, std::shared_ptr<DR>* dr /*r1*/)  // prologue "push {r0,r1}" then push.w',
+  'A host that bypasses MainPage must allocate/zero 0x40 bytes itself and pass a valid shared_ptr<DR> (ptr + control block); make_shared<DR> is 0x1DCE2C (see frame_render.device_resources.make_shared).',
+  ['0x1d9d2c vtable 0x11c8830; 0x1d9d62 str r6,[r5,#8]; 0x1d9d64 str r8,[r5,#4]; 0x1d9d88 bl 0x1d9dd4 with r0=this+0x34; 0x1d9d90 bl 0x1dbbc0(dr, this)', 'AppMain::IsAppInitialized 0x1da310 ldrb [r0,#0x3c] + dmb', 'init lambda 0x1da2d8 strb 1,[ctx,#8] where ctx=AppMain+0x34 (so +0x3c)', 'cross-check: frame_render.frame.init_flag (independent agent) reaches the same +0x3C meaning'],
+  'high')
+
+F('client_init.appmain.createApp', 'function', 0x1D9DD4,
+  'AppMain::createApp(this = AppMain+0x34): (1) cell = new(8) {AppPlatform*} (0x1D9C98) stored at this+4; (2) platform = new(0x88) memset 0 + AppPlatform_Winrt::ctor 0x494C0, *cell = platform; (3) client = factory 0x1D9CC0 (new 0x168 memset + ctor 0x54E90) stored at this+0; (4) platform+0x10 = client; (5) WinRT: ApplicationData.Current.LocalFolder.Path (HSTRING) -> narrow std::string (0x480D8) -> assigned to client+0x78 AND client+0x90 (std::string::assign 0xD730(dst, src, 0, npos)); (6) builds the init WorkItemHandler (0x1D9B68, lambda_c7b7) capturing this and starts it with ThreadPool.RunAsync (0x1DA4A4, IThreadPoolStatics slot 6).',
+  'void* createApp(AppMainClientPair* this /*r0 = AppMain+0x34*/)',
+  'In a host-driven (non-XAML) flow replicate steps 1-5 literally (or call this function with faked ApplicationData/ThreadPool factories). Step 6 can be replaced by a direct call of runInit (0x471E8) on a worker thread followed by setting AppMain+0x3C=1.',
+  ['disassembly 0x1d9dd4..0x1d9ff4', 'strings: L"Windows.Storage.ApplicationData" at 0x1dab74, IID 5612147b-e843-45e3-94d8-06169e3c8e17 built on stack at 0x1dab3c..0x1dab6e', 'sub_1dad20 calls IApplicationData vtbl[0x30] (get_LocalFolder, slot 12); QI IID 4207A996-CA2F-42F7-BDE8-8B10457A7F30 (IStorageItem, bytes at rdata 0x20fbc8) then get_Path 0x4EA38', 'platform back-pointer: 0x1d9e7a str r3,[r2,#0x10]; used by AppPlatform_Winrt::pollInput case 4 (0x4b3fa ldr r3,[r5,#0x10]; client->+0x6c)'],
+  'high')
+
+F('client_init.platform.ctor', 'function', 0x494C0,
+  'AppPlatform_Winrt::ctor (size 0x88): base AppPlatform ctor 0x4726C (stores this into g_platform, RVA 0xDDD7E0), vtable 0x33FB20, +0x14 std::string installRoot = Package.Current.InstalledLocation.Path (narrowed), +0x2C HIDController* (new 0x5C, ctor 0x1103FC), +0x30 int screenWidth=0x780, +0x34 int screenHeight=0x438, +0x38 float pixelsPerMillimetre, +0x3C/+0x40 float scaleX/scaleY, +0x48/+0x4C uint64 vibration deadline, +0x50 critical_section (input queue lock), +0x70.. input event deque (+0x7C head, +0x80 count). Base fields: +0x04 byte keyboardVisible, +0x08 listener map (std::map<listener*,float>), +0x10 MinecraftClient* (set by createApp).',
+  'AppPlatform_Winrt* ctor(AppPlatform_Winrt* this /*r0*/)  // zeroed 0x88-byte block',
+  'Needs WinRT: Windows.ApplicationModel.Package.Current (0x4E840), IPackage.InstalledLocation (0x4E8E0), IStorageItem.get_Path. installRoot must point at the folder that CONTAINS "data\\" (asset root) - readAssetFile appends "/data/".',
+  ['0x494e0 vtable 0x73fb20; 0x494e8 add.w sb,r6,#0x14 (installRoot string); 0x494fe str [r6,#0x2c]; 0x49500..0x4950a width 0x780 / height 0x438', '0x4954e..0x4965a Package statics -> IStorageItem(0x60fbc8 IID) -> path -> 0x480d8 -> 0xd730 assign to +0x14', '0x4f780 readAssetFile uses add.w r1,r0,#0x14 as the base string'],
+  'high')
+
+F('client_init.init.runInit', 'function', 0x471E8,
+  'App::init wrapper "runInit" (its only caller in the image is the init work item at 0x1DA2E8; no other invocation of MinecraftClient::init was found): this+0xC = holder (AppPlatform**); this->vtbl[7]() i.e. MinecraftClient::init (0x57B84); this+8 = 1 (initDone); tail-calls 0x47BF4(this, 0.0f) = AppPlatformListener registration (this+4=g_platform, insert into platform listener map with priority 0.0f).',
+  'void runInit(MinecraftClient* client /*r0*/, AppPlatform** holder /*r1*/)  // tail call 0x47BF4 with s0=0.0f',
+  'Host replacement: call this function exactly as the work item does (client, &cell). Must run before the first Minecraft::update; may run on any thread (the game runs it on a ThreadPool worker while the UI thread is free).',
+  ['0x471f4 str r1,[r4,#0xc]; 0x471f6 ldr r3,[r3,#0x1c]; 0x471f8 blx r3; 0x47200 strb 1,[r4,#8]; 0x47208 b.w 0x47bf4', 'lambda_c7b7 Invoke 0x1da2d8: r0=[ctx], r1=[ctx+4] -> 0x471e8 then ctx+8(byte)=1 (dmb ish before/after)', 'whole-image caller scan (all bl/b.w/b targets): the only call to 0x471e8 is 0x1da2e8; 0x47bf4 is called from 0x47208 (tail) and 0xcdfee (MaterialManager::load)'],
+  'high')
+
+F('client_init.init.listener_register', 'function', 0x47BF4,
+  'AppPlatformListener::registerListener(listener, float priority): listener+4 = g_platform (global 0xDDD7E0), inserts {priority, listener} into the platform listener map (platform+8, std::map via 0x1AC3C/0x47A10). Also called by MaterialManager::load (0xCDFCC) so the materials object reloads on resume. Notification order: suspend/focus-lost notify in reverse iteration order, resume/focus-gained in forward order.',
+  'void registerListener(AppPlatformListener* l /*r0*/, float priority /*s0*/)', None,
+  ['0x47bfe..0x47c10 movw/movt 0x11dd7e0 (g_platform) -> str [r0,#4]', '0xcdff? sub_cdfcc calls bl 0x47bf4', 'notify helpers 0x4743c (listener vf3), 0x4736c (vf5), 0x473d4 (vf4), 0x474a4 (vf2)'], 'medium')
+
+# ---------------------------------------------------------------- init steps
+F('client_init.init.vf7_steps', 'function', 0x57B84,
+  'MinecraftClient::init (vtable slot 7) - ordered steps with RVAs. (1) createDirectories(client+0x78, {"/games","/com.mojang","/minecraftpe"}) via _access/_mkdir (0x1A90BC); client+0xB4 gameDir = localFolder+"/games/com.mojang/minecraftpe" (0x19F38/0x10CAC/0x19128). (2) 0x585AC (sinf table setup). (3) Atlas metadata: new 0x40 + 0xDA1B8(obj,"images/terrain.meta",0) -> shared_ptr global RVA 0xDDDBF8, same for "images/items.meta" -> RVA 0xDDDC00; each handed to 0xDA764(meta, client); 0x1D426C, 0x15EC90 (global registries). (4) Options: tmp=gameDir; Options::init 0xA0B78(client+0x134, client, &tmp); Options::load 0xA230C (defaults use platform slot 40 getFreeMemory and DR+0x35, cores via _GetConcurrency). (5) Minecraft::init2 0x1D84B0(client, &options+0x25C): reads/creates <gameDir>/clientId.txt (0x1D829C) -> client+0x60, new 0x30 User(name) -> client+0x64, calls this->setSize(+0x20,+0x24,0.0f) (vtbl+0x50), creates +0x44/+0x48 object (0xF91FC), time -> +0xE0, then static game-data registration 0x19B528, 0x1CC2C0, 0x15A800, 0x163384, 0x1BACA4. (6) 0xCB474; client+0xB1 = platform->slot21(); assign options[0x25C] name into client+0x64; I18n 0xF3CB4(platform,"en_US") reads lang/en_US.lang through platform->readAssetFile. (7) +0x114 = new 0x38 object ctor 0x52B30(obj,&gameDir) + 0x53318 (unidentified). (8) FilePathManager new 0x38 ctor 0x1A8288(obj,&+0x78,&+0x90) -> client+0xAC; +0xB0=0. (9) **Textures = new 0xB8 memset, ctor 0xDBF98(tex, client+0x134, platform) -> client+0x118 (str at 0x57F7E)**; atlases i=0..4: 0xDC814(textures, 0xC5CB4(i, terrainMeta)); 0xDCCF4(textures); texture lists via 0xDCD38(textures,"startup.images"/"background.images"/"ingame.images",flag) (files read through g_platform->readAssetFile, images decoded by loadPNG/loadTGA). (10) MaterialManager::load 0xCDFCC(RVA 0xDE0AC0 object, "materials/common.json") (registers listener, compiles shaders via D3DCompile) ; 0x563A8(client, options[0x1A]) loads "materials/fancy.json" or "materials/sad.json". (11) Gui = 0x549A8 -> +0x130; ScreenChooser 0x54B78 -> +0xE8; 0xB2D7C(client); LevelRenderer 0x549F4(&client,terrainMeta) -> +0x108; GameRenderer 0x5495C -> +0x10C; +0x110 = 0x54AF8(client+0x68 value, textures); **Font = new 0x890 via 0x548A0(out,&textures,"font/default8.png",options) -> client+0x11C (str at 0x5823C)**; 0xA29B0(options). (12) controller query 0x1D83E0(client)->vtbl[2](&vector): if non-empty AND options[0x290]: client->vtbl[26] attach; on failure ProgressScreen (new 0x174, ctor 0x8F2E4) through setScreen 0x59638; otherwise **ScreenChooser::setScreen(client+0xE8, 1) 0x91A3C at 0x5831A -> Touch::StartMenuScreen**. (13) SoundEngine new 0xA2C ctor 0xEFA00(obj,20.0f) -> +0x138; 0xF03E8(engine, client, options). (14) client+0x150 = (platform->slot26()==0); InputHolder factory 0x56420 -> +0x124 (TouchInputHolder 0x551DC when useTouchscreen()).',
+  'void init(MinecraftClient* this /*r0*/)  // no other args; stack frame 0xA8; reaches the platform with this->vtbl[8]()',
+  'Preconditions the host must provide BEFORE calling: (a) client+0xC valid AppPlatform** (set by runInit) and the AppPlatform_Winrt constructed; (b) client+0x78/+0x90 = writable local-folder path (std::string); (c) process able to fopen "<installRoot>/data/..." files (installRoot = platform+0x14); (d) g_DeviceResources (RVA 0xE2AFC4) non-NULL with working ID3D11Device/Context (DX::DeviceResources ctor ran CreateDeviceResources) and a DR+0x38 feature level accepted by shader:getShaderModelSuffix 0xD73FC (see frame_render.shader.*); (e) fake WinRT MemoryManager (platform slot 40); (f) nothing from CoreWindow/XAML is touched by init. NOT done by init: swap-chain creation, platform HID/CoreWindow attach (0x4B55C), the real window setSize, render-loop start.',
+  ['client_vf7.txt annotated disassembly 0x57b84..0x583ea (789 lines) in arm32/v0_10_4/analysis', 'strings with a single xref inside vf7: "/games" 0x211edc, "/com.mojang" 0x211ee4, "/minecraftpe" 0x211ef0, "images/" 0x211f00, "terrain.meta" 0x211f08, "items.meta" 0x211f18, "en_US" 0x211f24, "startup.images" 0x211f2c, "background.images" 0x211f3c, "ingame.images" 0x211f50, "materials/common.json" 0x211f60, "font/default8.png" 0x211f78 (only xref 0x58216); "materials/fancy.json" 0x211f8c and "materials/sad.json" 0x211fa4 in 0x563A8', 'data files verified present in the package: data/images/{terrain,items}.meta, startup.images, background.images, ingame.images, font/default8.png, lang/en_US.lang, materials/{common,fancy,sad}.json'],
+  'high')
+
+F('client_init.init.textures_font_writers', 'function', 0x57F72,
+  'WHO WRITES client+0x118 / +0x11C: only MinecraftClient::init. +0x118 (Textures*): `add.w r2,r6,#0x118` at 0x57F72 then `str r4,[r2]` at 0x57F7E (r4 = result of Textures ctor 0xDBF98 on a fresh new(0xB8) memset block; previous value, if any, destroyed through 0xDC150 + operator delete). +0x11C (Font*): `add.w r1,r6,#0x11c` at 0x58234 then `str r3,[r1]` at 0x5823C (result of 0x548A0 with "font/default8.png" and Textures from +0x118 - so Textures MUST exist first, which the order guarantees). The ctor 0x54E90 zeroes both (0x54EFA / 0x54EFE). No other function in the MinecraftClient range writes them (swept all str/add forms). StartMenuScreen/Screen::init (0x90624) copies client+0x11C into screen+0xFC, therefore any screen constructed/initialised while init has not completed dereferences NULL - exactly the friend crash.',
+  'Textures* ctor 0xDBF98(Textures* this /*r0*/, Options* opts /*r1 = client+0x134*/, AppPlatform* plat /*r2 = client->vf8()*/) -> r0; stores opts at +0xC, platform at +0x10, size 0xB8',
+  'Do not create these objects from the host; run init. The only supported entry is runInit/vf7.',
+  ['field sweep: str/ldr [rX,#0x118] and add rX,rY,#0x118 / #0x11c over 0x50000-0x5E000 -> only 0x54efa/0x54efe (ctor) and 0x57f72/0x58234 (init)', '0xdbf98 stores r1->[sb+0xc], r2->[sb+0x10]', 'Screen::init 0x90624: ldr.w r4,[r1,#0x11c]; str.w r4,[r0,#0xfc]', 'friend crash description: StartMenuScreen ctor with +0x118/+0x11C NULL (consistent: init never ran; they called vf32 directly)'],
+  'high')
+
+F('client_init.first_screen', 'function', 0x91A3C,
+  'First screen: created INSIDE MinecraftClient::init at 0x5831A: ScreenChooser::setScreen(client+0xE8, 1) -> ScreenChooser::createScreen(1) 0x918D8 (new 0x388, memset, Touch::StartMenuScreen::ctor 0x995EC) -> MinecraftClient::setScreen 0x59638. It is only skipped when a gamepad is enumerated AND options[0x290] is set (then a ProgressScreen 0x174 is shown instead). It is first RENDERED by the first Minecraft::update after the ready flag: update -> vf29 render -> GameRenderer::render 0xB9E1C -> screen->vtbl[1](mouseX, mouseY, partialTicks). MinecraftClient::vf32(a=0,b!=0) (0x58830) also creates StartMenuScreen (used when leaving a world: screens call client->vf32(0,1) at [this+0xB0]).',
+  'Screen* ScreenChooser::setScreen(ScreenChooser* this /*r0 = client+0xE8*/, int id /*r1: 1 = start menu*/) -> r0; void MinecraftClient::setScreen(MinecraftClient* c /*r0*/, Screen* s /*r1, takes ownership*/) 0x59638',
+  'ScreenChooser = 4-byte object {MinecraftClient*}. createScreen switch: id1 StartMenuScreen; id2/3 0x170-byte screen (0x87F78); id4 0x360 (0x92DB0); id5/6 0x184 (0x71CE0).',
+  ['0x58314 ldr r0,[r6,#0xe8]; movs r1,#1; bl 0x91a3c', '0x91a3c: bl 0x918d8 ; ldr r0,[r5]; bl 0x59638', '0x918d8 id==1 -> 0x91900 mov.w r0,#0x388; 0x9191a bl 0x995ec (vtable 0x74266c Touch::StartMenuScreen)', 'MinecraftClient::vf32 0x58830: r2!=0, r1==0 -> new 0x388 + 0x995ec at 0x588b6', 'friend note: "client->vtbl[32] -> StartMenuScreen" (agrees; but that path is NOT the game own startup path)'],
+  'high')
+
+F('client_init.screen.setScreen', 'function', 0x59638,
+  'MinecraftClient::setScreen(Screen*): resets input state (0x116370,0x116660,0x10F3A4,0x1166DC); if client+0x148 (guard) -> defer in +0x149/+0x14C; if new screen non-NULL and screen->vtbl[18](0x48) true -> abort; old screen->vtbl[11](0x2C) (removed); install shared_ptr<Screen> (0x542A4) at +0x6C/+0x70; toggles +0x74 (UI grab) and the +0x120/+0x12C helpers; then Screen::init(0x90624)(screen, client, int(width*invScale), int(height*invScale)) with invScale = global float RVA 0x340D40; then screen->vtbl[19](0x4C) -> when true and client+0x68 != NULL calls 0x17C72C(world) (pause). No screen STACK: a single shared_ptr slot.',
+  'void setScreen(MinecraftClient* this /*r0*/, Screen* s /*r1*/); void Screen::init(Screen* s /*r0*/, MinecraftClient* c /*r1*/, int guiW /*r2*/, int guiH /*r3*/) 0x90624',
+  'Screen::init stores client at screen+0xB0, Font* at +0xFC, width +0xA4, height +0xA8, then calls virtuals [2] init(), [3] setupPositions(), [31]; Screen::setSize 0x915E8 stores +0xA4/+0xA8 and calls [3]. Screen vtable slots seen from the client: [1] render(int mx,int my,float pt), [3] setupPositions, [9] tick(0), [11] removed, [15]/[16] (GameRenderer), [19] isInGameScreen, [22] pause hook (0x58), [28] (0x70), [29] (0x74), [30] (0x78) keyboardHeightChanged.',
+  ['0x59644..0x59650 four reset calls; 0x59654 ldrb [r4,#0x148]; 0x5966a ldr r3,[r3,#0x48]; 0x59686 ldr r3,[r3,#0x2c]; 0x59694 bl 0x542a4; 0x5969a..0x596a4 swap +0x70/+0x6c', '0x596cc..0x59708: ldr r3,[r4,#0x24]/[r4,#0x20] * float @0x740d40 then bl 0x90624', 'GameRenderer 0xba316..0xba32a: screen->vtbl[1](r1=mx,r2=my,s0=partial)', 'RTTI _Ref_count<Screen> vtable rva 0x340258'],
+  'high')
+
+# ---------------------------------------------------------------- size / scale
+F('client_init.size.setSize', 'function', 0x59738,
+  'MinecraftClient::setSize(width_px, height_px, guiScaleOverride) (vtable slot 20). Writes client+0x20=width, +0x24=height (fallback 240x140 when 0; a quirk subtracts for kindle/fire models via 0x586EC); if s0 != 0: global guiScale (RVA 0xDDE814) = s0; else guiScale = 1 if width<400, 2 if >=400, 3 if >=800 (0x320), 4 if >=1000 (0x3E8) or 6 if platform->slot18 (pixels/mm) > 15.0; global invGui RVA 0x340D40 = 1/guiScale; updates float pairs +0x154/+0x158 (via options), Gui (+0x130 sub-vtbl at +0xA4 vtbl[1](rect)), current screen: Screen::setSize(int(w*inv), int(h*inv)) 0x915E8 + screen->vtbl[3](), InputHolder (+0x124)->vtbl[1](rect). NULL-safe for Gui/screen/input before init.',
+  'void setSize(MinecraftClient* this /*r0*/, int width /*r1*/, int height /*r2*/, float guiScale /*s0*/)',
+  'AppMain always passes s0 = 0.0f (pool constants at 0x1DA430/0x1DA8A4 are 0). Width/height are PHYSICAL pixels = int((logicalSize+0.5)*platform scale) with scale = platform+0x3C (x) / +0x40 (y). Host: call client->vtbl[20](client, winW, winH, 0.0f) after init and on every WM_SIZE; also store the same values in the platform (setScreenWidth 0x4FA40 -> +0x30, setScreenHeight 0x4FA20 -> +0x34; getters are platform slots 16/17) and write platform+0x38 (pixels/mm, ~3.78 for 96 dpi) and +0x3C/+0x40 (1.0).',
+  ['0x5975a..0x5977e width/height stores + defaults 0xf0/0x8c', '0x59796/0x597ce/0x597ea/0x597fc/0x5981c vstr into 0x11de814; 0x5982e vdiv; 0x59836 vstr to 0x740d40', 'callers: AppMain::OnWindowSizeChanged 0x1da32c (vtbl[0x50] with s0=0) and AttachToPanel 0x1da634 (same) and Minecraft::init2 0x1d855a', 'platform vf18 returns [plat+0x38] (0x4ecc0), set by 0x4b55c from DisplayInformation RawDpiX/Y avg / const'],
+  'high')
+
+F('client_init.size.platform_scale', 'function', 0x4B55C,
+  'AppPlatform_Winrt::initInput/attach (called once from AttachToPanel 0x1DA634 with the real XAML objects): HID::Initialize(HIDController(+0x2C), CoreWindow, SwapChainPanel|null, TextBox, focusPanel) 0x111C1C; DisplayInformation (GetForCurrentView) RawDpiX/RawDpiY (IDisplayInformation slots 12/13 = vtbl+0x30/+0x34) -> platform+0x38 = ((RawDpiX+RawDpiY)*0.5)/25.4f (float constant 25.4 at RVA 0x4B704; /96.0 double at 0x4B6FC); if a SwapChainPanel is supplied: platform+0x3C = DR+0x60 (compositionScaleX), +0x40 = DR+0x64, and +0x38 *= (+0x3C / panel.CompositionScaleX); else +0x3C = +0x40 = LogicalDpi(slot 11, vtbl+0x2C)/96. A non-XAML host must write these fields directly instead of calling it (it needs WinRT CoreWindow/panel objects).',
+  'void attach(AppPlatform_Winrt* this /*r0*/, ?, SwapChainPanel^ panel /*r2*/, TextBox^ tb /*r3*/, [sp] focusPanel)',
+  'If the faithful (XAML) route is chosen this function runs unmodified and needs fake IDisplayInformation.RawDpiX/RawDpiY/LogicalDpi.',
+  ['0x4b5ae ldr r3,[r3,#0x30]; 0x4b5c2 ldr r3,[r3,#0x34]; 0x4b5f0 bl 0x4b054; ldr r3,[r0,#0x60] -> str [r6,#0x3c]; 0x4b5fc ldr r3,[r0,#0x64] -> [r6,#0x40]', '0x4b660 ldr r3,[r3,#0x2c] (LogicalDpi) -> /96', 'independent label by the input agent: "AppPlatform_Winrt::initInput ... dpi scale fields +0x38/0x3C/0x40"'],
+  'high')
+
+# ---------------------------------------------------------------- platform vtable
+PLAT_VT = 0x33FB20
+pslots = [
+ (0, 0x4AC14, 'dtor'),
+ (1, 0x4EB90, 'getImagePath(std::string* out /*r1*/, const std::string& name /*r2*/, bool inAssets /*r3*/): inAssets ? installRoot+"/data/images/"+name : name'),
+ (2, 0x4F028, 'loadPNG (ifstream + libpng 1.5.13 -> TextureData)'),
+ (3, 0x47818, 'loadTGA (base impl, fopen)'),
+ (8, 0x476F0, 'returns empty std::string (sret r1)'),
+ (9, 0x4EB18, 'getDateString(int seconds) -> "N s (UTC)"'),
+ (10, 0x4E4D4, 'global counter decrement helper (--g[0xDDD7E4] < 0 ? 0 : -2)'),
+ (12, 0x4F800, 'savePNG(name) -> name+".png" via fopen/fwrite 0x51084'),
+ (14, 0x4F780, 'readAssetFile(std::string* out /*r1*/, const std::string& name /*r2*/): fopen(installRoot+"/data/"+name,"rb") content -> out (via base 0x4792C)'),
+ (16, 0x4ED00, 'getScreenWidth -> [this+0x30]'),
+ (17, 0x4ECE0, 'getScreenHeight -> [this+0x34]'),
+ (18, 0x4ECC0, 'getPixelsPerMillimeter -> float [this+0x38]'),
+ (19, 0x4EF14, 'isNetworkEnabled(bool wifiOnly): NetworkInformation.GetInternetConnectionProfile (0x4B108)'),
+ (23, 0x4E350, 'buyGame-ish: CurrentAppSimulator license (0x4E93C) + purchase request (L"TODO" product)'),
+ (25, 0x0BF60, 'end-of-frame hook (pure virtual in base; Winrt = empty stub; Present is done by DeviceResources)'),
+ (26, 0x17FD40, 'returns true (client+0x150 = !slot26)'),
+ (29, 0x50FF0, 'vibrate(int ms): VibrationDevice.GetDefault (0x4AEB8) Cancel+Vibrate(ms*10000 ticks), deadline +0x48'),
+ (30, 0x47690, 'getPlatformStringVar(std::string* out, int) -> "<getPlatformStringVar NotImplemented>"'),
+ (31, 0x4FAC4, 'showKeyboard(const std::string& text, int maxLen, bool limit) -> HID::ShowKeyboard 0x114220 (RunAsync)'),
+ (32, 0x4EDAC, 'hideKeyboard -> base 0x47720 (this+4=0) + HID dispatcher lambda'),
+ (33, 0x50F2C, 'updateTextBoxText(const std::string&) -> HID 0x114410'),
+ (34, 0x47740, 'isKeyboardVisible -> byte [this+4]'),
+ (39, 0x475F0, 'returns empty std::string'),
+ (40, 0x4EAF8, 'getFreeMemory (u64 r0:r1) = MemoryManager.AppMemoryUsageLimit(0x4E740) - AppMemoryUsage(0x4E69C)'),
+ (42, 0x47644, 'getDeviceName -> "UNKNOWN"'),
+]
+for s, r, t in pslots:
+    cell = PLAT_VT + 4 * s
+    assert u32(cell) == 0x400000 + r + 1, (s, hex(u32(cell)), hex(r))
+named = set(s for s, r, t in pslots)
+stub_void, ret_false, ret_true, other = [], [], [], []
+for s in range(43):
+    if s in named: continue
+    v = u32(PLAT_VT + 4 * s) - 0x400000 - 1
+    if v == 0x0BF60: stub_void.append(s)
+    elif v == 0x29BA0: ret_false.append(s)
+    elif v == 0x17FD40: ret_true.append(s)
+    else: other.append((s, v))
+vt_text = ('AppPlatform_Winrt vtable (43 slots, RVA 0x33FB20; base AppPlatform 0x33F890; slot cell = RVA + 4*slot, value = 0x400000+fn+1). Overridden/implemented slots (slot: function RVA - behaviour): '
+           + '; '.join('[%d] 0x%x %s' % (s, r, t) for s, r, t in pslots)
+           + '. Empty void stubs (0x0BF60): %s. Return-false stubs (0x29BA0): %s. Return-true stubs (0x17FD40): %s. Other unanalysed: %s.'
+           % (stub_void, ret_false, ret_true, ', '.join('[%d] 0x%x' % (s, v) for s, v in other)))
+F('client_init.platform.vtable', 'vtable', PLAT_VT, vt_text,
+  None,
+  'Calls are plain C++ virtual calls: this=r0; an sret std::string is passed in r1 (this stays r0). Slots used on the init path via client->vf8()/g_platform: 14 (assets), 21, 26, 30, 40, 18 (setSize), 34 (focus lost), 25 (postUpdate), 2/3 (texture decode).',
+  ['vtable dump arm32re.py vtable 0x33fb20 60', 'bodies read for every listed slot', 'independent labels by the platform/input agents agree on slots 1,2,9,12,14,19,23,29,31,32,33,34,40 (tools/arm32/names)'],
+  'medium', bytes_n=None)
+facts[-1]['expected_bytes'] = None
+
+F('client_init.platform.asset_access', 'abi', 0x4F780,
+  'Asset/file access path: AppPlatform_Winrt::readAssetFile (slot 14, RVA 0x4F780) builds installRoot(+0x14)+"/data/"+name and calls base AppPlatform::readAssetFile 0x4792C (fopen(path,"rb")/fread -> std::string; empty string when missing). getImagePath (slot 1, 0x4EB90) and loadPNG (slot 2, 0x4F028) use installRoot+"/data/images/". Direct users through the g_platform global (RVA 0xDDD7E0): Textures list loader 0xDCD38, ShaderProgram ctor region 0xD65CC, MaterialManager 0xCD350, I18n 0xF33B0. No archive/zip: plain files under data/. Storage: Options/world/clientId live in client+0xB4 gameDir via std::fopen/_mkdir (msvcr120_app), NOT through WinRT file APIs; only the base path comes from WinRT (ApplicationData.LocalFolder.Path).',
+  'std::string* readAssetFile(AppPlatform_Winrt* this /*r0*/, std::string* out /*r1*/, const std::string* name /*r2*/) -> r0=out',
+  'Host: set platform+0x14 to a path whose "data" subfolder holds the extracted package (D:\\...\\Minecraft Pocket Edition v0.10.4.40 [Winphone Iz]), and LocalFolder to a writable directory. Paths are joined with "/" - Windows accepts mixed separators. Locale: hard-coded "en_US" in init (no OS query). Clipboard/device-id/launcher: no WinRT usage found in this build.',
+  ['0x4f78e "/data/" (rdata 0x60ff3c); 0x4eb90 "/data/images/" (0x60ff10)', '0x47946 IAT msvcr120_app!fopen with mode string rdata 0x6f70c0', 'gplat scan: g_platform slot 14 used at 0xcd350, 0xd65cc, 0xdcd38; 0xf33b0 uses platform vtbl+0x38 (same slot)', 'string sweep: no "Clipboard"/"DataTransfer"/"Launcher"/"Globalization" strings'],
+  'high')
+
+F('client_init.platform.winrt_surface', 'abi', None,
+  'WinRT classes touched on the client-init path (activation via vccorlib120_app!GetActivationFactoryByPCWSTR thunk 0x2001E4, args: class name wchar*, IID*, void** out): Windows.Storage.ApplicationData (IApplicationDataStatics {5612147B-E843-45E3-94D8-06169E3C8E17}: get_Current slot 6; IApplicationData.get_LocalFolder slot 12; IStorageItem {4207A996-CA2F-42F7-BDE8-8B10457A7F30}.get_Path slot 12) in createApp 0x1D9DD4; Windows.ApplicationModel.Package (IPackageStatics get_Current slot 6, IPackage.get_InstalledLocation slot 7, IStorageItem.get_Path) in AppPlatform ctor; Windows.System.Threading.ThreadPool (IThreadPoolStatics {B6BF67DD-84BD-44F8-AC1C-93EBCB9DBA91}: RunAsync slot 6 for the init job, RunWithPriorityAndOptionsAsync slot 8 (priority 1 = High, options 1 = TimeSliced) for the render loop) - the handler is a Platform::Delegate whose WorkItemHandler vtable (RVA 0xDB892C) slot 3 = Invoke(IAsyncAction*), and the loop calls IAsyncInfo.get_Status (IID {00000036-0000-0000-C000-000000000046} QI, slot 7) every iteration: it runs while Status == Started(0) and exits on Canceled(2); Windows.System.MemoryManager (AppMemoryUsage slot 6 / AppMemoryUsageLimit slot 7, used by Options defaults via platform slot 40); on demand: VibrationDevice (IVibrationDeviceStatics GetDefault slot 6), NetworkInformation (slot 7 GetInternetConnectionProfile), CurrentAppSimulator (license), DisplayInformation (GetForCurrentView slot 6 via 0x4AF58, only in attach 0x4B55C), AsyncCausalityTracer. No Windows.UI.Xaml / CoreWindow object is needed to run App::init.',
+  None,
+  'A fake ThreadPool may simply invoke the handler synchronously/asynchronously: handler=*(void**)out-arg object; call (*(void***)handler)[3](handler, asyncActionFake). The fake IAsyncAction must answer QueryInterface(IID_IAsyncInfo) with get_Status returning 0 (Started) until Cancel() flips it to 2.',
+  ['disassembly of 0x1da4a4, 0x114078, 0x1da160, 0x1dab28, 0x1dad20, 0x4e840, 0x4aeb8, 0x4b108, 0x4e740/0x4e69c', 'IID bytes read at rdata 0x20fbd8 (IAsyncInfo) and 0x20fbc8 (IStorageItem)'],
+  'high', bytes_n=None)
+
+# ---------------------------------------------------------------- frame
+F('client_init.frame.render_loop_body', 'function', 0x1DA160,
+  'Per-frame driver (WorkItemHandler body, one iteration per loop turn; started by AppMain::StartRenderLoop 0x1DA8A8 with priority High/TimeSliced): while IAsyncInfo.Status==Started { scoped_lock(AppMain+0x10); if (AppMain+0x3C ready) { AppPlatform_Winrt::pump 0x50EAC(platform) [drain input queue 0x4B300 until empty; cancel vibration when GetTickCount64 > +0x48]; client->vtbl[19](client) = Minecraft::update; DX::DeviceResources::Present 0x1DBB10(AppMain+4) } }. There is NO sleep/timer in the loop: pacing comes from Present(0,0) (vsync).',
+  'void body(AppMain** capture /*r0*/, IAsyncAction* op /*r1*/)  // lambda_fc75 vtbl 0xDC883C',
+  'Host main loop equivalent: pump platform; Minecraft::update; Present. See md for the exact Minecraft::update sequence.',
+  ['0x1da1b6 ldr r3,[r3,#0x1c] (get_Status); 0x1da1d4..0x1da20c lock, ldrb [r4,#0x3c], bl 0x50eac, ldr r3,[r4,#0x34]; ldr r3,[r3,#0x4c]; blx; bl 0x1dbb10', 'independent: frame_render.frame.render_loop (same loop, same order)'],
+  'high')
+
+F('client_init.frame.minecraft_update', 'function', 0x1D8A54,
+  'Minecraft::update (slot 19): (1) this->vtbl[28] preUpdate (task deque, frame++, Mtx_lock +0x15C); (2) timer = *(this+0xA8): if (+0x3C paused && +0x68 world) keep partialTicks else Timer::advanceTime 0x65F10; (3) if +0x4C RakNetInstance: +0x50->vtbl[62] then +0x4C->vtbl[13](+0x50) (network pump); (4) for i in [0, timer.ticks): this->vtbl[31](i, ticks-1) tick and ++(+0xCC); (5) delta time: now=0x11B07C (double ms) ; +0xD8 = now-+0xE0; +0xE0 = now; (6) this->vtbl[29] render; (7) 0x1198B8; (8) this->vtbl[30] postUpdate.',
+  'void update(Minecraft* this /*r0*/)', None,
+  ['0x1d8a5e..0x1d8a62 vtbl+0x70; 0x1d8a64..0x1d8a7c timer; 0x1d8ab2..0x1d8acc tick loop (vtbl+0x7c); 0x1d8ade vtbl+0x74; 0x1d8afa vtbl+0x78', 'frame_render.frame.per_frame_update (independent) lists the same order'],
+  'high')
+
+F('client_init.frame.render_path', 'function', 0x5A114,
+  'MinecraftClient::render (slot 29): _Mtx_unlock(+0x15C); if +0x13C(renderEnabled): (when +0x40 is non-NULL stores 0x51740(+0x40,partial) into Gui+0xB0 and LevelRenderer+0xC) 0xB9E1C GameRenderer::render(client+0x10C, partialTicks=timer[2]) which binds the swap-chain RT/viewport (DX::DeviceResources via 0x4B054; BindRenderTarget 0x1DBCD0, SetViewport 0x1DBF80), draws the 3D world only when client+0x68 != NULL, then screen = client+0x6C -> vtbl[1](mouseX, mouseY, partialTicks); 0x1166DC. else (renderEnabled==0) clears with colour (0x545CC,0x1EFA0). Finally SoundEngine update 0xF2990. Nothing is presented here: the AppPlatform_Winrt slot-25 end-of-frame hook (called from postUpdate) is an empty stub and the swap-chain Present happens in DeviceResources::Present 0x1DBB10 after update returns.',
+  'void render(MinecraftClient* this /*r0*/); void GameRenderer::render(GameRenderer* this /*r0*/, float partialTicks /*s0*/) 0xB9E1C',
+  'mouseX/mouseY passed to Screen::render come from the Mouse state getters 0x11618C/0x1161D0 scaled by invGui (RVA 0x340D40); default -10000 when no pointer.',
+  ['0x5a142 ldrb [r4,#0x13c]; 0x5a182 bl 0xb9e1c; 0x5a186 bl 0x1166dc; 0x5a1c2 bl 0xf2990', '0xba316..0xba32a Screen vtbl[1]', 'AppPlatform_Winrt vtable cell 0x33fb84 (slot 25) = 0x0040bf61 (stub) while base cell 0x33f8f4 = purecall; MinecraftClient::vf30 0x56bec..0x56c02 calls slot 25 (0x64)'],
+  'high')
+
+F('client_init.frame.lifecycle', 'function', 0x58AF0,
+  'Lifecycle (AppPlatformListener) - callbacks are slots 1..5 of the client vtable: onLowMemory 0x58D70, onAppSuspended 0x58AF0 (Textures::unloadAll + materials release + renderEnabled=0), onAppResumed 0x58AA8 (reload + renderEnabled=1), onAppFocusLost 0x58A50 (renderEnabled=0 unless keyboard visible; Screen pause hook), onAppFocusGained 0x58A40 (renderEnabled=1). The game triggers them through the platform: Resume flow AppMain 0x1DA438 = notify onAppResumed (0x4743C) then onAppFocusGained (0x4736C); Suspend flow 0x1DAA3C = onAppFocusLost (0x473D4) then onAppSuspended (0x474A4). MainPage maps Suspending -> vf10 (0x1DFA40: DR Trim 0x1DC054, StopRenderLoop 0x1DA9D4, 0x1DAA3C) and Resuming -> vf11 (0x1DF4C4: if ready: 0x1DA438 + StartRenderLoop 0x1DA8A8).',
+  'void cb(MinecraftClient* this /*r0*/)',
+  'A desktop host should call the notify helpers on WM_ACTIVATE/minimise (or ignore them; the game works without).',
+  ['listener map walkers 0x4736c/0x473d4/0x4743c/0x474a4 call listener->vtbl[5/4/3/2]', '0x1da438 calls 0x4743c, 0x4736c; 0x1daa3c calls 0x473d4, 0x474a4', 'MainPage vtbl 0xdc8af8 slot 10 = 0x1dfa40, slot 11 = 0x1df4c4'],
+  'medium')
+
+F('client_init.keyboard', 'function', 0x59578,
+  'Keyboard/TabTip interaction on the client side: MainPage InputPane Showing/Hiding handlers call AppMain::onKeyboardHeightChanged(h) 0x1DA5B4 -> MinecraftClient::setKeyboardHeight(h*platformScaleY) 0x59578: client+0x164 = int(h*invGui(0x340D40)) and screen->vtbl[30](0x78) (screen re-layout). Platform side: showKeyboard (slot 31) / hideKeyboard (slot 32) / updateTextBoxText (slot 33) / isKeyboardVisible (slot 34 = byte platform+4; set 1 by base showKeyboard 0x47A00, cleared by base hideKeyboard 0x47720). The real Winrt versions additionally focus/unfocus a XAML TextBox through HID (RunAsync on the dispatcher), which is what makes the OS keyboard appear/disappear. The game never queries the real keyboard state: it only trusts platform+4 and the occluded height pushed through 0x59578. onAppFocusLost skips disabling rendering while isKeyboardVisible()==1.',
+  'void setKeyboardHeight(MinecraftClient* this /*r0*/, int pixels /*r1*/)',
+  'For the TabTip problem: hideKeyboard (slot 32) only reaches the OS through the HID dispatcher lambda; the host must implement showKeyboard/hideKeyboard (and updateTextBoxText) on its own (hook slots 31/32/33 of AppPlatform_Winrt, or fake TextBox/InputPane), call setKeyboardHeight(0) when the keyboard is dismissed, and keep platform+4 consistent.',
+  ['0x59578..0x595ac: vmul by *0x340d40, str [r0,#0x164], screen vtbl[30]', 'MainPage handlers 0x1df700 (Hiding -> 0) / 0x1df714 (Showing -> OccludedRect.Height) call 0x1da5b4', 'callers of slot 31/32/33/34: 0x7336e, 0x98a7e / 0x68bd0, 0x68e9c, 0x72462 / 0x72ab2.. / 0x58a5c'],
+  'medium')
+
+# ---------------------------------------------------------------- globals
+F('client_init.globals', 'data', None,
+  'Globals touched by the init/frame path (RVA = VA-0x400000): g_platform AppPlatform* 0xDDD7E0 (written by AppPlatform ctor 0x4726C; read by Textures/Shader/I18n/Options code); g_DeviceResources DX::DeviceResources* 0xE2AFC4 (written by DR ctor body 0x1DAE14, accessor 0x4B054 throws "Device resource object hasn\'t been created yet"); guiScale float 0xDDE814 and invGuiScale float 0x340D40 (both written only by setSize; invGuiScale initial value 0x3EAAAAAB = 1/3); terrain atlas meta shared_ptr 0xDDDBF8, items meta shared_ptr 0xDDDC00; MaterialManager object 0xDE0AC0 (load 0xCDFCC) and its release object 0xDDF594; static counter 0xDDD7E4 (platform slot 10).',
+  None, None,
+  ['movw #0xd7e0 + movt #0x11d (VA 0x11dd7e0) sites: 0x4728e (writer, AppPlatform ctor), 0x47adc, 0x47bfe, 0xa0412, 0xa0bf2, 0xcd3ba, 0xd663a, 0xdc528, 0xdcd68, 0x1164b8, 0x1a684e', 'drfields scan: bl 0x4b054 callers 0x4b55c,0xa0bd0,0xb9e1c,0xba51c,0xbec50,0xc34d8,0xc6564,0xc8a78,0xcb16c,0xce344,0xd1138,0xd6a3c,0xd8e4c,0x111c1c', 'bytes at RVA 0x340D40 = ab aa aa 3e'],
+  'high', bytes_n=None)
+
+F('client_init.globals.invGuiScale', 'data', 0x340D40,
+  'float invGuiScale = 1/guiScale used to convert physical pixels to GUI units (setScreen, GameRenderer mouse, setKeyboardHeight). Default 1/3. Must equal 1/ (float at RVA 0xDDE814).',
+  None, 'Written by setSize (0x59834) every call.', ['bytes ab aa aa 3e', 'writers: 0x59836 vstr s1,[r5] in setSize'], 'high', bytes_n=4)
+
+F('client_init.dr_requirements', 'abi', 0x4B054,
+  'What the client init needs from DX::DeviceResources (full layout in facts frame_render.*): the object must exist (g_DeviceResources) before ANY of Textures/ShaderProgram/GameRenderer code runs (0x4B054 throws std::runtime_error otherwise); fields read by client code: +0x35 byte (Options defaults, 0xA0CBA), +0x38 feature level (shader suffix 0xD73FC: only 0x9300 -> "_level_9_3", 0xA000/0xA100/0xB000/0xB100 -> "" ; 0x9100/0x9200 THROW "Unkonwn feature level"; consumers also 0xCB16C/0xD1138/0xD8E4C), +0x3C/+0x40 output size (0xC8A78), +0x60/+0x64 composition scale (platform attach). The game requests D3D11CreateDevice levels {11_1,11_0,10_1,10_0,9_3} only (array built at 0x1DAFDA..): FL9_1 hardware (Surface RT) therefore needs the frame_render D3D11CreateDevice hook AND the feature-level lie documented in frame_render.shader.feature_level_lie. App::init itself only needs device+immediate context; the swap chain / RTV are required by the first Minecraft::update (GameRenderer::render).',
+  'DX::DeviceResources* get() -> r0 (throws when g_DeviceResources==NULL)',
+  None,
+  ['0x4b060..0x4b068 movw/movt 0x122afc4 ldr r0,[r3]; cbz -> throw', '0xd73fc compares r1 with 0xa100/0xb000/0xb100/0x9300/0xa000', 'feature level array immediates 0xb100,0xb000,0xa100,0xa000,0x9300 at 0x1dafda..0x1daff2'],
+  'high')
+
+F('client_init.input_queue', 'function', 0x4B300,
+  'Input into the client is a queue owned by AppPlatform_Winrt: UI/HID threads call queueInputEvent 0x4B290 (lock cs+0x50, push to deque+0x70); the render loop drains it in pump 0x50EAC -> pollInputEvent 0x4B300 which dispatches by ev.type (signed byte at ev+0, tbb table at 0x4B3AE): 0 -> 0x115F84 (pointer/touch sink, args from shorts/bytes at ev+2,+4,+6,+7), 1 -> 0x116444 (mouse-button/wheel-like sink, extra arg byte ev+8), 2 -> Keyboard::feed 0x4E568 (byte ev+1, int ev+4), 3 -> Keyboard::feedText 0x4E598 (string ev+4, byte ev+0x1C), 4 -> back button: if current screen is not Touch::StartMenuScreen -> client->vtbl[24](0) (handleBack) via platform+0x10. AppMain::OnBackPressed 0x1DA248 returns handled=true (and queues a type-4 event) unless the current screen IS Touch::StartMenuScreen (RTTI TD 0xDCB110 Screen, 0xDCB128 StartMenuScreen).',
+  'bool pollInputEvent(AppPlatform_Winrt* this /*r0*/) -> r0 nonzero while events remain',
+  'A host without HID must push events through queueInputEvent (or call the 0x115F84/0x116444/0x4E568/0x4E598 sinks directly from the game thread). Event field layout beyond ev.type is owned by the input area.',
+  ['0x4b3a2 ldrsb r2,[r4]; cmp r2,#4; tbb', '0x4b3fa..0x4b422 RTDynamicCast(client+0x6c, TD Screen -> TD StartMenuScreen) then client vtbl+0x60', '0x1da248 same RTDynamicCast and 0x4ae2c queueBackEvent'],
+  'medium')
+
+F('client_init.shutdown', 'function', 0x55F78,
+  'Shutdown: client deleting dtor (vtable slot 0, 0x55F78) -> 0x55838 releases Textures/Font/Gui/Options/SoundEngine/etc.; AppMain::~AppMain 0x1DA044 resets DR->owner (0x1DBBC0(dr,NULL)), frees client (virtual deleting dtor via vtbl[0](1)), platform cell, critical_section. Host exit path: poll wantToQuit (slot 22), stop the loop, optionally call onAppSuspended/onAppFocusLost helpers, then destroy; skipping destruction is safe for process exit.',
+  'void dtor(MinecraftClient* this /*r0*/, int deleteFlag /*r1*/)', None,
+  ['0x55f84 bl 0x55838', '0x1da044..0x1da0ca dtor body (calls 0x1dbbc0(r0=DR,0))'], 'medium')
+
+# ---------------------------------------------------------------- port instructions
+port = [
+ "ARCHITECTURE: recommended hybrid ('b-lite'): do NOT run MainPage/XAML for the client side; replay AppMain's exact calls from the host. Everything the client needs is: fake WinRT activation for ApplicationData/Package/MemoryManager (+Vibration/Network on demand) and the g_DeviceResources device. XAML objects are only needed for HID attach (0x4B55C), SwapChainPanel (frame_render) and input.",
+ "STEP 0 (process): platform+0x14 (installRoot) must be the folder that contains data\\ and LocalFolder must be writable; all asset reads found go through readAssetFile/getImagePath (installRoot-based), but set the process cwd to installRoot as well for safety (not proven unnecessary: ShaderProgram passes a relative data/ source name to D3DCompile). Faking GetActivationFactoryByPCWSTR (thunk 0x2001E4) is required for the steps below unless you pre-fill the objects yourself.",
+ "STEP 1: create DX::DeviceResources via make_shared (0x1DCE2C) -> shared_ptr {ptr,ctrl}; this runs CreateDeviceResources (D3D11CreateDevice, hook needed on FL9_1) and sets g_DeviceResources (RVA 0xE2AFC4).",
+ "STEP 2: allocate 0x40 bytes zeroed; call AppMain::AppMain 0x1D9D14(this, &sharedDR). This (a) creates AppPlatform_Winrt (0x494C0, size 0x88 zeroed) and MinecraftClient (0x54E90, size 0x168 zeroed), (b) sets platform+0x10=client, client+0x78/+0x90 = LocalFolder path, (c) starts the init work item with ThreadPool.RunAsync (fake it: call handler vtbl[3](handler, fakeAsyncAction) on a worker thread) -> runInit 0x471E8(client, AppMain+0x38 value) -> MinecraftClient::init -> StartMenuScreen -> AppMain+0x3C=1.",
+ "STEP 3 (alternative to step 2 when XAML/ThreadPool are not faked): replicate createApp literally: cell=new(8); platform=new(0x88)+memset+ctor 0x494C0; *cell=platform; client=new(0x168)+memset+ctor 0x54E90(client,0,0,0); platform+0x10=client; assign client+0x78 and +0x90 (std::string) via std::string::assign 0xD7EC(dst, char*, len) ; then run runInit 0x471E8(client, cell) yourself on a worker thread and set your own ready flag.",
+ "STEP 4 (size): after (or before) init call client->vtbl[20](client, W, H, 0.0f) with physical window pixels; also write platform+0x30=W, +0x34=H (setters 0x4FA40/0x4FA20), +0x38 float pixels-per-mm (~3.78), +0x3C=+0x40=1.0f. Repeat on resize.",
+ "STEP 5 (swap chain): provide the swap chain/RTV/viewport that GameRenderer::render expects (frame_render.swapchain.*); it must exist before the first Minecraft::update.",
+ "STEP 6 (frame): loop { pump = AppPlatform_Winrt::pump 0x50EAC(platform); client->vtbl[19](client); DX::DeviceResources::Present 0x1DBB10(dr); if client->vtbl[22](client) break; } under any single lock; Minecraft::update calls the preUpdate/render pair that locks/unlocks client+0x15C, so never call vtbl[28]/vtbl[29] separately.",
+ "STEP 7 (input): push events with AppPlatform_Winrt::queueInputEvent 0x4B290 (or feed the sinks) - see client_init.input_queue; keyboard show/hide: hook platform slots 31/32/33 (see client_init.keyboard).",
+ "STEP 8 (lifecycle): on deactivation call notifyListeners helpers 0x473D4 then 0x474A4; on activation 0x4743C then 0x4736C (all take the AppPlatform_Winrt*).",
+ "KB/MOUSE UI: make AppPlatform_Winrt slot 26 (cell RVA 0x33FB88 = platform vtbl+0x68) return 0 BEFORE init (client+0x150=1) so useTouchscreen() (0x5A1D0) is false unless options[0x276]; the InputHolder factory 0x56420 then builds CustomInputHolder (MouseBuildInput/MouseTurnInput/KeyboardInput) instead of TouchInputHolder.",
+ "ABI reminders: all calls are plain AAPCS-VFP C calls; wrap function addresses with the Thumb bit (image+rva+1). The vtable cells you patch hold VAs with the Thumb bit (verify the original value first, see expected_bytes).",
+]
+
+openq = [
+ "Writer of client+0x3C (paused flag): only the Minecraft ctor writes it with a plain strb; readers are update/tick. Probably set through a setter reached by pointer arithmetic; not located.",
+ "Exact identity of client+0x68 (named 'Game' by the friend; behaves like Level*), +0x110 (0xCC4 object), +0x114 (0x38 object), +0x120/+0x128/+0x12C helpers, +0x44/+0x48 (0x90 object).",
+ "MinecraftClient vtable slots 6,9-15,17,18,23,25,33-40,42 not analysed in depth (roles unknown).",
+ "Item/tile registration functions called at the end of Minecraft::init2 (0x19B528,0x1CC2C0,0x15A800,0x163384,0x1BACA4) not analysed.",
+ "Callers of AppPlatform_Winrt loadPNG (slot 2) / loadTGA (slot 3): not resolved (Textures does not use Textures+0x10 with a simple pattern; probably via the TextureData loader after readAssetFile).",
+ "How the render loop is started the first time (frame_render.frame.timer_tick says a 50 ms DispatcherTimer polls IsAppInitialized); I confirmed only the callers of StartRenderLoop (0x1DF4C4 Resuming, 0x1DF8A4, 0x1DF9AC, 0x1E017C).",
+ "Whether anything besides ScreenChooser/vf32 recreates StartMenuScreen after device loss (HandleDeviceLost calls AppMain vtable slots 0/1 which are empty stubs 0x0BF60: the game does NOT reload textures on device loss).",
+ "Gamepad branch at the end of init (0x1D83E0 vtbl[2] vector element size 0x24, options[0x290]) not decoded; on desktop with no gamepad it is skipped.",
+]
+
+out = dict(area='client_init', facts=facts, port_instructions=port, open_questions=openq)
+json.dump(out, open(r'D:\repo\Win32Craft-main\arm32\v0_10_4\facts\client_init.json', 'w', encoding='utf-8'), indent=1)
+print(len(facts), 'facts')
+conf = {}
+for f in facts:
+    conf[f['confidence']] = conf.get(f['confidence'], 0) + 1
+print(conf)
+

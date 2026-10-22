@@ -1,0 +1,174 @@
+[    32] MAIN WM_ACTIVATEAPP active=1
+[    63] MAIN WM_ACTIVATE state=1 minimized=0
+[   172] kbdprobe start: Windows 10.0 build 15035
+[   188] metrics: convertibleSlate=0 tabletPC=1 digitizer=0xc1 maxTouches=5 mousePresent=1
+[   203] steps: SURFACE -> SHOW launch -> type ab -> X on keyboard -> answer visible/not visible after EVERY step; repeat with each HIDE; then the native EDIT
+[   219] IFrameworkInputPane CoCreateInstance hr=0x00000000 obj=00F057C0
+[   250] IFrameworkInputPane::AdviseWithHWND hr=0x00000000 cookie=1
+[   266] InputPane: RoGetActivationFactory(IInputPaneInterop) hr=0x00000000 factory=00F1FD9C
+[   313] InputPane: IInputPaneInterop::GetForWindow hr=0x00000000 pane=00F10A48
+[   328] InputPane: QueryInterface(IInputPane2 TryShow/TryHide) hr=0x00000000
+[   422] INITIAL tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=KbdProbeMain
+[   610] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=KbdProbeMain
+[  2516] ACTION show/launch TabTip.exe ok=1 error=0
+[  2578] SIG tip=1 vis=1 cloak=1 procs=2 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[  2657] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[  3797] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[  3828] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[  5860] ACTION show ITipInvocation::Toggle hr=0x00000000
+[  5938] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[  5985] FIP.Showing rect=(0,540,1920,1080) ensure=1
+[  7094] ORACLE keyboard=VISIBLE tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[  7172] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 13016] EDIT EN_SETFOCUS
+[ 13078] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Edit
+[ 17375] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Edit
+[ 17391] FIP.Hiding ensure=1
+[ 17453] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Edit
+[ 18766] EDIT EN_KILLFOCUS
+[ 18844] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 18875] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 21625] ACTION show/InputPane2::TryShow hr=0x00000000 result=1
+[ 21672] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 22844] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 22875] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 26375] ACTION show ITipInvocation::Toggle hr=0x00000000
+[ 26422] FIP.Showing rect=(0,540,1920,1080) ensure=1
+[ 26453] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 27860] ACTION hide/InputPane2::TryHide hr=0x00000000 result=1
+[ 27891] FIP.Hiding ensure=1
+[ 27907] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 32250] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 32297] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 34032] ACTION show ITipInvocation::Toggle hr=0x00000000
+[ 34063] FIP.Showing rect=(0,540,1920,1080) ensure=1
+[ 34078] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 35766] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 38094] ORACLE keyboard=VISIBLE tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 38141] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 40110] ACTION hide/SC_CLOSE tip=000905B0 posted=1
+[ 40172] FIP.Hiding ensure=1
+[ 40188] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 41188] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 41219] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 44438] ACTION show ITipInvocation::Toggle hr=0x00000000
+[ 44485] FIP.Showing rect=(0,540,1920,1080) ensure=1
+[ 44500] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 49422] ACTION hide ITipInvocation::Toggle hr=0x00000000
+[ 49485] FIP.Hiding ensure=1
+[ 49500] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 50453] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 50485] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 51782] ACTION show ITipInvocation::Toggle hr=0x00000000
+[ 51860] FIP.Showing rect=(0,540,1920,1080) ensure=1
+[ 51891] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 53735] ACTION hide/terminate TabTip.exe processes=1 lastError=0
+[ 53782] SIG tip=0 vis=0 cloak=0 procs=1 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 53907] SIG tip=0 vis=0 cloak=0 procs=0 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 55063] ORACLE keyboard=NOT-VISIBLE tip=0 vis=0 cloak=0 procs=0 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 55125] SIG tip=0 vis=0 cloak=0 procs=0 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 58953] ACTION show ITipInvocation CoCreateInstance failed hr=0x80040154
+[ 59000] SIG tip=0 vis=0 cloak=0 procs=0 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 63500] ACTION show ITipInvocation CoCreateInstance failed hr=0x80040154
+[ 65688] ORACLE keyboard=NOT-VISIBLE tip=0 vis=0 cloak=0 procs=0 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 65750] SIG tip=0 vis=0 cloak=0 procs=0 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 66672] ACTION show ITipInvocation CoCreateInstance failed hr=0x80040154
+[ 66719] SIG tip=0 vis=0 cloak=0 procs=0 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 67625] ORACLE keyboard=NOT-VISIBLE tip=0 vis=0 cloak=0 procs=0 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 67657] SIG tip=0 vis=0 cloak=0 procs=0 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 69297] ACTION show/launch TabTip.exe ok=1 error=0
+[ 69391] SIG tip=0 vis=0 cloak=0 procs=1 rect=(0,0,0,0) style=00000000 ex=00000000 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 69641] SIG tip=1 vis=0 cloak=0 procs=1 rect=(0,0,0,0) style=84000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 70844] ACTION show/InputPane2::TryShow hr=0x00000000 result=1
+[ 70938] SIG tip=1 vis=0 cloak=0 procs=1 rect=(0,0,0,0) style=84000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 71813] ACTION show ITipInvocation::Toggle hr=0x00000000
+[ 71860] SIG tip=1 vis=0 cloak=0 procs=1 rect=(0,0,0,0) style=84000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 72203] FIP.Showing rect=(0,540,1920,1080) ensure=1
+[ 72235] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 75282] ACTION hide/ShowWindow(SW_HIDE) tip=00240760 wasVisible=24 error=0
+[ 75344] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 77797] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 77844] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 85110] ORACLE keyboard=VISIBLE tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 85172] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 87203] ACTION hide/ShowWindow(SW_HIDE) tip=00240760 wasVisible=24 error=0
+[ 87250] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 88016] ORACLE keyboard=VISIBLE tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 88063] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 90438] FIP.Hiding ensure=1
+[ 90469] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 91438] ACTION show ITipInvocation::Toggle hr=0x00000000
+[ 91485] FIP.Showing rect=(0,540,1920,1080) ensure=1
+[ 91500] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 92578] ORACLE keyboard=VISIBLE tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 92610] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[ 94594] ACTION hide/SC_CLOSE tip=00240760 posted=1
+[ 94657] FIP.Hiding ensure=1
+[ 94672] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 98907] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[ 98985] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[101907] ACTION show ITipInvocation::Toggle hr=0x00000000
+[101953] FIP.Showing rect=(0,540,1920,1080) ensure=1
+[101969] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[106422] ORACLE keyboard=VISIBLE tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[106485] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[107594] ACTION hide/ShowWindow(SW_HIDE) tip=00240760 wasVisible=24 error=0
+[107657] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[109328] ORACLE keyboard=VISIBLE tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[109391] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,540,1920,1080) | ip=1(0,369,914,106) | fg=KbdProbeMain focus=Button
+[112766] SIG tip=1 vis=1 cloak=0 procs=1 rect=(0,360,1280,720) style=94000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[112813] FIP.Hiding ensure=1
+[112860] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[114375] MAIN WM_ACTIVATE state=0 minimized=0
+[114391] MAIN WM_ACTIVATEAPP active=0
+[114407] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=none focus=none
+[114500] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=CabinetWClass focus=none
+[114703] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=CabinetWClass focus=DirectUIHWND
+[116469] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=Notepad focus=Edit
+[118422] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=CabinetWClass focus=none
+[118532] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=CabinetWClass focus=DirectUIHWND
+[139360] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=none focus=none
+[139422] MAIN WM_ACTIVATEAPP active=1
+[139422] MAIN WM_ACTIVATE state=1 minimized=0
+[139469] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=KbdProbeMain
+[142578] EDIT EN_SETFOCUS
+[142719] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Edit
+[144094] EDIT EN_KILLFOCUS
+[144125] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[144141] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[147203] MAIN WM_ACTIVATE state=0 minimized=0
+[147219] MAIN WM_ACTIVATEAPP active=0
+[147235] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=none focus=none
+[147297] MAIN WM_ACTIVATEAPP active=1
+[147313] MAIN WM_ACTIVATE state=1 minimized=32
+[147344] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=CabinetWClass focus=none
+[147438] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=CabinetWClass focus=DirectUIHWND
+[148250] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=none focus=none
+[148422] MAIN WM_ACTIVATE state=1 minimized=0
+[148485] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=KbdProbeMain
+[148922] MAIN WM_ACTIVATE state=0 minimized=0
+[148922] MAIN WM_ACTIVATEAPP active=0
+[148969] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=none focus=none
+[149094] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=Shell_TrayWnd focus=Shell_TrayWnd
+[149188] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=Shell_TrayWnd focus=MSTaskListWClass
+[151344] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=none focus=none
+[151438] MAIN WM_ACTIVATEAPP active=1
+[151453] MAIN WM_ACTIVATE state=1 minimized=0
+[151547] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=KbdProbeMain
+[154922] EDIT EN_SETFOCUS
+[154985] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Edit
+[156282] EDIT EN_KILLFOCUS
+[156344] ORACLE keyboard=NOT-VISIBLE tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[156360] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=Button
+[157657] MAIN WM_ACTIVATE state=0 minimized=32
+[157672] MAIN WM_ACTIVATEAPP active=0
+[157703] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=CabinetWClass focus=none
+[157875] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=CabinetWClass focus=DirectUIHWND
+[163828] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=none focus=none
+[163953] MAIN WM_ACTIVATEAPP active=1
+[163953] MAIN WM_ACTIVATE state=1 minimized=32
+[164032] MAIN WM_ACTIVATE state=1 minimized=0
+[164094] SIG tip=1 vis=1 cloak=1 procs=1 rect=(0,360,1280,720) style=9c000000 ex=08000088 | fip=1(0,0,0,0) | ip=1(0,0,0,0) | fg=KbdProbeMain focus=KbdProbeMain
+[164891] MAIN WM_ACTIVATE state=0 minimized=0
+[164891] MAIN WM_ACTIVATEAPP active=0
+[164922] kbdprobe exit

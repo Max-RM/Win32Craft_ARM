@@ -1,0 +1,216 @@
+{
+ "area": "client_init",
+ "verdicts": [
+  {
+   "id": "client_init.conventions",
+   "verdict": "CONFIRMED",
+   "note": "ImageBase 0x400000 / SizeOfImage 0xE6E000 / machine 0x1C4 reproduced with arm32re info. Data pointers are VA|1 (vtable cell 0x33FFE8 holds 0x00457B85). MSVC120 std::string layout reproduced from three code sites (SSO 16 bytes, size at +0x10, capacity at +0x14, ctor stores 0xF at +0x14). sret rule reproduced: free functions take sret in r0 (0x19F38), member functions take this=r0 and sret=r1 (readAssetFile 0x4F780, getImagePath 0x4EB90, platform slot 35)."
+  },
+  {
+   "id": "client_init.rtti.class_chain",
+   "verdict": "CONFIRMED",
+   "note": "arm32re rtti reproduced every vtable RVA (MinecraftClient 0x33FFCC, Minecraft 0xDC8704, App 0x33F824, AppPlatformListener 0x33F940, AppPlatform 0x33F890, AppPlatform_Winrt 0x33FB20, AppMain 0xDC8830, MainPage 0xDC8AF8, StartMenuScreen 0x34266C, Gui 0x340D60 with a secondary vtable for this+0xA4 which matches setSize's Gui+0xA4 sub-vtbl call). Ctor chain read directly: 0x54E90 -> 0x1D7D44 (stores 0xDC8704) -> 0x46F40 (stores 0x33F824) -> 0x47B14; factory 0x1D9CC0 does new(0x168)+memset+ctor. Textures/Options/GameRenderer/ScreenChooser/SoundEngine have NO RTTI in this exe: those names are inferred from behaviour, not RTTI-proven. Nit: slot 43 (value 0x702064) is the COL pointer of the NEXT vtable, so the client vtable proper is slots 0..42; the ITouchScreenModel-looking entries after it are a different class and the ctor stores only ONE vptr."
+  },
+  {
+   "id": "client_init.vtable.client_slots",
+   "verdict": "CONFIRMED",
+   "note": "All cell values re-read with arm32re vtable 0x33FFCC; bodies of slots 1-5 (0x58D70/58AF0/58AA8/58A50/58A40), 7, 8, 16 (options[0x276] || client[0x150]==0), 19, 20, 24 (0x575BC), 26, 27, 28-32, 41 re-disassembled. Slots 6/13/14/18/35 are the 0xBF60 empty stub. Additional roles found: slots 9,10,11,12,33,34 only forward to the SoundEngine at +0x138; slots 17 and 39 forward to screen->vtbl[28]/[29] of +0x6C; slots 38/42 return client+0x12C. None of the previously 'unanalysed' slots is needed for init/frame."
+  },
+  {
+   "id": "client_init.vtable.client_slot7",
+   "verdict": "CONFIRMED",
+   "note": "Cell RVA = 0x33FFCC+4*7. cell value 0x00457B85 -> 0x57B84. Bytes match the fact's expected_bytes."
+  },
+  {
+   "id": "client_init.vtable.client_slot19",
+   "verdict": "CONFIRMED",
+   "note": "Cell RVA = 0x33FFCC+4*19. cell value 0x005D8A55 -> 0x1D8A54; render loop 0x1DA160 calls ldr r3,[r3,#0x4c] at 0x1DA200. Bytes match the fact's expected_bytes."
+  },
+  {
+   "id": "client_init.vtable.client_slot20",
+   "verdict": "CONFIRMED",
+   "note": "Cell RVA = 0x33FFCC+4*20. cell -> 0x59738; init2 (0x1D8552), OnWindowSizeChanged (0x1DA39E) and AttachToPanel all call ldr r3,[r3,#0x50]. Bytes match the fact's expected_bytes."
+  },
+  {
+   "id": "client_init.vtable.client_slot28",
+   "verdict": "CONFIRMED",
+   "note": "Cell RVA = 0x33FFCC+4*28. cell -> 0x59954; called from update at 0x1D8A60 (+0x70). Bytes match the fact's expected_bytes."
+  },
+  {
+   "id": "client_init.vtable.client_slot29",
+   "verdict": "CONFIRMED",
+   "note": "Cell RVA = 0x33FFCC+4*29. cell -> 0x5A114; called from update at 0x1D8AE8 (+0x74). Bytes match the fact's expected_bytes."
+  },
+  {
+   "id": "client_init.vtable.client_slot30",
+   "verdict": "CONFIRMED",
+   "note": "Cell RVA = 0x33FFCC+4*30. cell -> 0x56BDC; called from update at 0x1D8AFC (+0x78). Bytes match the fact's expected_bytes."
+  },
+  {
+   "id": "client_init.vtable.client_slot31",
+   "verdict": "CONFIRMED",
+   "note": "Cell RVA = 0x33FFCC+4*31. cell -> 0x59A8C; update calls (this,i,ticks-1) at 0x1D8ABC (+0x7C). Bytes match the fact's expected_bytes."
+  },
+  {
+   "id": "client_init.vtable.client_slot32",
+   "verdict": "CONFIRMED",
+   "note": "Cell RVA = 0x33FFCC+4*32. cell -> 0x58830; body read: args (a=r1,b=r2); b!=0 -> a?0x160-byte screen:StartMenuScreen(0x388) then Minecraft::leaveGame 0x1D86A4. Bytes match the fact's expected_bytes."
+  },
+  {
+   "id": "client_init.client_layout",
+   "verdict": "CORRECTED",
+   "note": "Re-derived with a whole-image field sweep and the ctors: +0x0C/+0x20/+0x24/+0x4C/+0x68/+0x6C/+0x70/+0x78/+0x90/+0xA8/+0xE8/+0x108/+0x10C/+0x118/+0x11C/+0x124/+0x130/+0x134/+0x138/+0x13C/+0x150/+0x164 each reproduced from >=2 functions (ctor, init, update, render, setScreen, setSize, lifecycle). ONE WRONG IDENTIFICATION: client+0xAC is NOT a FilePathManager. Ctor 0x1A8288 stores RTTI vtable 0xDC1760 = .?AVExternalFileLevelStorageSource@@ and its vtbl[2] (0x1A8984) enumerates directories with FindFirstFileExW through a std::function callback, i.e. it is the world/level storage source (vtbl[2](this,&vector of 0x24-byte level summaries)). Corollary: the init-time '0x1D83E0(client)->vtbl[2]' branch is a world-list query, not a gamepad query (see init.vf7_steps). Minor: +0x154/+0x158 are heap float[2] pairs allocated in the ctor, not inline."
+  },
+  {
+   "id": "client_init.ctor.minecraft_client",
+   "verdict": "CONFIRMED",
+   "note": "Disassembled 0x54E90: stores vtable 0x73FFCC after bl 0x1D7D44, str.w r4(0) at 0x54EFA/0x54EFE (+0x118/+0x11C), +0x13C=1, _Mtx_init(+0x15C,2), Options factory 0x54AC0 into +0x134, +0x164=0. Signature (push {r0-r3}, extra args ignored) and bytes confirmed."
+  },
+  {
+   "id": "client_init.ctor.minecraft",
+   "verdict": "CONFIRMED",
+   "note": "0x1D7D44 verified: calls 0x46F40, stores vtable 0xDC8704, +0x20=+0x24=1, +0x28=0x1267, new(0x448)+memset+RakNetInstance ctor 0x101B78 -> +0x4C, Timer new(0x24) with 20.0f and 1.0f -> +0xA8. Nit: the 'cores' lookup is App::sub_47134(this,'cores') on the command-line args vector, not a platform property."
+  },
+  {
+   "id": "client_init.ctor.app",
+   "verdict": "CONFIRMED",
+   "note": "0x46F40 bytes match; vtable 0x33F824, +8/+9/+0xC zeroed, argc/argv pass through unchanged from the MinecraftClient ctor (0,0)."
+  },
+  {
+   "id": "client_init.app.quit_flag",
+   "verdict": "CONFIRMED",
+   "note": "0x47260 = ldrb r0,[r0,#9]; quit 0x47240 sets it; the render loop body 0x1DA160 does not read +9 (read fully)."
+  },
+  {
+   "id": "client_init.appmain.layout",
+   "verdict": "CONFIRMED",
+   "note": "AppMain ctor 0x1D9D14 read fully: vtbl 0xDC8830 (slots 0,1 = 0xBF60 stubs), +4 DR*, +8 ctrl block (ldrex/strex AddRef), +0xC=0, critical_section ctor at +0x10, +0x30 float, createApp(this+0x34) at 0x1D9D88, setOwner 0x1DBBC0(dr,this) at 0x1D9D90. MainPage allocates operator new(0x40), zeroes 16 words and calls the ctor with r1=MainPage+0x74 (shared_ptr{ptr,ctrl}) at 0x1DD4F8. Nit: '0x1DD4C8' quoted as 'MainPage ctor' is only the operator-new call site inside MainPage::MainPage 0x1DCF5C."
+  },
+  {
+   "id": "client_init.appmain.createApp",
+   "verdict": "CONFIRMED",
+   "note": "Read all of 0x1D9DD4: cell new(8) via 0x1D9C98, platform new(0x88)+memset+0x494C0, client via 0x1D9CC0, platform+0x10=client at 0x1D9E7A, ApplicationData.Current (0x1DAB28, IID built on stack = 5612147B-E843-45E3-94D8-06169E3C8E17), get_LocalFolder vtbl+0x30, QI with the IID at rdata 0x20FBC8 = 4207A996-CA2F-42F7-BDE8-8B10457A7F30, get_Path 0x4EA38 vtbl+0x30, WindowsGetStringRawBuffer, narrowing std::string ctor 0x480D8, assign (0xD730) into client+0x78 and +0x90, then delegate 0x1D9B68 and ThreadPool.RunAsync 0x1DA4A4 (IID B6BF67DD-84BD-44F8-AC1C-93EBCB9DBA91, vtbl+0x18). The returned IAsyncAction is only Released and a NULL result is tolerated. AppMain+0x34 = {client, cell*} pair, +0x3C is set by the init lambda."
+  },
+  {
+   "id": "client_init.platform.ctor",
+   "verdict": "CONFIRMED",
+   "note": "0x494C0 read: base ctor 0x4726C stores this in global 0xDDD7E0 (VA 0x11DD7E0), vtable 0x33FB20, installRoot std::string at +0x14, HIDController new(0x5C) ctor 0x1103FC into +0x2C (needs vccorlib120_app Platform::Object::Object, so the real vccorlib DLL must be loadable), +0x30=0x780, +0x34=0x438, critical_section at +0x50, deque +0x70; Package.Current.InstalledLocation.Path afterwards. +0x38/+0x3C/+0x40 are NOT initialised by the ctor (stay 0 from the memset) - the host must write them."
+  },
+  {
+   "id": "client_init.init.runInit",
+   "verdict": "CONFIRMED",
+   "note": "0x471E8: str r1,[r4,#0xC]; ldr r3,[r3,#0x1C]; blx; strb 1,[r4,#8]; tail b.w 0x47BF4 with s0 literal at 0x4720C = 0.0f. The only bl-caller of 0x471E8 is 0x1DA2E8 (arm32re callers). Lambda 0x1DA2D8 passes r0=[ctx], r1=[ctx+4] and sets ctx+8 (=AppMain+0x3C) after dmb. Delegate Invoke path re-derived: WorkItemHandler vtable 0xDB892C slot 3 = 0x11556C -> functor vtbl[1] = 0x1DA2D8 (ignores its IAsyncAction argument). No other indirect vtbl[7] call on a client object was found in 0x46000-0x60000 or 0x1D0000-0x1E0000."
+  },
+  {
+   "id": "client_init.init.listener_register",
+   "verdict": "CONFIRMED",
+   "note": "0x47BF4 reproduced: listener+4 = [0xDDD7E0], inserts {s0,listener} via 0x1AC3C/0x47A10 into the map at platform+8. Notify helpers 0x4736C/0x473D4/0x4743C/0x474A4 walk the map and call listener vtbl 5/4/3/2."
+  },
+  {
+   "id": "client_init.init.vf7_steps",
+   "verdict": "CORRECTED",
+   "note": "Order of the steps reproduced from the real call sequence of 0x57B84 (createDirectories 0x57BE2, atlas metas, Options 0x57E38/0x57E40, init2 0x57E4E, I18n, +0x114, +0xAC, Textures 0x57F68, atlases, lists, MaterialManager 0x580D0, 0x563A8, Gui 0x580F2, ScreenChooser 0x58130, LevelRenderer 0x58166, GameRenderer 0x581A0, +0x110 0x581DE, Font 0x58230, level query 0x58278, StartMenuScreen 0x5831A, SoundEngine 0x5833C/0xF03E8, slot26 -> +0x150 0x5838A, InputHolder 0x5839C). Corrections: (1) Font factory 0x548A0 ABI is (out r0, Options** r1, const char* r2='font/default8.png', Textures** r3): Options and Textures are passed as pointers to locals and in the opposite order to the fact's text '(out,&textures,name,options)'; (2) the step-8 object at +0xAC is ExternalFileLevelStorageSource, not FilePathManager; (3) step 12 is not a controller/gamepad query: 0x1D83E0 returns client+0xAC, vtbl[2] fills a vector of 0x24-byte world summaries; if the list is non-empty AND options[0x290] is set (default 0 written at 0xA0D54; string 'dev_autoloadlevel' at 0x227E64 is the likely key) the game calls client vtbl[26] (0x593D0) to load a world instead of showing StartMenuScreen, so a stale options.txt plus an existing world changes the first screen; (4) the precondition list omits XAudio2: SoundEngine ctor 0xEFA00 -> SoundSystemRT::ctor 0x1062D8 calls XAudio2_8.dll ordinal #1 (IAT 0x20B05C) and CreateMasteringVoice (failure is tolerated: blt skips); (5) Minecraft::init2 calls setSize(client+0x20, +0x24, 0.0f) at 0x1D8558 while the fields still hold the ctor values 1x1, so the first StartMenuScreen is Screen::init'ed with GUI size 1x1 and guiScale 1 until the host's own setSize arrives (setSize is NULL-safe for Gui/screen/input); (6) 'nothing from CoreWindow/XAML is touched by init' reproduced: the 1024-function direct-call closure of 0x57B84 reaches none of the 36 GetActivationFactory wrappers; game code reaches platform vtable slots 14,21,26,30,35,40 (plus 2/3 via Textures)."
+  },
+  {
+   "id": "client_init.init.textures_font_writers",
+   "verdict": "CORRECTED",
+   "note": "Sole-writer claim reproduced two independent ways: a whole-image sweep of str/add forms with offsets 0x118/0x11C (every hit other than 0x54EFA/0x54EFE and 0x57F72/0x58244 belongs to unrelated classes, e.g. ImageButton ctor 0x5D31C) AND arm32re callers: Textures ctor 0xDBF98 has exactly one caller (0x57F68) and Font factory 0x548A0 exactly one (0x58230), both in init. Screen::init 0x90624 copies client+0x11C to screen+0xFC (ldr.w r4,[r1,#0x11c] at 0x90630). Correction: the Font pointer is stored at 0x58244 (str r3,[r1]), not 0x5823C - 0x5823C is the ldr of the new pointer from the factory's out slot; the Textures store at 0x57F7E is right. Textures ctor ABI (this r0, Options* r1=[client+0x134], AppPlatform* r2=client->vtbl[8]()) confirmed from the call site 0x57F5A-0x57F68."
+  },
+  {
+   "id": "client_init.first_screen",
+   "verdict": "CONFIRMED",
+   "note": "0x58314-0x5831A: ldr r0,[r6,#0xE8]; movs r1,#1; bl 0x91A3C. 0x91A3C -> 0x918D8 (tbb: id1 -> new(0x388)+memset+StartMenuScreen ctor 0x995EC, id2/3 0x170-byte 0x87F78, ...) -> ldr r0,[r5]; bl 0x59638. ScreenChooser is a 4-byte {client*} object created by 0x54B78. Created after Font but BEFORE SoundEngine (0x5833C) and InputHolder (0x5839C). vf32 0x58830 also builds StartMenuScreen when b!=0 and a==0."
+  },
+  {
+   "id": "client_init.screen.setScreen",
+   "verdict": "CONFIRMED",
+   "note": "0x59638 read in full: four reset calls, +0x148 deferral to +0x149/+0x14C, screen->vtbl[18] (0x48) abort test, old screen vtbl[11], shared_ptr swap at +0x6C/+0x70 via 0x542A4, +0x74 toggle, Screen::init(screen, client, guiW=int(width*inv), guiH=int(height*inv)) with inv = float at 0x340D40, then screen->vtbl[19] (0x4C) test and 0x17C72C. Screen::init stores client at +0xB0, Font at +0xFC, width/height at +0xA4/+0xA8 and calls vtbl[2],[3],[31] (0x90624)."
+  },
+  {
+   "id": "client_init.size.setSize",
+   "verdict": "CONFIRMED",
+   "note": "0x59738 read in full. Reproduced: stores +0x20/+0x24 with 240/140 fallback; s0!=0 -> global 0xDDE814 = s0; else guiScale 1 (<400), 2 (>=400), 3 (>=0x320), 4 (>=0x3E8) and 6 only inside the >=1000 branch when platform vtbl[18] (offset 0x48, default 10.0) > 15.0; invGui at 0x340D40 = 1/guiScale; updates float pairs [+0x154]/[+0x158], Gui sub-vtbl (+0xA4 vtbl[1]), Screen::setSize 0x915E8 + vtbl[3], InputHolder vtbl[1]. s0 literal pools: init2 0x1D85EC = 0.0, OnWindowSizeChanged 0x1DA434 = 0.0 (the fact's 0x1DA430 is a 0xDEFE trap pad), AttachToPanel 0x1DA8A4 = 0.0. OnWindowSizeChanged math re-derived: width = int((W+0.5)*platform[+0x3C]), height = int((H+0.5)*platform[+0x40]) -> setSize(r1=width, r2=height). Nit: the model quirk 0x586EC sets the height to 0x244 for a given range, it does not subtract."
+  },
+  {
+   "id": "client_init.size.platform_scale",
+   "verdict": "CONFIRMED",
+   "note": "0x4B55C read in full: HID::Initialize 0x111C1C, DisplayInformation vtbl+0x30/+0x34 (RawDpiX/Y), +0x38 = ((x+y)*0.5)/25.4 (literal at 0x4B704 = 25.4f); with a SwapChainPanel: +0x3C = DR+0x60, +0x40 = DR+0x64 and +0x38 *= +0x3C/panel.CompositionScaleX(vtbl+0x18); without: +0x3C=+0x40 = LogicalDpi (vtbl+0x2C)/96.0 (double at 0x4B6FC = 96.0)."
+  },
+  {
+   "id": "client_init.platform.vtable",
+   "verdict": "CONFIRMED",
+   "note": "arm32re vtable 0x33FB20 reproduces every listed slot RVA and the base-class cells (0x33F890). Empty stubs [4,5,6,13,15,20,24,25,36,37,38], return-false 0x29BA0 [7,21,22,27], return-true 0x17FD40 [11,26,28] all verified by disassembly. Extra detail: slot 35 (0x47618) zero-fills a ~0x60-byte sret struct (three std::strings) passed in r1 and is called from the init2 object ctor 0xF91FC; slots 8 and 41 return an empty std::string. A heuristic scan of platform-vtable calls in game code finds slots 14,16,17,18,19,21,25,26,29,30,31,32,33,34,35,38,40,41 in use, so the table is complete for host purposes."
+  },
+  {
+   "id": "client_init.platform.asset_access",
+   "verdict": "CONFIRMED",
+   "note": "0x4F780: builds installRoot(+0x14)+'/data/'+name with 0x19F38/0x19FF8 then base 0x4792C(this, out=r1, path=r2); caller 0xDCD80 passes r0=g_platform, r1=out, r2=name (vtbl+0x38 = slot 14). Same slot used at 0xCD350, 0xD65CC, 0xDCD38. Data tree on disk matches (data/images/*.meta, *.images, font/default8.png, lang/en_US.lang, materials/*.json, shaders/dx11/*)."
+  },
+  {
+   "id": "client_init.platform.winrt_surface",
+   "verdict": "CONFIRMED",
+   "note": "Verified class names/IIDs/slots in the callees: ApplicationData (0x1DAB28), Package (0x4E840: IID 4E534BDF, current = vtbl+0x18; InstalledLocation = vtbl+0x1C), MemoryManager (0x4E69C/0x4E740, pool 5C6C279C), ThreadPool statics RunAsync vtbl+0x18 and RunWithPriorityAndOptionsAsync vtbl+0x20 with (prio=1,opts=1) at 0x1DD408, IAsyncInfo IID bytes at 0x20FBD8 (00000036-0000-0000-C000-000000000046) and get_Status = vtbl+0x1C, loop runs while status==0. GetActivationFactory goes through wrapper 0x2001E4 -> b.w 0x200308 -> IAT cell 0x20B5FC (patch the IAT cell). The direct-call closure of init reaches no XAML/CoreWindow activation. Not in this list but needed by init: XAudio2_8.dll (non-WinRT) and the api-ms-win-core-winrt-string functions WindowsGetStringRawBuffer/WindowsDeleteString (a fake get_Path must return real HSTRINGs)."
+  },
+  {
+   "id": "client_init.frame.render_loop_body",
+   "verdict": "CONFIRMED",
+   "note": "0x1DA160 read in full: optional QI (IID 0x20FBD8) on the IAsyncAction arg (a NULL arg is dereferenced later, so a fake must be non-NULL if this body is called directly), get_Status; loop only while Status==0; scoped_lock(AppMain+0x10); if AppMain+0x3C: pump 0x50EAC(platform=*[AppMain+0x38]), client=[AppMain+0x34]->vtbl[19], Present 0x1DBB10([AppMain+4]). No sleep."
+  },
+  {
+   "id": "client_init.frame.minecraft_update",
+   "verdict": "CONFIRMED",
+   "note": "0x1D8A54 order reproduced exactly: vtbl+0x70, timer advance 0x65F10 (skipped when +0x3C && +0x68), RakNet pump (+0x50 vtbl+0xF8 then +0x4C vtbl+0x34(+0x50)), tick loop vtbl+0x7C(i,n-1) with ++[+0xCC], delta time into +0xD8/+0xE0, vtbl+0x74, 0x1198B8, vtbl+0x78."
+  },
+  {
+   "id": "client_init.frame.render_path",
+   "verdict": "CONFIRMED",
+   "note": "0x5A114 read in full: _Mtx_unlock(+0x15C), +0x13C gate, 0x51740 results stored in Gui+0xB0 and LevelRenderer+0xC, GameRenderer::render 0xB9E1C(client+0x10C, s0=timer[8]), 0x1166DC, else clear path 0x545CC/0x1EFA0, finally 0xF2990 with SoundEngine (+0x138). GameRenderer binds RT/viewport via DR::get 0x4B054 + 0x1DBF80 + 0x1DBCD0 (0xB9E3E-0xB9E5C). Platform slot 25 hook is the 0xBF60 stub."
+  },
+  {
+   "id": "client_init.frame.lifecycle",
+   "verdict": "CONFIRMED",
+   "note": "Callback bodies 0x58A40/58A50/58AA8/58AF0/58D70 re-read (focus lost keeps rendering while platform vtbl[34] isKeyboardVisible()!=0 and calls screen vtbl[22]; resume calls platform vtbl[21] -> +0xB1 and Textures::reload 0xDD188; suspend unloads textures and clears +0x13C). Resume flow 0x1DA438 = 0x4743C then 0x4736C, suspend flow 0x1DAA3C = 0x473D4 then tail b.w 0x474A4 (platform = *[AppMain+0x38]). Not independently reproduced: that MainPage vtbl slots 10/11 (0x1DFA40/0x1DF4C4) are bound to the Suspending/Resuming events (only the slot contents and their bodies were checked)."
+  },
+  {
+   "id": "client_init.keyboard",
+   "verdict": "CONFIRMED",
+   "note": "Chain reproduced: Hiding handler 0x1DF700 -> AppMain 0x1DA5B4(0), Showing 0x1DF714 -> InputPane vtbl+0x28 OccludedRect height -> 0x1DA5B4 (takes the AppMain+0x10 lock, multiplies by platform+0x40) -> client 0x59578 (client+0x164 = int(h*[0x340D40]); screen vtbl[30]). Base showKeyboard 0x47A00 / hideKeyboard 0x47720 only toggle platform+4; Winrt hideKeyboard 0x4EDAC calls the base then tail-jumps to HID 0x111B20 which posts a CoreWindow.Dispatcher.RunAsync lambda whose body 0x1108D4 does a QueryInterface and calls the IControl::Focus helper 0x11127C (toolkit label: unfocus TextBox, focus panel; only the call shape was re-read); showKeyboard calls HID::ShowKeyboard 0x114220. The game never queries the real keyboard state; onAppFocusLost reads platform+4."
+  },
+  {
+   "id": "client_init.globals",
+   "verdict": "CONFIRMED",
+   "note": "All movw/movt VAs reproduced: g_platform 0xDDD7E0 (written at 0x4729A), g_DeviceResources 0xE2AFC4 (read by 0x4B054, throws runtime_error when NULL), guiScale 0xDDE814, invGui 0x340D40 (bytes ab aa aa 3e), atlas metas 0xDDDBF8/0xDDDC00, MaterialManager 0xDE0AC0, release object 0xDDF594. Not re-checked: static counter 0xDDD7E4."
+  },
+  {
+   "id": "client_init.globals.invGuiScale",
+   "verdict": "CONFIRMED",
+   "note": "Bytes at 0x340D40 = abaaaa3e (0.3333f); only writer is setSize 0x59836; readers setScreen 0x596E4, setKeyboardHeight 0x5958A."
+  },
+  {
+   "id": "client_init.dr_requirements",
+   "verdict": "CONFIRMED",
+   "note": "DR::get callers scanned: DR fields read right after the call are +0x35 (0xA0CBA, Options default stored at options+0x278), +0x38 (0xCB1D2, 0xD116A, 0xD6AC8, 0xD8E66), +0x3C/+0x40 (0xC8A96), +0x60/+0x64 (0x4B5F0, HID 0x111E02). getShaderModelSuffix 0xD73FC disassembled: 0xA100/0xB000/0xB100/0xA000 -> empty, 0x9300 -> '_level_9_3', everything else (0x9100/0x9200) -> throws std::runtime_error 'Unkonwn feature level'. Options::init (0xA0BD0) calls DR::get so the DR must exist before init. No audio requirement is listed here: see the missing list."
+  },
+  {
+   "id": "client_init.input_queue",
+   "verdict": "CONFIRMED",
+   "note": "pollInputEvent 0x4B300 and queueInputEvent 0x4B290 (this r0, ev* r1) reproduced, tbb table resolved: type0 -> 0x4B3B4 -> 0x115F84 (args [ev+6],[ev+7],[ev+2],[ev+4]), type1 -> 0x4B3CA -> 0x116444 (same plus [ev+8] as 5th arg), type2 -> Keyboard::feed 0x4E568, type3 -> feedText 0x4E598, type4 -> RTDynamicCast(client+0x6C, Screen->StartMenuScreen) and client vtbl+0x60. Nit: the toolkit labels 0x115F84 Mouse::feed (4 args) and 0x116444 Multitouch::feed (5th arg = pointer slot), so the fact's prose for types 0/1 is swapped though the RVAs are right. Host note: each event is a heap object freed by the game with operator delete (thunk 0x20043C), so it must be allocated with the game's operator new (thunk 0x200430), not the host CRT."
+  },
+  {
+   "id": "client_init.shutdown",
+   "verdict": "CONFIRMED",
+   "note": "0x55F78 calls 0x55838 which releases +0x138,+0x134,+0x130,+0x11C,+0x118,+0x10C,+0x108; AppMain dtor 0x1DA044 calls DR::setOwner(dr,NULL) (0x1DA06C) and deletes the client through vtbl[0](1)."
+  }
+ ],
+ "missing": [
+  "XAudio2 is a hard init-time dependency that is absent from client_init.json (only the md mentions it): SoundEngine ctor 0xEFA00 -> SoundSystemRT::ctor 0x1062D8 calls IAT 0x20B05C = XAudio2_8.dll ordinal #1 with (IXAudio2** = this+4, Flags=0, Processor=1) and then IXAudio2 vtbl+0x1C CreateMasteringVoice(&voice=this+8, 2 ch, 0xAC44). A failing HRESULT is tolerated (blt skips), but the behaviour of later sound calls with a NULL engine was not analysed; a host needs the DLL, a stub or a hook.",
+  "Paths must be ASCII: both Package.InstalledLocation.Path and ApplicationData.LocalFolder.Path are converted by the narrowing std::string ctor 0x480D8 (low byte of each UTF-16 unit), so a non-ASCII install or profile directory silently corrupts every asset/storage path.",
+  "Process cwd is a requirement, not a hedge: D3DCompile (call at 0xD6C94) passes pSourceName = 'data/<name>' (relative) and pInclude = D3D_COMPILE_STANDARD_FILE_INCLUDE ((ID3DInclude*)1, str 1 at [sp] 0xD6C8A) with Flags1 0x8000; the dx11 shaders #include \"ShaderConstants.fxh\" which sits in data/shaders/dx11, so the include only resolves if the cwd is the folder that contains data\\.",
+  "Fake WinRT objects need more than the slot list: QueryInterface (slot 0) on the fake IStorageFolder must answer IID 4207A996-CA2F-42F7-BDE8-8B10457A7F30 (IStorageItem); AddRef/Release (slots 1/2) are called on every object; get_Path (slot 12) must return a real HSTRING (the game calls WindowsGetStringRawBuffer/WindowsDeleteString); IPackageStatics.get_Current slot 6, IPackage.get_InstalledLocation slot 7, IApplicationDataStatics.get_Current slot 6, IApplicationData.get_LocalFolder slot 12, IMemoryManagerStatics slots 6/7 return UINT64 (r0:r1); the exe's HIDController ctor (0x1103FC) needs the real vccorlib120_app Platform::Object. The ThreadPool fake must call the handler's COM Invoke at vtable slot 3; the init lambda ignores the IAsyncAction argument while the render-loop body 0x1DA160 dereferences it.",
+  "First-screen sizing: Minecraft::init2 (0x1D8558) calls setSize(client+0x20,+0x24,0.0f) with the ctor values 1x1, so StartMenuScreen is built at GUI size 1x1 / guiScale 1 and only fixes itself when the host's setSize runs. The host must call client->vtbl[20](W,H,0.0f) after init and before the first Minecraft::update, and must first write platform+0x38 (ppmm), +0x3C/+0x40 (=1.0f), +0x30/+0x34, otherwise OnWindowSizeChanged-style math produces width 0 and the 240x140 fallback. Writing client+0x20/+0x24 before runInit is also viable because setSize is NULL-safe and init2 re-applies those fields.",
+  "World auto-load branch at the end of init was mis-described as a gamepad query: client+0xAC is ExternalFileLevelStorageSource and the branch (0x58278-0x582DA) loads the first world through client vtbl[26] when options[0x290] is set (likely 'dev_autoloadlevel', string 0x227E64); default is 0 (0xA0D54) but a persisted options.txt under <LocalFolder>/games/com.mojang/minecraftpe can change the first screen. The level enumeration uses FindFirstFileExW (plain Win32 files), no WinRT.",
+  "Any host-allocated object handed to the game must come from the game's CRT heap: queued input events are freed by pollInputEvent with operator delete (0x4B428 -> thunk 0x20043C); allocate them via thunk 0x200430 (??2@YAPAXI@Z) and match the exact event size/layout from the input area.",
+  "Client vtable slots 9,10,11,12,33,34 (sound pass-through to +0x138) and 17/39 (screen vtbl[28]/[29] pass-through) are still unlabeled in the facts; the item/tile registration calls at the end of Minecraft::init2 (0x19B528,0x1CC2C0,0x15A800,0x163384,0x1BACA4) were not decoded and run on every init, so a crash there would not be diagnosable from the facts.",
+  "Ordering notes absent from the facts: the MainPage ctor also starts a High-priority TimeSliced ThreadPool job at 0x1DD40E (the CoreIndependentInputSource dispatcher loop, work item 0x1DE0BC, stored at MainPage+0x6C) which is unrelated to the client; AppMain's DR owner (setOwner at 0x1D9D90) is set after the init job is queued - I checked that init never reads DR+0x74 (only Present/HandleDeviceLost do), so a synchronous fake RunAsync is safe."
+ ]
+}

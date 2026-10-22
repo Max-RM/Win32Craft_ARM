@@ -1,0 +1,1190 @@
+{
+ "area": "friend_audit",
+ "facts": [
+  {
+   "id": "friend.exe_identity",
+   "x86_symbol": "friend claim (patcher): input exe SHA-256 6c0a8adc..., 14,759,424 bytes, ARMNT, base 0x400000, 24 import descriptors",
+   "x86_value": "sha256 6c0a8adc... size 14759424",
+   "kind": "claim_check",
+   "arm_rva": null,
+   "summary": "CONFIRMED: the stock exe is a PE32 ARMNT image, 6 sections (.text .rdata .data .pdata .tls .reloc), file size 0xE13600 = 14,759,424, SizeOfImage 0xE6E000, entry RVA 0x20095D (Thumb address of 0x20095C), 24 import descriptors in dir 0x33AC88/0x1F4 (25 incl. terminator = 0x1F4/20), checksum field 0, subsystem 2 (GUI), OS/subsystem version 6.2.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Same file as the TEST copy (sha256sum equal). The .tls section (vs 9) and the load-config dir (0x300EF8/0x48) are untouched by the patcher.",
+   "expected_bytes": null,
+   "evidence": [
+    "python pe_audit.py <stock exe> -> sha256 6c0a8adce0141323b8a43937043ffd0806dea71e9d11b74f614b39a2046b29f3, size 0xe13600, machine 0x1c4, nsec 6, sizeofimage 0xe6e000, entry 0x20095d, imports 24",
+    "arm32re.py info -> machine 0x1c4 base 0x400000 image 0xe6e000 entry 0x20095d, 12171 pdata functions"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.patch_dllchars",
+   "x86_symbol": "friend claim (patcher): DllCharacteristics 0x9140 -> 0x8140 (APPCONTAINER cleared; DYNAMIC_BASE/NX/TS_AWARE kept)",
+   "x86_value": "0x9140 -> 0x8140",
+   "kind": "claim_check",
+   "arm_rva": null,
+   "summary": "CONFIRMED: stock DllCharacteristics (file offset 0x17E = e_lfanew 0x120 + 0x18 + 0x46) is 0x9140 and the friend's patched exe holds 0x8140. Characteristics 0x0122, OS/subsystem version 6.2 as the patcher asserts.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Equivalent to what our 1.2.8 patcher does. ASLR stays on: the game ran at 0x540000 / 0x2D0000 in the friend's log (relocations applied), so all host RVAs must stay image-relative.",
+   "expected_bytes": null,
+   "evidence": [
+    "pe_audit stock: dllchars 0x9140 chars 0x122 osver (6,2) subver (6,2)",
+    "pe_audit friend-patched Win32Craft.0.10.4-arm32.exe: dllchars 0x8140"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.patch_import_dir",
+   "x86_symbol": "friend claim (patcher): import directory relocated into a new section: 24 original descriptors + win32craft.dll!Win32Bootstrap",
+   "x86_value": null,
+   "kind": "claim_check",
+   "arm_rva": "0x00E6E000",
+   "summary": "CONFIRMED: patched exe has dd[1] = RVA 0xE6E000 size 0x208 (26 descriptors * 20); descriptor 24 = {OFT 0xE6E22C, name 0xE6E208 'win32craft.dll', FirstThunk 0xE6E234}, terminator zero; descriptors 0..23 are byte copies. Import name list in the patched exe has 25 modules, the last is win32craft.dll. The IAT directory dd[12]=0x20B000/0x6C8 is unchanged (the new IAT cell is outside it, which the loader does not care about).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Delay-import directory is absent in this exe, so nothing else needs relocating.",
+   "expected_bytes": null,
+   "evidence": [
+    "pe_audit friend-patched: dd[1] (0xe6e000, 0x208), imports 25 ending in win32craft.dll",
+    "struct dump of .d3imp: descriptor 24 = ['0xe6e22c','0x0','0x0','0xe6e208','0xe6e234'], descriptor 25 all zero"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.patch_section_geometry",
+   "x86_symbol": "friend claim (patcher): .d3imp at RVA 0xE6E000, raw offset 0xE13600, SizeOfImage 0xE6F000, section table has room",
+   "x86_value": null,
+   "kind": "claim_check",
+   "arm_rva": "0x00E6E000",
+   "summary": "CONFIRMED: new section header: name .d3imp, VirtualSize 0x24C, RVA 0xE6E000, SizeOfRawData 0x400, raw 0xE13600; the old file ended exactly at 0xE13600 (.reloc ro 0xDF3A00 + rs 0x1FC00) and old SizeOfImage 0xE6E000 = end of .reloc rounded to 0x1000. New SizeOfImage 0xE6F000, NumberOfSections 7, SizeOfInitializedData += 0x400, section table ends at 0x330 < SizeOfHeaders 0x400.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Matches IMAGE_SIZE_0104_ARM_PATCHED 0x00E6F000 that win32_host.c keys on (host log: 'sections=7 SizeOfImage=00e6f000').",
+   "expected_bytes": null,
+   "evidence": [
+    "pe_audit stock: .reloc va e4e000 vs 1fb10 ro df3a00 rs 1fc00; sec_table_end 0x308 headers 0x400",
+    "pe_audit patched: sec .d3imp vs=24c va=e6e000 rs=400 ro=e13600 ch=e0000060; sizeofimage 0xe6f000; sec_table_end 0x330"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.patch_section_flags_rwx",
+   "x86_symbol": "friend claim (patcher): .d3imp flags 0xE0000060 (code + initialized data, read/write/execute)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x00E6E000",
+   "summary": "CONFIRMED: the value is exactly what the patcher writes (0xE0000060), BUT this is a readable+writable+EXECUTABLE image section; our proven 1.2.8 patcher uses a plain RW data section (0xC0000040) for the import table and puts the 16-byte trampoline in .text. A W+X section is a real loadability risk on Windows RT 8.1 / code-integrity (it loaded fine on Win11 ARM64 in the friend's log, which proves nothing about RT).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Do not reuse. Own patcher: keep .d3imp RW only (0xC0000040) and place the trampoline in .text slack (as 1.2.8), or avoid a trampoline by redirecting the call site with a 4-byte BL into a stub in .text.",
+   "expected_bytes": null,
+   "evidence": [
+    "pe_audit friend-patched: sec .d3imp ch=e0000060",
+    "tools/1.2.8-arm32-patcher.py line 57: NEW_SECTION_FLAGS = 0xC0000040 (device-proven layout)"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.patch_callsite",
+   "x86_symbol": "friend claim (patcher): call site RVA 0x200A72 (file 0x1FFE72) = bl 0x203EFC (bytes 03f043fa), the C++/CX main wrapper",
+   "x86_value": null,
+   "kind": "claim_check",
+   "arm_rva": "0x00200A72",
+   "summary": "CONFIRMED: bl at 0x200A72 inside sub_200970 (__scrt_common_main_seh, 0x200970..0x200AB6) targets 0x203EFC; file offset 0x1FFE72 = 0x200A72-0x1000+0x400 is right. The call happens AFTER _initterm_e/_initterm (CRT + C++ static init already ran) with r0 = 0x400000 literal (hInstance, relocated), r1=r3=0; result r0 is stored to [r4,#4] and becomes the process exit code, so Win32Bootstrap must return an int. 0x203EFC is a tail-call to 0x20405C: GetCmdArguments -> Platform::Array<String^> -> user main sub_1F42A4 -> Application::Start; replacing it bypasses the whole XAML bootstrap (no Application, no App2, no Frame, no MainPage).",
+   "arm_signature": "int Win32Bootstrap(void) entered via bl with r0=hInstance (0x400000 literal, relocated), r1=0, r3=0, r2 unspecified; returns the process exit code in r0",
+   "x86_to_arm_notes": "In the patched exe the BL is 6d f0 e3 d3 = bl 0xE6E23C (decoded with capstone).",
+   "expected_bytes": "03f043fa6060a36813b9114b",
+   "evidence": [
+    "arm32re.py dis 200a38 -> 00200a72: bl #0x203efc; 00200a76 str r0,[r4,#4]",
+    "arm32re.py callers 203efc -> only 00200a72",
+    "arm32re.py func 203efc -> push/pop + b.w #0x20405c; func 20405c calls thunk[vccorlib120_app!GetCmdArguments] then sub_1f42a4"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.patch_trampoline",
+   "x86_symbol": "friend claim (patcher): 16-byte PIC trampoline at RVA 0xE6E23C: ldr.w ip,[pc,#8]; add ip,pc; ldr.w ip,[ip]; bx ip; literal = cell-(tramp+8)",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x00E6E23C",
+   "summary": "CONFIRMED: bytes dff808c0 fc44 dcf800c0 6047 + literal 0xFFFFFFF0 at 0xE6E23C (4-aligned, inside the section's VirtualSize 0xE6E24C). Decoded: ldr.w ip,[pc,#8] (literal at +12), add ip,pc (pc=tramp+8), ldr.w ip,[ip], bx ip. literal 0xFFFFFFF0 = 0xE6E234 - (0xE6E23C+8): the IAT cell 0xE6E234. LR is untouched so Win32Bootstrap returns to 0x200A76. Position independent (valid at any ASLR base).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "bx ip needs bit0 set in the IAT value; the loader resolves a Thumb export of win32craft.dll with bit0 set (same mechanism as every other IAT call in the exe: they use ldr+blx). UNVERIFIED on a Surface RT, verified to work on Win11 ARM64 (log shows the host entered).",
+   "expected_bytes": null,
+   "evidence": [
+    "capstone over .d3imp: 0xe6e23c ldr.w ip,[pc,#8]; 0xe6e240 add ip,pc; 0xe6e242 ldr.w ip,[ip]; 0xe6e246 bx ip; literal 0xfffffff0 -> cell 0xe6e234"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.patch_bootstrap_iat",
+   "x86_symbol": "friend claim (patcher): win32craft.dll!Win32Bootstrap import: ILT/IAT cell in the new section",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x00E6E234",
+   "summary": "CONFIRMED: ILT 0xE6E22C and IAT cell 0xE6E234 both initially hold the hint/name RVA 0xE6E218 (bytes 00 00 'Win32Bootstrap' 00); the descriptor's name RVA 0xE6E208 holds 'win32craft.dll'. Windows fills the cell at load.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Own patcher: same scheme is fine, but the IAT must live in a non-executable data section.",
+   "expected_bytes": null,
+   "evidence": [
+    "capstone/struct dump of .d3imp: cell contents 0xe6e218 -> b'\\x00\\x00Win32Bootstrap\\x00'"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.patch_sizeofimage_marker",
+   "x86_symbol": "friend claim (win32_host.c): SizeOfImage 0xE6F000 is how win32craft.dll identifies the 0.10.4 build (IMAGE_SIZE_0104_ARM_PATCHED)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "CONFIRMED: win32_host.c lines 188-189 define IMAGE_SIZE_0104_ARM_PATCHED 0x00E6F000 / STOCK 0x00E6E000 and the gate at lines 22023-22054 accepts it; the logged image line shows SizeOfImage=00e6f000 and sections=7, so the patcher output matches the host gate.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "README_V0104 already plans one DLL for all versions chosen by PE machine + SizeOfImage: keep 0xE6F000 only if our patcher produces the same size, otherwise define our own constant.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c:22023 arm32_boot_is_0104 = size_of_image == IMAGE_SIZE_0104_ARM_PATCHED",
+    "friend win32craft.log: game image: base=00540000 ... sections=7 SizeOfImage=00e6f000 entry=0020095d DllCharacteristics=8140"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.vclibs_appcontainer",
+   "x86_symbol": "friend claim (WORK_SUMMARY): VCLibs 120 phone DLLs patched 0x1140 -> 0x0140 (APPCONTAINER cleared) and shipped next to the exe",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "CONFIRMED: msvcp120_app.dll, msvcr120_app.dll, vccorlib120_app.dll in the friend's TEST folder are ARMNT PE32 with DllCharacteristics 0x0140 (APPCONTAINER cleared) and checksum fields still the original ones. They loaded on Win11 ARM64. Their api-set imports are NOT proven on Windows RT 8.1: our loadcheck log (RT 8.1 6.3.9600) covers com-l1-1-0/-1-1, file-l1-2-0/-2-1, processthreads-l1-1-0/-1-1/-1-2, sysinfo-l1-2-0/-2-1, synch-l1-2-0, errorhandling-l1-1-0/-1-1, winrt-*; it does NOT list errorhandling-l1-1-2 and localization-l1-2-1 (imported by the game exe) nor rtlsupport-l1-2-0, fibers-l1-1-1, heap-l1-2-0, debug-l1-1-1, libraryloader-l1-1-1, processenvironment-l1-2-0 (imported by the VCLibs).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Run tools/loadcheck on the RT with the 0.10.4 folder before anything else; extend tools/make_arm32_apiset_shims.py for any contract the OS lacks. The VCLibs 12.0 phone DLLs are the right redistributable for this exe, no renames needed (imports are *_app already).",
+   "expected_bytes": null,
+   "evidence": [
+    "pe_audit msvcp120_app.dll / msvcr120_app.dll / vccorlib120_app.dll -> dllchars 0x140",
+    "arm32/device_logs/loadcheck_rt81_6.3.9600_OK.txt: api-set names served on RT 8.1 (list above)"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.iat_d3dcompile",
+   "x86_symbol": "friend claim (WORK_SUMMARY/host): IAT cell 0x0020B000 = D3DCOMPILER_47.dll!D3DCompile",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B000",
+   "summary": "CONFIRMED: the import cell at RVA 0x0020B000 is D3DCOMPILER_47.dll!D3DCompile (arm32re.py imports lists exactly this cell). The host's install_arm32_iat_hooks_0104 uses the right RVA constants and verifies by name through arm32_iat_resolve_cell.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Cell content at runtime is the resolved DLL export (Thumb bit set): the friend's log shows e.g. 'cell rva 0020b1a4 currently 755A0A71 = d3d11.dll+0x70a71'. Keep resolving by name, never by slot arithmetic.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports D3DCompile -> 0020b000  D3DCOMPILER_47.dll!D3DCompile"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.iat_d3dreflect",
+   "x86_symbol": "friend claim (WORK_SUMMARY/host): IAT cell 0x0020B004 = D3DCOMPILER_47.dll!D3DReflect",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B004",
+   "summary": "CONFIRMED: the import cell at RVA 0x0020B004 is D3DCOMPILER_47.dll!D3DReflect (arm32re.py imports lists exactly this cell). The host's install_arm32_iat_hooks_0104 uses the right RVA constants and verifies by name through arm32_iat_resolve_cell.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Cell content at runtime is the resolved DLL export (Thumb bit set): the friend's log shows e.g. 'cell rva 0020b1a4 currently 755A0A71 = d3d11.dll+0x70a71'. Keep resolving by name, never by slot arithmetic.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports D3DReflect -> 0020b004  D3DCOMPILER_47.dll!D3DReflect"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.iat_d3d11createdevice",
+   "x86_symbol": "friend claim (WORK_SUMMARY/host): IAT cell 0x0020B1A4 = d3d11.dll!D3D11CreateDevice",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B1A4",
+   "summary": "CONFIRMED: the import cell at RVA 0x0020B1A4 is d3d11.dll!D3D11CreateDevice (arm32re.py imports lists exactly this cell). The host's install_arm32_iat_hooks_0104 uses the right RVA constants and verifies by name through arm32_iat_resolve_cell.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Cell content at runtime is the resolved DLL export (Thumb bit set): the friend's log shows e.g. 'cell rva 0020b1a4 currently 755A0A71 = d3d11.dll+0x70a71'. Keep resolving by name, never by slot arithmetic.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports D3D11CreateDevice -> 0020b1a4  d3d11.dll!D3D11CreateDevice"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.iat_createdxgifactory1",
+   "x86_symbol": "friend claim (WORK_SUMMARY/host): IAT cell 0x0020B1AC = dxgi.dll!CreateDXGIFactory1",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B1AC",
+   "summary": "CONFIRMED: the import cell at RVA 0x0020B1AC is dxgi.dll!CreateDXGIFactory1 (arm32re.py imports lists exactly this cell). The host's install_arm32_iat_hooks_0104 uses the right RVA constants and verifies by name through arm32_iat_resolve_cell.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Cell content at runtime is the resolved DLL export (Thumb bit set): the friend's log shows e.g. 'cell rva 0020b1a4 currently 755A0A71 = d3d11.dll+0x70a71'. Keep resolving by name, never by slot arithmetic.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports CreateDXGIFactory1 -> 0020b1ac  dxgi.dll!CreateDXGIFactory1"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.iat_cxxthrow",
+   "x86_symbol": "friend claim (WORK_SUMMARY/host): IAT cell 0x0020B5D4 = msvcr120_app.dll!_CxxThrowException",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B5D4",
+   "summary": "CONFIRMED: the import cell at RVA 0x0020B5D4 is msvcr120_app.dll!_CxxThrowException (arm32re.py imports lists exactly this cell). The host's install_arm32_iat_hooks_0104 uses the right RVA constants and verifies by name through arm32_iat_resolve_cell.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Cell content at runtime is the resolved DLL export (Thumb bit set): the friend's log shows e.g. 'cell rva 0020b1a4 currently 755A0A71 = d3d11.dll+0x70a71'. Keep resolving by name, never by slot arithmetic.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports _CxxThrowException -> 0020b5d4  msvcr120_app.dll!_CxxThrowException"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.iat_operator_new",
+   "x86_symbol": "friend claim (WORK_SUMMARY/host): IAT cell 0x0020B5E0 = msvcr120_app.dll!??2@YAPAXI@Z (operator new)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B5E0",
+   "summary": "CONFIRMED: the import cell at RVA 0x0020B5E0 is msvcr120_app.dll!??2@YAPAXI@Z (operator new) (arm32re.py imports lists exactly this cell). The host's install_arm32_iat_hooks_0104 uses the right RVA constants and verifies by name through arm32_iat_resolve_cell.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Cell content at runtime is the resolved DLL export (Thumb bit set): the friend's log shows e.g. 'cell rva 0020b1a4 currently 755A0A71 = d3d11.dll+0x70a71'. Keep resolving by name, never by slot arithmetic.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports ??2@YAPAXI@Z (operator n -> 0020b5e0  msvcr120_app.dll!??2@YAPAXI@Z (operator new)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.iat_getactivationfactory",
+   "x86_symbol": "friend claim (WORK_SUMMARY/host): IAT cell 0x0020B5FC = vccorlib120_app.DLL!?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B5FC",
+   "summary": "CONFIRMED: the import cell at RVA 0x0020B5FC is vccorlib120_app.DLL!?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z (arm32re.py imports lists exactly this cell). The host's install_arm32_iat_hooks_0104 uses the right RVA constants and verifies by name through arm32_iat_resolve_cell.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Cell content at runtime is the resolved DLL export (Thumb bit set): the friend's log shows e.g. 'cell rva 0020b1a4 currently 755A0A71 = d3d11.dll+0x70a71'. Keep resolving by name, never by slot arithmetic.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py imports ?GetActivationFactoryByP -> 0020b5fc  vccorlib120_app.DLL!?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.boot_chain",
+   "x86_symbol": "friend claim (notes.md): entry 0x20095D -> _security_init_cookie 0x200E6C -> __scrt_common_main 0x200970 -> 0x203EFC -> 0x20405C -> user main sub_1F42A4",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0020095C",
+   "summary": "CONFIRMED: entry thunk 0x20095C: push {fp,lr}; bl 0x200E6C; pop; b.w 0x200970 (the 'common main'); inside it the bl at 0x200A72 -> 0x203EFC -> b.w 0x20405C -> bl 0x1F42A4 (user main).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py dis 20095d -> bl #0x200e6c ... b.w #0x200970",
+    "arm32re.py func 203efc / 20405c -> bl #0x1f42a4"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.user_main_application_start",
+   "x86_symbol": "friend claim (notes.md): sub_1F42A4: new(0x58) ApplicationInitializationCallback delegate (ctor 0x1EA914) -> Application::Start via IApplicationStatics {06499997-f7b4-45fe-b763-7577d1d3cb4a}, class string L\"Windows.UI.Xaml.Application\" (VA 0x6E4FB0)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001F42A4",
+   "summary": "CONFIRMED: sub_1F42A4 allocates 0x58 bytes (Heap::Allocate), calls sub_1EA914 (delegate ctor) and sub_1EECBC. sub_1EECBC loads pool 0x06499997 (first dword of IApplicationStatics), activates the class string at RVA 0x2E4FB0 through thunk 0x2001E4 (-> vccorlib GetActivationFactoryByPCWSTR, IAT 0x20B5FC) and calls the factory method (Start). The notes' '0x6e4fb0' is a VA (RVA 0x2E4FB0); the notes mix VAs and RVAs freely.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The faithful path needs a fake IApplicationStatics.Start that invokes the ApplicationInitializationCallback delegate (vtable slot 3, Invoke) on the UI thread; App2's constructor then registers its lifecycle handlers.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1f42a4 -> bl #0x200230 (Allocate), bl #0x1ea914, bl #0x1eecbc",
+    "arm32re.py func 1eecbc -> pool[001eed58]=0x06499997, movw/movt -> L\"Windows.UI.Xaml.Application\", bl #0x2001e4",
+    "arm32re.py strx 'Windows.UI.Xaml.Application' -w -> 002e4fb0 refs 3"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.app2_vtables",
+   "x86_symbol": "friend claim (notes.md): App2 vtables at 0xDC9158(+0), 0xDC9174(+4), 0xDC9198(+12), 0xDC91B4(+8), 0xDC9230(+16), 0xDC9294(+24), 0xDC92C8(+28), 0xDC92EC(+32), 0xDC9304(+36); RTTI .?AVApp2@MCPE_Host@@",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00DC9158",
+   "summary": "CONFIRMED: all nine RTTI vtables and this-adjust offsets are exactly as listed.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py rtti App2 -> 9 vtables with offsets 0,4,12,8,16,24,28,32,36"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.mainpage_vtables",
+   "x86_symbol": "friend claim (notes.md): MainPage vtable 0xDC8AF8 + alternates 0xDC8B2C/0xDC8B50/0xDC8B6C/0xDC8B98/0xDC8BEC/0xDC8C10/0xDC8C28; activation factory vtables 0xDC8EF4/0xDC8F18; ctor sub_1DCF5C (1888 bytes); ActivateInstance vf7 0x1E2490 calls the ctor at 0x1E24AE",
+   "x86_value": null,
+   "kind": "vtable",
+   "arm_rva": "0x00DC8AF8",
+   "summary": "CONFIRMED: RTTI vtables, ctor length (0x1DCF5C..0x1DD6BC = 1888) and the single factory caller at 0x1E24AE all match.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py rtti MainPage -> 8 vtables",
+    "arm32re.py func 1dcf5c -> len=1888",
+    "arm32re.py callers 1dcf5c -> 001e24ae in __MainPageActivationFactory::vf7"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.mainpage_layout",
+   "x86_symbol": "friend claim (notes.md): MainPage+0x74 = shared_ptr<DeviceResources> object ptr, +0x78 control block, +0x7C = AppMain*, +0x80 = bool (visible), +0x84 = ?",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": null,
+   "summary": "CONFIRMED: 0x74/0x78 form the pair passed by pointer (r1 = MainPage+0x74) to the AppMain ctor at 0x1DD4F2; the result is stored at +0x7C (0x1DD514); handlers read AppMain from +0x7C (sub_1DF8A4, sub_1DF9AC, sub_1DF714); +0x80 is written by the VisibilityChanged handler sub_1DF9AC from IVisibilityChangedEventArgs.get_Visible. +0x84 (the notes' '?') is the 50 ms Windows.UI.Xaml.DispatcherTimer created by sub_1DCE94 (stored at 0x1DD560); +0x5C/+0x60/+0x64/+0x68 are XAML element references (+0x60 is QI'd for IUIElement-class IID 676D0BE9-..., passed to sub_1DA634).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host never builds a MainPage, so none of these exist; a faithful design needs fakes for exactly the XAML objects sub_1DF8A4 touches (see friend.missed_dispatcher_tick).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py dis 1dd4a8 -> new(0x40) zeroed, add.w r1,r5,#0x74, bl sub_1d9d14, str r4,[r5,#0x7c]",
+    "arm32re.py func 1df9ac -> strb.w r3,[r4,#0x80] after get_Visible (slot 6)",
+    "arm32re.py dis 1dd52c -> bl sub_1dce94 (DispatcherTimer), str.w r4,[r5,#0x84]",
+    "arm32re.py func 1df8a4 -> QI(MainPage+0x84, IID D160CE46-CD22-4F5F-8C97-40E61DA3E2DC = IDispatcherTimer) then vtbl[12] = Stop"
+   ],
+   "confidence": "high",
+   "verdict": "CORRECTED",
+   "verifier_note": "Confirmed: +0x74/+0x78 = DR shared_ptr pair passed as r1 to the AppMain ctor, +0x7C = AppMain*, +0x80 = visibility byte (strb at 0x1DF9DE, read at 0x1DF9E8 in the VisibilityChanged handler 0x1DF9AC), +0x84 = DispatcherTimer. WRONG detail: +0x60 is NOT passed to the size/attach routine. The timer tick 0x1DF8A4 calls 0x1DA634(AppMain, r1=[MainPage+0x5C] (SwapChainPanel), r2=[+0x64] (TextBox), r3=[+0x68] (focus control)); +0x60 is only QI'd (IID 676D0BE9... = IUIElement) for put_Visibility(1) at 0x1DF936/0x1DF976. Fields +0x5C..+0x68 are zeroed in the ctor (0x1DCFD6..DE) and filled by InitializeComponent/Connect, so a host that skips MainPage must supply them itself."
+  },
+  {
+   "id": "friend.make_dr",
+   "x86_symbol": "friend claim (notes.md): sub_1DCE2C = make_shared<DeviceResources>(out): new(0x84) + control block ctor 0x1DC5A4 (vtable 0xDC8E64), object = base+0xC, so the object is 0x78 bytes",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001DCE2C",
+   "summary": "CONFIRMED: void* make_dr(void **out /*r0*/): [out]=control+0xC (object), [out+4]=control block (use=weak=1); returns out. The host's call make_dr(game_dr_shared_0104) with a 2-pointer array is the right ABI. The class RTTI name is DX::DeviceResources (the host/WORK_SUMMARY call it 'DisplayResources': cosmetic but misleading when grepping RTTI).",
+   "arm_signature": "void** make_dr(void** out /*r0*/) -> r0=out; out[0]=DeviceResources*, out[1]=control block",
+   "x86_to_arm_notes": "Relabel DisplayResources -> DX::DeviceResources in host comments.",
+   "expected_bytes": "03b42de99f480df1180b6f46",
+   "evidence": [
+    "arm32re.py func 1dce2c -> movs r0,#0x84; bl new; bl 0x1dc5a4; str [r4]=r0+0xc; str [r4,#4]=r0",
+    "arm32re.py rtti DeviceResources -> .?AV?$_Ref_count_obj@VDeviceResources@DX@@@std@@ vtable 0xdc8e64",
+    "arm32re.py callers 1dce2c -> only MainPage::MainPage at 0x1dd39a"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.dr_global_singleton",
+   "x86_symbol": "friend claim (win32_host.c): DisplayResources singleton at RVA 0xE2AFC4 written by its constructor",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": "0x00E2AFC4",
+   "summary": "CONFIRMED: the DR ctor sub_1DAE14 stores the object to the global (movw/movt at 0x1DAE5A); sub_4B054 (DeviceResources::get) reads it and throws 'Device resource object hasn't been created yet' when null. sub_4B55C (platform init) uses it to read DR+0x60/+0x64 (scale) into AppPlatform+0x3C/+0x40, so it must be set before any platform code runs.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 4b054 -> movw r3,#0xafc4; movt #0x122 (VA 0x122AFC4); string 'Device resource object hasn't been created yet'",
+    "idx.mov32[0x122afc4] -> sites 0x4b060 (sub_4b054), 0x1dae5a (sub_1dae14 ctor)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.dr_fields",
+   "x86_symbol": "friend claim (host defines ARM32_0104_DR_* / notes): DR fields: +0 annotation, +4 device (ID3D11Device1), +8 context (ID3D11DeviceContext1), +0xC swap chain, +0x10 RTV, +0x14 DSV, +0x30 panel, +0x38 feature level, +0x4C/+0x50 size floats, +0x54/+0x58 orientation enums, +0x60/+0x64 scale, +0x74 owner (AppMain)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x001DAFC0",
+   "summary": "CONFIRMED: CreateDeviceResources (sub_1DAFC0) stores QI results at DR+4 (IID 9D06DFFA-... = ID3D11Device1), DR+8 (420D5B32-... = ID3D11DeviceContext1), DR+0 (B2DAAD8B-... = ID3DUserDefinedAnnotation) and the feature level at DR+0x38; sub_1DB158 releases DR+0x10/+0x14, resizes/creates DR+0xC, reads +0x4C/+0x50/+0x54/+0x58/+0x60/+0x64 and writes +0x3C/+0x40/+0x44/+0x48; sub_1DBB10 presents DR+0xC and re-creates on DEVICE_REMOVED/RESET; sub_1DBBC0 is setOwner (str r1,[r0,#0x74]). All offsets the host uses are correct.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The game requires D3D11.1 (ID3D11Device1/DeviceContext1) and DXGI 1.3 (IDXGIDevice3, IDXGISwapChain2): present on Windows RT 8.1. The IIDs live at VA 0x6DF2xx (RVA 0x2DF2xx): the notes first read them as RVAs, then self-corrected to VAs, and the corrected reading is right.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1dafc0 -> D3D11CreateDevice(...,&DR+0x38,...), QI IIDs 0x6df258/0x6df268/0x6df218",
+    "arm32re.py func 1db158 / 1dbb10 / 1dbbc0",
+    "IIDs read from .rdata: 0x6df258=9D06DFFA-D1E5-4D07-83A8-1BB123F2F841 (ID3D11Device1), 0x6df268=420D5B32-B90C-4DA4-BEF0-359F6A24A83A (ID3D11DeviceContext1), 0x6df218=B2DAAD8B-03D4-4DBF-95EB-32AB4B63D0AB (ID3DUserDefinedAnnotation), 0x6df228=50C83A1C-E072-4C48-87B0-3630FA36A6D0 (IDXGIFactory2), 0x6df278=6007896C-3244-4AFD-BF18-A6D3BEDA5023 (IDXGIDevice3), 0x6df288=A8BE2AC4-199F-4946-B331-79599FB98DE7 (IDXGISwapChain2), 0x6df248=6F15AAF2-D208-4E89-9AB4-489535D34F9C (ID3D11Texture2D)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.dr_create_device",
+   "x86_symbol": "friend claim (notes.md): CreateDeviceResources feature-level list {0xB100,0xB000,0xA100,0xA000,0x9300}, no 9_1, no WARP retry, throws Platform::Exception on failure, flags 0",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x001DB028",
+   "summary": "CONFIRMED: D3D11CreateDevice(adapter 0, driver HARDWARE=1, 0, flags 0, levels[5]={B100,B000,A100,A000,9300}, 5, SDK 7, &device, &DR+0x38, &context) via thunk 0x1F433C at 0x1DB028; failure paths build a Platform::Exception (CreateException + _CxxThrowException).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "On a Surface RT (Tegra 3, FL 9_1) none of these levels exist -> D3D11CreateDevice fails -> Platform::Exception. The host MUST rewrite the list (append 0x9100/0x9200, or replace with {0x9100}) and add D3D11_CREATE_DEVICE_BGRA_SUPPORT (flags 0 here). The friend's run had cap 0x0000 'game list (no clamp)' and got 0xB100 on Win11, i.e. the 9_1 requirement was never exercised.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1dafc0 -> mov.w r3,#0xb100/#0xb000/#0xa100/#0xa000/#0x9300 stored at [r7,#0x18..0x28]; flags str #0 at [sp,#0..]; movs r3,#7 SDK; bl thunk 0x1f433c"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.dr_wsd_role",
+   "x86_symbol": "friend claim (win32_host.c): DR::windowSizeChanged (sub_5DB158) 'creates the views, viewport and the first clear'",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001DB158",
+   "summary": "WRONG(sub_1DB158 is DeviceResources::CreateSizeDependentTargets: ResizeBuffers/creates the swap chain, then RTV+DSV+viewport; it contains NO ClearRenderTargetView): sub_1DB158 gates on DR+0x30 (panel) != 0 (0x1DB178), unbinds RTs (ctx vtbl 0x84) and releases DR+0x10/+0x14, flushes (ctx slot 111), computes sizes, then: if DR+0xC exists -> IDXGISwapChain::ResizeBuffers(2, lroundf(DR+0x3C), lroundf(DR+0x40), 0x57 BGRA, 0) (swap-chain vtable 0x34) with DEVICE_REMOVED/RESET handling; else builds DXGI_SWAP_CHAIN_DESC1 (BGRA, 1 sample, usage 0x20, 2 buffers, FLIP_SEQUENTIAL) and CreateSwapChainForComposition (factory slot 24) and binds it to the panel through the QI on DR+0x30 (IID 5C526665-..., helpers sub_1DC3FC/sub_11401C; the exact SetSwapChain slot was not decoded). Afterwards it QIs IDXGISwapChain2 and calls SetMatrixTransform, then GetBuffer/CreateRenderTargetView/depth/viewport. There is no call through ID3D11DeviceContext slot 50 (offset 0xC8) anywhere in the function. The friend's own counters agree: ClearRTV=0, OMSetRTVs=2.",
+   "arm_signature": "void DeviceResources::CreateSizeDependentTargets(DeviceResources* this /*r0*/); needs this+0x30 != 0 (panel) as a gate",
+   "x86_to_arm_notes": "Consequence: after WSD the back buffer content is undefined and nothing ever draws it. Either the engine renders (Minecraft::update) or the host must ClearRenderTargetView once itself.",
+   "expected_bytes": "2de9f04b0df1180b2ded028b",
+   "evidence": [
+    "arm32re.py func 1db158 grep '#0xc8]' -> no match; '#0x84]' at 0x1db190 (OMSetRenderTargets unbind); '#0x1bc]' at 0x1db1be (Flush)",
+    "friend WORK_SUMMARY: 'Draw=0 DrawIndexed=0 ClearRTV=0 OMSetRTVs=2'"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.dr_panel_gate",
+   "x86_symbol": "friend claim (win32_host.c): DR+0x30 is a non-null gate only; never dereferenced when a swap chain already exists",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x001DB178",
+   "summary": "CONFIRMED: WSD reads DR+0x30 at 0x1DB178 (cbz -> skip everything) and dereferences it (QI IID 0x6DF1F8) only in the create-swap-chain branch at 0x1DB440, which the host skips by pre-filling DR+0xC. Other 'ldr [r3,#0x30]' hits in the DR code are COM vtable calls on other objects, not DR+0x30. A dummy DWORD (host's game_dr_panel_dummy_0104) is enough for sub_1DB158; but sub_1DC0B4 (the SizeChanged entry) is not safe with it only because the host never calls it.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Keep. IID 5C526665-F60E-4912-AF59-5FE0680F089D at VA 0x6DF1F8 is the native swap-chain-panel interface (not the documented 63AAD0B8.../F92F19D2... IIDs): a fake panel is only needed if we ever let the create-branch run.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1db158 -> 1db178 ldr r3,[r6,#0x30]; cmp; beq.w #0x1db7ae; 1db440 ldr r3,[r6,#0x30]; QI iid 0x6df1f8",
+    "grep of all ldr/str #0x30 in 0x1dab00..0x1dd000 reviewed"
+   ],
+   "confidence": "high",
+   "verdict": "CORRECTED",
+   "verifier_note": "Gate at 0x1DB178 and the dereference at 0x1DB440 confirmed. Corrections: (a) IID 5C526665-F60E-4912-AF59-5FE0680F089D (VA 0x6DF1F8) is Windows.UI.Xaml.IDependencyObject (from memory of the metadata; the code agrees: helper 0x1DC3FC QIs it and calls vtbl slot 11 (0x2C) = get_Dispatcher, then 0x11401C calls ICoreDispatcher::RunAsync (slot 8, 0x20) with a DispatchedHandler lambda built by 0x1DAD7C) - the swap-chain/panel binding is marshalled to the UI dispatcher. The finder left this undecoded. (b) The aside 'sub_1DC0B4 (the SizeChanged entry)' is wrong: 0x1DC0B4 re-checks the DXGI factory/adapter and recreates the device (DisplayContentsInvalidated -> ValidateDevice); the real SizeChanged chain is 0x1DF808 -> DR::SetSwapChainPanel 0x1DBD40 / DR::SetLogicalSize 0x1DBC80 -> 0x1DB158."
+  },
+  {
+   "id": "friend.matrix_transform_patch_bytes",
+   "x86_symbol": "friend claim (win32_host.c): patch at RVA 0x1DB56C: fb 6b 17 f1 08 01 -> 00 20 00 f0 19 b8",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x001DB56C",
+   "summary": "CONFIRMED: the six original bytes at 0x1DB56C are exactly fb6b17f10801 (ldr r3,[r7,#0x3c]; adds.w r1,r7,#8). The replacement movs r0,#0 ; b.w decodes to a branch to 0x1DB5A4 (b.w at 0x1DB56E, offset 0x32: 0x1DB572+0x32), which is the success path after the 'cmp r0,#0; bge' following the blx. The IDXGISwapChain2 QI'd to [r7,#0x3C] is still released by the epilogue.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Works, but it is a CODE patch with PAGE_EXECUTE_READWRITE on image .text (host line 22290). PORT_RULES #4 forbids RWX unless needed and Windows RT blocks writable-executable pages: it can fail on the Surface RT and abort the whole boot (host returns FALSE). Prefer a data patch: override vtable slot 34 of the HWND swap chain (IDXGISwapChain2::SetMatrixTransform) with a stub returning S_OK, or implement the matrix transform as a no-op proxy swap chain.",
+   "expected_bytes": "fb6b17f10801",
+   "evidence": [
+    "Pe.bytes(0x1db56c,10) = fb6b17f1080100bf1846",
+    "arm32re.py dis 1db50a -> 1db578 ldr r3,[r3,#0x88]; blx r3; 1db57e cmp r0,#0; bge #0x1db5a4"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.matrix_transform_reason",
+   "x86_symbol": "friend claim (win32_host.c): desktop IDXGISwapChain2 has SetMaximumFrameLatency at slot 0x88 while WP8.1 expects SetMatrixTransform there",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x001DB57C",
+   "summary": "WRONG(slot 0x88 = vtable index 34 = IDXGISwapChain2::SetMatrixTransform on the desktop too; SetMaximumFrameLatency is slot 31 = 0x7C. The call fails because SetMatrixTransform is only valid on swap chains created with CreateSwapChainForComposition, an HWND chain returns an error): counting the DXGI vtables: IUnknown 0-2, IDXGIObject 3-6, DeviceSubObject 7, IDXGISwapChain 8-17 (Present 8 = 0x20, GetBuffer 9, ResizeBuffers 13 = 0x34, which are the offsets the game's code uses), IDXGISwapChain1 18-28, IDXGISwapChain2: SetSourceSize 29, GetSourceSize 30, SetMaximumFrameLatency 31, GetMaximumFrameLatency 32, GetFrameLatencyWaitableObject 33, SetMatrixTransform 34 (=0x88), GetMatrixTransform 35. The game QIs IID A8BE2AC4 (IDXGISwapChain2) and calls slot 34 with a 3x2 matrix {1/scaleX,0,0,1/scaleY,0,0}. The patch is still necessary (and correct in effect) for the reason above.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Do not add a frame-latency workaround; do add SetMatrixTransform handling, because any future code path (e.g. a faithful resize) hits the same call.",
+   "expected_bytes": null,
+   "evidence": [
+    "IID at VA 0x6DF288 read from .rdata = A8BE2AC4-199F-4946-B331-79599FB98DE7",
+    "arm32re.py dis 1db50a -> matrix built at [r7,#8..0x1c] from 1/(DR+0x60), 1/(DR+0x64); ldr r3,[r3,#0x88]; blx",
+    "swap-chain slots used by the same function: 0x34 ResizeBuffers (13), 0x20 Present in sub_1DBB10 (8): consistent with the numbering above"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.swapchain_create_slot",
+   "x86_symbol": "friend claim (notes.md): WSD creates the swap chain with factory vtable slot 0x60 (notes were unsure: 'slot 0x60 != expected 0x44')",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001DB400",
+   "summary": "CONFIRMED: 0x60/4 = 24 = IDXGIFactory2::CreateSwapChainForComposition (IDXGIObject 3-6, IDXGIFactory 7-11, IDXGIFactory1 12-13, IDXGIFactory2: IsWindowedStereoEnabled 14, CreateSwapChainForHwnd 15, CreateSwapChainForCoreWindow 16, GetSharedResourceAdapterLuid 17, ..., CreateSwapChainForComposition 24). The 'expected 0x44' (slot 17) in the notes was the wrong expectation. DESC1: Format 0x57 (B8G8R8A8_UNORM), SampleDesc 1/0, BufferUsage 0x20 (RENDER_TARGET_OUTPUT), BufferCount 2, Scaling STRETCH, SwapEffect FLIP_SEQUENTIAL(3), AlphaMode IGNORE(3), Flags 0.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host's HWND DISCARD/2-buffer chain is an acceptable substitute (WSD then takes the ResizeBuffers path). If we switch to FLIP_SEQUENTIAL on an HWND later, remember ResizeBuffers(2,...) is called with the same count.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py dis 1db2c0..1db340 -> desc stores [r7,#0x50..0x7c]: 0x57, 1, 0x20, 2, 3 ..."
+   ],
+   "confidence": "medium",
+   "verdict": "CORRECTED",
+   "finder_arm_rva": "0x001DB3B2",
+   "verifier_note": "Slot 24 = 0x60 = IDXGIFactory2::CreateSwapChainForComposition confirmed against dxgi1_2.h (Factory2: IsWindowedStereoEnabled 14, ForHwnd 15, ForCoreWindow 16, ... ForComposition 24; MakeWindowAssociation is 8). But the address is wrong: 0x1DB3B2 is the 'cmp r0,#0' after IDXGIObject::GetParent(IID_IDXGIFactory2) (slot 6 = 0x18 at 0x1DB3AE). The actual call is ldr r4,[r4,#0x60] at 0x1DB3FE / blx r4 at 0x1DB400 with args (factory, device=[DR+4], &desc (r7+0x50), restrict 0, &DR+0xC)."
+  },
+  {
+   "id": "friend.appmain_ctor",
+   "x86_symbol": "friend claim (notes.md): AppMain is 0x40 bytes created in the MainPage ctor at 0x1DD4C6 (operator new 0x40 + zero + ctor sub_1D9D14(this, shared_ptr<DR>*)); dtor sub_1DA044; vtable 0xDC8830",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001D9D14",
+   "summary": "CONFIRMED: new(0x40) at 0x1DD4C6, all 16 words zeroed, r1 = MainPage+0x74, bl 0x1D9D14, result -> MainPage+0x7C. The ctor (push {r0,r1}...) takes (this, const shared_ptr<DR>&): copies obj/cnt to +4/+8 with an atomic ++[cnt+4], inits +0xC=0, critical_section at +0x10, float 0.0 at +0x30, calls sub_1D9DD4 on AppMain+0x34 and finally sub_1DBBC0 (DR::setOwner) so DR+0x74 = AppMain. vtable RVA 0xDC8830 (RTTI .?AVAppMain@MCPE_Host@@), dtor 0x1DA044 (134 bytes). The host's ZeroMemory(0x40)+ctor(app, game_dr_shared_0104) is the same sequence.",
+   "arm_signature": "AppMain* AppMain::ctor(AppMain* this /*r0*/, const shared_ptr<DR>* dr /*r1*/) -> r0=this",
+   "x86_to_arm_notes": "",
+   "expected_bytes": "03b42de9fc4b0df1200b6f46",
+   "evidence": [
+    "arm32re.py dis 1dd4a8 / func 1d9d14 / rtti AppMain -> vtable rva 00dc8830 / funcs 1da044 len=134",
+    "arm32re.py func 1d9d14 -> bl 0x1d9dd4 with r0=this+0x34; bl 0x1dbbc0 (setOwner)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.appmain_fields",
+   "x86_symbol": "friend claim (WORK_SUMMARY): AppMain fields: +0x34 MinecraftClient*, +0x38 platform holder, +0x3C 'isReady' byte read by sub_1DA310, +0x10 critical_section",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x001DA310",
+   "summary": "CONFIRMED: +0x34 = MinecraftClient* (sub_1D9CC0 factory: new(0x168)+memset+sub_54E90), +0x38 = 8-byte holder {AppPlatform_Winrt* (0x88 bytes, ctor 0x494C0), 0}; the holder is what gets stored into client+0xC. sub_1DA310 returns [AppMain+0x3C] != 0 with a dmb. Not mentioned by the friend: AppMain+0xC is the IAsyncAction of the render loop (set by sub_1DA8A8, cancelled by sub_1DA9D4), AppMain+0x30 is a float initialised to 0.0, [platform+0x10] = client back-pointer.",
+   "arm_signature": "bool AppMain::isReady(AppMain* this /*r0*/) -> r0",
+   "x86_to_arm_notes": "",
+   "expected_bytes": "2de90048eb4690f83c30bff3",
+   "evidence": [
+    "arm32re.py func 1d9dd4 -> new(0x88)+memset+bl 0x494c0 (AppPlatform_Winrt::ctor), str r0,[holder]; bl 0x1d9cc0 client factory; str r3,[platform,#0x10]",
+    "arm32re.py func 1da310 -> ldrb.w r3,[r0,#0x3c]; dmb"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.appmain_ready_setter",
+   "x86_symbol": "friend claim (WORK_SUMMARY): +0x3C is zeroed at allocation; no setter found in 0x5D0000-0x60B000 (0x5E280A/0x5E483C are other objects)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001DA2D8",
+   "summary": "WRONG(setter exists: the init-job lambda Invoke at 0x1DA2D8 stores 1 to (AppMain+0x34)+8 = AppMain+0x3C after client->vf7 returns): lambda_c7b753... (vtable 0xDC8848, Invoke = 0x1DA2D8): r3=[this+4] (= &AppMain.client_slot at +0x34), calls sub_471E8([r3], [r3+4]) = (client, holder) and then 'dmb; strb 1,[r3,#8]' i.e. AppMain+0x3C = 1. sub_471E8 does client+0xC = holder, calls client->vtable[7] (MinecraftClient::vf7 = init, 2150 bytes) and then sub_47BF4. The delegate (WorkItemHandler, built by sub_1D9B68) is submitted in the AppMain constructor: sub_1D9DD4 calls sub_1D9B68(...,2,0) then sub_1DA4A4 = IThreadPoolStatics::RunAsync (vtbl slot 6, class L\"Windows.System.Threading.ThreadPool\"). The lambda (VA 0x5DA2D8) is inside the friend's scan range 0x5D0000-0x60B000, but it writes the flag through a pointer to the AppMain+0x34 slot (strb [slot,#8]) and is reached through a vtable, so neither a search for stores to [AppMain,#0x3C] nor an xref search can find it.",
+   "arm_signature": "void initJob(WorkItemHandler* this, IAsyncAction* op): client->platformHolder=holder; client->vf7(); AppMain.ready=1",
+   "x86_to_arm_notes": "THE key finding: client initialisation runs ASYNCHRONOUSLY on a ThreadPool worker started from the AppMain ctor. The host's fake ThreadPool (win32_host.c:6371) does run it on a new thread after Sleep(10). The host must not touch the client until AppMain+0x3C != 0.",
+   "expected_bytes": "2de918480df1080b04466368",
+   "evidence": [
+    "arm32re.py func 1da2d8 -> bl sub_471e8; dmb; movs r2,#1; strb r2,[r3,#8]",
+    "arm32re.py func 471e8 -> str r1,[r4,#0xc]; ldr r3,[r4]; ldr r3,[r3,#0x1c]; blx r3",
+    "arm32re.py dis 1d9f8c -> Allocate(0xc,0x58); bl 1d9b68; bl 1da4a4",
+    "arm32re.py func 1da4a4 -> IID b6bf67dd-84bd-44f8-ac1c-93ebcb9dba91 (IThreadPoolStatics), L\"Windows.System.Threading.ThreadPool\", vtbl slot 0x18"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.appmain_tick_role",
+   "x86_symbol": "friend claim (WORK_SUMMARY): AppMain::tick(int milliseconds) = sub_5DA5B4 drives the game; the host calls it with 16 each frame",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001DA5B4",
+   "summary": "WRONG(sub_1DA5B4 is AppMain::onKeyboardHeightChanged(int px): called only by the InputPane Showing/Hiding handlers sub_1DF714 (px = InputPane.OccludedRect.Height) and sub_1DF700 (px = 0); it is not a time tick): sub_1DF714: obtains InputPane via sub_1DE9CC (class L\"Windows.UI.ViewManagement.InputPane\"), calls IInputPane slot 10 (get_OccludedRect), converts the float at +0x1C (rect height) to int and calls sub_1DA5B4(AppMain,height); sub_1DF700 calls sub_1DA5B4(AppMain,0). Both are registered in the MainPage ctor on the InputPane add_Showing (slot 6) and add_Hiding (slot 8) events (0x1DD30C/0x1DD358). sub_1DA5B4 locks AppMain+0x10, multiplies the int by [platform+0x40] (platform scale, 0.0 until sub_4B55C ran!), and calls sub_59578(client, px). sub_59578: client+0x164 = (int)(px * flt_340D40) and screen->vtable[30]() (no argument). Screens that override vtable[30] are exactly the text-input ones (ChatScreen, CreateWorldScreen, TextEditScreen, OptionsScreen); StartMenuScreen's slot 30 is the no-op stub 0x40BF60.",
+   "arm_signature": "void AppMain::onKeyboardHeightChanged(AppMain* this /*r0*/, int px /*r1*/)",
+   "x86_to_arm_notes": "Calling it every frame with 16 tells the game the soft keyboard is 16*scale pixels tall every frame (harmless for StartMenu, wrong for text screens) and drives NOTHING. The real frame driver is the ThreadPool render loop (friend.missed_render_loop). Rename in host: AppMain_onKeyboardHeightChanged.",
+   "expected_bytes": "2de9b0480df10c0b26f64cff",
+   "evidence": [
+    "arm32re.py func 1df714 -> bl sub_1de9cc; ldr r3,[r3,#0x28]; vldr s0,[r7,#0x1c]; vcvt; bl sub_1da5b4",
+    "arm32re.py func 1df700 -> movs r1,#0; b.w sub_1da5b4",
+    "arm32re.py func 1da5b4 -> vcvt s0*[platform+0x40]; bl sub_59578",
+    "arm32re.py func 59578 -> movw 0x740d40 vmul; str.w r1,[r0,#0x164]; ldr r3,[r3,#0x78]; blx r3",
+    "scan of RTTI vtables with 'Screen' in the name: non-stub slot 30 only in ChatScreen, CreateWorldScreen, OptionsScreen, ControllerOptionsScreen, TextEditScreen",
+    "arm32re.py dis 1dd2e0 -> add_Hiding (slot 8) handler sub_1df700, add_Showing (slot 6) handler sub_1df714"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.client_delta_164",
+   "x86_symbol": "friend claim (WORK_SUMMARY): client+0x164 = delta ms; sub_459578(client, delta) calls screen->vtbl[30](screen, delta)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x00059578",
+   "summary": "WRONG(client+0x164 is the soft-keyboard height in GUI pixels written by sub_59578, not a frame delta in ms): see friend.appmain_tick_role. sub_59578 loads flt_340D40 (=1/guiScale), computes (int)(px*flt), stores it at client+0x164 and invokes [screen+0x78] with only the screen as argument (r0); no delta is passed. The early-out when client+0x6C is NULL is correct.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The friend's reading came from the field being first stored right before the call; the consumers (text screens) read it as a keyboard offset.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 59578 (58 bytes)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.client_hierarchy",
+   "x86_symbol": "friend claim (WORK_SUMMARY): MinecraftClient is 0x168 bytes, ctor sub_54E90 loads vtable 0x33FFCC; base Minecraft (base ctor sub_1D7D44, vtable 0xDC8704) derives from App (sub_46F40, vtable 0x33F824); factory sub_1D9CC0",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00054E90",
+   "summary": "CONFIRMED: sub_1D9CC0: new(0x168)+memset+bl sub_54E90(client,[r8],[r6]) (both args are 0 in the AppMain path); sub_54E90 -> sub_1D7D44 (loads .?AVMinecraft@@ vtable 0xDC8704 and calls sub_46F40 = App ctor with .?AVApp@@ vtable 0x33F824) then stores .?AVMinecraftClient@@ 0x33FFCC. Fields initialised by the ctor: 0xE8-0x118 zero, +0x11C zero, +0x13C=1, +0x148/+0x149/+0x14C zero, mutex at +0x15C (_Mtx_init), +0x164 zero.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": "0fb42de9f04f0df11c0b85b0",
+   "evidence": [
+    "arm32re.py func 54e90 -> bl 0x1d7d44; movw/movt 0x73ffcc; str.w r4,[r5,#0x118]; strb.w r3,[r5,#0x13c]; _Mtx_init",
+    "arm32re.py dis 1d7d44 -> bl sub_46f40; vtable .?AVMinecraft@@; arm32re.py rtti .?AVApp@@ -> 0x33f824"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.client_fields",
+   "x86_symbol": "friend claim (WORK_SUMMARY): client fields: +0x20/+0x24 w/h, +0x6C/+0x70 shared_ptr<Screen>, +0x74 byte, +0x118 texture/resource store, +0x11C Font, +0x13C byte=1, +0x148/+0x149/+0x14C deferred screen change, +0x15C mutex",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x00059638",
+   "summary": "CONFIRMED: setSize writes +0x20/+0x24; setScreen swaps the shared_ptr pair into +0x6C/+0x70 (sub_542A4 builds std::_Ref_count<Screen>) and handles the deferred change with +0x148 (flag), +0x149, +0x14C; +0x74 is the byte released through +0x12C/+0x120; +0x118 is created in vf7 (add r2,r6,#0x118 at 0x57F72, then 'startup.images', 'background.images', 'ingame.images', 'materials/common.json' are loaded through it) and +0x11C receives the Font (add r1,r6,#0x11C at 0x58234 after loading 'font/default8.png'). +0x68 ('Game*'): name unverifiable, and NULL before a world exists is normal (Minecraft::vf19 and setScreen only test it), so logging it as 0 is not a defect. NEW: client+0xC = the 8-byte platform holder, set by the init job (App::vf8 returns [[client+0xC]] = AppPlatform_Winrt*).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 59638 / 59738 / 57b84 / 47210 (App::vf8: ldr r3,[r0,#0xc]; ldr r0,[r3])",
+    "all.txt scan: stores to [rX,#0x118]/[#0x11c] in 0x50000-0x5c000 only in ctor 0x54e90 (zero) -- the real assignment goes through 'add r2,r6,#0x118' + helper in vf7"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.client_0xC_null_crash",
+   "x86_symbol": "friend claim (WORK_SUMMARY): setSize (sub_459738) crashes at 0x458718 because client+0xC is NULL in the host",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00058718",
+   "summary": "CONFIRMED: setSize -> sub_586EC(client,1) -> client->vtable[8] (App::vf8) -> returns 0 when client+0xC==0 -> 0x58718 'ldr r3,[r3]' on the null platform. The diagnosis of WHY it is null is wrong: client+0xC is assigned by sub_471E8 inside the async init job (see friend.appmain_ready_setter), which had not run yet when the host called setSize synchronously.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Never call vf20/setSize from the host before AppMain+0x3C is set.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py dis 58714 -> 00058716 mov r3,r0; 00058718 ldr r3,[r3]",
+    "arm32re.py func 47210 -> App::vf8 returns 0 if [this+0xC]==0"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.setsize_semantics",
+   "x86_symbol": "friend claim (WORK_SUMMARY): setSize(w,h,scale): width>=1000 -> GUI scale 4.0 (800 -> 3.0, 400 -> 2.0); flt_11DE814 (RVA 0xDDE814) = scale, flt_740D40 (RVA 0x340D40) = 1/scale; vtable slot 20 = 0x459738",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00059738",
+   "summary": "CONFIRMED: thresholds 0x3E8/0x320/0x190 -> 4/3/2/1 exactly as claimed; scale is stored at VA 0x11DE814 (RVA 0xDDE814) and its reciprocal at VA 0x740D40 (RVA 0x340D40, both in .data). Omissions: when width>=1000 AND the platform's vtable[18] (pixel density, float) > 15.0 the scale is 6.0, and the function also rewrites a 12-float rect (sub_53970), updates client+0x130's object, the +0x154/+0x158 pairs and finally calls screen->setSize(w*inv,h*inv) via sub_915E8 (that is the site where the worker thread died later). The signature is (client r0, int w r1, int h r2, float scale s0): pass scale 0.0f to let the game choose.",
+   "arm_signature": "void MinecraftClient::setSize(MinecraftClient* r0, int w r1, int h r2, float scale s0)",
+   "x86_to_arm_notes": "The host writing 4.0/0.25 straight into the two globals (lines 22597-22598) is a hack that bypasses the density test and the rect update; call setSize(w,h,0.0f) once the platform exists instead.",
+   "expected_bytes": "2de970480df10c0b2ded048b",
+   "evidence": [
+    "arm32re.py func 59738 -> cmp #0x3e8/#0x320/#0x190, vstr to 0x11de814, vdiv 1/scale -> 0x740d40",
+    "vtable 0x33ffcc slot 20 = 0x459739"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.setscreen_semantics",
+   "x86_symbol": "friend claim (WORK_SUMMARY): setScreen sub_459638 : deferred when +0x148, early-out if screen->vtbl[18]!=0, shared_ptr swap, Screen::init sub_490624(screen,client,w,h)*inv, screen->vtbl[19], sub_57C72C(game)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00059638",
+   "summary": "CONFIRMED: all steps present (resets sub_116370/116660/10F3A4/1166DC, deferred flag, [screen+0x48] check, sub_542A4 swap into +0x6C/+0x70, sub_90624(screen,client,w,h) with sizes multiplied by flt_340D40, [screen+0x4C], sub_17C72C when client+0x68 != 0). Addresses 0x490624/0x57C72C are VAs (RVAs 0x90624/0x17C72C).",
+   "arm_signature": "void MinecraftClient::setScreen(MinecraftClient* r0, Screen* r1)",
+   "x86_to_arm_notes": "",
+   "expected_bytes": "2de93c480df1100b0d460446",
+   "evidence": [
+    "arm32re.py func 59638 (full disassembly read)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.client_vf32_role",
+   "x86_symbol": "friend claim (WORK_SUMMARY): MinecraftClient::vtbl[32] = sub_458830 (start: create menu + setScreen)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00058830",
+   "summary": "WRONG(sub_458830 is not startup: it resets +0x108/+0x110/+0x128/+0x12C and creates a screen only when its 3rd argument r2 != 0: r1==0 -> StartMenuScreen (0x388, sub_995EC), r1!=0 -> 0x160-byte screen (sub_8FA14); then tail-calls Minecraft::vf32; i.e. a 'leave game / back to menu' helper): vtable 0x33FFCC slot 32 = 0x458831 is right; the semantics are not. The initial screen of a fresh start is created inside vf7 (init) -> ... -> sub_91A3C / ProgressScreen (0x174, sub_8F2E4) at 0x582E8-0x5830E, after textures and the font exist.",
+   "arm_signature": "void MinecraftClient::vf32(MinecraftClient* r0, int a r1, int b r2)",
+   "x86_to_arm_notes": "The host injecting a StartMenuScreen duplicated and raced against the engine's own sequence.",
+   "expected_bytes": "2de9f0490df1140b85b06f46",
+   "evidence": [
+    "arm32re.py func 58830 -> cbz r8; movs/0x388 new; bl 0x995ec; bl 0x59638; bl 0x1d86a4 (Minecraft::vf32)",
+    "BFS over direct calls: 0x57b84 -> 0x91a3c -> 0x918d8 -> 0x995ec (StartMenuScreen ctor) and 0x57b84 -> 0x59638"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.startmenu_screen",
+   "x86_symbol": "friend claim (WORK_SUMMARY): Touch::StartMenuScreen vtable VA 0x74266C (RVA 0x34266C), ctor sub_4995EC (RVA 0x995EC), size 0x388, buttons 'Play' / 'Play on Realms'",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x000995EC",
+   "summary": "CONFIRMED: RTTI .?AVStartMenuScreen@Touch@@ vtable RVA 0x34266C; allocation size 0x388 in sub_458830; string 'Play on Realms' at RVA 0x2254E8 referenced from sub_995EC+0x72. The ctor takes only this (r0): vf32 calls it exactly like the host does.",
+   "arm_signature": "void Touch::StartMenuScreen::ctor(StartMenuScreen* this /*r0*/)",
+   "x86_to_arm_notes": "",
+   "expected_bytes": "03b42de9b0480df10c0b8fb0",
+   "evidence": [
+    "arm32re.py rtti StartMenuScreen -> 0034266c",
+    "arm32re.py strx 'Play on Realms' -> sub_995ec+0x72",
+    "arm32re.py func 58830 -> mov.w r0,#0x388; bl 0x995ec"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.texture_crash_chain",
+   "x86_symbol": "friend claim (WORK_SUMMARY): crash chain: StartMenuScreen ctor -> sub_45A708 -> sub_4639A8 -> sub_4DCCBC -> sub_4DCC2C -> sub_4DC5E8 (std::map::find) with this=client+0x118=NULL; pc 0x4DC5F0",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x000DC5E8",
+   "summary": "CONFIRMED: the chain exists as described: sub_5A708 loads [client+0x118] and passes it to sub_639A8 (Texture wrapper) -> map lookup at this+4; the crash log shows r0=r4=4 at pc rva 0xDC5F0, lr 0xDCC40, and return addresses 0x639EA, 0x5A764, 0x999EA (StartMenuScreen ctor). The log also shows a SECOND crash on a worker thread (T317C) at the same pc, whose stack goes 0x59912 (setSize+0x1DA) -> sub_915E8 -> StartMenuScreen::vf3 (0x99F68): i.e. a screen already installed was being re-laid-out by setSize while +0x118 was still NULL. Which code installed that screen on the worker is UNRESOLVED (host race with the async init is the most likely explanation).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "friend win32craft.log lines 120-175 (two crashes, same pc)",
+    "toolkit func_of for the return addresses -> sub_5a708, sub_639a8, Touch::StartMenuScreen::vf3 (0x99f68), MinecraftClient::vf20 (0x59738), sub_915e8"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.client118_setter_5d31c",
+   "x86_symbol": "friend claim (WORK_SUMMARY): 0x45D364 inside sub_45D31C is a candidate setter/init for client+0x118",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0005D31C",
+   "summary": "WRONG(sub_45D31C = ImageButton::ImageButton (vtable .?AVImageButton@@ 0x340508); its +0x118/+0x11C are ImageButton members, not the client's): sub_5D31C stores vtable 0x340508, floats 16.0 at +0x110/+0x114 and zeroes +0x118/+0x11C of an ImageButton. The only client write to +0x118 in the constructor range is the zeroing at 0x54EFA (correct); the real creation is in MinecraftClient::vf7 (0x57F72, 0x58234).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 5d31c -> movw/movt 0x740508 '.?AVImageButton@@'"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.root_cause_diagnosis",
+   "x86_symbol": "friend claim (WORK_SUMMARY): client+0x118 and +0x11C are NULL because the host never runs the normal client/resource init (platform/resources)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00057B84",
+   "summary": "WRONG(the host does not 'skip' the client init; the init runs on a ThreadPool worker started by the AppMain ctor (client->vf7 = MinecraftClient::init) and the host read/used the client (and injected a screen) before it finished): MinecraftClient::vf7 (0x57B84, 2150 bytes) is that init: builds /games/com.mojang/minecraftpe paths, loads terrain.meta/items.meta/en_US, creates +0x118 (0x57F72), loads startup/background/ingame .images and materials/common.json, compiles all shaders (BFS: 0x57B84 -> 0xCDFCC -> 0xCD350 -> 0xCC0E4 -> 0xC9CD4 -> 0xD67BC -> 0xD65CC -> 0xD6A3C (D3DCompile caller)), loads font/default8.png into +0x11C, calls Minecraft::init (0x1D84B0: clientId.txt, setSize), and finally creates the first screen. The friend's earlier observation 'about 45 shaders compile in ~3.4 s, then the game is alive but Draw=0' is exactly this init finishing on the worker; their later 'fix' (reading +0x118 at t=0.4 s and injecting StartMenuScreen) is what crashed.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "FIX: after AppMain ctor, poll AppMain+0x3C (ldrb, acquire) with a timeout/log until 1, only then touch the client.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 57b84 strings: '/games', '/com.mojang', '/minecraftpe', 'images/', 'terrain.meta', 'items.meta', 'en_US', 'startup.images', 'background.images', 'ingame.images', 'materials/common.json', 'font/default8.png'",
+    "BFS reachability result printed by the audit: 0xd6a3c reachable from 0x57b84 in 7 calls",
+    "friend log: AppMain created at 297 ms, host crash at 406 ms; worker activations (MemoryManager x4) at 453 ms"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.draw0_explanation",
+   "x86_symbol": "friend claim (WORK_SUMMARY): Draw=0 DrawIndexed=0 ClearRTV=0 because the renderer is never invoked",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001D8A54",
+   "summary": "CONFIRMED: the observation is right, the explanation ('menu is drawn by the game, not XAML, black window') is incomplete: the per-frame engine entry is Minecraft::vf19 (0x1D8A54: pre-update vf28, N x tick vf31, vf29, then render vf30), called ONLY from the render-loop lambda (sub_1DA160) that the XAML page starts after init is ready. Nothing in the host ever calls it.",
+   "arm_signature": "void Minecraft::update(Minecraft* r0)  [vtable slot 19]",
+   "x86_to_arm_notes": "",
+   "expected_bytes": "2de978480df1100b05462b68",
+   "evidence": [
+    "arm32re.py func 1d8a54 -> vtable[0x70], loop vtable[0x7c], vtable[0x74], vtable[0x78]",
+    "arm32re.py func 1da160 -> client->vtable[0x4c] (slot 19 = Minecraft::vf19)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.shader_count_45",
+   "x86_symbol": "friend claim (WORK_SUMMARY): about 45 shaders compile in ~3.4 s, frame 300 at 5515 ms, exited=False",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": null,
+   "summary": "UNVERIFIABLE: no log in the delivered folder contains these runs (the only logs show the crashing build); the only D3DCompile call site is sub_D6A3C and it is reachable from vf7, so 'shaders compile at startup' is plausible and consistent with the async init, but the count and timings cannot be re-derived statically.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py impcallers D3DCompile -> 000d6c94 in sub_d6a3c",
+    "no match for 'shader' lines in TEST/MCPE_0.10.4.40/win32craft.log"
+   ],
+   "confidence": "low",
+   "verdict": "UNVERIFIABLE",
+   "unverified_note": "No log with shader lines exists in the delivered folder (win32craft.log only holds the crashing runs). The only D3DCompile call site is 0xD6C94 inside the ShaderProgram ctor 0xD6A3C; count/timing cannot be derived statically.",
+   "finder_arm_rva": "0x000D6A3C"
+  },
+  {
+   "id": "friend.shader_suffix_fl",
+   "x86_symbol": "friend claim (notes.md): FL uses 9_3+ so no shader-suffix throw (notes) / Surface RT tops out at 9_1 is not addressed",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x000D73FC",
+   "summary": "WRONG(sub_D73FC getShaderModelSuffix throws std::runtime_error 'Unkonwn feature level' for 9_1 (0x9100) and 9_2 (0x9200); only 9_3 ('_level_9_3') and >=10_0 (empty suffix) are accepted): sub_D73FC(string* out, UINT featureLevel): 0x9300 -> L\"_level_9_3\" (VA 0x6351F0); 0xA000/0xA100/0xB000/0xB100 -> empty string; anything else -> builds 'Unkonwn feature level @ `anonymous-namespace'::getShaderModelSuffix' and throws runtime_error. Called from sub_D6A3C's compile path (callers: 0xD6AE4). The game never asks for 9_1; its device creation list also omits it.",
+   "arm_signature": "void getShaderModelSuffix(std::string* out /*r0*/, UINT featureLevel /*r1*/)",
+   "x86_to_arm_notes": "For the 9_1 target the host must (a) rewrite the D3D11CreateDevice level list, (b) hook/patch sub_D73FC to return L\"_level_9_1\" (a data patch of the pool/immediates or a trampoline) and (c) expect that the game's HLSL (written for ps/vs_4_0_level_9_3) may exceed 9_1 limits (64 ALU slots, no dynamic flow); this is the user-stated hard constraint and the friend never touched it.",
+   "expected_bytes": "2de990480df1080b2af728f8",
+   "evidence": [
+    "arm32re.py func d73fc -> cmp r1,#0xa100/#0x9300/#0xa000/#0xb000/#0xb100; movw 0x51f0 '_level_9_3'; string 'Unkonwn feature level'",
+    "arm32re.py strx '_level_9_3' -> only sub_d73fc+0x30"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.gui_scale_globals",
+   "x86_symbol": "friend claim (WORK_SUMMARY): flt_11DE814 = RVA 0xDDE814 (GUI scale), flt_740D40 = RVA 0x340D40 (1/scale)",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": "0x00DDE814",
+   "summary": "CONFIRMED: both are floats in .data (0x33F000+) written by setSize; writable, so the host's direct stores work (but see friend.setsize_semantics).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py dis 59738 -> movw/movt 0x011de814 and 0x00740d40 (.data)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.dispatcher_timer_claim",
+   "x86_symbol": "friend claim (notes.md): frame driving likely via DispatcherTimer and/or the AppMain activation handler; sub_1df714/sub_1df8a4 are timer-ish with 0x7a120",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001DCE94",
+   "summary": "WRONG(the 50 ms DispatcherTimer is a readiness poller, not the frame driver; frames come from the ThreadPool render loop; 0x7A120 = 500000 ticks = 50 ms): sub_1DCE94 (called once from the MainPage ctor at 0x1DD53A) activates L\"Windows.UI.Xaml.DispatcherTimer\" (RVA 0x2E29C0, IID E9961E6E...) and builds a 50 ms timer with a Tick handler; the handler is sub_1DF8A4: if AppMain is ready (sub_1DA310) it Stop()s the timer (MainPage+0x84, IDispatcherTimer slot 12), flips the visibility of the XAML element at MainPage+0x60 (sub_1E1CF0 x2), calls sub_1DA634(AppMain, MainPage+0x5C, +0x64, +0x68) and then sub_1DA8A8 (start render loop). sub_1DF714 is the InputPane Showing handler, unrelated.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1df8a4 -> sub_1da310 gate; QI IID D160CE46...; vtbl[0x30]; sub_1e1cf0; sub_1da634; sub_1da8a8",
+    "arm32re.py strx 'Windows.UI.Xaml.DispatcherTimer' -w -> 002e29c0 in sub_1dce94+0x4e",
+    "arm32re.py dis 1dd52c -> bl sub_1dce94; str r4,[r5,#0x84]",
+    "arm32re.py func 1dcf5c -> 001dd59e ldr r2,[pc]; pool[001dd870]=0x0007a120 ; ldr r1,[r1,#0x1c]; blx r1 (IDispatcherTimer::put_Interval, slot 7) on the timer at [r7,#0x90]"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.runframe_role",
+   "x86_symbol": "friend claim (WORK_SUMMARY): runFrame sub_5DA634 (XAML path) ... on desktop without XAML the path is unusable",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001DA634",
+   "summary": "WRONG(sub_5DA634 / RVA 0x1DA634 is 'AppMain::onPanelSizeChanged' (platform + size init), not runFrame; its arguments are XAML objects, it calls sub_4B55C and client->setSize): sub_1DA634(AppMain r0, IInspectable* panel r1, ? r2, ? r3): scoped_lock(AppMain+0x10); sub_1DAC80 (Window statics) + sub_1DAACC; sub_4B55C(platform, window, panel, r2, r3) = AppPlatform_Winrt::initialize (computes DPI scale into platform+0x38/+0x3C/+0x40 from DisplayInformation/DR, and calls HID::Initialize 0x111C1C, the input hookup); then QI panel for IID 676D0BE9-B65C-41C6-BA40-58CF87F201C1, reads its ActualWidth/Height via sub_1DAA58 (vtbl+0x5C), sets platform width/height (sub_4FA40 +0x30, sub_4FA20 +0x34) and calls client->vtable[20] setSize. It touches only a handful of WinRT interfaces, so a fake panel (IUIElement-class object returning ActualWidth/ActualHeight) plus fakes for Window/DisplayInformation would let it run unmodified (README decision rule: favours the hybrid/faithful architecture).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1da634 (full)",
+    "arm32re.py func 4b55c (full): sub_111c1c = HID::Initialize, sub_4b054 DR::get, sub_4af58 DisplayInformation (L\"Windows.Graphics.Display.DisplayInformation\" at sub_4af58+0x4c)",
+    "arm32re.py names: 111c1c 'HID::Initialize(HID,CoreWindow,SwapChainPanel|null,TextBox,focusPanel)' (label from the recon agents)"
+   ],
+   "confidence": "medium",
+   "verdict": "CORRECTED",
+   "verifier_note": "0x1DA634 is the attach/size routine (toolkit label attachUi). Confirmed: scoped_lock(AppMain+0x10), Window.Current (0x1DAC80) -> CoreWindow (0x1DAACC), AppPlatform_Winrt::initInput 0x4B55C, platform width/height via 0x4FA40/0x4FA20, client->vtable[20] setSize with s0 = 0.0f (literal at 0x1DA8A4). Corrections: the panel size is read with IUIElement::get_RenderSize (vtable slot 23 = 0x5C, helper 0x1DAA58, out-param Size* in r1), not ActualWidth/ActualHeight; w=(RenderSize.w+0.5)*platform+0x3C, h=(RenderSize.h+0.5)*platform+0x40; arguments are r1=SwapChainPanel, r2=TextBox, r3=focus control. Note the finder's 'sub_5DA634 favours faithful architecture' conclusion needs Window.Current/CoreWindow fakes: Windows.UI.Xaml.Window is not in the 1.2.8 fake set."
+  },
+  {
+   "id": "friend.mainpage_handlers_unimplemented",
+   "x86_symbol": "friend claim (win32_host.c): (review) the host replaces/implements the MainPage event handlers",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "FINDING: MainPage registers handlers for: InputPane Showing/Hiding (1DF714/1DF700), CoreWindow.VisibilityChanged (strings at 0x2E24F8; handler sub_1DF9AC), SwapChainPanel composition-scale event (TypedEventHandler<SwapChainPanel,Object>, sub_1E0034), DisplayInformation event (sub_1DFFCC), SizeChanged (sub_1DF618 -> DR::CreateWindowSizeDependentResources sub_1DC0B4), HardwareButtons.BackPressed (sub_1E1798). The host implements none of them (WM_SIZE only logs once, no back key, no visibility handling).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py strx on the TypedEventHandler type strings (HID/CoreWindow key+pointer 0x247F30/0x247FF8, VisibilityChanged 0x2E24F8, SwapChainPanel 0x2E2690, DisplayInformation 0x2E25D8), HardwareButtons 0x2E27E0 in sub_1E1798"
+   ],
+   "confidence": "medium",
+   "verdict": "CORRECTED",
+   "verifier_note": "Full list from the MainPage ctor handler pointers (RVA = pointer - 0x400000 - 1): VisibilityChanged 0x1DF9AC, DisplayInformation.DpiChanged 0x1DF67C, OrientationChanged 0x1DF76C, DisplayContentsInvalidated 0x1DF618 (-> DR 0x1DC0B4 device validation), SwapChainPanel CompositionScaleChanged 0x1DF510 (-> DR::SetCompositionScale 0x1DBBCC), SizeChanged 0x1DF808 (-> SetSwapChainPanel 0x1DBD40, SetLogicalSize 0x1DBC80, AppMain::OnWindowSizeChanged 0x1DA32C), BackPressed 0x1DF4E8, InputPane Hiding 0x1DF700 / Showing 0x1DF714, timer tick 0x1DF8A4. The finder's list is wrong on three entries: 0x1DF618 is not SizeChanged; 0x1E0034 and 0x1DFFCC are 26-byte stubs, not the composition-scale / DisplayInformation handlers; 0x1E1798 is the add_BackPressed registration helper, not the handler. DpiChanged and OrientationChanged were missing."
+  },
+  {
+   "id": "friend.host_wm_size_and_present",
+   "x86_symbol": "friend claim (win32_host.c): the WP8.1 game never Presents itself, so the host presents Present(chain,1,0) after tick(16) (comment at win32_host.c:22303 and render_game_0104)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": "0x001DBB10",
+   "summary": "WRONG(the game does Present: from its render thread through DeviceResources::present sub_1DBB10, Present(0,0)): once the render loop runs, the game calls sub_1DBB10 (swap chain DR+0xC vtbl 0x20 = Present(0,0), re-creates device objects on 0x887A0005/0x887A0007 and calls owner->vtable[0]/[1] around it). With the host fallback two threads would call Present on the same chain, and the fallback test (game_present_success_count unchanged during a synchronous tick) is meaningless for an async render thread. DR::present also needs owner (DR+0x74) vtable slots 0 and 1 to exist (AppMain vtable 0xDC8830: both are the ret stub 0x40BF60).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Remove the fallback Present once the render thread is active; hook Present (already done) only for statistics and HWND handling.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1dbb10 -> ldr r3,[r3,#0x20] Present(0,0); cmp 0x887a0005/0x887a0007; vtable calls on [r4,#0x74]",
+    "win32_host.c:22653-22658 render_game_0104"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.host_thread_apartment",
+   "x86_symbol": "friend claim (win32_host.c): host initialises COM as RO_INIT_MULTITHREADED on the main thread; game worker threads are raw CreateThread threads",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "UNVERIFIABLE: The real app's main/UI thread is a STA (Application::Start); the host uses MTA (RoInitialize returned S_FALSE 0x1 in the log, i.e. something had already initialised MTA before: most likely win32craft.dll's own load path). The fake ThreadPool starts workers with CreateThread (no RoInitialize), runs the handler after Sleep(10). Nothing in the audited code needs an STA yet because all UI-ish classes are fakes; it will matter as soon as a real WinRT class (InputPane, DisplayInformation, CoreWindow) is activated for real.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Keep all UI-class fakes in the host; do not fall through to real WinRT for XAML/Window/InputPane/DisplayInformation.",
+   "expected_bytes": null,
+   "evidence": [
+    "friend log: 'RoInitialize(RO_INIT_MULTITHREADED) [native combase]: HRESULT 0x00000001'",
+    "win32_host.c:6371-6410 fake_thread_pool_queue/win32_work_item_thread"
+   ],
+   "confidence": "low",
+   "verdict": "UNVERIFIABLE",
+   "unverified_note": "Cannot be settled statically. Facts: the exe's startup wrapper 0x20405C is labelled [MTAThread] by recon but the vccorlib InitializeData argument is a static at RVA 0xDC9F5C holding 2 (semantics undecoded); the friend log shows RoInitialize(MULTITHREADED) = S_FALSE on the host thread, the fake ThreadPool uses plain CreateThread.",
+   "finder_arm_rva": null
+  },
+  {
+   "id": "friend.host_async_operation_status",
+   "x86_symbol": "friend claim (win32_host.c): (not claimed) the fake IAsyncInfo reports AsyncStatus::Completed(1) forever and Cancel() is a no-op",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": "0x001DA160",
+   "summary": "FINDING: the render loop lambda (sub_1DA160) QIs the IAsyncAction it is invoked with for IAsyncInfo (IID 00000036-0000-0000-C000-000000000046 at VA 0x60FBD8), calls get_Status (vtbl slot 7) and keeps looping only while the status is Started (0); sub_1DA9D4 stops it with IAsyncInfo::Cancel (slot 9). The friend's fake_async_info_get_status (win32_host.c:5046) returns 1 (Completed) unconditionally, so the loop would exit on its first iteration, and Cancel does nothing, so it could never be stopped.",
+   "arm_signature": "HRESULT IAsyncInfo::get_Status(void* this, int* out)  [slot 7]; Cancel [slot 9]",
+   "x86_to_arm_notes": "Implement a per-operation fake IAsyncAction/IAsyncInfo: status Started(0) while the work item runs, Canceled(2) after Cancel(), Completed(1) when Invoke returns.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1da160 -> QI iid 0x60fbd8; ldr r3,[r3,#0x1c]; cmp r3,#0; moveq r5,#1; cbz r5,exit",
+    "win32_host.c:5046 fake_async_info_get_status -> *value = 1",
+    "arm32re.py func 1da9d4 -> ldr r3,[r3,#0x24] (Cancel)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.host_calls_abi_thumb",
+   "x86_symbol": "friend claim (win32_host.c): ARM_CODE(image, RVA) calls: make_dr(out), AppMain ctor(this, shared_ptr*), setSize typedef, StartMenu ctor(this), setScreen(client, screen), tick(app, int)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "CONFIRMED: calling conventions are plain AAPCS and match the game's code: make_dr (r0=out), AppMain ctor (r0,r1), StartMenu ctor (r0 only, like vf32), setScreen (r0=client, r1=screen), setSize (r1,r2,s0 float), AppMain::onKeyboardHeightChanged (r0, r1 int). ARM_CODE sets the Thumb bit; operator new is taken from the IAT cell 0x20B5E0 (Thumb bit set by the loader). No convention bug found in the calls themselves; the defect is in WHICH functions are called (see tick role) and WHEN.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func on each target: prologues take r0/r1 as above"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.host_unvalidated_memory",
+   "x86_symbol": "friend claim (win32_host.c): (review) the host reads/writes game memory without validation or synchronisation",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "FINDING: initialize_game_app_0104 reads client+0x20..0x164 and writes client+0x20/+0x24 and the two .data floats right after the AppMain ctor, while the worker is running vf7 (which reads those very fields in Minecraft::init -> setSize): a data race; IsBadReadPtr(client,0x168) only checks mapping. initialize_game_d3d_0104 trusts DR+4/+8 after make_dr, calls the DR with a stack of hooks installed on the SHARED d3d11 context vtable (process-wide) before the swap chain exists, and calls DR functions without the AppMain critical section (the real code holds AppMain+0x10 around every DR/platform operation).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Wait for ready, then take the AppMain critical section (scoped_lock = msvcr120_app Concurrency::critical_section at AppMain+0x10) for any host call into AppMain/DR/platform.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c:22595-22601 (writes) vs arm32re.py func 1d84b0 (reads client+0x20/0x24)",
+    "win32_host.c:22342-22369 install_0104_context_debug_hooks patches vtable cells of d3d11.dll's context class"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.host_first_clear_and_white",
+   "x86_symbol": "friend claim (win32_host.c): why the window stays white",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "UNVERIFIABLE: nothing ever draws into the back buffer: WSD does not clear (friend.dr_wsd_role), the engine render path is never entered (friend.draw0_explanation), the class paints nothing (WM_ERASEBKGND returns 1, WM_PAINT does BeginPaint/EndPaint only), and the only content is the presented never-initialised DISCARD back buffer (initial Present in initialize_game_d3d_0104 and the per-frame fallback Present). An uninitialised back buffer or a 'Not Responding' ghost window both render white on some stacks. Which of these produces the exact white the user saw cannot be proven offline.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Minimum diagnostic: ClearRenderTargetView once after WSD with a known colour (proves the present path) before debugging the engine.",
+   "expected_bytes": null,
+   "evidence": [
+    "win32_host.c:22669-22698 window_proc_0104",
+    "friend log: initial HWND backbuffer present: HRESULT 0x00000000, no clear counted"
+   ],
+   "confidence": "medium",
+   "verdict": "UNVERIFIABLE",
+   "unverified_note": "Not provable offline. New observation: the window class brush is COLOR_WINDOWTEXT+1 (black), WM_ERASEBKGND returns 1 (win32_host.c:22774-22780), so white is not the class background. Remaining candidates: the uncleared DXGI_SWAP_EFFECT_DISCARD back buffer that the host presents once at startup (driver-defined content), or a Not-Responding ghost: in the delivered log the main thread sits in the unhandled-exception path after the first AV while the process stays alive for 8+ s (watchdog line at 8859 ms).",
+   "finder_arm_rva": null
+  },
+  {
+   "id": "friend.host_host_is_128_hack",
+   "x86_symbol": "friend claim (win32_host.c): (review) install_arm32_iat_hooks_0104 sets host_is_128 = TRUE so the 1.2.8 fake-WinRT profile is used",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "FINDING: works for Package/ApplicationData/ThreadPool/MemoryManager (all four activations in the log are served), but pulls in 1.2.8-specific behaviour (the log banner still says 'Win32Craft 1.2.8 ARM32 Win32Bootstrap entered', the 1.2.8 CoreWindow/HID fakes, 1.2.8 user-data layout). The 0.10.4 exe activates additional classes the 1.2.8 profile does not cover: Windows.UI.ViewManagement.InputPane, Windows.UI.Xaml.Window, Windows.Graphics.Display.DisplayInformation, Windows.UI.Xaml.DispatcherTimer, Windows.Phone.UI.Input.HardwareButtons, Windows.Phone.Devices.Notification.VibrationDevice, Windows.ApplicationModel.Store.CurrentAppSimulator, Windows.Web.Http.*, Windows.Networking.Connectivity.NetworkInformation (README_V0104).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Build a 0.10.4 profile with its own activation table; do not flip host_is_128.",
+   "expected_bytes": null,
+   "evidence": [
+    "friend log lines: 'ARM32 activation #1..#7 Windows.ApplicationModel.Package/ApplicationData/ThreadPool/MemoryManager x4'",
+    "arm32re.py strx for the class strings (see mainpage_handlers_unimplemented)"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.host_input_missing",
+   "x86_symbol": "friend claim (win32_host.c): (review) the host forwards no input and no lifecycle to the game",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x004B290",
+   "summary": "FINDING: window_proc_0104 handles only CLOSE/DESTROY/ERASEBKGND/PAINT/SIZE; nothing is queued for the game. The game receives input through AppPlatform_Winrt::queueInputEvent (0x4B290) / pollInputEvent (0x4B300), drained each frame by pumpInput (0x50EAC) from the render loop, and the HID controller wires CoreWindow key/pointer events in HID::Initialize (0x111C1C, called from sub_4B55C). Either run sub_4B55C with a fake CoreWindow (as in 1.2.8) or build events in the host and call queueInputEvent.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py names: 4b290 AppPlatform_Winrt::queueInputEvent, 4b300 pollInputEvent, 50eac pumpInput, 111c1c HID::Initialize (labels by the recon agents)"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.missed_init_job",
+   "x86_symbol": "friend claim (audit): (missed) the AppMain ctor starts the client init as an async ThreadPool job",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001D9DD4",
+   "summary": "FINDING: AppMain::initPlatformAndClient (sub_1D9DD4): creates the 8-byte holder (sub_1D9C98), AppPlatform_Winrt (0x88, ctor 0x494C0) -> *holder, the client (sub_1D9CC0) -> AppMain+0x34, sets platform+0x10 = client, resolves two WinRT objects (sub_1DAB28 and sub_1DAD20; the log shows the Package and ApplicationData activations at this point), QIs one for IStorageItem (IID 4207A996-CA2F-42F7-BDE8-8B10457A7F30), converts its Path HSTRING and assigns the std::string to client+0x78 and client+0x90, builds the WorkItemHandler (sub_1D9B68) and submits it with IThreadPoolStatics::RunAsync (sub_1DA4A4). The worker runs sub_471E8: client+0xC = holder; client->vf7(); then AppMain+0x3C = 1.",
+   "arm_signature": "void AppMain::initPlatformAndClient(AppMain+0x34 /*r0*/)",
+   "x86_to_arm_notes": "Host contract: provide fake Package.Current.InstalledLocation.Path and ApplicationData.Current.LocalFolder.Path (already done), a ThreadPool that really runs the handler on another thread (already done), then WAIT.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1d9dd4 (full read)",
+    "friend log: ARM32 activation #1 Package, #2 ApplicationData, #3 ThreadPool during 'initialize_game_app_0104'"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.missed_render_loop",
+   "x86_symbol": "friend claim (audit): (missed) the real frame driver is a ThreadPool render loop started by AppMain::startRenderLoop",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001DA8A8",
+   "summary": "FINDING: sub_1DA8A8: if AppMain+0xC is null or its IAsyncInfo status != Started, build a WorkItemHandler (sub_1D9C00, lambda vtable 0xDC883C whose Invoke 0x1DA300 -> sub_1DA160) and submit it with IThreadPoolStatics::RunWithPriorityAndOptionsAsync(handler, High(1), TimeSliced(1)) (sub_114078, vtbl slot 8); the IAsyncAction goes to AppMain+0xC. The loop body sub_1DA160: while status==Started { scoped_lock(AppMain+0x10); if ready { AppPlatform_Winrt::pumpInput(platform) (0x50EAC); client->vtable[19]() = Minecraft::update (0x1D8A54, ticks + render); DeviceResources::present(DR) (0x1DBB10) } }. Triggers: the 50 ms DispatcherTimer tick (sub_1DF8A4, after ready) and the VisibilityChanged handler (sub_1DF9AC) for visible=true; sub_1DA9D4 stops it (IAsyncInfo::Cancel) when invisible.",
+   "arm_signature": "void AppMain::startRenderLoop(AppMain* r0)  [idempotent]",
+   "x86_to_arm_notes": "Host contract: call the same sequence (or call sub_1DA8A8 with a real AppMain after providing a status-correct fake IAsyncAction), keep AppMain+0x10 locking semantics, and stop the host-side Present.",
+   "expected_bytes": "2de9f0490df1140b26f6d2fd",
+   "evidence": [
+    "arm32re.py func 1da8a8 / 1da160 / 1da9d4 / 114078 / 1d9c00",
+    "arm32re.py ptrs dc883c -> FunctorCapture vf1 = 0x5da301 -> b.w sub_1da160",
+    "arm32re.py callers 1da8a8 -> 1df4de (MainPage::vf11), 1df98c (sub_1df8a4), 1df9f0 (sub_1df9ac), 1e01aa (MainPage::vf8)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.missed_platform_init",
+   "x86_symbol": "friend claim (audit): (missed) AppPlatform_Winrt::initialize / platform scale",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0004B55C",
+   "summary": "FINDING: AppMain::tick/keyboard path and the render loop assume platform+0x30/+0x34 (screen w/h; defaults 0x780 x 0x438 = 1920x1080 from the ctor), platform+0x38 (dpi factor), +0x3C/+0x40 (scale X/Y, copied from DR+0x60/+0x64; ZERO until sub_4B55C runs). Only sub_4B55C (called from onPanelSizeChanged) fills them and runs HID::Initialize. The friend zeroed none and filled none of these, calls the keyboard-height function with 16 every frame (-> 16*0.0 = 0), and wrote the GUI-scale globals by hand.",
+   "arm_signature": "void AppPlatform_Winrt::initialize(platform r0, window r1, panel r2, ... stack: r3, [sp])",
+   "x86_to_arm_notes": "",
+   "expected_bytes": "2de9f0480df1100b2ded028b",
+   "evidence": [
+    "arm32re.py func 494c0 -> str 0x780 at +0x30, 0x438 at +0x34",
+    "arm32re.py func 4b55c -> str r3,[r6,#0x3c]; str r3,[r6,#0x40] from sub_4b054()+0x60/+0x64; vdiv/vstr [r6,#0x38]"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.missed_xaml_objects_needed",
+   "x86_symbol": "friend claim (audit): (missed) the exact XAML/WinRT surface the post-ctor path touches",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "FINDING: from MainPage ctor + handlers + onPanelSizeChanged + initialize: Window.Current (sub_1DAC80, class Windows.UI.Xaml.Window), a CoreWindow (sub_1DAACC), the SwapChainPanel/IUIElement objects at MainPage+0x5C/+0x60/+0x64/+0x68 (ActualWidth/ActualHeight via IID 676D0BE9-B65C-41C6-BA40-58CF87F201C1 slots 0x5C..; visibility setter sub_1E1CF0), a DispatcherTimer (IDispatcherTimer Stop slot 12), DisplayInformation (sub_4AF58: GetForCurrentView + LogicalDpi/ResolutionScale getters at vtbl +0x2C/+0x30/+0x34), InputPane (OccludedRect), HardwareButtons, and for input a CoreWindow + optional SwapChainPanel/TextBox/focus panel in HID::Initialize. All of them are small interface surfaces; decision per README rule: hybrid replay of {AppMain ctor, wait ready, onPanelSizeChanged with fakes, startRenderLoop, resize via DR WSD} is cheaper than faking XAML load.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py func 1dac80 / 1daacc / 1daa58 / 4af58 / 1de9cc / 1e1798 and the strx output above"
+   ],
+   "confidence": "medium",
+   "verdict": "CORRECTED",
+   "verifier_note": "Surface list is right in spirit; corrections/additions: panel size comes from IUIElement::get_RenderSize (slot 23) not ActualWidth/Height; ISwapChainPanel QI (IID 0x60FBF8) + get_CompositionScaleX (slot 6) when a panel is passed to 0x4B55C; DisplayInformation getters at slots 0x2C/0x30/0x34; IUIElement::put_Visibility (slot 22) on MainPage+0x60; Window.Current -> IWindow::get_CoreWindow (0x1DAC80/0x1DAACC) is needed by 0x1DA634; SizeChangedEventArgs::get_NewSize (slot 7) for 0x1DA32C. CoreDispatcher/IDependencyObject fakes are only needed if DR+0xC is ever null at WSD time (initial create or device-lost recovery)."
+  },
+  {
+   "id": "friend.next_blocker",
+   "x86_symbol": "friend claim (audit): (prediction) single most likely next blocker after removing the StartMenuScreen injection",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": "0x001DA160",
+   "summary": "PREDICTION: Once the host waits for AppMain+0x3C==1 and stops injecting screens, nothing starts the render loop, and if the existing fake ThreadPool/IAsyncAction is used to start sub_1DA8A8, the loop terminates immediately because get_Status returns Completed. So the first visible failure is: no Minecraft::update / DR::present ever executes (still Draw=0), then (once status is fixed) platform scale = 0 / client size 0 until sub_4B55C+setSize are replayed, then the 9_1 hard-fail (CreateDevice list and getShaderModelSuffix) on the real device.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Order of work for the host: (1) wait ready (log duration; vf7 compiles all shaders: ~3 s on Win11), (2) replay onPanelSizeChanged with fakes (or set platform w/h/scale + client->setSize(w,h,0)), (3) fake IAsyncAction status, (4) startRenderLoop, (5) remove host Present, (6) input via queueInputEvent, (7) 9_1 (device list + shader suffix patch + 9_1-safe shaders).",
+   "expected_bytes": null,
+   "evidence": [
+    "see friend.host_async_operation_status, friend.missed_render_loop, friend.missed_platform_init, friend.shader_suffix_fl"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "friend.reuse_verdict",
+   "x86_symbol": "friend claim (audit): (verdict) which friend facts are reliable seeds",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "REUSE VERDICT: RELIABLE (re-derived here, safe to seed): exe identity, all IAT cells, boot chain, call site 0x200A72 + trampoline mechanics + section geometry (but NOT the RWX flags), App2/MainPage/AppMain/DR vtable RVAs and sizes, MainPage+0x74/0x7C layout, make_shared<DR> ABI and DR field offsets, CreateDeviceResources level list, DR global 0xE2AFC4, GPU whitelist table (RVA 0xDC8850, stride 0x14), WSD structure and the SetMatrixTransform skip BYTES, client size 0x168/ctor/vtable/factory, setScreen/setSize behaviour, StartMenuScreen facts, GUI scale globals. WRONG/MISLEADING (discard): 'AppMain::tick' role and the 'delta ms' reading of client+0x164, 'Screen::update = vtable[30]', 'runFrame', the SetMaximumFrameLatency explanation, 'first clear in WSD', '+0x118 setter sub_45D31C', 'vf32 = start', 'host skips client init', 'frame driving via DispatcherTimer', 'FL uses 9_3+' reasoning, the DisplayResources name. UNVERIFIABLE (do not rely): shader count/timings, frame timings, the white-window explanation.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Their code: discard (model-written, wrong frame driver, RWX patch section, RWX code patch, host_is_128 hack, hard-coded 1280x720). Their notes are useful only as an index of where to look.",
+   "expected_bytes": null,
+   "evidence": [
+    "every friend.* fact above"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  }
+ ],
+ "port_instructions": [
+  "Do not copy any friend code. Re-implement 0.10.4 from our own facts; use their notes only to know where to look.",
+  "Patcher (own): keep DYNAMIC_BASE, clear APPCONTAINER (DllCharacteristics 0x9140 -> 0x8140), add .d3imp as RW data (0xC0000040, NOT 0xE0000060) holding win32craft.dll!Win32Bootstrap, redirect the BL at RVA 0x200A72 (bytes 03f043fa, target 0x203EFC) to a PIC trampoline placed in .text slack (as tools/1.2.8-arm32-patcher.py does); verify with bytes 03f043fa and recompute everything from the parsed PE.",
+  "Startup order for the host (hybrid): (1) hooks (IAT cells 0x20B000/0x20B1A4/0x20B5D4/0x20B5FC by name), (2) make_shared<DeviceResources> RVA 0x1DCE2C (device created through the hooked D3D11CreateDevice with a rewritten level list: append/replace with 9_1 and add BGRA), (3) HWND swap chain into DR+0xC, DR+0x30 dummy non-null, DR floats 0x4C/0x50/0x60/0x64, ISwapChain2::SetMatrixTransform made a no-op, DR CreateSizeDependentTargets 0x1DB158, (4) AppMain new(0x40)+zero+ctor 0x1D9D14 (this starts the async init on a ThreadPool worker), (5) WAIT for AppMain+0x3C != 0 (ldrb + barrier; log how long), (6) replay AppMain::onPanelSizeChanged 0x1DA634 with fakes (or platform+0x30/0x34/0x38/0x3C/0x40 + client->setSize(w,h,0.0f)), (7) start the render loop (0x1DA8A8) with a status-correct fake IAsyncAction, (8) stop calling Present from the host.",
+  "Never call AppMain 0x1DA5B4 as a frame tick; it is the soft-keyboard height callback (px).",
+  "Never touch client fields or call client vtable slots before AppMain+0x3C == 1; take AppMain+0x10 (critical_section) around host calls into AppMain/DR/platform.",
+  "FL 9_1: rewrite the feature-level array {B100,B000,A100,A000,9300} passed at the call 0x1DB028 (in the IAT hook), patch getShaderModelSuffix 0xD73FC to return '_level_9_1' for 0x9100/0x9200, and check the shaders against 9_1 limits.",
+  "SetMatrixTransform: replace the code patch at 0x1DB56C by a data patch (vtable slot 34 of the swap chain) to avoid PAGE_EXECUTE_READWRITE on the device.",
+  "Run tools/loadcheck on the Surface RT with the 0.10.4 folder (VCLibs 120 DLLs + exe) before debugging anything else."
+ ],
+ "open_questions": [
+  "Second crash on thread T317C (setSize -> screen->vf3 -> NULL texture map): which code installed the screen it re-laid-out is unresolved (host race vs engine flow).",
+  "Exact identity of the XAML objects at MainPage+0x5C/+0x60/+0x64/+0x68 and the class of IID D160CE46... beyond 'IDispatcherTimer' (inferred from slot 12 Stop usage) and 676D0BE9... (IUIElement-class, ActualWidth/ActualHeight via slot 0x5C).",
+  "Whether Windows RT 8.1 serves api-ms-win-core-errorhandling-l1-1-2 / localization-l1-2-1 / rtlsupport-l1-2-0 / fibers-l1-1-1 / heap-l1-2-0 / debug-l1-1-1 / libraryloader-l1-1-1 / processenvironment-l1-2-0 natively (not in our loadcheck log).",
+  "Whether a W+X image section or PAGE_EXECUTE_READWRITE on image code is rejected on Windows RT 8.1 (never tested; proven layout from 1.2.8 avoids both).",
+  "Whether the game's HLSL compiles and runs under ps/vs_4_0_level_9_1 (only _level_9_3 is requested by the game).",
+  "Why the window is exactly white for the user (no clear + no render + no paint; see friend.host_first_clear_and_white)."
+ ],
+ "_summary": {
+  "facts": 67,
+  "confidence": {
+   "high": 53,
+   "medium": 12,
+   "low": 2
+  },
+  "verdicts": {
+   "CONFIRMED": 41,
+   "WRONG": 12,
+   "UNVERIFIABLE": 3,
+   "FINDING": 9,
+   "PREDICTION": 1,
+   "REUSE": 1
+  }
+ }
+}

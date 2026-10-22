@@ -1,0 +1,36 @@
+﻿function MinecraftClient::vf30  [00056bdc..00056c2e) len=82
+00056bdc: 2de91848 push.w   {r3, r4, fp, lr}            
+00056be0: 0df1080b add.w    fp, sp, #8                  
+00056be4: 0446     mov      r4, r0                      
+00056be6: 2368     ldr      r3, [r4]                    
+00056be8: 1b6a     ldr      r3, [r3, #0x20]             
+00056bea: 9847     blx      r3                          
+00056bec: 50b1     cbz      r0, #0x56c04                
+00056bee: 94f83c31 ldrb.w   r3, [r4, #0x13c]            
+00056bf2: 3bb1     cbz      r3, #0x56c04                
+00056bf4: 2368     ldr      r3, [r4]                    
+00056bf6: 2046     mov      r0, r4                      
+00056bf8: 1b6a     ldr      r3, [r3, #0x20]             
+00056bfa: 9847     blx      r3                          
+00056bfc: 0346     mov      r3, r0                      
+00056bfe: 1b68     ldr      r3, [r3]                    
+00056c00: 5b6e     ldr      r3, [r3, #0x64]             
+00056c02: 9847     blx      r3                          
+00056c04: bff0a2fb bl       #0x11634c                     ; sub_11634c
+00056c08: a36e     ldr      r3, [r4, #0x68]             
+00056c0a: 73b1     cbz      r3, #0x56c2a                
+00056c0c: e36c     ldr      r3, [r4, #0x4c]             
+00056c0e: 1846     mov      r0, r3                      
+00056c10: 1b68     ldr      r3, [r3]                    
+00056c12: 1b6d     ldr      r3, [r3, #0x50]             
+00056c14: 9847     blx      r3                          
+00056c16: 40b1     cbz      r0, #0x56c2a                
+00056c18: e36c     ldr      r3, [r4, #0x4c]             
+00056c1a: 1846     mov      r0, r3                      
+00056c1c: 1b68     ldr      r3, [r3]                    
+00056c1e: db6c     ldr      r3, [r3, #0x4c]             
+00056c20: 9847     blx      r3                          
+00056c22: 10b1     cbz      r0, #0x56c2a                
+00056c24: 2046     mov      r0, r4                      
+00056c26: 02f061fb bl       #0x592ec                      ; sub_592ec
+00056c2a: bde81888 pop.w    {r3, r4, fp, pc}            

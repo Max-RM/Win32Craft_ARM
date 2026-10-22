@@ -1,0 +1,632 @@
+function sub_1db158  [001db158..001db7be) len=1638
+001db158: 2de9f04b push.w   {r4, r5, r6, r7, r8, sb, fp, lr}
+001db15c: 0df1180b add.w    fp, sp, #0x18               
+001db160: 2ded028b vpush    {d8}                        
+001db164: 26f678f9 bl       #0x1458                       ; sub_1458
+001db168: b3b0     sub      sp, #0xcc                   
+001db16a: 6f46     mov      r7, sp                      
+001db16c: 82b0     sub      sp, #8                      
+001db16e: 6ff00103 mvn      r3, #1                      
+001db172: 0646     mov      r6, r0                      
+001db174: c7e90a33 strd     r3, r3, [r7, #0x28]         
+001db178: 336b     ldr      r3, [r6, #0x30]             
+001db17a: 002b     cmp      r3, #0                      
+001db17c: 00f01783 beq.w    #0x1db7ae                   
+001db180: b468     ldr      r4, [r6, #8]                
+001db182: 0023     movs     r3, #0                      
+001db184: 7b63     str      r3, [r7, #0x34]             
+001db186: 2046     mov      r0, r4                      
+001db188: 2468     ldr      r4, [r4]                    
+001db18a: 17f13402 adds.w   r2, r7, #0x34               
+001db18e: 0121     movs     r1, #1                      
+001db190: d4f88440 ldr.w    r4, [r4, #0x84]             
+001db194: a047     blx      r4                          
+001db196: 3369     ldr      r3, [r6, #0x10]             
+001db198: 4ff00009 mov.w    sb, #0                      
+001db19c: 2bb1     cbz      r3, #0x1db1aa               
+001db19e: c6f81090 str.w    sb, [r6, #0x10]             
+001db1a2: 1846     mov      r0, r3                      
+001db1a4: 1b68     ldr      r3, [r3]                    
+001db1a6: 9b68     ldr      r3, [r3, #8]                
+001db1a8: 9847     blx      r3                          
+001db1aa: 7369     ldr      r3, [r6, #0x14]             
+001db1ac: 2bb1     cbz      r3, #0x1db1ba               
+001db1ae: c6f81490 str.w    sb, [r6, #0x14]             
+001db1b2: 1846     mov      r0, r3                      
+001db1b4: 1b68     ldr      r3, [r3]                    
+001db1b6: 9b68     ldr      r3, [r3, #8]                
+001db1b8: 9847     blx      r3                          
+001db1ba: b068     ldr      r0, [r6, #8]                
+001db1bc: 0368     ldr      r3, [r0]                    
+001db1be: d3f8bc31 ldr.w    r3, [r3, #0x1bc]            
+001db1c2: 9847     blx      r3                          
+001db1c4: d6ed181a vldr     s3, [r6, #0x60]             
+001db1c8: 96ed130a vldr     s0, [r6, #0x4c]             
+001db1cc: 96ed191a vldr     s2, [r6, #0x64]             
+001db1d0: d6ed140a vldr     s1, [r6, #0x50]             
+001db1d4: b7ee008a vmov.f32 s16, #1.000000e+00          
+001db1d8: 21ee800a vmul.f32 s0, s3, s0                  
+001db1dc: 61ee200a vmul.f32 s1, s2, s1                  
+001db1e0: b4eec80a vcmpe.f32 s0, s16                     
+001db1e4: 87ed0c8a vstr     s16, [r7, #0x30]            
+001db1e8: 86ed110a vstr     s0, [r6, #0x44]             
+001db1ec: f1ee10fa vmrs     apsr_nzcv, fpscr            
+001db1f0: c6ed120a vstr     s1, [r6, #0x48]             
+001db1f4: 02d2     bhs      #0x1db1fc                   
+001db1f6: 17f13003 adds.w   r3, r7, #0x30               
+001db1fa: 01e0     b        #0x1db200                     ; sub_1db200
+001db1fc: 06f14403 add.w    r3, r6, #0x44               
+001db200: 1b68     ldr      r3, [r3]                    
+001db202: 87ed0c8a vstr     s16, [r7, #0x30]            
+001db206: 7364     str      r3, [r6, #0x44]             
+001db208: 96ed120a vldr     s0, [r6, #0x48]             
+001db20c: b4eec80a vcmpe.f32 s0, s16                     
+001db210: f1ee10fa vmrs     apsr_nzcv, fpscr            
+001db214: 02d2     bhs      #0x1db21c                   
+001db216: 17f13003 adds.w   r3, r7, #0x30               
+001db21a: 01e0     b        #0x1db220                     ; sub_1db220
+001db21c: 06f14803 add.w    r3, r6, #0x48               
+001db220: 93ed000a vldr     s0, [r3]                    
+001db224: 736d     ldr      r3, [r6, #0x54]             
+001db226: 5b1e     subs     r3, r3, #1                  
+001db228: 012b     cmp      r3, #1                      
+001db22a: 86ed120a vstr     s0, [r6, #0x48]             
+001db22e: 0bd8     bhi      #0x1db248                   
+001db230: b36d     ldr      r3, [r6, #0x58]             
+001db232: 5a1e     subs     r2, r3, #1                  
+001db234: 072a     cmp      r2, #7                      
+001db236: 07d8     bhi      #0x1db248                   
+001db238: dfe802f0 tbb      [pc, r2]                    
+001db23c: 0604     lsls     r6, r0, #0x10               
+001db23e: 0606     lsls     r6, r0, #0x18               
+001db240: 0606     lsls     r6, r0, #0x18               
+001db242: 0604     lsls     r6, r0, #0x10               
+001db244: 0123     movs     r3, #1                      
+001db246: 00e0     b        #0x1db24a                     ; sub_1db24a
+001db248: 0023     movs     r3, #0                      
+001db24a: 0bb9     cbnz     r3, #0x1db250               
+001db24c: 96ed110a vldr     s0, [r6, #0x44]             
+001db250: 86ed0f0a vstr     s0, [r6, #0x3c]             
+001db254: 13b1     cbz      r3, #0x1db25c               
+001db256: d6ed110a vldr     s1, [r6, #0x44]             
+001db25a: 01e0     b        #0x1db260                     ; sub_1db260
+001db25c: d6ed120a vldr     s1, [r6, #0x48]             
+001db260: f368     ldr      r3, [r6, #0xc]              
+001db262: c6ed100a vstr     s1, [r6, #0x40]             
+001db266: 5bb3     cbz      r3, #0x1db2c0               
+001db268: 4bf22453 movw     r3, #0xb524                   ; -> 0x0060b524 IAT msvcr120_app.dll!lroundf
+001db26c: c0f26003 movt     r3, #0x60                   
+001db270: b0ee600a vmov.f32 s0, s1                      
+001db274: 1b68     ldr      r3, [r3]                    
+001db276: 9847     blx      r3                          
+001db278: 4bf22453 movw     r3, #0xb524                   ; -> 0x0060b524 IAT msvcr120_app.dll!lroundf
+001db27c: c0f26003 movt     r3, #0x60                   
+001db280: 96ed0f0a vldr     s0, [r6, #0x3c]             
+001db284: 0546     mov      r5, r0                      
+001db286: 1b68     ldr      r3, [r3]                    
+001db288: 9847     blx      r3                          
+001db28a: f468     ldr      r4, [r6, #0xc]              
+001db28c: 0246     mov      r2, r0                      
+001db28e: 5723     movs     r3, #0x57                   
+001db290: 2046     mov      r0, r4                      
+001db292: 2468     ldr      r4, [r4]                    
+001db294: 0093     str      r3, [sp]                    
+001db296: 2b46     mov      r3, r5                      
+001db298: 646b     ldr      r4, [r4, #0x34]             
+001db29a: 0221     movs     r1, #2                      
+001db29c: cdf80490 str.w    sb, [sp, #4]                
+001db2a0: a047     blx      r4                          
+001db2a2: dff8b035 ldr.w    r3, [pc, #0x5b0]              ; pool[001db854]=0x887a0005 
+001db2a6: 9842     cmp      r0, r3                      
+001db2a8: 06d0     beq      #0x1db2b8                   
+001db2aa: dff8a435 ldr.w    r3, [pc, #0x5a4]              ; pool[001db850]=0x887a0007 
+001db2ae: 9842     cmp      r0, r3                      
+001db2b0: 02d0     beq      #0x1db2b8                   
+001db2b2: e3f6dbfc bl       #0xbec6c                      ; sub_bec6c
+001db2b6: 28e1     b        #0x1db50a                     ; sub_1db50a
+001db2b8: 3046     mov      r0, r6                      
+001db2ba: 00f0fdfb bl       #0x1dbab8                     ; sub_1dbab8
+001db2be: 76e2     b        #0x1db7ae                     ; sub_1db7ae
+001db2c0: 0023     movs     r3, #0                      
+001db2c2: 3b65     str      r3, [r7, #0x50]             
+001db2c4: 7b65     str      r3, [r7, #0x54]             
+001db2c6: bb65     str      r3, [r7, #0x58]             
+001db2c8: fb65     str      r3, [r7, #0x5c]             
+001db2ca: 3b66     str      r3, [r7, #0x60]             
+001db2cc: 7b66     str      r3, [r7, #0x64]             
+001db2ce: bb66     str      r3, [r7, #0x68]             
+001db2d0: fb66     str      r3, [r7, #0x6c]             
+001db2d2: 3b67     str      r3, [r7, #0x70]             
+001db2d4: 7b67     str      r3, [r7, #0x74]             
+001db2d6: bb67     str      r3, [r7, #0x78]             
+001db2d8: fb67     str      r3, [r7, #0x7c]             
+001db2da: 4bf22453 movw     r3, #0xb524                   ; -> 0x0060b524 IAT msvcr120_app.dll!lroundf
+001db2de: c0f26003 movt     r3, #0x60                   
+001db2e2: 1b68     ldr      r3, [r3]                    
+001db2e4: 9847     blx      r3                          
+001db2e6: 4bf22453 movw     r3, #0xb524                   ; -> 0x0060b524 IAT msvcr120_app.dll!lroundf
+001db2ea: c0f26003 movt     r3, #0x60                   
+001db2ee: 96ed100a vldr     s0, [r6, #0x40]             
+001db2f2: 3865     str      r0, [r7, #0x50]             
+001db2f4: 1b68     ldr      r3, [r3]                    
+001db2f6: 9847     blx      r3                          
+001db2f8: 5723     movs     r3, #0x57                   
+001db2fa: bb65     str      r3, [r7, #0x58]             
+001db2fc: 0023     movs     r3, #0                      
+001db2fe: fb65     str      r3, [r7, #0x5c]             
+001db300: 0123     movs     r3, #1                      
+001db302: 3b66     str      r3, [r7, #0x60]             
+001db304: 0023     movs     r3, #0                      
+001db306: 7b66     str      r3, [r7, #0x64]             
+001db308: 2023     movs     r3, #0x20                   
+001db30a: bb66     str      r3, [r7, #0x68]             
+001db30c: 0223     movs     r3, #2                      
+001db30e: fb66     str      r3, [r7, #0x6c]             
+001db310: 0323     movs     r3, #3                      
+001db312: 7b67     str      r3, [r7, #0x74]             
+001db314: 0023     movs     r3, #0                      
+001db316: fb67     str      r3, [r7, #0x7c]             
+001db318: 3b67     str      r3, [r7, #0x70]             
+001db31a: 0323     movs     r3, #3                      
+001db31c: bb67     str      r3, [r7, #0x78]             
+001db31e: 0023     movs     r3, #0                      
+001db320: bb63     str      r3, [r7, #0x38]             
+001db322: 7865     str      r0, [r7, #0x54]             
+001db324: 7368     ldr      r3, [r6, #4]                
+001db326: 4ff27821 movw     r1, #0xf278                   ; -> 0x006df278 .rdata+0xd4278
+001db32a: c0f26d01 movt     r1, #0x6d                   
+001db32e: 17f13802 adds.w   r2, r7, #0x38               
+001db332: 1846     mov      r0, r3                      
+001db334: 1b68     ldr      r3, [r3]                    
+001db336: 1b68     ldr      r3, [r3]                    
+001db338: 9847     blx      r3                          
+001db33a: 0028     cmp      r0, #0                      
+001db33c: 10da     bge      #0x1db360                   
+001db33e: 24f08fff bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db342: 0446     mov      r4, r0                      
+001db344: 7c60     str      r4, [r7, #4]                
+001db346: 14b1     cbz      r4, #0x1db34e               
+001db348: 2368     ldr      r3, [r4]                    
+001db34a: 5b68     ldr      r3, [r3, #4]                
+001db34c: 9847     blx      r3                          
+001db34e: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db352: c0f27301 movt     r1, #0x73                   
+001db356: 17f13000 adds.w   r0, r7, #0x30               
+001db35a: 3c63     str      r4, [r7, #0x30]             
+001db35c: 25f074f8 bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db360: 0023     movs     r3, #0                      
+001db362: bb64     str      r3, [r7, #0x48]             
+001db364: bb6b     ldr      r3, [r7, #0x38]             
+001db366: 17f14801 adds.w   r1, r7, #0x48               
+001db36a: 1846     mov      r0, r3                      
+001db36c: 1b68     ldr      r3, [r3]                    
+001db36e: db69     ldr      r3, [r3, #0x1c]             
+001db370: 9847     blx      r3                          
+001db372: 0028     cmp      r0, #0                      
+001db374: 10da     bge      #0x1db398                   
+001db376: 24f073ff bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db37a: 0446     mov      r4, r0                      
+001db37c: 7c60     str      r4, [r7, #4]                
+001db37e: 14b1     cbz      r4, #0x1db386               
+001db380: 2368     ldr      r3, [r4]                    
+001db382: 5b68     ldr      r3, [r3, #4]                
+001db384: 9847     blx      r3                          
+001db386: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db38a: c0f27301 movt     r1, #0x73                   
+001db38e: 17f13000 adds.w   r0, r7, #0x30               
+001db392: 3c63     str      r4, [r7, #0x30]             
+001db394: 25f058f8 bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db398: 0023     movs     r3, #0                      
+001db39a: 3b64     str      r3, [r7, #0x40]             
+001db39c: bb6c     ldr      r3, [r7, #0x48]             
+001db39e: 4ff22821 movw     r1, #0xf228                   ; -> 0x006df228 .rdata+0xd4228
+001db3a2: c0f26d01 movt     r1, #0x6d                   
+001db3a6: 17f14002 adds.w   r2, r7, #0x40               
+001db3aa: 1846     mov      r0, r3                      
+001db3ac: 1b68     ldr      r3, [r3]                    
+001db3ae: 9b69     ldr      r3, [r3, #0x18]             
+001db3b0: 9847     blx      r3                          
+001db3b2: 0028     cmp      r0, #0                      
+001db3b4: 10da     bge      #0x1db3d8                   
+001db3b6: 24f053ff bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db3ba: 0446     mov      r4, r0                      
+001db3bc: 7c60     str      r4, [r7, #4]                
+001db3be: 14b1     cbz      r4, #0x1db3c6               
+001db3c0: 2368     ldr      r3, [r4]                    
+001db3c2: 5b68     ldr      r3, [r3, #4]                
+001db3c4: 9847     blx      r3                          
+001db3c6: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db3ca: c0f27301 movt     r1, #0x73                   
+001db3ce: 17f13000 adds.w   r0, r7, #0x30               
+001db3d2: 3c63     str      r4, [r7, #0x30]             
+001db3d4: 25f038f8 bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db3d8: 06f10c04 add.w    r4, r6, #0xc                
+001db3dc: 2368     ldr      r3, [r4]                    
+001db3de: 33b1     cbz      r3, #0x1db3ee               
+001db3e0: c4f80090 str.w    sb, [r4]                    
+001db3e4: 1846     mov      r0, r3                      
+001db3e6: 1b68     ldr      r3, [r3]                    
+001db3e8: 00bf     nop                                  
+001db3ea: 9b68     ldr      r3, [r3, #8]                
+001db3ec: 9847     blx      r3                          
+001db3ee: 0094     str      r4, [sp]                    
+001db3f0: 3c6c     ldr      r4, [r7, #0x40]             
+001db3f2: 7168     ldr      r1, [r6, #4]                
+001db3f4: 0023     movs     r3, #0                      
+001db3f6: 2046     mov      r0, r4                      
+001db3f8: 2468     ldr      r4, [r4]                    
+001db3fa: 17f15002 adds.w   r2, r7, #0x50               
+001db3fe: 246e     ldr      r4, [r4, #0x60]             
+001db400: a047     blx      r4                          
+001db402: 0028     cmp      r0, #0                      
+001db404: 10da     bge      #0x1db428                   
+001db406: 24f02bff bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db40a: 0446     mov      r4, r0                      
+001db40c: 7c60     str      r4, [r7, #4]                
+001db40e: 14b1     cbz      r4, #0x1db416               
+001db410: 2368     ldr      r3, [r4]                    
+001db412: 5b68     ldr      r3, [r3, #4]                
+001db414: 9847     blx      r3                          
+001db416: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db41a: c0f27301 movt     r1, #0x73                   
+001db41e: 17f13000 adds.w   r0, r7, #0x30               
+001db422: 3c63     str      r4, [r7, #0x30]             
+001db424: 25f010f8 bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db428: 5821     movs     r1, #0x58                   
+001db42a: 0c20     movs     r0, #0xc                    
+001db42c: 24f000ff bl       #0x200230                     ; thunk[vccorlib120_app.DLL!?Allocate@Heap@Details@Platform@@SAPAXII@Z]
+001db430: 7860     str      r0, [r7, #4]                
+001db432: 0023     movs     r3, #0                      
+001db434: 0222     movs     r2, #2                      
+001db436: 3146     mov      r1, r6                      
+001db438: fff7a0fc bl       #0x1dad7c                     ; sub_1dad7c
+001db43c: 8046     mov      r8, r0                      
+001db43e: 7860     str      r0, [r7, #4]                
+001db440: 336b     ldr      r3, [r6, #0x30]             
+001db442: 0024     movs     r4, #0                      
+001db444: 3c63     str      r4, [r7, #0x30]             
+001db446: 73b1     cbz      r3, #0x1db466               
+001db448: 1846     mov      r0, r3                      
+001db44a: 1b68     ldr      r3, [r3]                    
+001db44c: 4ff2f811 movw     r1, #0xf1f8                   ; -> 0x006df1f8 .rdata+0xd41f8
+001db450: c0f26d01 movt     r1, #0x6d                   
+001db454: 17f13002 adds.w   r2, r7, #0x30               
+001db458: 1b68     ldr      r3, [r3]                    
+001db45a: 9847     blx      r3                          
+001db45c: 0028     cmp      r0, #0                      
+001db45e: 01da     bge      #0x1db464                   
+001db460: 36f6bcfe bl       #0x121dc                      ; sub_121dc
+001db464: 3c6b     ldr      r4, [r7, #0x30]             
+001db466: 3c62     str      r4, [r7, #0x20]             
+001db468: 2046     mov      r0, r4                      
+001db46a: 00f0c7ff bl       #0x1dc3fc                     ; sub_1dc3fc
+001db46e: 0546     mov      r5, r0                      
+001db470: 3d60     str      r5, [r7]                    
+001db472: 4246     mov      r2, r8                      
+001db474: 0121     movs     r1, #1                      
+001db476: 38f7d1fd bl       #0x11401c                     ; sub_11401c
+001db47a: 0346     mov      r3, r0                      
+001db47c: 13b1     cbz      r3, #0x1db484               
+001db47e: 1b68     ldr      r3, [r3]                    
+001db480: 9b68     ldr      r3, [r3, #8]                
+001db482: 9847     blx      r3                          
+001db484: 1db1     cbz      r5, #0x1db48e               
+001db486: 2b68     ldr      r3, [r5]                    
+001db488: 2846     mov      r0, r5                      
+001db48a: 9b68     ldr      r3, [r3, #8]                
+001db48c: 9847     blx      r3                          
+001db48e: 1cb1     cbz      r4, #0x1db498               
+001db490: 2368     ldr      r3, [r4]                    
+001db492: 2046     mov      r0, r4                      
+001db494: 9b68     ldr      r3, [r3, #8]                
+001db496: 9847     blx      r3                          
+001db498: b8f1000f cmp.w    r8, #0                      
+001db49c: 04d0     beq      #0x1db4a8                   
+001db49e: d8f80030 ldr.w    r3, [r8]                    
+001db4a2: 4046     mov      r0, r8                      
+001db4a4: 9b68     ldr      r3, [r3, #8]                
+001db4a6: 9847     blx      r3                          
+001db4a8: bb6b     ldr      r3, [r7, #0x38]             
+001db4aa: 0121     movs     r1, #1                      
+001db4ac: 1846     mov      r0, r3                      
+001db4ae: 1b68     ldr      r3, [r3]                    
+001db4b0: 1b6b     ldr      r3, [r3, #0x30]             
+001db4b2: 9847     blx      r3                          
+001db4b4: 0028     cmp      r0, #0                      
+001db4b6: 10da     bge      #0x1db4da                   
+001db4b8: 24f0d2fe bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db4bc: 0446     mov      r4, r0                      
+001db4be: 3c60     str      r4, [r7]                    
+001db4c0: 14b1     cbz      r4, #0x1db4c8               
+001db4c2: 2368     ldr      r3, [r4]                    
+001db4c4: 5b68     ldr      r3, [r3, #4]                
+001db4c6: 9847     blx      r3                          
+001db4c8: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db4cc: c0f27301 movt     r1, #0x73                   
+001db4d0: 17f13000 adds.w   r0, r7, #0x30               
+001db4d4: 3c63     str      r4, [r7, #0x30]             
+001db4d6: 24f0b7ff bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db4da: 3b6c     ldr      r3, [r7, #0x40]             
+001db4dc: 2bb1     cbz      r3, #0x1db4ea               
+001db4de: 0022     movs     r2, #0                      
+001db4e0: 3a64     str      r2, [r7, #0x40]             
+001db4e2: 1846     mov      r0, r3                      
+001db4e4: 1b68     ldr      r3, [r3]                    
+001db4e6: 9b68     ldr      r3, [r3, #8]                
+001db4e8: 9847     blx      r3                          
+001db4ea: bb6c     ldr      r3, [r7, #0x48]             
+001db4ec: 2bb1     cbz      r3, #0x1db4fa               
+001db4ee: 0022     movs     r2, #0                      
+001db4f0: ba64     str      r2, [r7, #0x48]             
+001db4f2: 1846     mov      r0, r3                      
+001db4f4: 1b68     ldr      r3, [r3]                    
+001db4f6: 9b68     ldr      r3, [r3, #8]                
+001db4f8: 9847     blx      r3                          
+001db4fa: bb6b     ldr      r3, [r7, #0x38]             
+001db4fc: 2bb1     cbz      r3, #0x1db50a               
+001db4fe: 0022     movs     r2, #0                      
+001db500: ba63     str      r2, [r7, #0x38]             
+001db502: 1846     mov      r0, r3                      
+001db504: 1b68     ldr      r3, [r3]                    
+001db506: 9b68     ldr      r3, [r3, #8]                
+001db508: 9847     blx      r3                          
+001db50a: 96ed180a vldr     s0, [r6, #0x60]             
+001db50e: 0023     movs     r3, #0                      
+001db510: 7b61     str      r3, [r7, #0x14]             
+001db512: fb60     str      r3, [r7, #0xc]              
+001db514: 88ee000a vdiv.f32 s0, s16, s0                 
+001db518: 3b61     str      r3, [r7, #0x10]             
+001db51a: bb61     str      r3, [r7, #0x18]             
+001db51c: fb61     str      r3, [r7, #0x1c]             
+001db51e: 87ed020a vstr     s0, [r7, #8]                
+001db522: 96ed190a vldr     s0, [r6, #0x64]             
+001db526: fb63     str      r3, [r7, #0x3c]             
+001db528: 88ee000a vdiv.f32 s0, s16, s0                 
+001db52c: 87ed050a vstr     s0, [r7, #0x14]             
+001db530: f368     ldr      r3, [r6, #0xc]              
+001db532: 4ff28821 movw     r1, #0xf288                   ; -> 0x006df288 .rdata+0xd4288
+001db536: c0f26d01 movt     r1, #0x6d                   
+001db53a: 17f13c02 adds.w   r2, r7, #0x3c               
+001db53e: 1846     mov      r0, r3                      
+001db540: 1b68     ldr      r3, [r3]                    
+001db542: 1b68     ldr      r3, [r3]                    
+001db544: 9847     blx      r3                          
+001db546: 0028     cmp      r0, #0                      
+001db548: 10da     bge      #0x1db56c                   
+001db54a: 24f089fe bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db54e: 0446     mov      r4, r0                      
+001db550: 3c60     str      r4, [r7]                    
+001db552: 14b1     cbz      r4, #0x1db55a               
+001db554: 2368     ldr      r3, [r4]                    
+001db556: 5b68     ldr      r3, [r3, #4]                
+001db558: 9847     blx      r3                          
+001db55a: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db55e: c0f27301 movt     r1, #0x73                   
+001db562: 17f13000 adds.w   r0, r7, #0x30               
+001db566: 3c63     str      r4, [r7, #0x30]             
+001db568: 24f06eff bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db56c: fb6b     ldr      r3, [r7, #0x3c]             
+001db56e: 17f10801 adds.w   r1, r7, #8                  
+001db572: 00bf     nop                                  
+001db574: 1846     mov      r0, r3                      
+001db576: 1b68     ldr      r3, [r3]                    
+001db578: d3f88830 ldr.w    r3, [r3, #0x88]             
+001db57c: 9847     blx      r3                          
+001db57e: 0028     cmp      r0, #0                      
+001db580: 10da     bge      #0x1db5a4                   
+001db582: 24f06dfe bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db586: 0446     mov      r4, r0                      
+001db588: 3c60     str      r4, [r7]                    
+001db58a: 14b1     cbz      r4, #0x1db592               
+001db58c: 2368     ldr      r3, [r4]                    
+001db58e: 5b68     ldr      r3, [r3, #4]                
+001db590: 9847     blx      r3                          
+001db592: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db596: c0f27301 movt     r1, #0x73                   
+001db59a: 17f13000 adds.w   r0, r7, #0x30               
+001db59e: 3c63     str      r4, [r7, #0x30]             
+001db5a0: 24f052ff bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db5a4: 0023     movs     r3, #0                      
+001db5a6: fb64     str      r3, [r7, #0x4c]             
+001db5a8: f468     ldr      r4, [r6, #0xc]              
+001db5aa: 4ff24822 movw     r2, #0xf248                   ; -> 0x006df248 .rdata+0xd4248
+001db5ae: c0f26d02 movt     r2, #0x6d                   
+001db5b2: 17f14c03 adds.w   r3, r7, #0x4c               
+001db5b6: 2046     mov      r0, r4                      
+001db5b8: 2468     ldr      r4, [r4]                    
+001db5ba: 0021     movs     r1, #0                      
+001db5bc: 646a     ldr      r4, [r4, #0x24]             
+001db5be: a047     blx      r4                          
+001db5c0: 0028     cmp      r0, #0                      
+001db5c2: 10da     bge      #0x1db5e6                   
+001db5c4: 24f04cfe bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db5c8: 0446     mov      r4, r0                      
+001db5ca: 3c60     str      r4, [r7]                    
+001db5cc: 14b1     cbz      r4, #0x1db5d4               
+001db5ce: 2368     ldr      r3, [r4]                    
+001db5d0: 5b68     ldr      r3, [r3, #4]                
+001db5d2: 9847     blx      r3                          
+001db5d4: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db5d8: c0f27301 movt     r1, #0x73                   
+001db5dc: 17f13000 adds.w   r0, r7, #0x30               
+001db5e0: 3c63     str      r4, [r7, #0x30]             
+001db5e2: 24f031ff bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db5e6: 3369     ldr      r3, [r6, #0x10]             
+001db5e8: 33b1     cbz      r3, #0x1db5f8               
+001db5ea: c6f81090 str.w    sb, [r6, #0x10]             
+001db5ee: 1846     mov      r0, r3                      
+001db5f0: 1b68     ldr      r3, [r3]                    
+001db5f2: 00bf     nop                                  
+001db5f4: 9b68     ldr      r3, [r3, #8]                
+001db5f6: 9847     blx      r3                          
+001db5f8: 7468     ldr      r4, [r6, #4]                
+001db5fa: f96c     ldr      r1, [r7, #0x4c]             
+001db5fc: 06f11003 add.w    r3, r6, #0x10               
+001db600: 2046     mov      r0, r4                      
+001db602: 2468     ldr      r4, [r4]                    
+001db604: 0022     movs     r2, #0                      
+001db606: 646a     ldr      r4, [r4, #0x24]             
+001db608: a047     blx      r4                          
+001db60a: 0028     cmp      r0, #0                      
+001db60c: 10da     bge      #0x1db630                   
+001db60e: 24f027fe bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db612: 0446     mov      r4, r0                      
+001db614: 3c60     str      r4, [r7]                    
+001db616: 14b1     cbz      r4, #0x1db61e               
+001db618: 2368     ldr      r3, [r4]                    
+001db61a: 5b68     ldr      r3, [r3, #4]                
+001db61c: 9847     blx      r3                          
+001db61e: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db622: c0f27301 movt     r1, #0x73                   
+001db626: 17f13000 adds.w   r0, r7, #0x30               
+001db62a: 3c63     str      r4, [r7, #0x30]             
+001db62c: 24f00cff bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db630: 4bf22453 movw     r3, #0xb524                   ; -> 0x0060b524 IAT msvcr120_app.dll!lroundf
+001db634: c0f26003 movt     r3, #0x60                   
+001db638: 96ed100a vldr     s0, [r6, #0x40]             
+001db63c: 00bf     nop                                  
+001db63e: 1b68     ldr      r3, [r3]                    
+001db640: 9847     blx      r3                          
+001db642: 4bf22453 movw     r3, #0xb524                   ; -> 0x0060b524 IAT msvcr120_app.dll!lroundf
+001db646: c0f26003 movt     r3, #0x60                   
+001db64a: 96ed0f0a vldr     s0, [r6, #0x3c]             
+001db64e: 0446     mov      r4, r0                      
+001db650: 1b68     ldr      r3, [r3]                    
+001db652: 9847     blx      r3                          
+001db654: 0123     movs     r3, #1                      
+001db656: c7f88830 str.w    r3, [r7, #0x88]             
+001db65a: c7f88c30 str.w    r3, [r7, #0x8c]             
+001db65e: 2d23     movs     r3, #0x2d                   
+001db660: c7f89030 str.w    r3, [r7, #0x90]             
+001db664: 0123     movs     r3, #1                      
+001db666: c7f89430 str.w    r3, [r7, #0x94]             
+001db66a: 0023     movs     r3, #0                      
+001db66c: c7f89830 str.w    r3, [r7, #0x98]             
+001db670: c7f89c30 str.w    r3, [r7, #0x9c]             
+001db674: 4023     movs     r3, #0x40                   
+001db676: c7f8a030 str.w    r3, [r7, #0xa0]             
+001db67a: 0023     movs     r3, #0                      
+001db67c: c7f8a430 str.w    r3, [r7, #0xa4]             
+001db680: c7f8a830 str.w    r3, [r7, #0xa8]             
+001db684: 7b64     str      r3, [r7, #0x44]             
+001db686: c7f88000 str.w    r0, [r7, #0x80]             
+001db68a: c7f88440 str.w    r4, [r7, #0x84]             
+001db68e: 7468     ldr      r4, [r6, #4]                
+001db690: 17f14403 adds.w   r3, r7, #0x44               
+001db694: 0022     movs     r2, #0                      
+001db696: 2046     mov      r0, r4                      
+001db698: 2468     ldr      r4, [r4]                    
+001db69a: 17f18001 adds.w   r1, r7, #0x80               
+001db69e: 6469     ldr      r4, [r4, #0x14]             
+001db6a0: a047     blx      r4                          
+001db6a2: 0028     cmp      r0, #0                      
+001db6a4: 10da     bge      #0x1db6c8                   
+001db6a6: 24f0dbfd bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db6aa: 0446     mov      r4, r0                      
+001db6ac: 3c60     str      r4, [r7]                    
+001db6ae: 14b1     cbz      r4, #0x1db6b6               
+001db6b0: 2368     ldr      r3, [r4]                    
+001db6b2: 5b68     ldr      r3, [r3, #4]                
+001db6b4: 9847     blx      r3                          
+001db6b6: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db6ba: c0f27301 movt     r1, #0x73                   
+001db6be: 17f13000 adds.w   r0, r7, #0x30               
+001db6c2: 3c63     str      r4, [r7, #0x30]             
+001db6c4: 24f0c0fe bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db6c8: 0023     movs     r3, #0                      
+001db6ca: c7f8b030 str.w    r3, [r7, #0xb0]             
+001db6ce: 0323     movs     r3, #3                      
+001db6d0: c7f8b430 str.w    r3, [r7, #0xb4]             
+001db6d4: 0023     movs     r3, #0                      
+001db6d6: c7f8b830 str.w    r3, [r7, #0xb8]             
+001db6da: c7f8bc30 str.w    r3, [r7, #0xbc]             
+001db6de: 7369     ldr      r3, [r6, #0x14]             
+001db6e0: 33b1     cbz      r3, #0x1db6f0               
+001db6e2: c6f81490 str.w    sb, [r6, #0x14]             
+001db6e6: 1846     mov      r0, r3                      
+001db6e8: 1b68     ldr      r3, [r3]                    
+001db6ea: 00bf     nop                                  
+001db6ec: 9b68     ldr      r3, [r3, #8]                
+001db6ee: 9847     blx      r3                          
+001db6f0: 7468     ldr      r4, [r6, #4]                
+001db6f2: 796c     ldr      r1, [r7, #0x44]             
+001db6f4: 06f11403 add.w    r3, r6, #0x14               
+001db6f8: 2046     mov      r0, r4                      
+001db6fa: 2468     ldr      r4, [r4]                    
+001db6fc: 17f1b002 adds.w   r2, r7, #0xb0               
+001db700: a46a     ldr      r4, [r4, #0x28]             
+001db702: a047     blx      r4                          
+001db704: 0028     cmp      r0, #0                      
+001db706: 10da     bge      #0x1db72a                   
+001db708: 24f0aafd bl       #0x200260                     ; thunk[vccorlib120_app.DLL!?CreateException@Exception@Platform@@SAP$AAV12@H@Z]
+001db70c: 0446     mov      r4, r0                      
+001db70e: 3c60     str      r4, [r7]                    
+001db710: 14b1     cbz      r4, #0x1db718               
+001db712: 2368     ldr      r3, [r4]                    
+001db714: 5b68     ldr      r3, [r3, #4]                
+001db716: 9847     blx      r3                          
+001db718: 4af63811 movw     r1, #0xa938                   ; -> 0x0073a938 .rdata+0x12f938
+001db71c: c0f27301 movt     r1, #0x73                   
+001db720: 17f13000 adds.w   r0, r7, #0x30               
+001db724: 3c63     str      r4, [r7, #0x30]             
+001db726: 24f08ffe bl       #0x200448                     ; thunk[msvcr120_app.dll!_CxxThrowException]
+001db72a: 9fed480a vldr     s0, [pc, #0x120]            
+001db72e: 326c     ldr      r2, [r6, #0x40]             
+001db730: f36b     ldr      r3, [r6, #0x3c]             
+001db732: 17f15004 adds.w   r4, r7, #0x50               
+001db736: 87ed140a vstr     s0, [r7, #0x50]             
+001db73a: 87ed150a vstr     s0, [r7, #0x54]             
+001db73e: 87ed180a vstr     s0, [r7, #0x60]             
+001db742: bb65     str      r3, [r7, #0x58]             
+001db744: fa65     str      r2, [r7, #0x5c]             
+001db746: 87ed198a vstr     s16, [r7, #0x64]            
+001db74a: 0fcc     ldm      r4!, {r0, r1, r2, r3}       
+001db74c: 06f11805 add.w    r5, r6, #0x18               
+001db750: 00bf     nop                                  
+001db752: 0fc5     stm      r5!, {r0, r1, r2, r3}       
+001db754: 0121     movs     r1, #1                      
+001db756: 0ccc     ldm      r4!, {r2, r3}               
+001db758: 0cc5     stm      r5!, {r2, r3}               
+001db75a: 06f11802 add.w    r2, r6, #0x18               
+001db75e: b368     ldr      r3, [r6, #8]                
+001db760: 1846     mov      r0, r3                      
+001db762: 1b68     ldr      r3, [r3]                    
+001db764: d3f8b030 ldr.w    r3, [r3, #0xb0]             
+001db768: 9847     blx      r3                          
+001db76a: b468     ldr      r4, [r6, #8]                
+001db76c: 7369     ldr      r3, [r6, #0x14]             
+001db76e: 06f11002 add.w    r2, r6, #0x10               
+001db772: 2046     mov      r0, r4                      
+001db774: 2468     ldr      r4, [r4]                    
+001db776: 0121     movs     r1, #1                      
+001db778: d4f88440 ldr.w    r4, [r4, #0x84]             
+001db77c: a047     blx      r4                          
+001db77e: 7b6c     ldr      r3, [r7, #0x44]             
+001db780: 2bb1     cbz      r3, #0x1db78e               
+001db782: 0022     movs     r2, #0                      
+001db784: 7a64     str      r2, [r7, #0x44]             
+001db786: 1846     mov      r0, r3                      
+001db788: 1b68     ldr      r3, [r3]                    
+001db78a: 9b68     ldr      r3, [r3, #8]                
+001db78c: 9847     blx      r3                          
+001db78e: fb6c     ldr      r3, [r7, #0x4c]             
+001db790: 2bb1     cbz      r3, #0x1db79e               
+001db792: 0022     movs     r2, #0                      
+001db794: fa64     str      r2, [r7, #0x4c]             
+001db796: 1846     mov      r0, r3                      
+001db798: 1b68     ldr      r3, [r3]                    
+001db79a: 9b68     ldr      r3, [r3, #8]                
+001db79c: 9847     blx      r3                          
+001db79e: fb6b     ldr      r3, [r7, #0x3c]             
+001db7a0: 2bb1     cbz      r3, #0x1db7ae               
+001db7a2: 0022     movs     r2, #0                      
+001db7a4: fa63     str      r2, [r7, #0x3c]             
+001db7a6: 1846     mov      r0, r3                      
+001db7a8: 1b68     ldr      r3, [r3]                    
+001db7aa: 9b68     ldr      r3, [r3, #8]                
+001db7ac: 9847     blx      r3                          
+001db7ae: bd46     mov      sp, r7                      
+001db7b0: 33b0     add      sp, #0xcc                   
+001db7b2: 25f65dfe bl       #0x1470                       ; sub_1470
+001db7b6: bdec028b vpop     {d8}                        
+001db7ba: bde8f08b pop.w    {r4, r5, r6, r7, r8, sb, fp, pc}

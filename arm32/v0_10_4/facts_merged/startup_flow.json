@@ -1,0 +1,1516 @@
+{
+ "area": "startup_flow",
+ "facts": [
+  {
+   "id": "startup_flow.pe_entry",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0020095c",
+   "summary": "PE AddressOfEntryPoint is 0x20095D (Thumb bit); real code starts at 0x20095C: push {fp,lr}; bl 0x200e6c (/GS cookie init: GetSystemTimeAsFileTime^ThreadId^ProcessId^TickCount64^QPC) ; pop; b.w 0x200970.",
+   "arm_signature": "void entry(void) -> never returns normally (ends in exit)",
+   "x86_to_arm_notes": "Not used by the host (the host DLL is loaded by the patched exe before/at startup). Listed so the patcher knows 0x20095D is the entry.",
+   "expected_bytes": "2de90048eb4600f083fabde8",
+   "evidence": [
+    "dis 20095c -> bl #0x200e6c ; b.w #0x200970",
+    "info -> entry: 0x20095d"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.crt_main",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00200970",
+   "summary": "CRT startup (mainCRTStartup-like). Runs _initterm_e(table 0x20BDA0..0x20BDB4) then _initterm(table 0x20B6C8..0x20BD9C), parses _acmdln to the command-line tail, then calls the WinMain thunk at 0x200a72 and passes the result to exit.",
+   "arm_signature": "void crt_main(void) ; calls bl 0x203efc with r0=0x400000 (hInstance, literal), r1=0, r2=command-line tail pointer, r3=0",
+   "x86_to_arm_notes": "Same role as the 1.2.8 CoreWindow exe CRT but the \"main\" it reaches is the vccorlib [MTAThread]-style wrapper, NOT a CoreApplication::Run. Friend patcher hooked exactly this call site (RVA 0x200A72) - re-derived here.",
+   "expected_bytes": "2de9fe490df1200b6f460023",
+   "evidence": [
+    "dis 200a6c -> ldr r0,[pool]=0x00400000; movs r3,#0; movs r1,#0; bl #0x203efc @0x200a72; str r0,[r4,#4]",
+    "pool -> _initterm_e(0x60bda0,0x60bdb4) @0x2009d6, _initterm(0x60b6c8,0x60bd9c) @0x2009fa"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.winmain_call_site",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x00200a72",
+   "summary": "The single call from the CRT into the app: bl 0x203efc (WinMain thunk). Patching this call (as the friend did, trampoline 0xE6E23C in their patched copy) would skip the whole XAML boot - the faithful option does NOT need it.",
+   "arm_signature": "bl 0x203efc",
+   "x86_to_arm_notes": "Hooking here replaces the entire genuine boot; for the faithful path leave it alone and fake Application::Start instead (see startup_flow.application_start).",
+   "expected_bytes": "03f043fa",
+   "evidence": [
+    "dis 200a6c",
+    "friend WORK_SUMMARY: call site RVA 0x200A72 (matches)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.initterm_tables",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": "0x0020bda0",
+   "summary": "_initterm_e table 0x20BDA0..0x20BDB4 = {0, sub_200878 (CRT locale/fmode init + conditional RoInitialize(1) when [0xE2B03C]!=0; that flag is 0 in the file), sub_2004f8, sub_1ffecc (vccorlib Platform::Details::InitializeData(apartment=[0xDC9F5C]=2)), 0x429ba0 (no-op)}; _initterm table at 0x20B6C8..0x20BD9C holds the C++ static initialisers.",
+   "arm_signature": "void (*table[])(void)",
+   "x86_to_arm_notes": "vccorlib120_app.dll must be loadable (InitializeData is in its IAT 0x20B608) - the C++/CX runtime is real, only WinRT activation is faked.",
+   "expected_bytes": null,
+   "evidence": [
+    "ptrs 20bda0 -> 0x600879 0x6004f9 0x5ffecd 0x429ba1",
+    "func 1ffecc -> calls thunk[vccorlib120_app!InitializeData] with [0x11c9f5c]"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.winmain_thunk",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00203efc",
+   "summary": "WinMain thunk: push {fp,lr}; pop; b.w 0x20405c.",
+   "arm_signature": "int WinMain(HINSTANCE, HINSTANCE, LPSTR, int)",
+   "x86_to_arm_notes": "Pure forwarder.",
+   "expected_bytes": "2de90048eb46bde8004800f0",
+   "evidence": [
+    "func 203efc"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.main_wrapper",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0020405c",
+   "summary": "vccorlib-style main wrapper: Platform::Details::GetCmdArguments(&argc) -> argv; Heap::Allocate(0x30,0x48) -> Platform::Array<String^>; for each arg WindowsCreateString (via 0x1edf0) + store; then calls the user main sub_1f42a4(array); releases array; returns its result.",
+   "arm_signature": "int main_wrapper(HINSTANCE, HINSTANCE, LPSTR, int)",
+   "x86_to_arm_notes": "Uses IAT vccorlib120_app!GetCmdArguments (thunk 0x204180) and WindowsDeleteString.",
+   "expected_bytes": "2de9f0490df1140b89b06f46",
+   "evidence": [
+    "func 20405c",
+    "bl #0x1f42a4 @0x2040c6"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.user_main",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001f42a4",
+   "summary": "User main(Array<String^>^): Heap::Allocate(0xc,0x58) -> sub_1ea914 constructs a Windows::UI::Xaml::ApplicationInitializationCallback delegate (0x58 bytes, FunctorCapture lambda at +0x14, vtables 0xDC96C8/0xDC96E0/0xDC96FC); then sub_1eecbc = Application::Start(callback); releases the delegate; returns.",
+   "arm_signature": "int main(Platform::Array<Platform::String^>^ args /*r0*/) -> r0 exit code",
+   "x86_to_arm_notes": "The ONLY work done before the XAML runtime takes over. There is no CoreApplication/IFrameworkView, no App.xaml-generated main beyond this.",
+   "expected_bytes": "2de99f480df1180b6f466ff0",
+   "evidence": [
+    "func 1f42a4 -> Allocate(0xc,0x58); bl #0x1ea914; bl #0x1eecbc",
+    "rtti ApplicationInitializationCallback vtable 0xdc96c8"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.callback_ctor",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001ea914",
+   "summary": "ApplicationInitializationCallback delegate constructor: Delegate ctor via vccorlib (0x200254); [+0]=vtable 0xDC96C8, [+4]=0xDC96E0, [+8]=0xDC96FC; [+0x10]=(arg r2==2 ? -1 : 0); functor (lambda_bd4a6ab8...) vtable 0xDC9ECC at +0x14, [+0x54]=functor ptr.",
+   "arm_signature": "void* ApplicationInitializationCallback_ctor(void* mem /*r0*/, uint8 unused /*r1*/, int kind /*r2 = 2*/, int /*r3 = 0*/) -> r0=this",
+   "x86_to_arm_notes": "The COM object handed to Application::Start is the object base (+0) : vtable 0xDC96C8 slot0 QI, slot1 AddRef, slot2 Release, slot3 Invoke(this, ApplicationInitializationCallbackParams*).",
+   "expected_bytes": "0fb42de9be480df1180b6f46",
+   "evidence": [
+    "dis 1ea914 -> stores 0xdc96c8/0xdc96e0/0xdc96fc; str [r5,#0x54]"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.callback_invoke",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x0000000c",
+   "summary": "ApplicationInitializationCallback::Invoke = vtable[3] (offset 0xC) of the delegate; implementation 0x1f2f64 (adjusts nothing; if vtable==0xDC96C8 it calls functor=[this+0x54] vtbl[1] i.e. lambda body 0x1ee380, otherwise dispatches through [vtable+0xC]).",
+   "arm_signature": "HRESULT Invoke(void* this /*r0*/, void* params /*r1, ignored*/) -> r0 = 0 (S_OK)",
+   "x86_to_arm_notes": "Fake Application::Start must call cb->vtbl[3](cb, NULL) on the thread that will own the UI. params is never read.",
+   "expected_bytes": null,
+   "evidence": [
+    "func 1f2f64 -> cmp vtable with 0xdc96c8; ldr r0,[r0,#0x54]; ldr r3,[r3,#4]; blx r3",
+    "ptrs dc96c8 -> [3] = 0x5f2f65 (Invoke)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.callback_lambda",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001ee380",
+   "summary": "Lambda body of the callback: Heap::Allocate(0x34,0x40) (App2 object, 0x40 bytes) -> App2::App2 (sub_1e2b48) ; then Release() on the returned handle. The App2 instance survives only because App2::ctor passes itself as `outer` to IApplicationFactory::CreateInstance (the runtime AddRefs it).",
+   "arm_signature": "void lambda(void* functor /*r0, unused*/)",
+   "x86_to_arm_notes": "HOST MUST AddRef the `outer` pointer in its fake IApplicationFactory::CreateInstance, otherwise App2 is freed right after this lambda returns.",
+   "expected_bytes": "2de980480df1040b85b06f46",
+   "evidence": [
+    "func 1ee380 -> bl #0x1e2b48 ; ldr r3,[r3,#8]; blx r3 (Release)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.application_start",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001eecbc",
+   "summary": "Application::Start(callback): GetActivationFactory(L\"Windows.UI.Xaml.Application\", IID_IApplicationStatics {06499997-F7B4-45FE-B763-7577D1D3CB4A}) then calls IApplicationStatics vtbl[7] (0x1c) Start(callback). In the real runtime this blocks until the app exits.",
+   "arm_signature": "void Application_Start(ApplicationInitializationCallback^ cb /*r0 = delegate base*/)  ; inside: r0=statics, r1=cb, blx [vtbl+0x1c]",
+   "x86_to_arm_notes": "Faithful host: fake factory \"Windows.UI.Xaml.Application\" returning IApplicationStatics (Start=slot7 runs: cb->Invoke(NULL); QI(App2 outer, IApplicationOverrides)->OnLaunched(args); then a Win32 message loop that also services DispatcherTimer ticks / CoreDispatcher.RunAsync queues until WM_CLOSE; returns S_OK) AND IApplicationFactory (CreateInstance, slot6). LoadComponent (slots 8/9) may be a no-op if FindName is faked.",
+   "expected_bytes": "2de990480df1080b12f6c8fb",
+   "evidence": [
+    "func 1eecbc -> movw wstr L\"Windows.UI.Xaml.Application\"; GUID bytes 06499997-f7b4-45fe-b763-7577d1d3cb4a; ldr r3,[r3,#0x1c]; blx r3",
+    "actscan: 1eecbc, 1ee424 use IApplicationStatics; 1e2cf0 uses IApplicationFactory {93BBE361-BE5A-4EE3-B4A3-95118DC97A89}"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.app2_ctor",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001e2b48",
+   "summary": "MCPE_Host::App2::App2 (App2 : Windows::UI::Xaml::Application, composable). Sets 9 sub-object vtables (0xDC9158 @+0,0xDC9174 @+4,0xDC91B4 @+8,0xDC9198 @+0xC,0xDC9230 @+0x10,0xDC9294 @+0x18,0xDC92C8 @+0x1C,0xDC92EC @+0x20,0xDC9304 @+0x24); fields +0x28=0,+0x30=0 (MainPage^),+0x38=-1; calls sub_1e2cf0(this+8) = IApplicationFactory::CreateInstance(outer=this+8, &inner=this+0x14); empty call sub_bf60; add_Suspending(SuspendingEventHandler->sub_1e3da0) and add_Resuming(EventHandler<Object>->sub_1e3c34) on the inner via IApplication slots 13 / 15.",
+   "arm_signature": "App2* App2_ctor(App2* this /*r0, 0x40 bytes zeroed by Heap::Allocate*/) -> r0",
+   "x86_to_arm_notes": "No OnLaunched registration here: OnLaunched is delivered by the runtime through QI(IApplicationOverrides). Layout: +0x14 inner IInspectable (Application base), +0x30 MainPage^, +0x38 int (-1), +0x3C byte disposed flag (checked by ABI wrappers).",
+   "expected_bytes": "03b42de9f04b0df1180b88b0",
+   "evidence": [
+    "func 1e2b48",
+    "sub_1e2cf0 -> GetActivationFactory(Windows.UI.Xaml.Application, IApplicationFactory) ; sub_1e3228 -> factory vtbl[6]",
+    "sub_1e5f50 -> IApplication vslot 13 ; sub_1e5edc -> vslot 15"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.app2_qi_overrides",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x00000010",
+   "summary": "App2::QueryInterface (0x1e4c84) returns IApplicationOverrides {25F99FF7-9347-459A-9FAC-B2D0E11C1A0F} as App2+0x10 (vtable 0xDC9230). Other IIDs: IComponentConnector {F6790987..} -> +0x1C, IXamlMetadataProvider {B3765D69..} -> +0x18, IUnknown/IInspectable/IAgileObject/IWeakReferenceSource handled locally, everything else is forwarded to the inner object [this+0x14]->QI.",
+   "arm_signature": "HRESULT QI(App2* this, REFIID, void** out)",
+   "x86_to_arm_notes": "The runtime obtains OnLaunched by QI on the OUTER pointer passed to CreateInstance (App2+8).",
+   "expected_bytes": null,
+   "evidence": [
+    "func 1e4c84 -> add.w r3,r5,#0x10 after IID @0x6e4f30; +0x1c after IID @0x6e2368; +0x18 after IID @0x6e4f40",
+    "guid map: 6e4f30 IApplicationOverrides"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.app2_onlaunched_abi",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x0000001c",
+   "summary": "IApplicationOverrides::OnLaunched is slot 7 (offset 0x1C) of the App2+0x10 sub-object. Slot 7 of vtable 0xDC9230 (dc9230+7*4) = thunk 0x1e54d4 (this-=0x10) -> 0x1e5480 which checks the disposed byte [App2+0x3C] and calls the real override sub_1e3a30. Slots 6..14 map: OnActivated, OnLaunched, OnFileActivated, OnSearchActivated, OnShareTargetActivated, OnFileOpenPickerActivated, OnFileSavePickerActivated, OnCachedFileUpdaterActivated, OnWindowCreated; only OnLaunched is overridden with real work (the other overrides 0x1e37c4 etc. are base-forwarders).",
+   "arm_signature": "HRESULT OnLaunched(void* this /*r0 = App2+0x10*/, ILaunchActivatedEventArgs* args /*r1*/)",
+   "x86_to_arm_notes": "args is only used via QI(IActivatedEventArgs {CF651713-CD08-4FD8-B697-A281B6544E2E}) -> get_PreviousExecutionState (slot 7). Pass an object whose PreviousExecutionState = 0 (NotRunning).",
+   "expected_bytes": null,
+   "evidence": [
+    "func 1e5480 -> ldrb [r0,#0x3c]; bl #0x1e3a30",
+    "dis 1e54d4 -> subs r0,#0x10; literal -> 0x1e5480",
+    "ptrs dc9230 -> [7]=0x5e54d5"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.app2_onlaunched",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001e3a30",
+   "summary": "App2::OnLaunched (436 B). 1) StatusBar::GetForCurrentView().HideAsync() (sub_1e3394/sub_1e350c); 2) if [this+0x30]==NULL: Heap::Allocate(0x88,0x94) + MainPage ctor sub_1dcf5c -> store [this+0x30]; 3) QI(args, IActivatedEventArgs).get_PreviousExecutionState; if ==3 (Terminated): ApplicationData::Current.LocalSettings.Values -> MainPage::vf11(page, values); 4) QI(page, IUIElement {676D0BE9-..}) ; Window::Current.put_Content(page) (IWindow slot 9); Window::Current.Activate() (IWindow slot 20).",
+   "arm_signature": "HRESULT OnLaunched(App2* this /*r0 = App2 base*/, ILaunchActivatedEventArgs* args /*r1*/)",
+   "x86_to_arm_notes": "There is NO Frame, NO navigation, NO SplashScreen handling: the Page is the window content. This is the first point at which the genuine MainPage code runs.",
+   "expected_bytes": "2de9f04b0df1180b1df60efd",
+   "evidence": [
+    "func 1e3a30 summary: bl 1e3394, 1e350c, 1dcf5c, 1dab28, 1e621c, 1e6278, 1df4c4, 1dac80 (vslot 9 / vslot 20)",
+    "LaunchActivated path state==3 compare @0x1e3af6"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.app2_onsuspending",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001e3da0",
+   "summary": "Suspending handler lambda (SuspendingEventHandler, registered by App2 ctor): ApplicationData::Current (1dab28) -> LocalSettings (1e621c, IApplicationData slot 10) -> Values (1e6278, IApplicationDataContainer slot 8) -> MainPage::vf10 (sub_1dfa40 = SaveState: DeviceResources::Trim, AppMain::StopRenderLoop, client suspend helpers sub_473d4/sub_474a4).",
+   "arm_signature": "void handler(App2* this /*r0*/, Object^ sender /*r1*/, SuspendingEventArgs^ e /*r2*/)",
+   "x86_to_arm_notes": "e is never read.",
+   "expected_bytes": "2de9f0490df1140b87b06f46",
+   "evidence": [
+    "func 1e3da0",
+    "func 1dfa40"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.app2_onresuming",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001e3c34",
+   "summary": "Resuming handler lambda: same ApplicationData->LocalSettings->Values chain then MainPage::vf11 (sub_1df4c4 = if AppMain ready: client resume helpers sub_4743c/sub_4736c + AppMain::StartRenderLoop).",
+   "arm_signature": "void handler(App2* this /*r0*/, Object^ sender /*r1*/, Object^ e /*r2*/)",
+   "x86_to_arm_notes": "Also called from OnLaunched when PreviousExecutionState==Terminated.",
+   "expected_bytes": "2de9f0490df1140b87b06f46",
+   "evidence": [
+    "func 1e3c34",
+    "func 1df4c4"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.mainpage_ctor",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001dcf5c",
+   "summary": "MCPE_Host::MainPage::MainPage (1888 B, object 0x94 bytes). Ordered: (1) vtables+fields: +0x5c..+0x78=0, +0x80 byte=1 (visible), +0x8c=-1; (2) sub_1dd874(this+8) = Page base composable ctor (IPageFactory::CreateInstance); (3) InitializeComponent sub_1eddd8; (4) Window.Current.CoreWindow.add_VisibilityChanged; (5) DisplayInformation::GetForCurrentView().add_DpiChanged + add_OrientationChanged; (6) DisplayInformation.add_DisplayContentsInvalidated (static); (7) swapChainPanel.add_CompositionScaleChanged (ISwapChainPanel slot 8); (8) swapChainPanel.add_SizeChanged (IFrameworkElement slot 47); (9) HardwareButtons.add_BackPressed (static); (10) InputPane::GetForCurrentView().add_Hiding + add_Showing; (11) shared_ptr<DX::DeviceResources> = sub_1dce2c -> [this+0x74/+0x78]; (12) ThreadPool.RunWithPriorityAndOptionsAsync(input-thread WorkItem, High, TimeSliced) -> [this+0x6c]; (13) Canvas.SetLeft(EditBox,3000.0) and Canvas.SetLeft(Button,3000.0) (moves them off-screen); (14) new(0x40) AppMain + sub_1d9d14(app,&shared_ptr<DR>) -> [this+0x7c]; (15) DispatcherTimer (sub_1dce94) -> [this+0x84], put_Interval(0x7A120 ticks=50 ms), add_Tick(sub_1df8a4), Start().",
+   "arm_signature": "MainPage* MainPage_ctor(MainPage* this /*r0 = Heap::Allocate(0x88,0x94)*/) -> r0",
+   "x86_to_arm_notes": "Everything after step 3 is plain C++ calling WinRT interfaces; only DeviceResources (step 11) and AppMain (step 14) contain game/engine logic. Fields: +0x08 Page outer ABI, +0x24 Page inner, +0x58 _contentLoaded byte, +0x5C swapChainPanel (ISwapChainPanel^), +0x60 Logo (IImage^), +0x64 EditBox (ITextBox^), +0x68 Button (IButton^), +0x6C IAsyncAction^ (input thread), +0x70 CoreIndependentInputSource^, +0x74/+0x78 shared_ptr<DeviceResources>, +0x7C AppMain*, +0x80 byte visible, +0x84 DispatcherTimer^, +0x8C int.",
+   "expected_bytes": "2de9f04f0df11c0b2ded028b",
+   "evidence": [
+    "func 1dcf5c (call order verified in disassembly)",
+    "actscan: Window, DisplayInformation, InputPane, HardwareButtons, DispatcherTimer, Canvas, ThreadPool activations all inside/next to this ctor"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.mainpage_initcomponent",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001eddd8",
+   "summary": "MCPE_Host::MainPage::InitializeComponent (854 B): guard byte [this+0x58]; Uri(L\"ms-appx:///MainPage.xaml\") (sub_1088a0); Application::LoadComponentWithResourceLocation(this, uri, 0) (IApplicationStatics slot 9, sub_1ee424); then 4x IFrameworkElement::FindName (slot 51, sub_1ed378): \"swapChainPanel\"->QI ISwapChainPanel->[this+0x5c]; \"Logo\"->QI IImage->[+0x60]; \"EditBox\"->QI ITextBox->[+0x64]; \"Button\"->QI IButton->[+0x68].",
+   "arm_signature": "void InitializeComponent(MainPage* this /*r0*/)",
+   "x86_to_arm_notes": "This is the XAML loader call the friend tried to avoid. With a no-op fake LoadComponent and a fake FindName returning 4 host objects it can run UNMODIFIED (no Connect()/IComponentConnector path is used; MainPage.xbf names: SwapChainPanel swapChainPanel{ Image Logo (Assets/NewLogo.png), Canvas/TextBox EditBox, Button Button }).",
+   "expected_bytes": "2de9f0490df1140b13f63afb",
+   "evidence": [
+    "func 1eddd8 wstr L\"ms-appx:///MainPage.xaml\"/\"swapChainPanel\"/\"Logo\"/\"EditBox\"/\"Button\"",
+    "MainPage.xbf string dump: SwapChainPanel,Name,Image,Source=Assets/NewLogo.png,Canvas,TextBox,Button"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.mainpage_handlers",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001df9ac",
+   "summary": "MainPage event handlers (all tiny): OnVisibilityChanged 0x1df9ac (this+0x80=args->get_Visible [args slot 6]; if AppMain ready: visible->StartRenderLoop else lock+StopRenderLoop), DpiChanged 0x1df67c (get_LogicalDpi slot 11 -> DR::SetDpi 0x1dbc5c), OrientationChanged 0x1df76c (get_CurrentOrientation slot 6 -> DR::SetCurrentOrientation 0x1dbc1c), DisplayContentsInvalidated 0x1df618 (-> DR 0x1dc0b4), CompositionScaleChanged 0x1df510 (ISwapChainPanel get_CompositionScaleX slot 6 / Y slot 7 -> DR::SetCompositionScale 0x1dbbcc), SizeChanged 0x1df808, BackPressed 0x1df4e8, InputPane Hiding 0x1df700 / Showing 0x1df714, Tick 0x1df8a4. All take (this, sender, args) as r0,r1,r2.",
+   "arm_signature": "HRESULT Invoke-target(MainPage* this /*r0*/, Object^ sender /*r1*/, Object^ args /*r2*/)",
+   "x86_to_arm_notes": "Delegates are created by sub_1dc6ec/1dc7d4/1dc8bc/1dc9a4/1dca8c/1dcc5c/1dcd44 (FunctorCapture of member fn pointer). The host stores the delegate pointer passed to add_X and later calls vtable[3] Invoke(delegate, sender, args).",
+   "expected_bytes": "2de990480df1080b21f650fd",
+   "evidence": [
+    "func 1df9ac / 1df67c / 1df76c / 1df618 / 1df510 / 1df808 / 1df4e8 / 1df700 / 1df714 / 1df8a4"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.mainpage_onsizechanged",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001df808",
+   "summary": "SizeChanged handler: lock(AppMain+0x10); DR::SetSwapChainPanel(dr, [this+0x5c]) (0x1dbd40); size=args->get_NewSize (args slot 7, Size{float w,h}); DR::SetLogicalSize(dr, s0=w, s1=h) (0x1dbc80); AppMain::OnWindowSizeChanged(app, sender, args) (0x1da32c); unlock.",
+   "arm_signature": "HRESULT OnSizeChanged(MainPage* this /*r0*/, Object^ sender /*r1*/, SizeChangedEventArgs^ args /*r2*/)",
+   "x86_to_arm_notes": "THE FIRST SizeChanged on the SwapChainPanel is what binds the panel to DeviceResources and creates the composition swap chain. A host that never raises it (the friend) gets a blank/white surface. ISizeChangedEventArgs must be the PRIMARY interface of the args object (handler calls vtable slot 7 without QI).",
+   "expected_bytes": "2de9f0480df1100b21f622fe",
+   "evidence": [
+    "func 1df808",
+    "func 1dbd40 (SetSwapChainPanel: stores [DR+0x30]=panel)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.mainpage_ontick",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001df8a4",
+   "summary": "DispatcherTimer Tick handler (50 ms): if AppMain::IsAppInitialized (byte +0x3C): QI(timer)->Stop() (IDispatcherTimer slot 12); QI(Logo,IUIElement).put_Visibility(1=Collapsed) (slot 22, sub_1e1cf0); AppMain::AttachToPanel(app, swapChainPanel, EditBox, Button) (0x1da634); put_Visibility(Collapsed) again; AppMain::StartRenderLoop (0x1da8a8). If not ready: does nothing (timer keeps ticking).",
+   "arm_signature": "HRESULT OnTick(MainPage* this /*r0*/, Object^ sender /*r1*/, Object^ args /*r2*/)",
+   "x86_to_arm_notes": "This is a ONE-SHOT initialisation gate, not the frame driver. Frames are driven by the render-loop work item (startup_flow.render_loop_body). Start() is called exactly once (in the MainPage ctor).",
+   "expected_bytes": "2de9b0480df10c0b21f6d4fd",
+   "evidence": [
+    "func 1df8a4",
+    "callers of IDispatcherTimer::Start slot 11: only MainPage ctor @0x1dd670"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.mainpage_savestate",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001dfa40",
+   "summary": "MainPage::vf10 (OnSuspending body): lock; DeviceResources::Trim (sub_1dc054, IDXGIDevice3::Trim slot 17); AppMain::StopRenderLoop (sub_1da9d4, IAsyncInfo::Cancel slot 9); client suspend helpers (sub_1daa3c: sub_473d4+sub_474a4).",
+   "arm_signature": "void SaveState(MainPage* this /*r0*/, IPropertySet^ values /*r1, unused*/)",
+   "x86_to_arm_notes": "Values argument ignored.",
+   "expected_bytes": "2de990480df1080b21f606fd",
+   "evidence": [
+    "func 1dfa40"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.mainpage_loadstate",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001df4c4",
+   "summary": "MainPage::vf11 (OnResuming body): if AppMain::IsAppInitialized: client resume helpers (sub_1da438: sub_4743c+sub_4736c) then AppMain::StartRenderLoop.",
+   "arm_signature": "void LoadState(MainPage* this /*r0*/, IPropertySet^ values /*r1, unused*/)",
+   "x86_to_arm_notes": "Values argument ignored.",
+   "expected_bytes": "2de918480df1080b0446e06f",
+   "evidence": [
+    "func 1df4c4"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.mainpage_inputthread",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001de0bc",
+   "summary": "Input-thread work item queued by the MainPage ctor: QI([this+0x5c],ISwapChainPanel).CreateCoreIndependentInputSource(7=Touch|Pen|Mouse) (slot 10) -> [this+0x70]; QI(source,ICorePointerInputSource {BBF1BB18..}).add_PointerPressed(slot 20)/add_PointerMoved(slot 18)/add_PointerReleased(slot 22) with handlers that are EMPTY (0xbf60 / 0x1df7f0); then ICoreInputSourceBase.get_Dispatcher (slot 6, sub_1157e0).ProcessEvents(ProcessUntilQuit=2) (ICoreDispatcher slot 7) - blocks the worker forever.",
+   "arm_signature": "void work_item(functor+4 /*r0 = captured MainPage***/)",
+   "x86_to_arm_notes": "Vestigial in this build (all three pointer handlers are empty); real pointer/key input comes from CoreWindow events registered in HID::Initialize. Faithful host can fake CreateCoreIndependentInputSource with an object whose add_Pointer* return tokens and whose dispatcher ProcessEvents(2) just sleeps, or patch the work item away.",
+   "expected_bytes": "2de9f04b0df1180b23f6c8f9",
+   "evidence": [
+    "func 1de0bc",
+    "func 1df7f0 len=22 (empty)",
+    "func 1157e0 vslot 6"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.dr_make_shared",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001dce2c",
+   "summary": "make_shared<DX::DeviceResources>(shared_ptr<DR>* out): operator new(0x84), ref-count block (counts=1,1 at +4/+8, vtable 0xDC8E64), constructs DR at +0xC via sub_1dc5a4->sub_1dae14; out={ptr,ctrl}.",
+   "arm_signature": "shared_ptr<DR>* make_shared_DR(shared_ptr<DR>* out /*r0*/) -> r0=out",
+   "x86_to_arm_notes": "Creating the D3D11 device happens HERE (before any XAML object exists): sub_1dae14 -> sub_1dafc0 -> d3d11!D3D11CreateDevice. The DR ctor stores `this` in the global 0xE2AFC4 (read by DX::DeviceResources::get() 0x4b054 from 20 call sites).",
+   "expected_bytes": "03b42de99f480df1180b6f46",
+   "evidence": [
+    "func 1dce2c",
+    "func 1dc5a4",
+    "name 4b054 DX::DeviceResources::get [global 0xE2AFC4]"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.dr_create_device",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001dafc0",
+   "summary": "DX::DeviceResources::CreateDeviceResources: D3D11CreateDevice(adapter=NULL, DRIVER_TYPE_HARDWARE(1), software=NULL, Flags=0, FeatureLevels={0xB100,0xB000,0xA100,0xA000,0x9300} (11_1,11_0,10_1,10_0,9_3), n=5, SDK=7, &dev, &DR+0x38 (out FL), &ctx); then QI device/context/IDXGIDevice3; later sub_1db858.",
+   "arm_signature": "void CreateDeviceResources(DR* this /*r0*/)",
+   "x86_to_arm_notes": "FEATURE LEVEL 9_1: the game requests 9_3 as its lowest level and Flags=0 (no BGRA). On a Surface RT (FL 9_1) D3D11CreateDevice would fail with this list => the host MUST hook IAT cell 0x20B1A4 (d3d11!D3D11CreateDevice) and clamp the list to {9_1} and add D3D11_CREATE_DEVICE_BGRA_SUPPORT (same as the 1.2.8 ARM hook).",
+   "expected_bytes": "2de9b0480df10c0b26f646fa",
+   "evidence": [
+    "dis 1dafc0 -> stores 0xb100,0xb000,0xa100,0xa000,0x9300; movs r3,#5; movs r3,#7; bl #0x1f433c (thunk D3D11CreateDevice)",
+    "imports D3D11CreateDevice -> IAT 0x20b1a4"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.dr_set_panel",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001dbd40",
+   "summary": "DX::DeviceResources::SetSwapChainPanel(panel): DisplayInformation::GetForCurrentView (sub_4af58); [DR+0x30]=panel; QI(panel,IFrameworkElement).get_ActualHeight (slot 14, sub_1dc490)/get_ActualWidth (slot 13, sub_1dc504) -> [DR+0x4C/+0x50] logical size (throws InvalidArgument if invalid); [DR+0x54]=NativeOrientation (IDisplayInformation slot 7); [DR+0x58]=CurrentOrientation (slot 6); QI(panel,ISwapChainPanel).get_CompositionScaleX (slot 6) -> [DR+0x60], ScaleY (slot 7) -> [DR+0x64]; ApplyResolutionOverride (0x1dbfbc); [DR+0x5C]=LogicalDpi (slot 11); CreateWindowSizeDependentResources (0x1db158).",
+   "arm_signature": "void SetSwapChainPanel(DR* this /*r0*/, ISwapChainPanel* panel /*r1*/)",
+   "x86_to_arm_notes": "ActualWidth/ActualHeight must be finite and > 0 (sub_1daed0 raises __abi_WinRTraiseInvalidArgumentException otherwise); composition scale must be non-zero (AppPlatform init divides by it).",
+   "expected_bytes": "2de9f04b0df1180b2ded028b",
+   "evidence": [
+    "func 1dbd40 (summary + -f)",
+    "callers: 1df808 only"
+   ],
+   "confidence": "high",
+   "verdict": "CORRECTED",
+   "verifier_note": "Everything matches (stores [DR+0x30]=panel; Actual W/H via QI IFrameworkElement slots 13/14 into +0x4C/+0x50; native/current orientation slots 7/6 -> +0x54/+0x58; ISwapChainPanel scale slots 6/7 -> +0x60/+0x64; only caller is 0x1df840 inside the SizeChanged handler) EXCEPT the validity rule: the checker sub_1daed0 raises InvalidArgument only for NEGATIVE values (vcmpe + blo); 0 and NaN pass. 'finite and > 0' is wrong, '>= 0' is right. Scale must still be non-zero for the platform maths."
+  },
+  {
+   "id": "startup_flow.dr_create_wsd",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001db158",
+   "summary": "DX::DeviceResources::CreateWindowSizeDependentResources (1638 B): returns immediately if [DR+0x30] (panel)==NULL; OMSetRenderTargets(0..) ; releases old RTV/DSV; creates the swap chain with IDXGIFactory2::CreateSwapChainForComposition (slot 24, device=[DR+4]) ; creates a DispatchedHandler (sub_1dad7c -> sub_1daf04) and runs it on the panel dispatcher: QI(panel,IDependencyObject).get_Dispatcher (slot 11, sub_1dc3fc) -> ICoreDispatcher::RunAsync(priority=1, handler) (slot 8, sub_11401c); the handler does QI(panel,ISwapChainPanelNative {F92F19D2-3ADE-45A6-A20C-F6F1EA90554B}).SetSwapChain(swapChain) (slot 3, sub_1daf04); then IDXGIDevice1::SetMaximumFrameLatency(1) (slot 12), creates RTV/DSV/viewport; also IDXGISwapChain2 (A8BE2AC4) SetMatrixTransform (slot 34 = 0x88) for scale.",
+   "arm_signature": "void CreateWindowSizeDependentResources(DR* this /*r0*/)",
+   "x86_to_arm_notes": "Fake needs: panel IDependencyObject.get_Dispatcher + ICoreDispatcher.RunAsync executing the handler (Invoke) ; panel ISwapChainPanelNative.SetSwapChain; and a way to make a COMPOSITION swap chain visible on a Win32 HWND (DirectComposition target on the host HWND, or hook IDXGIFactory2 slot 24 to create an HWND swap chain). The IDXGISwapChain2::SetMatrixTransform call (slot 34) needs a valid IDXGISwapChain2 - the friend patched it out at 0x1DB56C; with DComp/composition swap chains it should work unmodified.",
+   "expected_bytes": "2de9f04b0df1180b2ded028b",
+   "evidence": [
+    "func 1db158 -> vslot 24 off 0x60 (CreateSwapChainForComposition); bl 1dad7c; bl 1dc3fc; bl 11401c; IIDs 6df238 (ISwapChainPanelNative), 6df1f8 (IDependencyObject), 6df288 (IDXGISwapChain2)",
+    "friend notes: RVA_0104_DR_MATRIX_TRANSFORM_SKIP=0x1DB56C"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.dr_present",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001dbb10",
+   "summary": "DX::DeviceResources::present: IDXGISwapChain::Present(0,0) on [DR+0xC] (slot 8); on DEVICE_REMOVED/RESET (compare to two constants) -> release swap chain, recreate device (sub_1dafc0) and size resources (sub_1db158).",
+   "arm_signature": "void Present(DR* this /*r0*/)",
+   "x86_to_arm_notes": "Called once per render-loop iteration. SyncInterval=0: pacing comes from composition/DWM and Minecraft::update.",
+   "expected_bytes": "2de99f480df1180b6f466ff0",
+   "evidence": [
+    "func 1dbb10"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.dr_global",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": "0x00e2afc4",
+   "summary": "Global DX::DeviceResources* singleton, written by the DR constructor (sub_1dae14 at 0x1dae5a) and read through DX::DeviceResources::get() 0x4b054 (20 callers: shaders, GameRenderer, AppPlatform init).",
+   "arm_signature": "DR* g_DeviceResources",
+   "x86_to_arm_notes": "Must be non-NULL before MinecraftClient::init (shader compile) runs, i.e. the DR must be constructed first (it is: MainPage ctor step 11 precedes AppMain).",
+   "expected_bytes": null,
+   "evidence": [
+    "func 1dae14 movw/movt 0xafc4 -> .data+0xaebfc4",
+    "callers 4b054"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.dr_fields",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "offset",
+   "arm_rva": "0x00000030",
+   "summary": "DeviceResources layout (object at ref-block+0xC): +4 ID3D11Device, +8 ID3D11DeviceContext, +0xC IDXGISwapChain, +0x10/+0x14 RTV/DSV, +0x30 SwapChainPanel^, +0x34/+0x35 bytes (resolution-override flags), +0x38 D3D_FEATURE_LEVEL out, +0x4C/+0x50 logical size w/h (float), +0x54 native orientation, +0x58 current orientation, +0x5C dpi (float), +0x60/+0x64 composition scale X/Y (float), +0x68 resolution-override table ptr, +0x74 listener (AppMain*, set by sub_1dbbc0).",
+   "arm_signature": "offsets",
+   "x86_to_arm_notes": "Only the panel (+0x30), scale (+0x60/+0x64), listener (+0x74) matter to the startup flow; the rest belongs to the device/render areas.",
+   "expected_bytes": null,
+   "evidence": [
+    "sub_1dbd40, sub_1dbbcc, sub_1dbfbc, sub_1dbbc0 stores/loads"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.appmain_ctor",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001d9d14",
+   "summary": "MCPE_Host::AppMain::AppMain(shared_ptr<DR>*): [+0]=vtable 0xDC8830 (IDeviceNotify-like; slots 0/1 are empty stubs 0xbf60), [+4]=DR*, [+8]=ctrl (AddRef), [+0xC]=0 (IAsyncAction^ render task), concurrency::critical_section ctor at +0x10, sub_1d9dd4(app+0x34)=createApp, sub_1dbbc0(DR, app) registers the AppMain as DR listener.",
+   "arm_signature": "AppMain* AppMain_ctor(AppMain* this /*r0 = new(0x40), zeroed*/, shared_ptr<DR>* dr /*r1*/) -> r0",
+   "x86_to_arm_notes": "AppMain layout (0x40): +4 DR*, +8 ctrl, +0xC render IAsyncAction^, +0x10..+0x33 critical_section (scoped_lock(app+0x10) everywhere), +0x34 MinecraftClient*, +0x38 holder* ({AppPlatform_Winrt*}, 8-byte alloc), +0x3C byte isReady.",
+   "expected_bytes": "03b42de9fc4b0df1200b6f46",
+   "evidence": [
+    "func 1d9d14",
+    "func 1dbbc0 (str r1,[r0,#0x74])"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.appmain_createapp",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001d9dd4",
+   "summary": "AppMain::createApp(struct* s = AppMain+0x34): s[0]=0,s[1]=holder=new(8); platform = new(0x88)+memset+AppPlatform_Winrt::ctor(0x494c0) stored holder[0]; client = AppMain::newMinecraftClient (0x1d9cc0: new(0x168), memset, MinecraftClient::ctor 0x54e90) -> s[0]; platform[+0x10]=client; ApplicationData::Current.LocalFolder (IApplicationData slot 12)->QI IStorageItem->get_Path (slot 12) -> narrow std::string stored at platform+0x78 and +0x90; then ThreadPool.RunAsync(WorkItemHandler(init job lambda c7b75372)) (IThreadPoolStatics slot 6).",
+   "arm_signature": "AppMain-struct* createApp(struct* s /*r0 = AppMain+0x34*/) -> r0",
+   "x86_to_arm_notes": "ORDER INSIDE AppMain ctor: platform -> client(ctor only, no init) -> LocalFolder path -> async init job. MinecraftClient::init is NOT run here: it runs later on the thread-pool thread.",
+   "expected_bytes": "2de9f0490df1140b27f63cfb",
+   "evidence": [
+    "func 1d9dd4 (-f)",
+    "name 1d9cc0 newMinecraftClient",
+    "name 1da2d8 initJob lambda"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.appmain_initjob",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001da2d8",
+   "summary": "Init-job lambda body (WorkItemHandler functor lambda_c7b75372...): s=[this+4] (= AppMain+0x34); sub_471e8(client=s[0], holder=s[1]); then DMB; byte s[8]=1 (= AppMain+0x3C isReady) ; DMB.",
+   "arm_signature": "void job(functor* this /*r0*/)",
+   "x86_to_arm_notes": "THIS is who sets AppMain+0x3C (the friend could not find the setter because it lives in a lambda object). sub_471e8: client[+0xC]=holder; client->vtbl[7]() = MinecraftClient::init (0x57b84); client[+8]=1; sub_47bf4(client, 0.0f).",
+   "expected_bytes": "2de918480df1080b04466368",
+   "evidence": [
+    "func 1da2d8: strb r2,[r3,#8] with r3=[r4,#4]",
+    "func 471e8: str r1,[r4,#0xc]; ldr r3,[r3,#0x1c]; blx r3"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.appmain_isready",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001da310",
+   "summary": "AppMain::IsAppInitialized: ldrb [app+0x3C]; DMB; returns bool.",
+   "arm_signature": "bool IsAppInitialized(AppMain* this /*r0*/)",
+   "x86_to_arm_notes": "Polled by Tick, VisibilityChanged, Resuming and the render loop.",
+   "expected_bytes": "2de90048eb4690f83c30bff3",
+   "evidence": [
+    "func 1da310"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.client_init",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00057b84",
+   "summary": "MinecraftClient::init (vtable slot 7 = offset 0x1C of the client, 2150 B): sets up paths (\"/games/com.mojang/minecraftpe\"), images/ terrain.meta items.meta, language \"en_US\", materials/common.json, creates TextureManager (new 0xB8 -> sub_dbf98, stored client+0x118) and Font (\"font/default8.png\", new 0x890 -> sub_548a0, stored client+0x11C), shaders, input holders and the initial StartMenuScreen. Runs on a ThreadPool worker, NOT on the UI thread.",
+   "arm_signature": "void init(MinecraftClient* this /*r0*/)",
+   "x86_to_arm_notes": "Requires: client+0xC = holder (set by sub_471e8), the AppPlatform_Winrt (file IO, paths), the DeviceResources singleton (shader compile uses D3DCompile via IAT 0x20B000 - needs _level_9_1 profiles) and a working D3D device. The friend never ran this => +0x118/+0x11C stayed NULL => StartMenuScreen crashed in map::find.",
+   "expected_bytes": "2de9f04f0df11c0ba9f764fc",
+   "evidence": [
+    "func 57b84 strings \"/games\",\"/com.mojang\",\"/minecraftpe\",\"terrain.meta\",\"items.meta\",\"en_US\",\"font/default8.png\"",
+    "scan: add r2,r6,#0x118 @0x57f72 ; add r1,r6,#0x11c @0x58234 ; client ctor 0x54e90 zeroes both @0x54efa/0x54efe"
+   ],
+   "confidence": "high",
+   "verdict": "CORRECTED",
+   "verifier_note": "Function, vtable slot (0x1c) and what it creates are right: textures stored via add r2,r6,#0x118 at 0x57f72 (Textures ctor 0xdbf98), font via add r1,r6,#0x11c at 0x58234 (Font factory 0x548a0), MaterialManager::load (0xcdfcc -> D3DCompile chain verified: 0xd6a3c <- 0xd65cc <- 0xd67bc <- 0xc9cd4 <- 0xcc0e4 <- 0xcd350 <- 0xcdfcc <- 0x57b84), ScreenChooser::setScreen (0x91a3c) for the first screen. CORRECTION to the explanatory note 'The friend never ran this': the friend DID run it implicitly - their host calls the AppMain ctor 0x1d9d14, which starts the init job through the ThreadPool fake (their log shows ThreadPool activation #3 right after the ctor and a second thread T317c starting at 453 ms and crashing at the same pc). The real bug was that the host thread read/used the client and injected a StartMenuScreen + setScreen while the worker was still inside init (data race), and never waited for AppMain+0x3C."
+  },
+  {
+   "id": "startup_flow.appmain_startrender",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001da8a8",
+   "summary": "AppMain::StartRenderLoop: if [app+0xC] is NULL or QI(IAsyncInfo).get_Status (slot 7) != Started(0): create WorkItemHandler (sub_1d9c00, functor lambda_fc75a67...) capturing AppMain, ThreadPool.RunWithPriorityAndOptionsAsync(handler, priority=1 High, options=1 TimeSliced) (sub_114078, IThreadPoolStatics slot 8) -> store in [app+0xC].",
+   "arm_signature": "void StartRenderLoop(AppMain* this /*r0*/)",
+   "x86_to_arm_notes": "Idempotent. Called from Tick (first), VisibilityChanged(true), Resuming.",
+   "expected_bytes": "2de9f0490df1140b26f6d2fd",
+   "evidence": [
+    "func 1da8a8",
+    "func 114078"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.render_loop_body",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001da160",
+   "summary": "Render-loop WorkItem body (the REAL FRAME DRIVER): loop { QI(passed IAsyncAction,IAsyncInfo).get_Status (slot 7); if !=Started(0) return; lock(app+0x10); if AppMain.isReady(+0x3C): AppPlatform_Winrt::update(platform) (sub_50eac: drains input queue, UI task queue, vibration timers); client->vtbl[19]() = Minecraft::update (0x1d8a54: tick loop + render); DeviceResources::present (0x1dbb10); unlock }.",
+   "arm_signature": "void body(AppMain** captured+4 /*r0*/, IAsyncAction* operation /*r1*/)",
+   "x86_to_arm_notes": "The IAsyncAction passed to Invoke MUST also answer QI(IAsyncInfo {00000036-0000-0000-C000-000000000046}) with get_Status=0 (Started) until Cancel (slot 9) is called, and the object returned by RunWithPriorityAndOptionsAsync is the same one StartRenderLoop later queries.",
+   "expected_bytes": "2de9f04f0df11c0b27f676f9",
+   "evidence": [
+    "func 1da160 -f",
+    "name 1d8a54 Minecraft::update"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.appmain_attach",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001da634",
+   "summary": "AppMain::AttachToPanel(panel, editBox, button) (called once from Tick): lock; platform=[[app+0x38]]; Window.Current.CoreWindow; AppPlatform_Winrt::initialize(platform, coreWindow, panel, editBox, button) (0x4b55c: HID::Initialize 0x111c1c registers CoreWindow KeyDown/KeyUp/PointerPressed/Moved/Released + TextBox TextChanged, reads DisplayInformation RawDpiX/Y/LogicalDpi, DR composition scale -> platform +0x38/+0x3C/+0x40); QI(panel,IUIElement).get_RenderSize (slot 23) -> client->vtbl[20](client, (int)((w+0.5)*platform[+0x3C]), (int)((h+0.5)*platform[+0x40]), s0=const) = MinecraftClient::setSize; platform+0x30 = width, +0x34 = height (setScreenWidth/Height).",
+   "arm_signature": "void AttachToPanel(AppMain* this /*r0*/, ISwapChainPanel* panel /*r1*/, ITextBox* edit /*r2*/, IButton* btn /*r3*/)",
+   "x86_to_arm_notes": "Friend labelled this \"runFrame sub_5DA634 ... XAML path unusable\": it is actually one-time window attachment, not a per-frame function.",
+   "expected_bytes": "2de9f04f0df11c0b2ded048b",
+   "evidence": [
+    "func 1da634 (-f)",
+    "func 4b55c",
+    "dis 1da6dc..1da768"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.appmain_onsize",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001da32c",
+   "summary": "AppMain::OnWindowSizeChanged(sender, SizeChangedEventArgs): reads args->get_NewSize (slot 7) and calls client->vtbl[20] (setSize) with (int)((w+0.5)*platform[+0x3C]), (int)((h+0.5)*platform[+0x40]) ; platform+0x30/+0x34 = new width/height.",
+   "arm_signature": "void OnWindowSizeChanged(AppMain* this /*r0*/, Object^ sender /*r1*/, SizeChangedEventArgs^ args /*r2*/)",
+   "x86_to_arm_notes": "No isReady check: uses client pointer immediately (client object exists after AppMain ctor).",
+   "expected_bytes": "2de970480df10c0b2ded048b",
+   "evidence": [
+    "func 1da32c",
+    "dis 1da362..1da3ac"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.appmain_kbheight",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001da5b4",
+   "summary": "AppMain::onKeyboardHeightChanged(int px) (friend mislabelled it \"AppMain::tick(ms)\" and called it with 16 every frame!): lock; client->sub_59578(client, (int)(px * platform[+0x40])) = MinecraftClient::setKeyboardHeight (client+0x164 = px*guiInv; screen->vtbl[30]).",
+   "arm_signature": "void onKeyboardHeightChanged(AppMain* this /*r0*/, int px /*r1*/)",
+   "x86_to_arm_notes": "Called by the InputPane Showing (px = OccludedRect.Height) and Hiding (px = 0) handlers only. Calling it with 16 each frame does NOT run a frame - this is why the friend saw Draw=0.",
+   "expected_bytes": "2de9b0480df10c0b26f64cff",
+   "evidence": [
+    "func 1da5b4",
+    "func 59578",
+    "func 1df700 (xor r1,r1 ; b.w 1da5b4)"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.platform_ctor",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x000494c0",
+   "summary": "AppPlatform_Winrt::ctor (object 0x88): base ctor 0x4726c, vtable 0x73FB20 (RVA 0x33FB20), +0x2C HIDController (Heap::Allocate(0x5c,0x68), ctor 0x1103fc), +0x30/+0x34 = 0x780/0x438 (default 1920x1080), +0x50 critical_section, +0x70 deque; Package::Current.InstalledLocation (IPackageStatics slot 6; IPackage slot 7) -> QI IStorageItem -> get_Path (slot 12) -> narrow std::string at +0x14 (install path).",
+   "arm_signature": "AppPlatform_Winrt* ctor(AppPlatform_Winrt* this /*r0*/)",
+   "x86_to_arm_notes": "Only WinRT touched: Package.Current, StorageItem.Path, HIDController ctor (no WinRT until HID::Initialize).",
+   "expected_bytes": "2de9f04b0df1180bb7f7c6ff",
+   "evidence": [
+    "func 494c0 (-f)",
+    "actscan 4e840 Package IPackageStatics"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.platform_init",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0004b55c",
+   "summary": "AppPlatform_Winrt::initialize(coreWindow, panel, editBox, button): HID::Initialize; DisplayInformation::GetForCurrentView -> RawDpiX (slot 12), RawDpiY (slot 13), LogicalDpi (slot 11); platform+0x38 = ((dpiX+dpiY)*0.5)/const ; with a panel: +0x3C = DR+0x60, +0x40 = DR+0x64 (composition scale), +0x38 *= (+0x3C / CompositionScaleX of ISwapChainPanel) ; without panel: +0x3C=LogicalDpi/const.",
+   "arm_signature": "void initialize(AppPlatform_Winrt* this /*r0*/, ICoreWindow* w /*r1*/, ISwapChainPanel* panel /*r2*/, ITextBox* edit /*r3*/, IButton* btn /*[sp]*/)",
+   "x86_to_arm_notes": "Needs DeviceResources composition scale already set (SizeChanged must have run) or the scale is 0.",
+   "expected_bytes": "2de9f0480df1100b2ded028b",
+   "evidence": [
+    "func 4b55c",
+    "dis 4b586..4b6be"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.client_update",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001d8a54",
+   "summary": "Minecraft::update (vtable slot 19, offset 0x4C): per-frame engine step called from the render loop: client->vf28 (0x70), timer advance, tick loop client->vf31 (0x7C), client->vf29 (0x74, render = MinecraftClient::render 0x5a114), client->vf30 (0x78).",
+   "arm_signature": "void update(MinecraftClient* this /*r0*/)",
+   "x86_to_arm_notes": "Pure game logic; needs only the D3D context of the DeviceResources.",
+   "expected_bytes": "2de978480df1100b05462b68",
+   "evidence": [
+    "func 1d8a54",
+    "render_loop_body calls vtbl[0x4c]"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.getactivationfactory_thunk",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x002001e4",
+   "summary": "Single choke point for ALL runtime-class activation: sub_2001e4(LPCWSTR className /*r0*/, GUID* iid /*r1*/, void** out /*r2*/) is a tail jump to vccorlib120_app!GetActivationFactoryByPCWSTR through IAT 0x20B5FC. 38 call sites (inventory in startup_flow.md).",
+   "arm_signature": "HRESULT GetActivationFactoryByPCWSTR(LPCWSTR name /*r0*/, Platform::Guid& iid /*r1*/, void** factory /*r2*/)",
+   "x86_to_arm_notes": "Patch IAT cell 0x20B5FC (or detour 0x2001e4) to route class names to host fakes and forward everything else to the real vccorlib function. Exactly like install_activation_redirect on 1.2.8.",
+   "expected_bytes": "2de90048eb46bde8004800f0",
+   "evidence": [
+    "impcallers GetActivationFactoryByPCWSTR -> only sub_2001e4",
+    "actscan 2001e4 -> 38 callers"
+   ],
+   "confidence": "high",
+   "verdict": "CORRECTED",
+   "verifier_note": "RVA/bytes/IAT right, but the call-site count is 36 not 38: both the arm32re caller index and an independent raw BL/B.W decode over all of .text find exactly 36 direct bl sites and no tail jumps. The class list in startup_flow.md is complete for those 36 sites (23 distinct classes incl. the lazy ones)."
+  },
+  {
+   "id": "startup_flow.iat_activation",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020b5fc",
+   "summary": "IAT cell vccorlib120_app.DLL!?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z.",
+   "arm_signature": "HRESULT (*)(void*,Platform::Guid&,void**)",
+   "x86_to_arm_notes": "Friend value 0x20B5FC re-derived.",
+   "expected_bytes": "18c33300",
+   "evidence": [
+    "imports GetActivationFactoryByPCWSTR -> 0020b5fc"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iat_d3d11createdevice",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020b1a4",
+   "summary": "IAT cell d3d11.dll!D3D11CreateDevice (single caller DX::DeviceResources::CreateDeviceResources).",
+   "arm_signature": "HRESULT D3D11CreateDevice(...)",
+   "x86_to_arm_notes": "Clamp feature levels to 9_1 and OR in BGRA support.",
+   "expected_bytes": "94b53300",
+   "evidence": [
+    "imports D3D11CreateDevice -> 0020b1a4",
+    "impcallers -> 0x1db028"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iat_createdxgifactory1",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020b1ac",
+   "summary": "IAT cell dxgi.dll!CreateDXGIFactory1 (single caller DX::DeviceResources::ValidateDevice 0x1dc0b4 = DisplayContentsInvalidated path).",
+   "arm_signature": "HRESULT CreateDXGIFactory1(REFIID, void**)",
+   "x86_to_arm_notes": "Only used on the display-invalidated (ValidateDevice) path, not at startup.",
+   "expected_bytes": "44b53300",
+   "evidence": [
+    "imports CreateDXGIFactory1 -> 0020b1ac",
+    "impcallers -> 0x1dc1fe"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iat_d3dcompile",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020b000",
+   "summary": "IAT cell D3DCOMPILER_47.dll!D3DCompile (+0x20B004 D3DReflect).",
+   "arm_signature": "HRESULT D3DCompile(...)",
+   "x86_to_arm_notes": "Shader profile names are built by game code (getShaderModelSuffix throws for 9_1/9_2 per other area) - see shader areas.",
+   "expected_bytes": "72b53300",
+   "evidence": [
+    "imports D3DCompile -> 0020b000"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.timer_interval",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": "0x001dd870",
+   "summary": "DispatcherTimer interval literal (pool of MainPage ctor): 0x0007A120 = 500,000 ticks of 100 ns = 50 ms, passed as TimeSpan {int64} in r2:r3 (r3=0) to IDispatcherTimer::put_Interval (slot 7).",
+   "arm_signature": "TimeSpan 0x7A120",
+   "x86_to_arm_notes": "The Tick handler stops the timer on first successful tick, so the host timer must support Stop().",
+   "expected_bytes": "20a10700",
+   "evidence": [
+    "bytes 1dd870 -> 20 a1 07 00",
+    "dis 1dd59e ldr r2,[pc,#0x2d0]; movs r3,#0; blx [r1,#0x1c]"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.canvas_left_const",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "data",
+   "arm_rva": "0x001dd500",
+   "summary": "double 3000.0 (0x40A7700000000000) loaded into d8 and passed to Canvas.SetLeft(EditBox/Button, 3000.0) via ICanvasStatics slot 8 (sub_1dfab8; AAPCS-VFP: r0=statics, r1=IUIElement*, d0=length).",
+   "arm_signature": "double 3000.0",
+   "x86_to_arm_notes": "Moves the TextBox and Button far off-screen; with a fake Canvas.SetLeft = no-op nothing else is needed.",
+   "expected_bytes": "000000000070a740",
+   "evidence": [
+    "bytes 1dd500 -> 00 00 00 00 00 70 a7 40",
+    "dis 1dd46c vldr d8,[pc,#0x90]"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.str_application",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "string",
+   "arm_rva": "0x002e4fb0",
+   "summary": "L\"Windows.UI.Xaml.Application\" class name - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "570069006e0064006f00770073002e00",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_iswapchainpanel",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x0020fbf8",
+   "summary": "ISwapChainPanel {C589644F-EBA8-427A-B75A-9F1F93A11AE9} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "4f6489c5a8eb7a42b75a9f1f93a11ae9",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_iframeworkelement",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002df208",
+   "summary": "IFrameworkElement {A391D09B-4A99-4B7C-9D8D-6FA5D01F6FBF} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "9bd091a3994a7c4b9d8d6fa5d01f6fbf",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_iuielement",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002de660",
+   "summary": "IUIElement {676D0BE9-B65C-41C6-BA40-58CF87F201C1} (copy 2; copy 1 at 0x2E2378) - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "e90b6d675cb6c641ba4058cf87f201c1",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_idispatchertimer",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002e2358",
+   "summary": "IDispatcherTimer {D160CE46-CD22-4F5F-8C97-40E61DA3E2DC} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "46ce60d122cd5f4f8c9740e61da3e2dc",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_idependencyobject",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002df1f8",
+   "summary": "IDependencyObject {5C526665-F60E-4912-AF59-5FE0680F089D} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "6566525c0ef61249af595fe0680f089d",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_iswapchainpanelnative",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002df238",
+   "summary": "ISwapChainPanelNative {F92F19D2-3ADE-45A6-A20C-F6F1EA90554B} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "d2192ff9de3aa645a20cf6f1ea90554b",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_iactivatedeventargs",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002e4f00",
+   "summary": "IActivatedEventArgs {CF651713-CD08-4FD8-B697-A281B6544E2E} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "131765cf08cdd84fb697a281b6544e2e",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_iapplicationoverrides",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002e4f30",
+   "summary": "IApplicationOverrides {25F99FF7-9347-459A-9FAC-B2D0E11C1A0F} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "f79ff92547939a459facb2d0e11c1a0f",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_iapplication",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002e4f20",
+   "summary": "IApplication {74B861A1-7487-46A9-9A6E-C78B512726C5} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "a161b8748774a9469a6ec78b512726c5",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_icorepointerinputsource",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x00247dd0",
+   "summary": "ICorePointerInputSource {BBF1BB18-E47A-48EB-8807-F8F8D3EA4551} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "18bbf1bb7ae4eb488807f8f8d3ea4551",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_iasyncinfo",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x0020fbd8",
+   "summary": "IAsyncInfo {00000036-0000-0000-C000-000000000046} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "3600000000000000c000000000000046",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_istorageitem",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x0020fbc8",
+   "summary": "IStorageItem {4207A996-CA2F-42F7-BDE8-8B10457A7F30} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "96a907422fcaf742bde88b10457a7f30",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_iimage",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002eca40",
+   "summary": "IImage {495B7402-9AF3-4E50-AA90-03388F3086D2} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "02745b49f39a504eaa9003388f3086d2",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_itextbox",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002eca5c",
+   "summary": "ITextBox {E48F5A8B-1DFF-4352-A1F4-E516514EC882} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "8b5a8fe4ff1d5243a1f4e516514ec882",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_itextbox2",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x00247e00",
+   "summary": "ITextBox2 {F7168C00-1432-462A-9405-38F385BFC37C} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "008c16f732142a46940538f385bfc37c",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.iid_ibutton",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "iid",
+   "arm_rva": "0x002eca7c",
+   "summary": "IButton {280335AE-5570-46C7-8E0B-602BE71229A2} - GUID/string bytes at this RVA in .rdata (used with QueryInterface or GetActivationFactory).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The host fake must answer QueryInterface for this IID with a pointer whose vtable has the slots listed in startup_flow.md.",
+   "expected_bytes": "ae3503287055c7468e0b602be71229a2",
+   "evidence": [
+    "guid map (SDK 19041 idl) matches bytes at this RVA"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_app_statics_start",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x0000001c",
+   "summary": "IApplicationStatics (activation \"Windows.UI.Xaml.Application\", IID 06499997) slot 7 Start(ApplicationInitializationCallback^)",
+   "arm_signature": "HRESULT Start(this /*r0*/, cb /*r1*/)",
+   "x86_to_arm_notes": "caller 0x1eecbc",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_app_statics_loadcomponent",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000024",
+   "summary": "IApplicationStatics slot 9 LoadComponentWithResourceLocation(IInspectable* component /*r1*/, IUriRuntimeClass* uri /*r2*/, int location /*r3 = 0*/)",
+   "arm_signature": "HRESULT (this, component, uri, 0)",
+   "x86_to_arm_notes": "caller 0x1ee424 (InitializeComponent). Slot 8 LoadComponent exists but is unused.",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_app_factory_createinstance",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000018",
+   "summary": "IApplicationFactory {93BBE361} slot 6 CreateInstance(IInspectable* outer /*r1 = App2+8*/, IInspectable** inner /*r2 = &App2+0x14*/, IApplication** instance /*r3*/)",
+   "arm_signature": "HRESULT (this, outer, &inner, &instance)",
+   "x86_to_arm_notes": "caller 0x1e3228; fake must AddRef outer and return inner implementing IApplication slots 13 (add_Suspending) and 15 (add_Resuming)",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_application_add_suspending",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000034",
+   "summary": "IApplication slot 13 add_Suspending(SuspendingEventHandler* /*r1*/, EventRegistrationToken* /*r2*/); slot 15 (0x3C) add_Resuming(EventHandler<Object>*, token*)",
+   "arm_signature": "HRESULT (this, handler, &token)",
+   "x86_to_arm_notes": "callers 0x1e5f50 / 0x1e5edc",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_window_current",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000018",
+   "summary": "IWindowStatics {93328409} slot 6 get_Current(IWindow** /*r1*/) ; class \"Windows.UI.Xaml.Window\"",
+   "arm_signature": "HRESULT (this, &window)",
+   "x86_to_arm_notes": "helper 0x1dac80 (4 callers: OnLaunched, MainPage ctor, AttachToPanel)",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_window_put_content",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000024",
+   "summary": "IWindow {3276167D} slot 9 put_Content(UIElement* /*r1 = QI(page,IUIElement)*/); slot 10 (0x28) get_CoreWindow(CoreWindow** /*r1*/); slot 20 (0x50) Activate()",
+   "arm_signature": "HRESULT (this, page)",
+   "x86_to_arm_notes": "callers 0x1e3b84.. (OnLaunched), 0x1daacc (CoreWindow)",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_corewindow_visibility",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x000000e0",
+   "summary": "ICoreWindow {79B9D5F2} slot 56 add_VisibilityChanged(TypedEventHandler<CoreWindow,VisibilityChangedEventArgs>* /*r1*/, token* /*r2*/). HID::Initialize additionally uses slots 34 add_KeyDown, 36 add_KeyUp, 44 add_PointerMoved, 46 add_PointerPressed, 48 add_PointerReleased; handler args: IVisibilityChangedEventArgs slot 6 get_Visible(bool*)",
+   "arm_signature": "HRESULT (this, handler, &token)",
+   "x86_to_arm_notes": "MainPage ctor @0x1dd09a; HID::Initialize @0x11f4e..0x1202a",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_displayinfo_statics",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000018",
+   "summary": "IDisplayInformationStatics {C6A02A6C} slot 6 GetForCurrentView(IDisplayInformation** /*r1*/); slot 9 (0x24) add_DisplayContentsInvalidated(TypedEventHandler<DisplayInformation,Object>*, token*); class \"Windows.Graphics.Display.DisplayInformation\"",
+   "arm_signature": "HRESULT (this, out)",
+   "x86_to_arm_notes": "helpers 0x4af58 (GetForCurrentView, 7 callers) and 0x1e183c (static event)",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_displayinfo_instance",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000038",
+   "summary": "IDisplayInformation {BED112AE} slots used: 6 get_CurrentOrientation, 7 get_NativeOrientation, 8 add_OrientationChanged, 11 get_LogicalDpi (float*), 12 get_RawDpiX, 13 get_RawDpiY, 14 add_DpiChanged",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "MainPage ctor @0x1dd10c/0x1dd156, DR::SetSwapChainPanel, AppPlatform::initialize",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_swapchainpanel_iface",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000020",
+   "summary": "ISwapChainPanel {C589644F} slots: 6 get_CompositionScaleX(float*), 7 get_CompositionScaleY(float*), 8 add_CompositionScaleChanged(TypedEventHandler<SwapChainPanel,Object>*, token*), 10 (0x28) CreateCoreIndependentInputSource(deviceTypes=7, CoreInputSource** out)",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "MainPage ctor @0x1dd208; 0x1df510 handler; DR::SetSwapChainPanel; input work item",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_framework_element",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x000000bc",
+   "summary": "IFrameworkElement {A391D09B} slots: 13 (0x34) get_ActualWidth(double*), 14 (0x38) get_ActualHeight(double*), 47 (0xBC) add_SizeChanged(SizeChangedEventHandler*, token*) via helper 0x1e1720, 51 (0xCC) FindName(HSTRING, IInspectable**)",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "DR::SetSwapChainPanel (sub_1dc490/1dc504), MainPage ctor, InitializeComponent (sub_1ed378)",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_uielement_iface",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000058",
+   "summary": "IUIElement {676D0BE9} slots: 22 (0x58) put_Visibility(int 1=Collapsed), 23 (0x5C) get_RenderSize(Size* float w,h)",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "helpers 0x1e1cf0 (Tick handler: Logo) and 0x1daa58 (AttachToPanel)",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_dependencyobject_dispatcher",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x0000002c",
+   "summary": "IDependencyObject {5C526665} slot 11 get_Dispatcher(CoreDispatcher** /*r1*/); ICoreDispatcher {60DB2FA8} slot 7 ProcessEvents(option), slot 8 RunAsync(CoreDispatcherPriority /*r1 = 1*/, DispatchedHandler* /*r2*/, IAsyncAction** /*r3*/)",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "DR::CreateWindowSizeDependentResources (sub_1dc3fc, sub_11401c), HID RunOnDispatcher lambdas",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_swapchainpanel_native",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x0000000c",
+   "summary": "ISwapChainPanelNative {F92F19D2} slot 3 SetSwapChain(IDXGISwapChain* /*r1*/) (IUnknown-derived: slots 0-2 QI/AddRef/Release)",
+   "arm_signature": "HRESULT (this, swapchain)",
+   "x86_to_arm_notes": "lambda sub_1daf04, executed through the panel dispatcher",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_dispatchertimer_factory",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000018",
+   "summary": "Class \"Windows.UI.Xaml.DispatcherTimer\": IDispatcherTimerFactory {E9961E6E} slot 6 CreateInstance(outer=NULL, inner*=NULL, instance**); IDispatcherTimer {D160CE46}: 7 put_Interval(TimeSpan in r2:r3), 9 add_Tick(EventHandler<Object>*, token*), 11 Start, 12 Stop",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "helper 0x1dce94; MainPage ctor @0x1dd5a6..0x1dd670; Tick handler @0x1df8f8",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_inputpane",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000018",
+   "summary": "Class \"Windows.UI.ViewManagement.InputPane\": IInputPaneStatics {95F4AF3A} slot 6 GetForCurrentView; IInputPane {640ADA70} slots 6 add_Showing, 8 add_Hiding (TypedEventHandler<InputPane,InputPaneVisibilityEventArgs>*, token*), 10 (0x28) get_OccludedRect(Rect*)",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "helper 0x1de9cc; MainPage ctor; Showing handler 0x1df714 reads get_OccludedRect (height -> AppMain::onKeyboardHeightChanged). On-screen-keyboard contract for the Win32 port.",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_hardwarebuttons",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000018",
+   "summary": "Class \"Windows.Phone.UI.Input.HardwareButtons\": statics IID {594B8780-DA66-4FD8-A776-7506BD0CBFA7} slot 6 add_BackPressed(EventHandler<BackPressedEventArgs>*, token*); args slot 7 put_Handled(bool)",
+   "arm_signature": "HRESULT (this, handler, &token)",
+   "x86_to_arm_notes": "helper 0x1e1798; handler 0x1df4e8 (RTDynamicCast of current screen decides Handled)",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "medium",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_threadpool",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000018",
+   "summary": "Class \"Windows.System.Threading.ThreadPool\": IThreadPoolStatics {B6BF67DD} slot 6 RunAsync(WorkItemHandler*, IAsyncAction**) [AppMain init job]; slot 8 RunWithPriorityAndOptionsAsync(handler, priority=1, options=1, IAsyncAction**) [render loop, input thread, HID]. IAsyncAction must QI to IAsyncInfo (slot 7 get_Status, slot 9 Cancel); WorkItemHandler.Invoke(IAsyncAction*) = vtable slot 3",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "helpers 0x1da4a4, 0x114078",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_appdata_package",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000018",
+   "summary": "Class \"Windows.Storage.ApplicationData\": IApplicationDataStatics {5612147B} slot 6 get_Current; IApplicationData slot 10 get_LocalSettings, slot 12 get_LocalFolder; IApplicationDataContainer slot 8 get_Values; IStorageItem {4207A996} slot 12 get_Path(HSTRING*). Class \"Windows.ApplicationModel.Package\": IPackageStatics {4E534BDF} slot 6 get_Current; IPackage slot 7 get_InstalledLocation",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "helpers 0x1dab28, 0x1dad20, 0x1e621c, 0x1e6278, 0x4e840, 0x4e8e0, 0x4ea38",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_statusbar",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000018",
+   "summary": "Class \"Windows.UI.ViewManagement.StatusBar\": IStatusBarStatics {8B463FDF} slot 6 GetForCurrentView; IStatusBar {0FFCC5BF} slot 7 HideAsync(IAsyncAction**)",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "helpers 0x1e3394/0x1e350c in OnLaunched; result released immediately",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  },
+  {
+   "id": "startup_flow.slots_canvas_uri_page",
+   "x86_symbol": "n/a (0.10.4 XAML app: no x86 counterpart)",
+   "x86_value": null,
+   "kind": "vtable_slot",
+   "arm_rva": "0x00000020",
+   "summary": "Class \"Windows.UI.Xaml.Controls.Canvas\": ICanvasStatics {40CE5C46} slot 8 SetLeft(IUIElement*, double in d0). Class \"Windows.Foundation.Uri\": IUriRuntimeClassFactory {44A9796F} slot 6 CreateUri(HSTRING). Class \"Windows.UI.Xaml.Controls.Page\": IPageFactory {DFA149AC} slot 6 CreateInstance(outer=MainPage+8, inner*=MainPage+0x24, instance**)",
+   "arm_signature": "HRESULT (this, ...)",
+   "x86_to_arm_notes": "helpers 0x1dfab8, 0x1088a0, 0x1dd874",
+   "expected_bytes": null,
+   "evidence": [
+    "see helper/caller RVAs in x86_to_arm_notes; slot numbers cross-checked against Windows SDK 10.0.19041 idl vtable order"
+   ],
+   "confidence": "high",
+   "verdict": "CONFIRMED"
+  }
+ ],
+ "port_instructions": [
+  "Faithful (recommended) boot: keep the exe's own main/App2/MainPage code; replace only (a) GetActivationFactory (IAT 0x20B5FC) with a router to host fakes, (b) D3D11CreateDevice (IAT 0x20B1A4) clamp to FL 9_1 + BGRA, (c) the swap-chain presentation path (composition swap chain -> HWND). No code patch of MainPage/InitializeComponent is needed if LoadComponent is a no-op and FindName returns the 4 fake elements.",
+  "Fake Application.Start(cb): (1) cb->vtbl[3](cb,NULL) on the UI thread; (2) the App2 ctor has by then called your IApplicationFactory.CreateInstance(outer=App2+8): keep+AddRef outer; (3) QI(outer, IApplicationOverrides 25F99FF7-9347-459A-9FAC-B2D0E11C1A0F) -> p; call p->vtbl[7](p, launchArgs) where launchArgs QI(IActivatedEventArgs).get_PreviousExecutionState (slot 7) returns 0; (4) then run a Win32 message loop until WM_CLOSE, servicing: DispatcherTimer ticks, CoreDispatcher.RunAsync queues, and the events listed in startup_flow.md section 'events the host must raise'; (5) return S_OK so main returns.",
+  "Events the host MUST raise after OnLaunched returns (UI thread): (i) FrameworkElement.SizeChanged on the SwapChainPanel (handler = delegate registered through IFrameworkElement slot 47) with SizeChangedEventArgs{NewSize = client area in DIPs}; before raising make get_ActualWidth/Height return the same finite values and ISwapChainPanel.get_CompositionScaleX/Y return non-zero (1.0 or the DPI scale); (ii) DispatcherTimer Tick every 50 ms until Stop(). Optional later: CoreWindow.VisibilityChanged, DisplayInformation Dpi/Orientation/DisplayContentsInvalidated, CompositionScaleChanged, InputPane Showing/Hiding, HardwareButtons.BackPressed.",
+  "ThreadPool fake: RunAsync / RunWithPriorityAndOptionsAsync must run the WorkItemHandler on a REAL separate thread (Invoke = vtable slot 3, argument = the IAsyncAction); the IAsyncAction needs IAsyncInfo get_Status (0=Started,2=Canceled,1=Completed) and Cancel. The render loop checks the status every iteration and spins at full speed (Present(0,0)); the init job sets AppMain+0x3C when MinecraftClient::init finishes.",
+  "Delegate protocol: every event handler pointer passed to an add_X method is the delegate object base; call handler->vtbl[3](handler, sender, args) (r0,r1,r2); tokens are 64-bit EventRegistrationToken written through the out pointer; handlers run synchronously on the calling thread in this code (they take AppMain's critical_section).",
+  "Fakes must be agile/free-threaded: Window.Current, DisplayInformation::GetForCurrentView, CoreWindow, panel getters are called from the UI thread, the render thread (AttachToPanel is UI; Minecraft::update uses DX::DeviceResources::get only) and thread-pool threads (HID lambdas call dispatcher.RunAsync).",
+  "Replay option (skip only XAML loader): create DR via 0x1dce2c(out), then AppMain via new(0x40)+0x1d9d14(app,&sp); wait for AppMain+0x3C; then DR::SetSwapChainPanel 0x1dbd40(dr,panel) / SetLogicalSize 0x1dbc80(dr, s0=w, s1=h) / OnWindowSizeChanged 0x1da32c / AttachToPanel 0x1da634 / StartRenderLoop 0x1da8a8. All of these still call Window.Current, CoreWindow, DisplayInformation and panel interfaces, so replay saves only the Application/Page/Timer/InputPane/HardwareButtons plumbing.",
+  "FL 9_1: CreateDeviceResources requests {11_1,11_0,10_1,10_0,9_3} with Flags=0. The clamp is mandatory on Surface RT. Also the swap chain is created with IDXGIFactory2::CreateSwapChainForComposition and then IDXGISwapChain2::SetMatrixTransform is invoked (slot 34): provide a composition-capable swap chain (DirectComposition target on the HWND) or intercept both.",
+  "Keyboard (TabTip) contract: the game never calls the Win32 touch keyboard; it focuses the XAML TextBox 'EditBox' (HID lambdas, TextBox2.PreventKeyboardDisplayOnProgrammaticFocus) and focuses the Button to dismiss, and learns the keyboard height ONLY through InputPane Showing/Hiding events -> AppMain::onKeyboardHeightChanged(px). A host fake should map EditBox focus/unfocus to show/hide of TabTip and raise InputPane Hiding/Showing (get_OccludedRect height) deterministically from its own state machine instead of relying on TabTip window events."
+ ],
+ "open_questions": [
+  "Exact value of the float constants used by client->setSize (s0 pool at 0x1da74c, 0x1da3a8) and of the divisors in AppPlatform_Winrt::initialize (+0x38 scale) were not decoded; read the pool words before choosing DPI/scale values.",
+  "AppMain+0x3C is set only by the init job; if MinecraftClient::init throws on the worker thread (e.g. D3DCompile failing at 9_1 profiles) the flag is never set and the Tick handler silently never attaches - no error surfaces in the XAML code.",
+  "HID::Initialize (0x111c1c, 1162 B) was only inventoried (CoreWindow slots 34/36/44/46/48, TextBox slot 30, TextBox2 slot 15, DisplayInformation slot 11, ThreadPool slot 8, helper calls 0x113ec8/0x114194/0x114380 unidentified); its details belong to the input area.",
+  "Apartment model: CRT calls RoInitialize(1) only if [0xE2B03C]!=0 (0 in file); vccorlib InitializeData is passed [0xDC9F5C]=2. The apartment the real XAML runtime gives the main thread (and whether App2 expects STA UI thread) was not proven; fakes should be thread-agile.",
+  "IXamlMetadataProvider / XamlTypeInfo (App2+0x18) and IComponentConnector (App2+0x1C) are only needed by the real XAML parser; not reached when LoadComponent is faked.",
+  "Resume/suspend helper functions 0x4743c/0x4736c/0x473d4/0x474a4 not analysed (only their call sites).",
+  "The 1.2.8 fake CoreWindow can be a starting point for the CoreWindow part, but its vtable must be re-checked slot by slot against startup_flow.md (this exe calls ICoreWindow slots 34/36/44/46/48/56 and ICoreInputSource slots 18/20/22)."
+ ]
+}

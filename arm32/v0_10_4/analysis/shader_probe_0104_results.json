@@ -1,0 +1,4688 @@
+{
+ "summary": {
+  "shaders/cloud.vertex|vs": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 13,
+    "9_3": 13,
+    "10_0": 13
+   }
+  },
+  "shaders/color.fragment|ps": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 2,
+    "9_3": 2,
+    "10_0": 2
+   }
+  },
+  "shaders/color.vertex|vs": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 6,
+    "9_3": 6,
+    "10_0": 6
+   }
+  },
+  "shaders/color_ex.fragment|ps": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 2,
+    "9_3": 2,
+    "10_0": 2
+   }
+  },
+  "shaders/color_texture.fragment|ps": {
+   "combos": 2,
+   "9_1": "2/2",
+   "9_3": "2/2",
+   "10_0": "2/2",
+   "max_instr_sm4": {
+    "9_1": 5,
+    "9_3": 5,
+    "10_0": 5
+   }
+  },
+  "shaders/color_uv.vertex|vs": {
+   "combos": 2,
+   "9_1": "2/2",
+   "9_3": "2/2",
+   "10_0": "2/2",
+   "max_instr_sm4": {
+    "9_1": 7,
+    "9_3": 7,
+    "10_0": 7
+   }
+  },
+  "shaders/current_color.fragment|ps": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 2,
+    "9_3": 2,
+    "10_0": 2
+   }
+  },
+  "shaders/entity.fragment|ps": {
+   "combos": 14,
+   "9_1": "14/14",
+   "9_3": "14/14",
+   "10_0": "14/14",
+   "max_instr_sm4": {
+    "9_1": 15,
+    "9_3": 15,
+    "10_0": 15
+   }
+  },
+  "shaders/entity.vertex|vs": {
+   "combos": 14,
+   "9_1": "14/14",
+   "9_3": "14/14",
+   "10_0": "14/14",
+   "max_instr_sm4": {
+    "9_1": 40,
+    "9_3": 40,
+    "10_0": 39
+   }
+  },
+  "shaders/flat_white.fragment|ps": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 2,
+    "9_3": 2,
+    "10_0": 2
+   }
+  },
+  "shaders/position.vertex|vs": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 5,
+    "9_3": 5,
+    "10_0": 5
+   }
+  },
+  "shaders/renderchunk.fragment|ps": {
+   "combos": 15,
+   "9_1": "15/15",
+   "9_3": "15/15",
+   "10_0": "15/15",
+   "max_instr_sm4": {
+    "9_1": 10,
+    "9_3": 10,
+    "10_0": 10
+   }
+  },
+  "shaders/renderchunk.vertex|vs": {
+   "combos": 15,
+   "9_1": "15/15",
+   "9_3": "15/15",
+   "10_0": "15/15",
+   "max_instr_sm4": {
+    "9_1": 35,
+    "9_3": 35,
+    "10_0": 35
+   }
+  },
+  "shaders/sky.vertex|vs": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 7,
+    "9_3": 7,
+    "10_0": 7
+   }
+  },
+  "shaders/texture.fragment|ps": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 2,
+    "9_3": 2,
+    "10_0": 2
+   }
+  },
+  "shaders/texture_ccolor.fragment|ps": {
+   "combos": 2,
+   "9_1": "2/2",
+   "9_3": "2/2",
+   "10_0": "2/2",
+   "max_instr_sm4": {
+    "9_1": 5,
+    "9_3": 5,
+    "10_0": 5
+   }
+  },
+  "shaders/texture_cutout.fragment|ps": {
+   "combos": 1,
+   "9_1": "1/1",
+   "9_3": "1/1",
+   "10_0": "1/1",
+   "max_instr_sm4": {
+    "9_1": 5,
+    "9_3": 5,
+    "10_0": 5
+   }
+  },
+  "shaders/uv.vertex|vs": {
+   "combos": 2,
+   "9_1": "2/2",
+   "9_3": "2/2",
+   "10_0": "2/2",
+   "max_instr_sm4": {
+    "9_1": 6,
+    "9_3": 6,
+    "10_0": 6
+   }
+  }
+ },
+ "results": {
+  "shaders/cloud.vertex|vs|": {
+   "shader": "shaders/cloud.vertex",
+   "stage": "vs",
+   "defines": [],
+   "users": [
+    "fancy.json|clouds|fancy.material",
+    "sad.json|clouds|sad.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 13,
+      "cb": 3,
+      "res": 3,
+      "in": 2,
+      "out": 2,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 1936
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 13,
+      "cb": 3,
+      "res": 3,
+      "in": 2,
+      "out": 2,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 1936
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 13,
+      "cb": 3,
+      "res": 3,
+      "in": 2,
+      "out": 2,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 1580
+    }
+   }
+  },
+  "shaders/color.fragment|ps|": {
+   "shader": "shaders/color.fragment",
+   "stage": "ps",
+   "defines": [],
+   "users": [
+    "common.json|skyplane|sky.material",
+    "common.json|ui_fill_gradient|ui.material",
+    "common.json|ui_colored|ui.material",
+    "fancy.json|clouds|fancy.material",
+    "sad.json|clouds|sad.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 0,
+      "res": 0,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 532
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 0,
+      "res": 0,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 532
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 0,
+      "res": 0,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 452
+    }
+   }
+  },
+  "shaders/color.vertex|vs|": {
+   "shader": "shaders/color.vertex",
+   "stage": "vs",
+   "defines": [],
+   "users": [
+    "common.json|shadow_overlay|shadows.material",
+    "common.json|ui_fill_gradient|ui.material",
+    "common.json|ui_colored|ui.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1048
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1048
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 836
+    }
+   }
+  },
+  "shaders/color_ex.fragment|ps|": {
+   "shader": "shaders/color_ex.fragment",
+   "stage": "ps",
+   "defines": [],
+   "users": [
+    "common.json|shadow_overlay|shadows.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 716
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 716
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 608
+    }
+   }
+  },
+  "shaders/color_texture.fragment|ps|": {
+   "shader": "shaders/color_texture.fragment",
+   "stage": "ps",
+   "defines": [],
+   "users": [
+    "common.json|particles_opaque|particles.material",
+    "common.json|ui_texture_and_color|ui.material",
+    "common.json|ui_item|ui.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 3,
+      "cb": 0,
+      "res": 2,
+      "in": 3,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     },
+     "bytes": 808
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 3,
+      "cb": 0,
+      "res": 2,
+      "in": 3,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     },
+     "bytes": 808
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 3,
+      "cb": 0,
+      "res": 2,
+      "in": 3,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     },
+     "bytes": 668
+    }
+   }
+  },
+  "shaders/color_texture.fragment|ps|ALPHA_TEST": {
+   "shader": "shaders/color_texture.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST"
+   ],
+   "users": [
+    "common.json|particles_alpha|particles.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 2,
+      "in": 3,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 916
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 2,
+      "in": 3,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 916
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 2,
+      "in": 3,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 708
+    }
+   }
+  },
+  "shaders/color_uv.vertex|vs|": {
+   "shader": "shaders/color_uv.vertex",
+   "stage": "vs",
+   "defines": [],
+   "users": [
+    "common.json|particles_opaque|particles.material",
+    "common.json|ui_texture_and_color|ui.material",
+    "common.json|ui_item|ui.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 1,
+      "res": 1,
+      "in": 3,
+      "out": 3,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1184
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 1,
+      "res": 1,
+      "in": 3,
+      "out": 3,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1184
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 1,
+      "res": 1,
+      "in": 3,
+      "out": 3,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 948
+    }
+   }
+  },
+  "shaders/color_uv.vertex|vs|ALPHA_TEST": {
+   "shader": "shaders/color_uv.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST"
+   ],
+   "users": [
+    "common.json|particles_alpha|particles.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 1,
+      "res": 1,
+      "in": 3,
+      "out": 3,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1184
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 1,
+      "res": 1,
+      "in": 3,
+      "out": 3,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1184
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 1,
+      "res": 1,
+      "in": 3,
+      "out": 3,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 948
+    }
+   }
+  },
+  "shaders/current_color.fragment|ps|": {
+   "shader": "shaders/current_color.fragment",
+   "stage": "ps",
+   "defines": [],
+   "users": [
+    "common.json|stars|sky.material",
+    "common.json|ui_fill_color|ui.material",
+    "common.json|name_tag|ui3D.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 1,
+      "res": 1,
+      "in": 1,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 636
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 1,
+      "res": 1,
+      "in": 1,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 636
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 1,
+      "res": 1,
+      "in": 1,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 556
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [],
+   "users": [
+    "sad.json|entity_static|entity.material",
+    "sad.json|heavy_tile|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 0,
+      "res": 2,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1016
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 0,
+      "res": 2,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1016
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 0,
+      "res": 2,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 812
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|ALPHA_TEST,FANCY,FLIP_BACKFACES,USE_EMISSIVE,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST",
+    "FANCY",
+    "FLIP_BACKFACES",
+    "USE_EMISSIVE",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity_emissive_alpha|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 15,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1528
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 15,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1528
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 15,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1140
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|ALPHA_TEST,FANCY,FLIP_BACKFACES,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST",
+    "FANCY",
+    "FLIP_BACKFACES",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity_alphatest|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1284
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1284
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 968
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|ALPHA_TEST,FLIP_BACKFACES,USE_EMISSIVE,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST",
+    "FLIP_BACKFACES",
+    "USE_EMISSIVE",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity_emissive_alpha|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 15,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1528
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 15,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1528
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 15,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1140
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|ALPHA_TEST,FLIP_BACKFACES,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST",
+    "FLIP_BACKFACES",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity_alphatest|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1284
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1284
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 968
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|COLOR_BASED,FANCY,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "COLOR_BASED",
+    "FANCY",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|item_in_hand|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 0,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 992
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 0,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 992
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 0,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 748
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|COLOR_BASED,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "COLOR_BASED",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|item_in_hand|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 0,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 992
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 0,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 992
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 0,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 748
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|FANCY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "FANCY"
+   ],
+   "users": [
+    "fancy.json|entity_static|entity.material",
+    "fancy.json|heavy_tile|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 0,
+      "res": 2,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1016
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 0,
+      "res": 2,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1016
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 0,
+      "res": 2,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 812
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|FANCY,FLIP_BACKFACES,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "FANCY",
+    "FLIP_BACKFACES",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity_nocull|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1176
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1176
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 928
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|FANCY,USE_EMISSIVE,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "FANCY",
+    "USE_EMISSIVE",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity_emissive|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1312
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1312
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1016
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|FANCY,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "FANCY",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity|entity.material",
+    "fancy.json|slime_outer|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1176
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1176
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 928
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|FLIP_BACKFACES,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "FLIP_BACKFACES",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity_nocull|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1176
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1176
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 928
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|USE_EMISSIVE,USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "USE_EMISSIVE",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity_emissive|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1312
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1312
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 3,
+      "tex": 1
+     },
+     "bytes": 1016
+    }
+   }
+  },
+  "shaders/entity.fragment|ps|USE_OVERLAY": {
+   "shader": "shaders/entity.fragment",
+   "stage": "ps",
+   "defines": [
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity|entity.material",
+    "sad.json|slime_outer|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1176
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1176
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 2,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 928
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [],
+   "users": [
+    "sad.json|entity_static|entity.material",
+    "sad.json|heavy_tile|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 14,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2188
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 14,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2188
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 14,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1776
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|ALPHA_TEST,FANCY,FLIP_BACKFACES,USE_EMISSIVE,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST",
+    "FANCY",
+    "FLIP_BACKFACES",
+    "USE_EMISSIVE",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity_emissive_alpha|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 40,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3604
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 40,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3604
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 39,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2636
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|ALPHA_TEST,FANCY,FLIP_BACKFACES,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST",
+    "FANCY",
+    "FLIP_BACKFACES",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity_alphatest|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 40,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3604
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 40,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3604
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 39,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2636
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|ALPHA_TEST,FLIP_BACKFACES,USE_EMISSIVE,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST",
+    "FLIP_BACKFACES",
+    "USE_EMISSIVE",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity_emissive_alpha|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1896
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|ALPHA_TEST,FLIP_BACKFACES,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST",
+    "FLIP_BACKFACES",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity_alphatest|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1896
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|COLOR_BASED,FANCY,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "COLOR_BASED",
+    "FANCY",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|item_in_hand|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 30,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3088
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 30,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3088
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 29,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2288
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|COLOR_BASED,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "COLOR_BASED",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|item_in_hand|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2312
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2312
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 1856
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|FANCY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "FANCY"
+   ],
+   "users": [
+    "fancy.json|entity_static|entity.material",
+    "fancy.json|heavy_tile|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 28,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 2968
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 28,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 2968
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 27,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 4,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2216
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|FANCY,FLIP_BACKFACES,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "FANCY",
+    "FLIP_BACKFACES",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity_nocull|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 40,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3604
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 40,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3604
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 39,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2636
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|FANCY,USE_EMISSIVE,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "FANCY",
+    "USE_EMISSIVE",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity_emissive|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 30,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3124
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 30,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3124
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 29,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2328
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|FANCY,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "FANCY",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "fancy.json|entity|entity.material",
+    "fancy.json|slime_outer|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 30,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3124
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 30,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3124
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 29,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2328
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|FLIP_BACKFACES,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "FLIP_BACKFACES",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity_nocull|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1896
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|USE_EMISSIVE,USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "USE_EMISSIVE",
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity_emissive|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1896
+    }
+   }
+  },
+  "shaders/entity.vertex|vs|USE_OVERLAY": {
+   "shader": "shaders/entity.vertex",
+   "stage": "vs",
+   "defines": [
+    "USE_OVERLAY"
+   ],
+   "users": [
+    "sad.json|entity|entity.material",
+    "sad.json|slime_outer|entity.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2348
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 16,
+      "cb": 3,
+      "res": 3,
+      "in": 3,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1896
+    }
+   }
+  },
+  "shaders/flat_white.fragment|ps|": {
+   "shader": "shaders/flat_white.fragment",
+   "stage": "ps",
+   "defines": [],
+   "users": [
+    "common.json|shadow_front|shadows.material",
+    "common.json|shadow_back|shadows.material",
+    "common.json|ui_invert_overlay|ui.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 0,
+      "res": 0,
+      "in": 1,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 524
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 0,
+      "res": 0,
+      "in": 1,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 524
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 0,
+      "res": 0,
+      "in": 1,
+      "out": 1,
+      "temps": 0,
+      "tex": 0
+     },
+     "bytes": 420
+    }
+   }
+  },
+  "shaders/position.vertex|vs|": {
+   "shader": "shaders/position.vertex",
+   "stage": "vs",
+   "defines": [],
+   "users": [
+    "common.json|shadow_front|shadows.material",
+    "common.json|shadow_back|shadows.material",
+    "common.json|stars|sky.material",
+    "common.json|ui_fill_color|ui.material",
+    "common.json|ui_invert_overlay|ui.material",
+    "common.json|name_tag|ui3D.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 1,
+      "res": 1,
+      "in": 1,
+      "out": 1,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 920
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 1,
+      "res": 1,
+      "in": 1,
+      "out": 1,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 920
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 1,
+      "res": 1,
+      "in": 1,
+      "out": 1,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 732
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|ALLOW_FADE,FANCY,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALLOW_FADE",
+    "FANCY",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_fading_in|terrain.material",
+    "fancy.json|terrain_fading_in_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1112
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|ALLOW_FADE,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALLOW_FADE",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_fading_in|terrain.material",
+    "sad.json|terrain_fading_in_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1112
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|ALPHA_TEST,FANCY,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST",
+    "FANCY",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_alpha_single_side_fog|terrain.material",
+    "fancy.json|terrain_alpha_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1488
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1488
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1152
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|ALPHA_TEST,FANCY,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST",
+    "FANCY",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_alpha_single_side|terrain.material",
+    "fancy.json|terrain_alpha|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1268
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1268
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 996
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|ALPHA_TEST,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_alpha_single_side_fog|terrain.material",
+    "sad.json|terrain_alpha_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1488
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1488
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 10,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1152
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|ALPHA_TEST,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_alpha_single_side|terrain.material",
+    "sad.json|terrain_alpha|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1268
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1268
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 996
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|FANCY,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "FANCY",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_far|terrain.material",
+    "fancy.json|terrain_opaque_fog|terrain.material",
+    "fancy.json|terrain_doubleside_fog|terrain.material",
+    "fancy.json|terrain_far_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1112
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|FANCY,FOG,LOW_PRECISION,NEAR_WATER": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "FANCY",
+    "FOG",
+    "LOW_PRECISION",
+    "NEAR_WATER"
+   ],
+   "users": [
+    "fancy.json|terrain_blend_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1112
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|FANCY,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "FANCY",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_opaque|terrain.material",
+    "fancy.json|terrain_doubleside|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1156
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1156
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 956
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|FANCY,LOW_PRECISION,NEAR_WATER": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "FANCY",
+    "LOW_PRECISION",
+    "NEAR_WATER"
+   ],
+   "users": [
+    "fancy.json|terrain_blend|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1156
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1156
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 956
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_far|terrain.material",
+    "sad.json|terrain_opaque_fog|terrain.material",
+    "sad.json|terrain_doubleside_fog|terrain.material",
+    "sad.json|terrain_far_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1112
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|FOG,LOW_PRECISION,NEAR_WATER": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "FOG",
+    "LOW_PRECISION",
+    "NEAR_WATER"
+   ],
+   "users": [
+    "sad.json|terrain_blend_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1376
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 0,
+      "res": 4,
+      "in": 5,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1112
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|LOW_PRECISION": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_opaque|terrain.material",
+    "sad.json|terrain_doubleside|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1156
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1156
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 956
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|LOW_PRECISION,NEAR_WATER": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "LOW_PRECISION",
+    "NEAR_WATER"
+   ],
+   "users": [
+    "sad.json|terrain_blend|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1156
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1156
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 956
+    }
+   }
+  },
+  "shaders/renderchunk.fragment|ps|NEAR_WATER": {
+   "shader": "shaders/renderchunk.fragment",
+   "stage": "ps",
+   "defines": [
+    "NEAR_WATER"
+   ],
+   "users": [
+    "standalone|terrain_blend|terrain_switchable.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1084
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 1084
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 0,
+      "res": 4,
+      "in": 4,
+      "out": 1,
+      "temps": 2,
+      "tex": 2
+     },
+     "bytes": 884
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|ALLOW_FADE,FANCY,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALLOW_FADE",
+    "FANCY",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_fading_in|terrain.material",
+    "fancy.json|terrain_fading_in_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 18,
+      "cb": 4,
+      "res": 4,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2700
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 18,
+      "cb": 4,
+      "res": 4,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2700
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 18,
+      "cb": 4,
+      "res": 4,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2172
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|ALLOW_FADE,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALLOW_FADE",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_fading_in|terrain.material",
+    "sad.json|terrain_fading_in_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 15,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2392
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 15,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2392
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 15,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1948
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|ALPHA_TEST,FANCY,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST",
+    "FANCY",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_alpha_single_side_fog|terrain.material",
+    "fancy.json|terrain_alpha_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 17,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2512
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 17,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2512
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 17,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2012
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|ALPHA_TEST,FANCY,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST",
+    "FANCY",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_alpha_single_side|terrain.material",
+    "fancy.json|terrain_alpha|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1396
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1396
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1136
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|ALPHA_TEST,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_alpha_single_side_fog|terrain.material",
+    "sad.json|terrain_alpha_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 14,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2204
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 14,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2204
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 14,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1788
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|ALPHA_TEST,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_alpha_single_side|terrain.material",
+    "sad.json|terrain_alpha|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1396
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1396
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1136
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|FANCY,FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "FANCY",
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_far|terrain.material",
+    "fancy.json|terrain_opaque_fog|terrain.material",
+    "fancy.json|terrain_doubleside_fog|terrain.material",
+    "fancy.json|terrain_far_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 17,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2512
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 17,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2512
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 17,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2012
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|FANCY,FOG,LOW_PRECISION,NEAR_WATER": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "FANCY",
+    "FOG",
+    "LOW_PRECISION",
+    "NEAR_WATER"
+   ],
+   "users": [
+    "fancy.json|terrain_blend_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 35,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3372
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 35,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3372
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 35,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 5,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 2580
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|FANCY,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "FANCY",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "fancy.json|terrain_opaque|terrain.material",
+    "fancy.json|terrain_doubleside|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1396
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1396
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1136
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|FANCY,LOW_PRECISION,NEAR_WATER": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "FANCY",
+    "LOW_PRECISION",
+    "NEAR_WATER"
+   ],
+   "users": [
+    "fancy.json|terrain_blend|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 34,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 4,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3292
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 34,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 4,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 3292
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 34,
+      "cb": 3,
+      "res": 3,
+      "in": 4,
+      "out": 4,
+      "temps": 3,
+      "tex": 0
+     },
+     "bytes": 2516
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|FOG,LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "FOG",
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_far|terrain.material",
+    "sad.json|terrain_opaque_fog|terrain.material",
+    "sad.json|terrain_doubleside_fog|terrain.material",
+    "sad.json|terrain_far_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 14,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2204
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 14,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 2204
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 14,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 5,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1788
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|FOG,LOW_PRECISION,NEAR_WATER": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "FOG",
+    "LOW_PRECISION",
+    "NEAR_WATER"
+   ],
+   "users": [
+    "sad.json|terrain_blend_fog|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 17,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 5,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2328
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 17,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 5,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 2328
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 17,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 5,
+      "temps": 2,
+      "tex": 0
+     },
+     "bytes": 1868
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|LOW_PRECISION": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "LOW_PRECISION"
+   ],
+   "users": [
+    "sad.json|terrain_opaque|terrain.material",
+    "sad.json|terrain_doubleside|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1396
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1396
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 8,
+      "cb": 1,
+      "res": 1,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1136
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|LOW_PRECISION,NEAR_WATER": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "LOW_PRECISION",
+    "NEAR_WATER"
+   ],
+   "users": [
+    "sad.json|terrain_blend|terrain.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 12,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1992
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 12,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1992
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 12,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1652
+    }
+   }
+  },
+  "shaders/renderchunk.vertex|vs|NEAR_WATER": {
+   "shader": "shaders/renderchunk.vertex",
+   "stage": "vs",
+   "defines": [
+    "NEAR_WATER"
+   ],
+   "users": [
+    "standalone|terrain_blend|terrain_switchable.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 11,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1864
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 11,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1864
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 11,
+      "cb": 2,
+      "res": 2,
+      "in": 4,
+      "out": 4,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1536
+    }
+   }
+  },
+  "shaders/sky.vertex|vs|": {
+   "shader": "shaders/sky.vertex",
+   "stage": "vs",
+   "defines": [],
+   "users": [
+    "common.json|skyplane|sky.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 3,
+      "res": 3,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1712
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 3,
+      "res": 3,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1712
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 7,
+      "cb": 3,
+      "res": 3,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1440
+    }
+   }
+  },
+  "shaders/texture.fragment|ps|": {
+   "shader": "shaders/texture.fragment",
+   "stage": "ps",
+   "defines": [],
+   "users": [
+    "common.json|ui_textured|ui.material",
+    "common.json|ui_cubemap|ui.material",
+    "common.json|ui_crosshair|ui.material",
+    "common.json|cracks_overlay|ui3D.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 0,
+      "res": 2,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 1
+     },
+     "bytes": 704
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 0,
+      "res": 2,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 1
+     },
+     "bytes": 704
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 2,
+      "cb": 0,
+      "res": 2,
+      "in": 2,
+      "out": 1,
+      "temps": 0,
+      "tex": 1
+     },
+     "bytes": 592
+    }
+   }
+  },
+  "shaders/texture_ccolor.fragment|ps|": {
+   "shader": "shaders/texture_ccolor.fragment",
+   "stage": "ps",
+   "defines": [],
+   "users": [
+    "common.json|sun_moon|sky.material",
+    "common.json|ui_textured_and_glcolor|ui.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 3,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     },
+     "bytes": 916
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 3,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     },
+     "bytes": 916
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 3,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     },
+     "bytes": 776
+    }
+   }
+  },
+  "shaders/texture_ccolor.fragment|ps|ALPHA_TEST": {
+   "shader": "shaders/texture_ccolor.fragment",
+   "stage": "ps",
+   "defines": [
+    "ALPHA_TEST"
+   ],
+   "users": [
+    "common.json|sign_text|ui3D.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1024
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 1024
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 2,
+      "tex": 1
+     },
+     "bytes": 816
+    }
+   }
+  },
+  "shaders/texture_cutout.fragment|ps|": {
+   "shader": "shaders/texture_cutout.fragment",
+   "stage": "ps",
+   "defines": [],
+   "users": [
+    "common.json|block_overlay|ui3D.material",
+    "common.json|selection_overlay|ui3D.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "ps_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     },
+     "bytes": 1012
+    },
+    "9_3": {
+     "ok": true,
+     "target": "ps_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     },
+     "bytes": 1012
+    },
+    "10_0": {
+     "ok": true,
+     "target": "ps_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 5,
+      "cb": 1,
+      "res": 3,
+      "in": 2,
+      "out": 1,
+      "temps": 1,
+      "tex": 1
+     },
+     "bytes": 808
+    }
+   }
+  },
+  "shaders/uv.vertex|vs|": {
+   "shader": "shaders/uv.vertex",
+   "stage": "vs",
+   "defines": [],
+   "users": [
+    "common.json|sun_moon|sky.material",
+    "common.json|ui_textured|ui.material",
+    "common.json|ui_textured_and_glcolor|ui.material",
+    "common.json|ui_cubemap|ui.material",
+    "common.json|ui_crosshair|ui.material",
+    "common.json|block_overlay|ui3D.material",
+    "common.json|selection_overlay|ui3D.material",
+    "common.json|cracks_overlay|ui3D.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1056
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1056
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 844
+    }
+   }
+  },
+  "shaders/uv.vertex|vs|ALPHA_TEST": {
+   "shader": "shaders/uv.vertex",
+   "stage": "vs",
+   "defines": [
+    "ALPHA_TEST"
+   ],
+   "users": [
+    "common.json|sign_text|ui3D.material"
+   ],
+   "fl": {
+    "9_1": {
+     "ok": true,
+     "target": "vs_4_0_level_9_1",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1056
+    },
+    "9_3": {
+     "ok": true,
+     "target": "vs_4_0_level_9_3",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 1056
+    },
+    "10_0": {
+     "ok": true,
+     "target": "vs_4_0",
+     "hr": "0x00000000",
+     "reflect": {
+      "instr": 6,
+      "cb": 1,
+      "res": 1,
+      "in": 2,
+      "out": 2,
+      "temps": 1,
+      "tex": 0
+     },
+     "bytes": 844
+    }
+   }
+  }
+ },
+ "device": {
+  "hardware": {
+   "create_hr": "S_OK",
+   "fl": "0x9100",
+   "create_shader_ok_with_9_1_bytecode": 76,
+   "create_shader_fail_with_9_1_bytecode": [],
+   "9_3_bytecode_on_9_1_device": {
+    "ok": 76,
+    "fail": 0
+   }
+  },
+  "warp": {
+   "create_hr": "S_OK",
+   "fl": "0x9100",
+   "create_shader_ok_with_9_1_bytecode": 76,
+   "create_shader_fail_with_9_1_bytecode": [],
+   "9_3_bytecode_on_9_1_device": {
+    "ok": 76,
+    "fail": 0
+   }
+  }
+ }
+}

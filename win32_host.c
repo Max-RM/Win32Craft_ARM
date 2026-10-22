@@ -233,6 +233,9 @@ static BOOL host_is_windows7;
 static BOOL host_is_115;
 static BOOL host_is_128;
 static BOOL host_is_116;
+#ifdef WIN32CRAFT_ARM32
+static BOOL host_is_0104;   /* Minecraft PE 0.10.4.40 (Windows Phone 8.1 XAML) ARM32 image: win32_host_arm32_0104.inl */
+#endif
 static BOOL pending_main_menu_exit_confirmation;
 static BOOL activation_116(LPCWSTR class_name, const GUID *iid, void **result);
 static BOOL host_unlimited_fps;
@@ -335,6 +338,12 @@ static BOOL arm32_relative_mouse_gate(BOOL requested);           /* requested &&
 static void arm32_osk_show(const char *why);                     /* game asked for the on-screen keyboard (InputPane.TryShow) */
 static void arm32_osk_hide(const char *why);                     /* ... and to hide it (InputPane.TryHide) */
 static BOOL arm32_osk_rect_buffer(float rect[4]);                /* touch keyboard rectangle in swap-chain buffer pixels, FALSE = hidden */
+static BOOL arm32_osk_rect_for_game(float rect[4]);              /* the same for the 1.2.8 OccludedRect, held back while the opening finger is down */
+static void arm32_osk_note_pointer_up(void);                     /* a finger was lifted (tap-to-reopen after the user closed the keyboard) */
+static void arm32_input_pane_raise(BOOL showing);                /* raise the handlers the game registered with InputPane.Showing / Hiding */
+/* 0.10.4 host (win32_host_arm32_0104_*.inl, included in front of Win32Bootstrap): entry points used by the shared code above it */
+static void x104_inputpane_raise(BOOL showing);                  /* input unit: InputPane Showing/Hiding to the handlers MainPage registered */
+static HRESULT WINAPI x104_activation_hook(LPCWSTR class_name, const GUID *iid, void **result);   /* core: WinRT activation router */
 
 /* lower-case hex dump "de ad be ef " (at most (out_size-1)/3 bytes) */
 static void arm32_hex_dump(char *out, SIZE_T out_size, const BYTE *bytes, SIZE_T count)
@@ -2685,6 +2694,7 @@ extern DWORD WINAPI GetTickCount(void);
 extern DWORD WINAPI GetCurrentProcessId(void);
 extern BOOL WINAPI TerminateProcess(HANDLE, UINT);
 extern BOOL WINAPI MoveFileExW(LPCWSTR, LPCWSTR, DWORD);
+extern DWORD WINAPI SetFilePointer(HANDLE, LONG, LONG *, DWORD);
 extern int WINAPI lstrlenA(LPCSTR);
 wchar_t Win32CraftLogPathW[MAX_PATH];
 /* Tick base of the log prefix "[  12345 ms T0a3c] " (milliseconds since the first log line; thread id of the writer).
@@ -2703,18 +2713,66 @@ UINT Win32CraftLogPrefix(char *out, UINT capacity)
     return (UINT)wsprintfA(out, "[%7lu ms T%04lx] ", (unsigned long)(now - base), (unsigned long)GetCurrentThreadId());
 }
 
-/* The file is append-only; a retry session must not bury the new run in an old multi-megabyte file: above 4 MB the
- * previous file is moved to win32craft.log.old (one generation, replaced) and a fresh file starts. */
+/* The file is append-only (several runs follow each other), but it never grows past ARM32_LOG_MAX_BYTES (1 MiB):
+ *  - at start an existing file above the limit is emptied (and a leftover win32craft.log.old of older builds is deleted);
+ *  - while the game runs, log_line checks the size every ARM32_LOG_CHECK_LINES lines; above the limit the file is emptied and
+ *    restarted with a note plus the first ARM32_LOG_HEAD_BYTES of this run (the start-up lines: Windows version, options, devices),
+ *    so the file still starts with the facts that identify the machine.  Lines written between the check and the restart are lost. */
+#define ARM32_LOG_MAX_BYTES (1024u * 1024u)
+#define ARM32_LOG_CHECK_LINES 64
+#define ARM32_LOG_HEAD_BYTES 8192u
+static DWORD arm32_log_session_start;      /* file size when this run opened it (start of this run's lines) */
+
 static void arm32_log_rotate(const wchar_t *path)
 {
     WIN32_FILE_ATTRIBUTE_DATA info;
     wchar_t old_path[MAX_PATH + 8];
     if (lstrlenW(path) + 5 >= MAX_PATH + 8) return;
-    if (!GetFileAttributesExW(path, GetFileExInfoStandard, &info)) return;
-    if (info.nFileSizeHigh == 0 && info.nFileSizeLow <= 4u * 1024u * 1024u) return;
     lstrcpyW(old_path, path);
     lstrcatW(old_path, L".old");
-    MoveFileExW(path, old_path, 1 /* MOVEFILE_REPLACE_EXISTING */);
+    DeleteFileW(old_path);
+    if (!GetFileAttributesExW(path, GetFileExInfoStandard, &info)) return;
+    if (info.nFileSizeHigh == 0 && info.nFileSizeLow <= ARM32_LOG_MAX_BYTES) return;
+    /* CREATE_ALWAYS truncates; the other writers (api_compat.c) open with share read|write, so this is allowed */
+    {
+        HANDLE empty = CreateFileW(path, 2 /* FILE_WRITE_DATA */, 3, NULL, 2 /* CREATE_ALWAYS */, 0x80, NULL);
+        if (empty != INVALID_HANDLE_VALUE) CloseHandle(empty);
+    }
+}
+
+/* the file reached the limit: keep the head of this run, drop everything else */
+static void arm32_log_restart(HANDLE file, const wchar_t *path)
+{
+    static char head[ARM32_LOG_HEAD_BYTES + 1];
+    static DWORD head_length;
+    static BOOL head_taken;
+    DWORD written;
+    HANDLE reader;
+    HANDLE empty;
+    char note[160];
+
+    if (!path || !path[0]) return;
+    if (!head_taken) {
+        /* the first restart of this run: the head is still in the file, at the offset where this run began */
+        head_taken = TRUE;
+        reader = CreateFileW(path, 0x80000000u /* GENERIC_READ */, 3, NULL, 3 /* OPEN_EXISTING */, 0x80, NULL);
+        if (reader != INVALID_HANDLE_VALUE) {
+            if (arm32_log_session_start < ARM32_LOG_MAX_BYTES - ARM32_LOG_HEAD_BYTES &&
+                SetFilePointer(reader, (LONG)arm32_log_session_start, NULL, 0 /* FILE_BEGIN */) != 0xFFFFFFFFu) {
+                if (!ReadFile(reader, head, ARM32_LOG_HEAD_BYTES, &head_length, NULL)) head_length = 0;
+            }
+            CloseHandle(reader);
+        }
+        while (head_length && head[head_length - 1] != '\n') --head_length;      /* whole lines only */
+    }
+    empty = CreateFileW(path, 2 /* FILE_WRITE_DATA */, 3, NULL, 2 /* CREATE_ALWAYS */, 0x80, NULL);
+    if (empty == INVALID_HANDLE_VALUE) return;
+    CloseHandle(empty);
+    wsprintfA(note, "==== win32craft.log restarted: it reached %lu KB; the start of this run is kept below, the lines in between were dropped ====\r\n",
+              (unsigned long)(ARM32_LOG_MAX_BYTES / 1024u));
+    WriteFile(file, note, (DWORD)lstrlenA(note), &written, NULL);
+    if (head_length) WriteFile(file, head, head_length, &written, NULL);
+    WriteFile(file, "==== ... ====\r\n", 15, &written, NULL);
 }
 
 static HANDLE arm32_log_open_file(void)
@@ -2731,6 +2789,7 @@ static HANDLE arm32_log_open_file(void)
                            0x80 /* FILE_ATTRIBUTE_NORMAL */, NULL);
         if (file != INVALID_HANDLE_VALUE) {
             lstrcpyW(Win32CraftLogPathW, path);
+            arm32_log_session_start = GetFileSize(file, NULL);
             return file;
         }
     }
@@ -2742,6 +2801,7 @@ static HANDLE arm32_log_open_file(void)
         file = CreateFileW(path, 4, 3, NULL, 4, 0x80, NULL);
         if (file != INVALID_HANDLE_VALUE) {
             lstrcpyW(Win32CraftLogPathW, path);
+            arm32_log_session_start = GetFileSize(file, NULL);
             return file;
         }
     }
@@ -2754,6 +2814,8 @@ static void log_line(const char *text)
     static HANDLE volatile log_file = INVALID_HANDLE_VALUE;
     static volatile LONG open_lock;
     static volatile LONG open_attempts;
+    static volatile LONG line_counter;
+    static volatile LONG restart_lock;
     char buffer[1024];
     DWORD length = 0;
     DWORD written;
@@ -2803,6 +2865,13 @@ static void log_line(const char *text)
             buffer[length++] = '\r';
             buffer[length++] = '\n';
             WriteFile(file, buffer, length, &written, NULL);
+        }
+        /* size cap: every ARM32_LOG_CHECK_LINES lines look at the file size (counts the api_compat.c lines too) */
+        if ((__atomic_add_fetch(&line_counter, 1, __ATOMIC_RELAXED) % ARM32_LOG_CHECK_LINES) == 0 &&
+            !__atomic_exchange_n(&restart_lock, 1, __ATOMIC_ACQUIRE)) {
+            DWORD size = GetFileSize(file, NULL);
+            if (size != 0xFFFFFFFFu && size > ARM32_LOG_MAX_BYTES) arm32_log_restart(file, Win32CraftLogPathW);
+            __atomic_store_n(&restart_lock, 0, __ATOMIC_RELEASE);
         }
     }
     OutputDebugStringA(text);
@@ -9199,22 +9268,70 @@ static HRESULT WINAPI arm32_input_pane_query_interface(
 static HRESULT WINAPI arm32_input_pane_get_for_current_view(
     FakeInspectable *object, void **result);
 
-static HRESULT WINAPI arm32_input_pane_add_event(
-    FakeInspectable *object, void *handler, LONGLONG *token)
+/* The game registers one TypedEventHandler<InputPane, InputPaneVisibilityEventArgs> for Showing (add_Showing, slot 6; body 0x57e2e8:
+ * args->put_EnsuredFocusedElementInView(true), InputPane::OccludedRect, keyboard height lambda posted to the ClientInstance) and one for
+ * Hiding (add_Hiding, slot 8; body 0x57e398: put_EnsuredFocusedElementInView(true), height 0).  They are stored here (AddRef'd delegates)
+ * and raised by arm32_input_pane_raise when the real keyboard appears / disappears, so the chat box moves up and back down. */
+#define ARM32_INPUT_PANE_MAX_HANDLERS 4
+static void *arm32_input_pane_handlers[2][ARM32_INPUT_PANE_MAX_HANDLERS];   /* [0] Showing, [1] Hiding */
+
+static HRESULT arm32_input_pane_add_handler(unsigned hiding, void *handler, LONGLONG *token)
 {
-    (void)object;
-    (void)handler;
+    unsigned index;
+    char line[160];
+
     if (!token) return E_POINTER;
-    *token = 1;
+    *token = 0;
+    if (!handler) return S_OK;
+    for (index = 0; index < ARM32_INPUT_PANE_MAX_HANDLERS; ++index) {
+        if (!arm32_input_pane_handlers[hiding][index]) {
+            ((ULONG (WINAPI *)(void *))((void **)*(void **)handler)[1])(handler);
+            arm32_input_pane_handlers[hiding][index] = handler;
+            *token = (LONGLONG)(index + 1);
+            wsprintfA(line, "ARM32 InputPane.add_%s: game handler %p stored (token %u)", hiding ? "Hiding" : "Showing", handler, index + 1);
+            log_line(line);
+            return S_OK;
+        }
+    }
+    *token = 100;
+    log_line("ARM32 InputPane: too many Showing/Hiding handlers - extra handler ignored");
     return S_OK;
 }
 
-static HRESULT WINAPI arm32_input_pane_remove_event(
-    FakeInspectable *object, LONGLONG token)
+static HRESULT arm32_input_pane_remove_handler(unsigned hiding, LONGLONG token)
+{
+    if (token >= 1 && token <= ARM32_INPUT_PANE_MAX_HANDLERS) {
+        void *handler = arm32_input_pane_handlers[hiding][token - 1];
+        if (handler) {
+            arm32_input_pane_handlers[hiding][token - 1] = NULL;
+            ((ULONG (WINAPI *)(void *))((void **)*(void **)handler)[2])(handler);
+        }
+    }
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_input_pane_add_showing(FakeInspectable *object, void *handler, LONGLONG *token)
 {
     (void)object;
-    (void)token;
-    return S_OK;
+    return arm32_input_pane_add_handler(0, handler, token);
+}
+
+static HRESULT WINAPI arm32_input_pane_remove_showing(FakeInspectable *object, LONGLONG token)
+{
+    (void)object;
+    return arm32_input_pane_remove_handler(0, token);
+}
+
+static HRESULT WINAPI arm32_input_pane_add_hiding(FakeInspectable *object, void *handler, LONGLONG *token)
+{
+    (void)object;
+    return arm32_input_pane_add_handler(1, handler, token);
+}
+
+static HRESULT WINAPI arm32_input_pane_remove_hiding(FakeInspectable *object, LONGLONG token)
+{
+    (void)object;
+    return arm32_input_pane_remove_handler(1, token);
 }
 
 static HRESULT WINAPI arm32_input_pane_occluded_rect(
@@ -9226,8 +9343,9 @@ static HRESULT WINAPI arm32_input_pane_occluded_rect(
     rect[1] = 0.0f;
     rect[2] = 0.0f;
     rect[3] = 0.0f;
-    /* the Windows touch keyboard (when the host opened it) occludes the bottom of the window: report it in buffer pixels */
-    arm32_osk_rect_buffer(rect);
+    /* the Windows touch keyboard (when the host opened it) occludes the bottom of the window: report it in buffer pixels - but not while the finger
+     * that opened it is still down (the game would move the chat box under the finger, read the lift as a tap outside it and close it again) */
+    arm32_osk_rect_for_game(rect);
     return S_OK;
 }
 
@@ -9270,8 +9388,8 @@ static const void *arm32_input_pane_factory_vtable[7] = {
 static const void *arm32_input_pane_vtable[11] = {
     arm32_input_pane_query_interface, fake_add_ref, fake_release,
     fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
-    arm32_input_pane_add_event, arm32_input_pane_remove_event,
-    arm32_input_pane_add_event, arm32_input_pane_remove_event,
+    arm32_input_pane_add_showing, arm32_input_pane_remove_showing,
+    arm32_input_pane_add_hiding, arm32_input_pane_remove_hiding,
     arm32_input_pane_occluded_rect
 };
 
@@ -9290,6 +9408,66 @@ static FakeInspectable arm32_input_pane = {
 static FakeInspectable arm32_input_pane2 = {
     arm32_input_pane2_vtable, 1, FAKE_XAML_APPLICATION
 };
+
+/* IInputPaneVisibilityEventArgs: 6 get_OccludedRect(Rect*), 7 put_EnsuredFocusedElementInView(bool), 8 get_EnsuredFocusedElementInView(bool*) */
+static BYTE arm32_input_pane_ensured;
+
+static HRESULT WINAPI arm32_input_pane_args_occluded_rect(FakeInspectable *object, float *rect)
+{
+    return arm32_input_pane_occluded_rect(object, rect);
+}
+
+static HRESULT WINAPI arm32_input_pane_args_put_ensured(FakeInspectable *object, BYTE value)
+{
+    (void)object;
+    arm32_input_pane_ensured = value;
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_input_pane_args_get_ensured(FakeInspectable *object, BYTE *value)
+{
+    (void)object;
+    if (!value) return E_POINTER;
+    *value = arm32_input_pane_ensured;
+    return S_OK;
+}
+
+static const void *arm32_input_pane_args_vtable[9] = {
+    fake_query_interface, fake_add_ref, fake_release,
+    fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
+    arm32_input_pane_args_occluded_rect, arm32_input_pane_args_put_ensured, arm32_input_pane_args_get_ensured
+};
+static FakeInspectable arm32_input_pane_args = {
+    arm32_input_pane_args_vtable, 1, FAKE_XAML_APPLICATION
+};
+
+/* invoke the delegates the game registered for Showing (TRUE) / Hiding (FALSE): TypedEventHandler::Invoke is slot 3 (sender, args) */
+static void arm32_input_pane_raise(BOOL showing)
+{
+    unsigned slot = showing ? 0u : 1u;
+    if (host_is_0104) {   /* 0.10.4: the input unit owns the InputPane objects and the handlers MainPage registered */
+        x104_inputpane_raise(showing);
+        return;
+    }
+    unsigned index;
+    unsigned called = 0;
+    char line[160];
+
+    for (index = 0; index < ARM32_INPUT_PANE_MAX_HANDLERS; ++index) {
+        void *handler = arm32_input_pane_handlers[slot][index];
+        HRESULT result;
+        if (!handler) continue;
+        result = ((HRESULT (WINAPI *)(void *, void *, void *))((void **)*(void **)handler)[3])(handler, &arm32_input_pane, &arm32_input_pane_args);
+        ++called;
+        wsprintfA(line, "ARM32 InputPane %s event raised to the game handler %p hr=0x%08lx", showing ? "Showing" : "Hiding", handler,
+                  (unsigned long)result);
+        log_line(line);
+    }
+    if (!called) {
+        wsprintfA(line, "ARM32 InputPane %s event: the game registered no handler", showing ? "Showing" : "Hiding");
+        log_line(line);
+    }
+}
 
 static HRESULT WINAPI arm32_input_pane_query_interface(
     FakeInspectable *object, REFIID iid, void **result)
@@ -9384,6 +9562,7 @@ static HRESULT WINAPI win32_get_activation_factory(
     LPCWSTR class_name, const GUID *iid, void **result)
 {
 #ifdef WIN32CRAFT_ARM32
+    if (host_is_0104) return x104_activation_hook(class_name, iid, result);   /* never hand out the 1.2.8 fakes to the 0.10.4 exe */
     if (InterlockedIncrement(&arm32_activation_calls) == 401)
         log_line("ARM32: 400 WinRT activation requests logged; from now on only 'WinRT fallback' lines are logged");
 #endif
@@ -19940,6 +20119,7 @@ static int arm32_touch_api_effective;          /* 0 = touch handling inactive, e
 static int arm32_input_source = ARM32_SRC_MOUSEKB;
 static int arm32_input_initial_source = ARM32_SRC_MOUSEKB;
 static BOOL arm32_pointer_touch_seen;          /* a PT_TOUCH WM_POINTERDOWN reached window_proc at least once */
+static BOOL arm32_legacy_touch_used;           /* a touch-sourced mouse message was converted to a contact before any WM_POINTER finger was seen */
 static BOOL arm32_wm_touch_registered;         /* auto mode also called RegisterTouchWindow: WM_TOUCH is the multi-touch fallback when no WM_POINTER arrives */
 static Arm32TouchSlot arm32_touch_slots[ARM32_TOUCH_SLOTS];
 static Arm32TouchStats arm32_stats;
@@ -20343,6 +20523,7 @@ static void arm32_touch_end(int slot, int client_x, int client_y, const char *wh
     s->active = FALSE;
     s->dirty = FALSE;
     arm32_last_touch_tick = GetTickCount();
+    arm32_osk_note_pointer_up();
     if (!queue_touch_event(slot, 1, 0, client_x, client_y)) ++arm32_stats.queue_failed;
     ++arm32_stats.up;
     if (arm32_stats.up <= arm32_touch_log_budget()) {
@@ -20472,8 +20653,18 @@ static BOOL arm32_touch_pointer_message(HWND window, UINT message, WPARAM wparam
             return FALSE;
         }
         if (!arm32_pointer_touch_seen) {
+            int legacy_slot = arm32_touch_find_slot(ARM32_LEGACY_TOUCH_ID);
             arm32_pointer_touch_seen = TRUE;
-            log_line("ARM32 touch: first PT_TOUCH WM_POINTERDOWN received - the pointer API works on this device");
+            if (arm32_legacy_touch_used) {
+                log_line("ARM32 touch: first PT_TOUCH WM_POINTERDOWN received after contacts that arrived as emulated mouse messages - "
+                         "the pointer API works on this device, multi-touch is active");
+            } else {
+                log_line("ARM32 touch: first PT_TOUCH WM_POINTERDOWN received - the pointer API works on this device");
+            }
+            /* a finger that began as a converted mouse contact must not stay down: its button-up is dropped from now on */
+            if (legacy_slot >= 0) {
+                arm32_touch_end(legacy_slot, arm32_touch_slots[legacy_slot].x, arm32_touch_slots[legacy_slot].y, "pointer API took over");
+            }
         }
         arm32_touch_from_pointer_lparam(window, lparam, &client_x, &client_y);
         if (info_logged < 3 && arm32_api.get_pointer_info) {
@@ -20548,7 +20739,8 @@ static BOOL arm32_touch_wm_touch(HWND window, WPARAM wparam, LPARAM lparam)
     if (arm32_touch_api_effective != ARM32_TOUCHAPI_WMTOUCH) {
         /* auto mode registered the window for WM_TOUCH up front.  A WM_TOUCH message while no WM_POINTER touch message was ever seen proves the
          * pointer stack is not delivered here (Windows RT 8.1 Surface RT log: pointer*=0, all touch as emulated mouse): use real multi-touch. */
-        if (!(arm32_touch_api_effective == ARM32_TOUCHAPI_POINTER && arm32_wm_touch_registered && !arm32_pointer_touch_seen)) return FALSE;
+        if (!(arm32_touch_api_effective == ARM32_TOUCHAPI_POINTER && arm32_wm_touch_registered && !arm32_pointer_touch_seen &&
+              !arm32_legacy_touch_used)) return FALSE;   /* after a converted mouse contact the device is single touch, as before: no late takeover */
         arm32_touch_api_effective = ARM32_TOUCHAPI_WMTOUCH;
         log_line("ARM32 input: WM_TOUCH arrived but no WM_POINTER touch message was ever seen - switching to --touch-api=wmtouch (multi-touch)");
     }
@@ -20615,6 +20807,13 @@ static BOOL arm32_legacy_mouse_filter(HWND window, UINT message, LPARAM lparam)
     extra = (DWORD)GetMessageExtraInfo();
     from_touch = (extra & 0xFFFFFF80u) == 0xFF515780u;
     if (from_touch) {
+        /* No PT_TOUCH WM_POINTERDOWN has arrived yet: convert the emulated mouse messages to a (single) contact, but stay in pointer mode.
+         * Windows also sends a lone emulated tap (the tap that activates the window ...) on machines whose pointer stack works, so
+         * the first such message proves nothing; switching to legacy for good made Windows 11 ARM64 play with ONE finger (no walking and
+         * looking at the same time).  The first real WM_POINTERDOWN of a finger takes over; where none ever comes (Windows RT 8.1 Surface RT
+         * log: pointer*=0) every contact stays a converted single touch, as before. */
+        BOOL provisional = arm32_touch_api_effective == ARM32_TOUCHAPI_POINTER && !arm32_pointer_touch_seen;
+        if (provisional) arm32_legacy_touch_used = TRUE;
         ++arm32_stats.legacy_from_touch;
         if (logged < 8) {
             ++logged;
@@ -20622,17 +20821,19 @@ static BOOL arm32_legacy_mouse_filter(HWND window, UINT message, LPARAM lparam)
                       message, (unsigned long)extra, arm32_touch_api_names[arm32_touch_api_effective],
                       (int)arm32_pointer_touch_seen,
                       arm32_touch_api_effective == ARM32_TOUCHAPI_LEGACY ? "converted to touch"
-                      : (!arm32_pointer_touch_seen && arm32_touch_api_effective == ARM32_TOUCHAPI_POINTER ? "switching to legacy conversion"
-                                                                                                          : "dropped"));
+                      : (provisional ? "converted to touch (provisional: the pointer API stays active and takes over with the first WM_POINTER finger)"
+                                     : "dropped"));
             log_line(line);
         }
-        if (arm32_touch_api_effective == ARM32_TOUCHAPI_POINTER && !arm32_pointer_touch_seen) {
-            /* the finger arrives only as emulated mouse messages: WM_POINTER touch handling does not work here */
-            arm32_touch_api_effective = ARM32_TOUCHAPI_LEGACY;
-            log_line("ARM32 input: WARNING no PT_TOUCH WM_POINTER message was seen but touch-sourced mouse messages arrive - "
-                     "switching to --touch-api=legacy (single touch) automatically");
+        if (provisional && message == WM_LBUTTONDOWN && arm32_stats.legacy_from_touch >= 12 && !arm32_pointer_touch_seen) {
+            static BOOL noted;
+            if (!noted) {
+                noted = TRUE;
+                log_line("ARM32 input: NOTE many touch contacts arrived only as emulated mouse messages and no WM_POINTER finger was ever seen - "
+                         "this device delivers single touch only (send this log if multi-touch is expected)");
+            }
         }
-        if (arm32_touch_api_effective == ARM32_TOUCHAPI_LEGACY) return arm32_legacy_touch_message(window, message, lparam);
+        if (arm32_touch_api_effective == ARM32_TOUCHAPI_LEGACY || provisional) return arm32_legacy_touch_message(window, message, lparam);
         return TRUE;   /* pointer / wmtouch modes: the contact is already delivered, drop the duplicate */
     }
 
@@ -20693,25 +20894,334 @@ static void arm32_input_note_key(WPARAM virtual_key)
 }
 
 /* ---- Windows touch keyboard (TabTip) for text boxes ----
- * The game asks for the keyboard through InputPane.TryShow / TryHide.  On a touch-only device nothing else can type, so the host
- * launches / toggles the Windows touch keyboard; the typed text arrives as ordinary WM_KEYDOWN / WM_CHAR.  The class name and the
- * TabTip path are Windows knowledge that the first device log confirms ("ARM32 osk:" lines). */
-static BOOL arm32_osk_want;
-static BOOL arm32_osk_opened_by_us;
+ * The game asks for the keyboard through InputPane.TryShow / TryHide (fake InputPane above) and reacts to the InputPane Showing /
+ * Hiding events (keyboard height -> chat box position).  Device facts (kbdprobe run, Windows 10 build 15035 ARM32, Surface 2):
+ *   - IsWindowVisible(IPTip_Main_Window) is ALWAYS true and the window rectangle never changes, so neither says anything;
+ *   - the truth is IFrameworkInputPane::Location (empty rect = hidden), the WinRT InputPane OccludedRect (height 0 = hidden) and the
+ *     DWM cloak flag of the TabTip window (cloaked = hidden) - all three agreed with what the user saw;
+ *   - launching TabTip.exe while it already runs does NOTHING; ITipInvocation::Toggle shows AND hides (state blind);
+ *   - hiding works with IInputPane2::TryHide and with SC_CLOSE to the TabTip window; ShowWindow(SW_HIDE) does nothing;
+ *   - killing TabTip.exe leaves IFrameworkInputPane stale and ITipInvocation unregistered until TabTip.exe is launched again: never kill it;
+ *   - IInputPane2::TryShow does not show a keyboard for a window without a text control (so Toggle is the way to show);
+ *   - the user can close it with the keyboard's X at any time; nothing tells the game, so the host raises the game's Hiding handler.
+ * The previous controller trusted IsWindowVisible: it never toggled a running TabTip, reported a keyboard rectangle forever
+ * ("won't go down") and never told the game about Showing/Hiding.  Windows RT 8.1 is not measured yet (TelegArm: InputPane interop is
+ * missing there, the cloak flag is unreliable): the log line "ARM32 osk: signals ..." names what was found and every action and every
+ * state change is logged ("ARM32 osk:" lines). */
+#define ARM32_OSK_SIG_NONE      0
+#define ARM32_OSK_SIG_FIP       1
+#define ARM32_OSK_SIG_PANE      2
+#define ARM32_OSK_SIG_CLOAK     3
+#define ARM32_OSK_HIDE_TRYHIDE  1
+#define ARM32_OSK_HIDE_CLOSE    2
+#define ARM32_OSK_HIDE_TOGGLE   3
+#define ARM32_OSK_E_ABORT      ((HRESULT)0x80004004L)   /* a Toggle the host refused to send (the previous one was less than 2 s ago) */
+
+static const char *const arm32_osk_signal_names[] = { "none", "IFrameworkInputPane", "InputPane", "dwm-cloak" };
+static const char *const arm32_osk_hide_names[] = { "?", "InputPane2::TryHide", "SC_CLOSE", "ITipInvocation::Toggle" };
+
+static BOOL arm32_osk_want;                    /* the game asked for the keyboard and it is not up yet */
+static BOOL arm32_osk_ours;                    /* the keyboard on screen was shown on the game's request */
 static BOOL arm32_osk_launched;
 static DWORD arm32_osk_last_attempt;
+static DWORD arm32_osk_want_since;
 static unsigned arm32_osk_attempts;
+static BOOL arm32_osk_signals_ready;
+static int arm32_osk_signal;
+static void **arm32_osk_fip;                   /* IFrameworkInputPane of the shell (Location + Showing/Hiding callbacks) */
+static DWORD arm32_osk_fip_cookie;
+static void **arm32_osk_pane;                  /* real WinRT InputPane of the game window (IInputPaneInterop), Windows 10 */
+static void **arm32_osk_pane2;                 /* ... as IInputPane2 (TryShow / TryHide) */
+static volatile LONG arm32_osk_fip_callbacks;  /* bumped by the shell callbacks (any thread), logged by the main loop */
+static LONG arm32_osk_fip_callbacks_seen;
+static int arm32_osk_state = -1;               /* last verdict: 1 shown, 0 hidden, -1 unknown */
+static DWORD arm32_osk_last_detect;
+static float arm32_osk_raised_rect[4];
+static BOOL arm32_osk_dismissed_by_user;       /* the user closed the keyboard with its X while the game kept the text focus */
+static BOOL arm32_osk_tap_since_dismiss;
+static DWORD arm32_osk_pointer_up_tick;
+static int arm32_osk_hide_methods[3];
+static unsigned arm32_osk_hide_count;
+static unsigned arm32_osk_hide_stage;          /* 0 idle, else 1-based index into arm32_osk_hide_methods */
+static DWORD arm32_osk_hide_deadline;
+static DWORD arm32_osk_last_toggle_tick;       /* last SUCCESSFUL ITipInvocation::Toggle (Toggle is state blind: never twice in a row) */
+static BOOL arm32_osk_last_toggle_ok;
+static BOOL arm32_osk_last_was_launch;         /* the last show attempt launched TabTip.exe instead of toggling */
+static BOOL arm32_osk_last_show_suppressed;    /* the last show attempt's Toggle was held back by the 2 s guard (nothing was sent) */
+static BOOL arm32_osk_hide_pending;            /* a TryHide waits ARM32_OSK_HIDE_DELAY_MS: a TryShow inside that time cancels it */
+static DWORD arm32_osk_hide_pending_deadline;
+static const char *arm32_osk_hide_pending_why;
+static DWORD arm32_osk_visible_since;          /* tick when the state last became "visible" */
+#define ARM32_OSK_HIDE_DELAY_MS 300u
+static BOOL arm32_osk_signal_proven;           /* the state signal was seen to change at least once (or the shell called back) */
+static BOOL arm32_osk_state_assumed;           /* arm32_osk_state is the host's own belief (blind / missing signal), not a measurement */
+static BOOL arm32_osk_show_after_hide;         /* TryShow arrived while a hide was in flight: show when the hide is done */
+static BOOL arm32_osk_hide_when_visible;       /* TryHide arrived while a show was in flight: hide as soon as the keyboard is up */
+static DWORD arm32_osk_hide_when_visible_deadline;
+static DWORD arm32_osk_last_hide_tick;         /* last TryHide / host hide (a hide landing soon after is not a user dismissal) */
+/* the shell's own Showing / Hiding callbacks are the state signal that works on Windows 11 (22631 log: the callback fires ~350 ms after every
+ * Toggle while IPTip_Main_Window stays invisible and gave no usable rectangle, so the Win10 window tests read "hidden" for ever and the
+ * controller kept Toggling the keyboard open and shut) */
+static volatile LONG arm32_osk_cb_kind;        /* last callback: 0 none yet, 1 Showing, 2 Hiding */
+static volatile LONG arm32_osk_cb_rect[4];     /* rectangle of the last Showing callback (screen pixels) */
+static volatile DWORD arm32_osk_cb_tick;
+static BOOL arm32_osk_loc_works;               /* IFrameworkInputPane::Location was seen non-empty: its "empty" can be believed */
+static LONG arm32_osk_assume_cb_seq;           /* callback count when the host started to assume a state */
+static int arm32_osk_win11 = -1;               /* 1 = Windows 11 (build >= 22000): IPTip_Main_Window is never visible there */
+
+typedef HRESULT (WINAPI *Arm32DwmGetWindowAttributeFn)(HWND, DWORD, void *, DWORD);
+static Arm32DwmGetWindowAttributeFn arm32_osk_dwm_get;
+static BOOL arm32_osk_dwm_resolved;
+
+static float arm32_osk_absf(float value)
+{
+    return value < 0.0f ? -value : value;
+}
 
 static HWND arm32_osk_find_window(void)
 {
     return FindWindowW(L"IPTip_Main_Window", NULL);
 }
 
-static BOOL arm32_osk_visible_now(void)
+/* 1 = TabTip window exists, is not cloaked and is "visible"; 0 = no window / cloaked / invisible; -1 = DWM not available */
+static int arm32_osk_cloak_verdict(void)
 {
     HWND tip = arm32_osk_find_window();
+    DWORD cloaked = 0;
 
-    return tip && IsWindowVisible(tip);
+    if (!arm32_osk_dwm_resolved) {
+        HMODULE dwmapi = LoadLibraryW(L"dwmapi.dll");
+        arm32_osk_dwm_resolved = TRUE;
+        arm32_osk_dwm_get = dwmapi ? (Arm32DwmGetWindowAttributeFn)GetProcAddress(dwmapi, "DwmGetWindowAttribute") : NULL;
+    }
+    if (!tip) return 0;
+    if (!arm32_osk_dwm_get) return -1;
+    if (arm32_osk_dwm_get(tip, 14 /* DWMWA_CLOAKED */, &cloaked, sizeof(cloaked)) != 0) return -1;
+    return (cloaked == 0 && IsWindowVisible(tip)) ? 1 : 0;
+}
+
+/* Windows 11 (build >= 22000): the touch keyboard lives in TextInputHost.exe; the IPTip_Main_Window of TabTip exists but is never "visible" */
+static BOOL arm32_osk_is_win11(void)
+{
+    if (arm32_osk_win11 < 0) {
+        typedef struct { ULONG size, major, minor, build, platform; WCHAR csd[128]; } OsVersion;
+        typedef LONG (WINAPI *RtlGetVersionFn)(void *);
+        HMODULE ntdll = GetModuleHandleW(L"ntdll.dll");
+        RtlGetVersionFn function = ntdll ? (RtlGetVersionFn)GetProcAddress(ntdll, "RtlGetVersion") : NULL;
+        OsVersion info;
+
+        arm32_osk_win11 = 0;
+        memset(&info, 0, sizeof(info));
+        info.size = sizeof(info);
+        if (function && function(&info) >= 0 && info.major >= 10 && info.build >= 22000u) arm32_osk_win11 = 1;
+    }
+    return arm32_osk_win11 == 1;
+}
+
+/* is the touch keyboard on screen?  1 / 0 / -1 (no usable signal).  Strong signals first; the weak cloak flag only when nothing else answers. */
+static int arm32_osk_detect(void)
+{
+    int strong = -1;
+    HWND tip = arm32_osk_find_window();
+    LONG callback_kind = arm32_osk_cb_kind;
+
+    /* a TabTip window that does not exist / is not visible cannot show a keyboard: IFrameworkInputPane and InputPane stay "visible" (stale)
+     * after TabTip.exe was killed or restarted (probe log: tip=0/vis=0 while fip kept its rectangle).  Windows 11 never shows that window,
+     * so there only its existence counts. */
+    if (!tip) return 0;
+    if (!IsWindowVisible(tip) && !arm32_osk_is_win11()) return 0;
+
+    if (arm32_osk_fip) {
+        RECT rc;
+        memset(&rc, 0, sizeof(rc));
+        if (SUCCEEDED(((HRESULT (WINAPI *)(void *, RECT *))((void **)arm32_osk_fip[0])[6])(arm32_osk_fip, &rc))) {
+            strong = (rc.bottom > rc.top && rc.right > rc.left) ? 1 : 0;
+            if (strong) arm32_osk_loc_works = TRUE;
+        }
+    }
+    if (arm32_osk_pane) {
+        float rect[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        if (SUCCEEDED(((HRESULT (WINAPI *)(void *, float *))((void **)arm32_osk_pane[0])[10])(arm32_osk_pane, rect))) {
+            if (rect[3] > 0.5f) return 1;
+            if (strong < 0) strong = 0;
+        }
+    }
+    if (callback_kind && arm32_osk_is_win11()) {
+        /* Windows 11 only (Windows 8.1 / 10 keep exactly the probe-verified rectangle logic below): the shell told us itself (Showing = 1,
+         * Hiding = 2) and the callback is the truth, except that a rectangle that has proven reliable overrules a callback older than the
+         * keyboard's animation (the user closed it some way that sent no Hiding) */
+        int from_callback = callback_kind == 1 ? 1 : 0;
+        DWORD age = GetTickCount() - arm32_osk_cb_tick;
+
+        if (from_callback == 1 && strong == 0 && arm32_osk_loc_works && age > 1500u) return 0;
+        return from_callback;
+    }
+    if (strong >= 0) return strong;
+    return arm32_osk_cloak_verdict();
+}
+
+/* one log line with every signal at once: what the next device log needs to show how a Windows version reports its keyboard */
+static void arm32_osk_snapshot(const char *tag)
+{
+    HWND tip = arm32_osk_find_window();
+    HWND host = FindWindowW(L"Windows.UI.Core.CoreWindow", L"Microsoft Text Input Application");
+    RECT tip_rect;
+    RECT fip_rect;
+    float pane_rect[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    HRESULT fip_hr = E_FAIL;
+    HRESULT pane_hr = E_FAIL;
+    char line[420];
+
+    memset(&tip_rect, 0, sizeof(tip_rect));
+    memset(&fip_rect, 0, sizeof(fip_rect));
+    if (tip) GetWindowRect(tip, &tip_rect);
+    if (arm32_osk_fip) fip_hr = ((HRESULT (WINAPI *)(void *, RECT *))((void **)arm32_osk_fip[0])[6])(arm32_osk_fip, &fip_rect);
+    if (arm32_osk_pane) pane_hr = ((HRESULT (WINAPI *)(void *, float *))((void **)arm32_osk_pane[0])[10])(arm32_osk_pane, pane_rect);
+    wsprintfA(line, "ARM32 osk: snapshot (%s): win11=%d tipWindow=%d visible=%d cloak=%d rect=(%ld,%ld,%ld,%ld) | fip hr=0x%08lx rect=(%ld,%ld,%ld,%ld) | "
+                    "pane hr=0x%08lx bottom=%d | textInputHost=%d visible=%d | callbacks kind=%ld rect=(%ld,%ld,%ld,%ld) | state=%d assumed=%d detect=%d",
+              tag, (int)arm32_osk_is_win11(), tip != NULL, tip ? (int)IsWindowVisible(tip) : 0, arm32_osk_cloak_verdict(),
+              tip_rect.left, tip_rect.top, tip_rect.right, tip_rect.bottom,
+              (unsigned long)fip_hr, fip_rect.left, fip_rect.top, fip_rect.right, fip_rect.bottom,
+              (unsigned long)pane_hr, (int)pane_rect[3], host != NULL, host ? (int)IsWindowVisible(host) : 0,
+              (long)arm32_osk_cb_kind, (long)arm32_osk_cb_rect[0], (long)arm32_osk_cb_rect[1], (long)arm32_osk_cb_rect[2], (long)arm32_osk_cb_rect[3],
+              arm32_osk_state, (int)arm32_osk_state_assumed, arm32_osk_detect());
+    log_line(line);
+}
+
+/* IFrameworkInputPaneHandler: the shell calls it on a thread of its choice; it only counts, the main loop logs and acts */
+static HRESULT WINAPI arm32_osk_fip_handler_query(void *self, const GUID *iid, void **out)
+{
+    static const GUID iid_unknown = { 0x00000000U, 0x0000, 0x0000, { 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
+    static const GUID iid_handler = { 0x226C537BU, 0x1E76, 0x4D9E, { 0xA7, 0x60, 0x33, 0xDB, 0x29, 0x92, 0x2F, 0x18 } };
+
+    if (!out) return E_POINTER;
+    if (iid && (memcmp(iid, &iid_unknown, sizeof(GUID)) == 0 || memcmp(iid, &iid_handler, sizeof(GUID)) == 0)) {
+        *out = self;
+        return S_OK;
+    }
+    *out = NULL;
+    return E_NOINTERFACE;
+}
+
+static ULONG WINAPI arm32_osk_fip_handler_add_ref(void *self)
+{
+    (void)self;
+    return 2;
+}
+
+static ULONG WINAPI arm32_osk_fip_handler_release(void *self)
+{
+    (void)self;
+    return 1;
+}
+
+static HRESULT WINAPI arm32_osk_fip_handler_showing(void *self, RECT *rect, BOOL ensure)
+{
+    (void)self;
+    (void)ensure;
+    arm32_osk_cb_rect[0] = rect ? rect->left : 0;
+    arm32_osk_cb_rect[1] = rect ? rect->top : 0;
+    arm32_osk_cb_rect[2] = rect ? rect->right : 0;
+    arm32_osk_cb_rect[3] = rect ? rect->bottom : 0;
+    arm32_osk_cb_tick = GetTickCount();
+    arm32_osk_cb_kind = 1;
+    InterlockedIncrement(&arm32_osk_fip_callbacks);
+    return S_OK;
+}
+
+static HRESULT WINAPI arm32_osk_fip_handler_hiding(void *self, BOOL ensure)
+{
+    (void)self;
+    (void)ensure;
+    arm32_osk_cb_tick = GetTickCount();
+    arm32_osk_cb_kind = 2;
+    InterlockedIncrement(&arm32_osk_fip_callbacks);
+    return S_OK;
+}
+
+static const void *arm32_osk_fip_handler_vtable[5] = {
+    arm32_osk_fip_handler_query, arm32_osk_fip_handler_add_ref, arm32_osk_fip_handler_release,
+    arm32_osk_fip_handler_showing, arm32_osk_fip_handler_hiding
+};
+static const void *arm32_osk_fip_handler_object = arm32_osk_fip_handler_vtable;
+
+/* once, when the game window exists: find the best keyboard-state signal and log what each one answered */
+static void arm32_osk_init_signals(void)
+{
+    typedef HRESULT (WINAPI *CoCreateInstanceFn)(const GUID *, void *, DWORD, const GUID *, void **);
+    typedef HRESULT (WINAPI *RoGetActivationFactoryFn)(void *, const GUID *, void **);
+    typedef HRESULT (WINAPI *WindowsCreateStringFn)(const WCHAR *, UINT32, void **);
+    typedef HRESULT (WINAPI *WindowsDeleteStringFn)(void *);
+    static const GUID clsid_fip = { 0xD5120AA3U, 0x46BA, 0x44C5, { 0x82, 0x2D, 0xCA, 0x80, 0x92, 0xC1, 0xFC, 0x72 } };
+    static const GUID iid_fip = { 0x5752238BU, 0x24F0, 0x495A, { 0x82, 0xF1, 0x2F, 0xD5, 0x93, 0x05, 0x67, 0x96 } };
+    static const GUID iid_interop = { 0x75CF2C57U, 0x9195, 0x4931, { 0x83, 0x32, 0xF0, 0xB4, 0x09, 0xE9, 0x16, 0xAF } };
+    static const GUID iid_pane = { 0x640ada70U, 0x06f3, 0x4c87, { 0xa6, 0x78, 0x98, 0x29, 0xc9, 0x12, 0x7c, 0x28 } };
+    static const GUID iid_pane2 = { 0x8a6b3f26U, 0x7090, 0x4793, { 0x94, 0x4c, 0xc3, 0xf2, 0xcd, 0xe2, 0x62, 0x76 } };
+    static const WCHAR class_name[] = L"Windows.UI.ViewManagement.InputPane";
+    HMODULE ole32;
+    HMODULE combase;
+    CoCreateInstanceFn create_instance;
+    HRESULT hr_fip = E_FAIL, hr_advise = E_FAIL, hr_interop = E_FAIL, hr_pane = E_FAIL;
+    int cloak_state;
+    char line[320];
+
+    if (arm32_osk_signals_ready || !game_window) return;
+    arm32_osk_signals_ready = TRUE;
+    ole32 = LoadLibraryW(L"ole32.dll");
+    create_instance = ole32 ? (CoCreateInstanceFn)GetProcAddress(ole32, "CoCreateInstance") : NULL;
+    if (create_instance) {
+        void **object = NULL;
+        hr_fip = create_instance(&clsid_fip, NULL, 1u /* CLSCTX_INPROC_SERVER */, &iid_fip, (void **)&object);
+        if (SUCCEEDED(hr_fip) && object) {
+            arm32_osk_fip = object;
+            hr_advise = ((HRESULT (WINAPI *)(void *, HWND, void *, DWORD *))((void **)object[0])[4])(
+                object, game_window, (void *)&arm32_osk_fip_handler_object, &arm32_osk_fip_cookie);
+            {
+                RECT probe_rect;
+                memset(&probe_rect, 0, sizeof(probe_rect));
+                if (FAILED(((HRESULT (WINAPI *)(void *, RECT *))((void **)object[0])[6])(object, &probe_rect))) {
+                    log_line("ARM32 osk: IFrameworkInputPane::Location fails in this thread - the shell signal is not used");
+                    ((ULONG (WINAPI *)(void *))((void **)object[0])[2])(object);
+                    arm32_osk_fip = NULL;
+                }
+            }
+        }
+    }
+    combase = LoadLibraryW(L"combase.dll");
+    if (combase) {
+        RoGetActivationFactoryFn get_factory = (RoGetActivationFactoryFn)GetProcAddress(combase, "RoGetActivationFactory");
+        WindowsCreateStringFn create_string = (WindowsCreateStringFn)GetProcAddress(combase, "WindowsCreateString");
+        WindowsDeleteStringFn delete_string = (WindowsDeleteStringFn)GetProcAddress(combase, "WindowsDeleteString");
+        void *name = NULL;
+        void **factory = NULL;
+        void **pane = NULL;
+        if (get_factory && create_string && delete_string && SUCCEEDED(create_string(class_name, (UINT32)(ARRAYSIZE(class_name) - 1), &name))) {
+            hr_interop = get_factory(name, &iid_interop, (void **)&factory);
+            delete_string(name);
+            if (SUCCEEDED(hr_interop) && factory) {
+                hr_pane = ((HRESULT (WINAPI *)(void *, HWND, const GUID *, void **))((void **)factory[0])[6])(factory, game_window, &iid_pane, (void **)&pane);
+                if (SUCCEEDED(hr_pane) && pane) {
+                    void **pane2 = NULL;
+                    arm32_osk_pane = pane;
+                    if (SUCCEEDED(((HRESULT (WINAPI *)(void *, const GUID *, void **))((void **)pane[0])[0])(pane, &iid_pane2, (void **)&pane2))) {
+                        arm32_osk_pane2 = pane2;
+                    }
+                }
+            }
+        }
+    }
+    cloak_state = arm32_osk_cloak_verdict();
+    arm32_osk_signal = arm32_osk_fip ? ARM32_OSK_SIG_FIP : (arm32_osk_pane ? ARM32_OSK_SIG_PANE : (cloak_state >= 0 ? ARM32_OSK_SIG_CLOAK : ARM32_OSK_SIG_NONE));
+    wsprintfA(line, "ARM32 osk: signals: IFrameworkInputPane create=0x%08lx advise=0x%08lx | InputPane interop=0x%08lx getForWindow=0x%08lx "
+                    "TryHide=%s | dwm-cloak verdict=%d | primary=%s",
+              (unsigned long)hr_fip, (unsigned long)hr_advise, (unsigned long)hr_interop, (unsigned long)hr_pane,
+              arm32_osk_pane2 ? "yes" : "no", cloak_state, arm32_osk_signal_names[arm32_osk_signal]);
+    log_line(line);
+}
+
+static BOOL arm32_osk_visible_now(void)
+{
+    return arm32_osk_state == 1;
 }
 
 static BOOL arm32_osk_eligible(void)
@@ -20764,8 +21274,17 @@ static BOOL arm32_osk_launch_tabtip(void)
     return ok;
 }
 
-/* ITipInvocation::Toggle(GetDesktopWindow()) on CLSID_UIHostNoLaunch: shows the keyboard of an already running TabTip */
-static BOOL arm32_osk_toggle_com(void)
+/* Toggle is state blind (it shows AND hides), so a second one right after the first could undo it: no two Toggles within 2 s - unless the shell
+ * has reported a change since the last Toggle (then the first one has taken effect and the next one is safe) */
+static BOOL arm32_osk_toggle_guard_active(void)
+{
+    if (!arm32_osk_last_toggle_ok || (GetTickCount() - arm32_osk_last_toggle_tick) >= 2000u) return FALSE;
+    if (arm32_osk_cb_kind && (int)(arm32_osk_cb_tick - arm32_osk_last_toggle_tick) > 0) return FALSE;
+    return TRUE;
+}
+
+/* ITipInvocation::Toggle(GetDesktopWindow()) on CLSID_UIHostNoLaunch: SHOWS a hidden keyboard and HIDES a shown one (state blind) */
+static HRESULT arm32_osk_toggle_com(const char *why)
 {
     typedef HRESULT (WINAPI *CoCreateInstanceFn)(const GUID *, void *, DWORD, const GUID *, void **);
     static const GUID clsid_ui_host_no_launch = { 0x4ce576faU, 0x83dc, 0x4f88, { 0x95, 0x1c, 0x9d, 0x07, 0x82, 0xb4, 0xe3, 0x76 } };
@@ -20778,99 +21297,470 @@ static BOOL arm32_osk_toggle_com(void)
 
     if (!create) {
         log_line("ARM32 osk: CoCreateInstance is not available - ITipInvocation::Toggle skipped");
-        return FALSE;
+        return E_FAIL;
+    }
+    if (arm32_osk_toggle_guard_active()) {
+        /* Toggle shows AND hides: a second one right after the first would undo it (the keyboard takes up to 400 ms to appear) */
+        log_line("ARM32 osk: Toggle suppressed - the previous Toggle was less than 2 s ago");
+        return ARM32_OSK_E_ABORT;
     }
     result = create(&clsid_ui_host_no_launch, NULL, 0x2u | 0x4u /* INPROC_HANDLER | LOCAL_SERVER */, &iid_tip_invocation,
                     (void **)&object);
     if (FAILED(result) || !object) {
-        wsprintfA(line, "ARM32 osk: CoCreateInstance(UIHostNoLaunch / ITipInvocation) failed, hr=0x%08lx", (unsigned long)result);
+        wsprintfA(line, "ARM32 osk: %s: CoCreateInstance(UIHostNoLaunch / ITipInvocation) failed, hr=0x%08lx", why, (unsigned long)result);
         log_line(line);
-        return FALSE;
+        return FAILED(result) ? result : E_FAIL;
     }
     result = ((HRESULT (WINAPI *)(void *, HWND))((void **)*object)[3])(object, GetDesktopWindow());
     ((ULONG (WINAPI *)(void *))((void **)*object)[2])(object);
-    wsprintfA(line, "ARM32 osk: ITipInvocation::Toggle hr=0x%08lx", (unsigned long)result);
+    arm32_osk_last_toggle_ok = SUCCEEDED(result);
+    if (SUCCEEDED(result)) arm32_osk_last_toggle_tick = GetTickCount();
+    wsprintfA(line, "ARM32 osk: %s: ITipInvocation::Toggle hr=0x%08lx", why, (unsigned long)result);
     log_line(line);
-    return SUCCEEDED(result);
+    return result;
 }
 
-static void arm32_osk_poll(void)
+static void arm32_osk_assume_state(int state, const char *why)
 {
-    HWND tip;
-    DWORD now;
+    char line[160];
+
+    arm32_osk_state_assumed = state ? TRUE : FALSE;
+    arm32_osk_assume_cb_seq = arm32_osk_fip_callbacks;
+    if (arm32_osk_state == state) return;
+    if (state == 1) arm32_osk_visible_since = GetTickCount();
+    arm32_osk_state = state;
+    wsprintfA(line, "ARM32 osk: no state signal - assuming the keyboard is %s (%s)", state ? "visible" : "hidden", why);
+    log_line(line);
+    arm32_input_pane_raise(state ? TRUE : FALSE);
+}
+
+/* compare the keyboard state with the last verdict; raises the game's Showing / Hiding handlers on a change (main loop only) */
+static void arm32_osk_update_state(void)
+{
+    int detected = arm32_osk_detect();
+    int old = arm32_osk_state;
+    char line[240];
+
+    if (detected < 0) return;
+    if (arm32_osk_state_assumed && arm32_osk_is_win11() && arm32_osk_fip_callbacks != arm32_osk_assume_cb_seq) {
+        /* the shell called back after the assumption was made: it is a real signal, measure again */
+        arm32_osk_state_assumed = FALSE;
+        log_line("ARM32 osk: a shell Showing/Hiding callback arrived - the assumed keyboard state is replaced by the measured one");
+    }
+    if (arm32_osk_state_assumed) {
+        /* the host believes the keyboard is up without a trustworthy signal: keep the belief until a hide / show request replaces it */
+        if (detected == 1) arm32_osk_state_assumed = FALSE;
+        return;
+    }
+    if (detected == old) {
+        if (detected == 1 && (arm32_osk_want || arm32_osk_ours)) {
+            float rect[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            if (arm32_osk_rect_buffer(rect) &&
+                (arm32_osk_absf(rect[1] - arm32_osk_raised_rect[1]) > 2.0f || arm32_osk_absf(rect[3] - arm32_osk_raised_rect[3]) > 2.0f)) {
+                arm32_osk_raised_rect[0] = rect[0];
+                arm32_osk_raised_rect[1] = rect[1];
+                arm32_osk_raised_rect[2] = rect[2];
+                arm32_osk_raised_rect[3] = rect[3];
+                log_line("ARM32 osk: keyboard rectangle changed - raising the game's Showing handler again");
+                arm32_input_pane_raise(TRUE);
+            }
+        }
+        return;
+    }
+    arm32_osk_state = detected;
+    if (detected == 1) arm32_osk_visible_since = GetTickCount();
+    if (old >= 0) arm32_osk_signal_proven = TRUE;
+    wsprintfA(line, "ARM32 osk: keyboard %s (signal %s, was %d)", detected ? "VISIBLE" : "hidden", arm32_osk_signal_names[arm32_osk_signal], old);
+    log_line(line);
+    if (detected == 1) {
+        if (arm32_osk_want || arm32_osk_ours) {
+            float rect[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            if (arm32_osk_rect_buffer(rect)) memcpy(arm32_osk_raised_rect, rect, sizeof(rect));
+            arm32_input_pane_raise(TRUE);
+        }
+    } else if (old == 1) {
+        if (arm32_osk_ours && !arm32_osk_hide_stage && !arm32_osk_hide_when_visible &&
+            (!arm32_osk_last_hide_tick || (GetTickCount() - arm32_osk_last_hide_tick) > 1500u)) {
+            arm32_osk_dismissed_by_user = TRUE;
+            arm32_osk_tap_since_dismiss = FALSE;
+            arm32_osk_ours = FALSE;
+            log_line("ARM32 osk: the keyboard was closed by the user (its X); the game keeps the text focus - a tap on it opens the keyboard again");
+        }
+        arm32_input_pane_raise(FALSE);
+    }
+}
+
+static void arm32_osk_show_attempt(void)
+{
+    HWND tip = arm32_osk_find_window();
+    char line[200];
+    HRESULT result;
+
+    ++arm32_osk_attempts;
+    arm32_osk_last_attempt = GetTickCount();
+    arm32_osk_last_show_suppressed = FALSE;
+    wsprintfA(line, "ARM32 osk: show attempt %u: TabTip window %s", arm32_osk_attempts, tip ? "exists -> ITipInvocation::Toggle" : "not found -> launch TabTip.exe");
+    log_line(line);
+    if (!tip) {
+        arm32_osk_launched = TRUE;
+        arm32_osk_last_was_launch = TRUE;
+        arm32_osk_launch_tabtip();
+        return;
+    }
+    arm32_osk_last_was_launch = FALSE;
+    result = arm32_osk_toggle_com("show");
+    arm32_osk_last_show_suppressed = result == ARM32_OSK_E_ABORT;
+    if (FAILED(result) && result != ARM32_OSK_E_ABORT && (!arm32_osk_launched || arm32_osk_attempts >= 3)) {
+        arm32_osk_launched = TRUE;
+        arm32_osk_last_was_launch = TRUE;
+        arm32_osk_launch_tabtip();
+    }
+}
+
+/* Toggle is state blind (it also HIDES), so a second Toggle is only sent when the previous action had time to work, the state signal
+ * says "hidden" and (before the signal was ever seen to change) the Toggle did not already report success */
+static void arm32_osk_show_progress(DWORD now)
+{
+    char line[220];
+
+    if (arm32_osk_hide_stage) return;     /* a hide is in flight: arm32_osk_show remembered the request */
+    if (arm32_osk_state == 1) {
+        static volatile LONG logged;
+        arm32_osk_want = FALSE;
+        arm32_osk_ours = TRUE;
+        if (InterlockedIncrement(&logged) <= 60) {
+            wsprintfA(line, "ARM32 osk: the keyboard is visible (%lu ms after the request, %u attempt(s))", (unsigned long)(now - arm32_osk_want_since),
+                      arm32_osk_attempts);
+            log_line(line);
+        }
+        return;
+    }
+    if (arm32_osk_attempts && arm32_osk_last_show_suppressed) {
+        /* the last attempt sent nothing (the 2 s Toggle guard held it back): retry right after the guard, and draw no conclusion from a Toggle that
+         * never ran (Windows 11 1.2.8 log: a re-tap 1 s after the keyboard went down only got the keyboard 2.9 s later) */
+        if ((int)(now - (arm32_osk_last_toggle_tick + 2100u)) < 0 && arm32_osk_toggle_guard_active()) return;
+    } else if (arm32_osk_attempts) {
+        DWORD wait = arm32_osk_last_toggle_ok ? 2500u : (arm32_osk_last_was_launch ? (arm32_osk_state == 0 && arm32_osk_find_window() ? 300u : 1600u) : 400u);
+
+        if ((now - arm32_osk_last_attempt) < wait) return;
+        if (arm32_osk_state != 0 && (arm32_osk_last_toggle_ok || arm32_osk_last_was_launch)) {
+            /* no trustworthy signal: one action per request (a second Toggle could hide what the first one showed) */
+            arm32_osk_want = FALSE;
+            arm32_osk_ours = TRUE;
+            arm32_osk_assume_state(1, "one show action done");
+            return;
+        }
+        if (arm32_osk_state == 0 && arm32_osk_last_toggle_ok && !arm32_osk_signal_proven) {
+            /* Toggle reported success but the (never proven) signal still says hidden: it may be blind - believe the Toggle, do not toggle again */
+            arm32_osk_want = FALSE;
+            arm32_osk_ours = TRUE;
+            arm32_osk_assume_state(1, "Toggle succeeded but the state signal never changed - treating the signal as blind");
+            return;
+        }
+        if (arm32_osk_state == 0 && arm32_osk_cloak_verdict() == 1) {
+            arm32_osk_want = FALSE;
+            arm32_osk_ours = TRUE;
+            arm32_osk_assume_state(1, "the signals disagree (the TabTip window is not cloaked)");
+            return;
+        }
+    }
+    /* a state signal that has been seen to work says "hidden": every further Toggle that does not show the keyboard is a failure to report,
+     * not something to repeat ten times (Toggle also HIDES - the 22631 log shows the keyboard flickering open and shut under 10 attempts) */
+    if (arm32_osk_attempts >= ((arm32_osk_is_win11() && arm32_osk_signal_proven) ? 4u : 10u)) {
+        char message[200];
+        arm32_osk_want = FALSE;
+        wsprintfA(message, "ARM32 osk: the touch keyboard did NOT appear after %u attempts - giving up; text can still be typed on a hardware keyboard (send this log)",
+                  arm32_osk_attempts);
+        log_line(message);
+        arm32_osk_snapshot("gave up");
+        return;
+    }
+    arm32_osk_show_attempt();
+}
+
+static BOOL arm32_osk_hide_retry_pending;      /* the Toggle of the current hide method was held back (previous Toggle < 2 s ago): run it again */
+static unsigned arm32_osk_hide_retries;
+
+/* FALSE = this method could not run yet (Toggle held back by the 2 s guard) and must be tried again, not skipped */
+static BOOL arm32_osk_hide_run_method(int method)
+{
+    char line[200];
+    HWND tip = arm32_osk_find_window();
+    HRESULT result = S_OK;
+    BYTE accepted = 0;
+
+    if (method == ARM32_OSK_HIDE_TRYHIDE) {
+        result = arm32_osk_pane2 ? ((HRESULT (WINAPI *)(void *, BYTE *))((void **)arm32_osk_pane2[0])[7])(arm32_osk_pane2, &accepted) : E_FAIL;
+        wsprintfA(line, "ARM32 osk: hide via InputPane2::TryHide hr=0x%08lx accepted=%d", (unsigned long)result, (int)accepted);
+        log_line(line);
+    } else if (method == ARM32_OSK_HIDE_CLOSE) {
+        BOOL posted = tip ? PostMessageW(tip, ARM32_WM_SYSCOMMAND, ARM32_SC_CLOSE, 0) : FALSE;
+        wsprintfA(line, "ARM32 osk: hide via SC_CLOSE to the TabTip window %p posted=%d", (void *)tip, (int)posted);
+        log_line(line);
+    } else {
+        /* Toggle SHOWS a hidden keyboard: only toggle one that is believed to be up */
+        if (arm32_osk_state != 1) {
+            log_line("ARM32 osk: hide via Toggle skipped - the keyboard is not believed to be visible (a Toggle would open it)");
+            return TRUE;
+        }
+        if (arm32_osk_toggle_com("hide") == ARM32_OSK_E_ABORT) return FALSE;
+    }
+    return TRUE;
+}
+
+/* run a hide method; a held-back Toggle is retried after the guard interval instead of moving on to the next method */
+static void arm32_osk_hide_start_method(int method, DWORD now)
+{
+    if (!arm32_osk_hide_run_method(method) && arm32_osk_hide_retries < 3) {
+        ++arm32_osk_hide_retries;
+        arm32_osk_hide_retry_pending = TRUE;
+        arm32_osk_hide_deadline = arm32_osk_last_toggle_tick + 2100u;
+        if ((int)(arm32_osk_hide_deadline - now) <= 0) arm32_osk_hide_deadline = now + 100u;
+        return;
+    }
+    arm32_osk_hide_retry_pending = FALSE;
+    arm32_osk_hide_deadline = now + (method == ARM32_OSK_HIDE_TOGGLE ? 2200u : 550u);
+}
+
+static void arm32_osk_begin_hide(const char *why);
+
+static void arm32_osk_hide_done(void)
+{
+    arm32_osk_hide_stage = 0;
+    arm32_osk_hide_retry_pending = FALSE;
+    arm32_osk_ours = FALSE;
+    if (arm32_osk_show_after_hide) {
+        arm32_osk_show_after_hide = FALSE;
+        arm32_osk_dismissed_by_user = FALSE;
+        arm32_osk_tap_since_dismiss = FALSE;
+        arm32_osk_want = TRUE;
+        arm32_osk_attempts = 0;
+        arm32_osk_want_since = GetTickCount();
+        log_line("ARM32 osk: the hide is done - now doing the show the game asked for meanwhile");
+    }
+}
+
+static void arm32_osk_hide_progress(DWORD now)
+{
     char line[200];
 
-    if (!arm32_osk_want) return;
-    tip = arm32_osk_find_window();
-    if (tip && IsWindowVisible(tip)) {
-        RECT rect;
-        arm32_osk_want = FALSE;
-        arm32_osk_opened_by_us = TRUE;
-        if (GetWindowRect(tip, &rect)) {
-            wsprintfA(line, "ARM32 osk: touch keyboard window %p is visible, rect=(%ld,%ld)-(%ld,%ld)", (void *)tip, (long)rect.left,
-                      (long)rect.top, (long)rect.right, (long)rect.bottom);
+    if (arm32_osk_state <= 0 || (arm32_osk_state_assumed && !arm32_osk_hide_retry_pending)) {
+        if (arm32_osk_state < 0 || arm32_osk_state_assumed) arm32_osk_assume_state(0, "one hide action done");
+        log_line("ARM32 osk: the keyboard is hidden");
+        arm32_osk_hide_done();
+        return;
+    }
+    if ((int)(now - arm32_osk_hide_deadline) < 0 && !(arm32_osk_hide_retry_pending && !arm32_osk_toggle_guard_active())) return;
+    if (arm32_osk_hide_retry_pending) {
+        arm32_osk_hide_start_method(arm32_osk_hide_methods[arm32_osk_hide_stage - 1], now);
+        return;
+    }
+    if (arm32_osk_hide_stage >= arm32_osk_hide_count) {
+        wsprintfA(line, "ARM32 osk: the keyboard is STILL visible after %u hide method(s) - giving up (send this log)", arm32_osk_hide_count);
+        log_line(line);
+        arm32_osk_snapshot("hide gave up");
+        arm32_osk_hide_done();
+        return;
+    }
+    ++arm32_osk_hide_stage;
+    arm32_osk_hide_retries = 0;
+    arm32_osk_hide_start_method(arm32_osk_hide_methods[arm32_osk_hide_stage - 1], now);
+}
+
+/* once per main-loop pass (arm32_input_frame): detect state changes, drive show / hide, tap-to-reopen */
+static void arm32_osk_poll(void)
+{
+    DWORD now;
+    BOOL busy;
+    BOOL idle = !(arm32_osk_want || arm32_osk_ours || arm32_osk_hide_stage || arm32_osk_dismissed_by_user || arm32_osk_hide_when_visible ||
+                  arm32_osk_hide_pending);
+
+    if (idle) {
+        /* Windows 11: the shell also shows / hides the keyboard on its own (a tap on a text field, Enter, a focus change) - keep the state current
+         * and log it even when no request is pending (1.2.8 log 2026-10-21: four callbacks arrived while idle and were invisible, so the state was
+         * stale, typed keys flipped the game to Mouse mode and a later show request could have toggled a visible keyboard shut) */
+        if (!(arm32_osk_signals_ready && arm32_osk_is_win11() && arm32_osk_fip_callbacks != arm32_osk_fip_callbacks_seen)) return;
+    }
+    arm32_osk_init_signals();
+    now = GetTickCount();
+    busy = arm32_osk_want || arm32_osk_hide_stage || arm32_osk_hide_when_visible;
+    if (arm32_osk_fip_callbacks != arm32_osk_fip_callbacks_seen) {
+        char line[240];
+        LONG skipped = arm32_osk_fip_callbacks - arm32_osk_fip_callbacks_seen - 1;
+        arm32_osk_fip_callbacks_seen = arm32_osk_fip_callbacks;
+        /* Windows 11 reads the callback as the state itself (arm32_osk_detect) and "signal proven" is set when the measured state really
+         * changes; Windows 8.1 / 10 count a callback as proof as they always did */
+        if (!arm32_osk_is_win11()) arm32_osk_signal_proven = TRUE;
+        if (arm32_osk_cb_kind == 1) {
+            wsprintfA(line, "ARM32 osk: shell Showing callback #%ld rect=(%ld,%ld,%ld,%ld)%s, arrived %lu ms ago", (long)arm32_osk_fip_callbacks_seen,
+                      (long)arm32_osk_cb_rect[0], (long)arm32_osk_cb_rect[1], (long)arm32_osk_cb_rect[2], (long)arm32_osk_cb_rect[3],
+                      idle ? " while no request was pending" : "", (unsigned long)(now - arm32_osk_cb_tick));
         } else {
-            wsprintfA(line, "ARM32 osk: touch keyboard window %p is visible", (void *)tip);
+            wsprintfA(line, "ARM32 osk: shell Hiding callback #%ld%s, arrived %lu ms ago", (long)arm32_osk_fip_callbacks_seen,
+                      idle ? " while no request was pending" : "", (unsigned long)(now - arm32_osk_cb_tick));
         }
         log_line(line);
-        return;
+        if (skipped > 0) {
+            wsprintfA(line, "ARM32 osk: (%ld earlier shell callback(s) since the last logged one were not seen individually)", (long)skipped);
+            log_line(line);
+        }
+        if (arm32_osk_fip_callbacks_seen <= 6) arm32_osk_snapshot("after the shell callback");
+        arm32_osk_last_detect = 0;
     }
-    now = GetTickCount();
-    if (arm32_osk_attempts && (now - arm32_osk_last_attempt) < 900u) return;
-    if (arm32_osk_attempts >= 5) {
-        arm32_osk_want = FALSE;
-        log_line("ARM32 osk: the touch keyboard window (class IPTip_Main_Window) did NOT appear after 5 attempts - giving up; "
-                 "text can still be typed on a hardware keyboard (send this log)");
-        return;
+    if (arm32_osk_last_detect == 0 || (now - arm32_osk_last_detect) >= (busy ? 60u : 150u)) {
+        arm32_osk_last_detect = now ? now : 1u;
+        arm32_osk_update_state();
     }
-    arm32_osk_last_attempt = now;
-    ++arm32_osk_attempts;
-    wsprintfA(line, "ARM32 osk: attempt %u: window %s", arm32_osk_attempts, tip ? "exists but is hidden -> ITipInvocation::Toggle"
-                                                                              : "not found -> launch TabTip.exe");
-    log_line(line);
-    if (!tip && (!arm32_osk_launched || arm32_osk_attempts == 4)) {
-        arm32_osk_launched = TRUE;
-        arm32_osk_launch_tabtip();
-    } else {
-        arm32_osk_toggle_com();
+    if (arm32_osk_hide_when_visible) {
+        if (arm32_osk_state == 1) {
+            arm32_osk_hide_when_visible = FALSE;
+            arm32_osk_ours = TRUE;
+            log_line("ARM32 osk: the keyboard came up after the game already asked to hide it - hiding it now");
+            arm32_osk_begin_hide("deferred TryHide");
+        } else if ((int)(now - arm32_osk_hide_when_visible_deadline) >= 0) {
+            arm32_osk_hide_when_visible = FALSE;
+        }
     }
+    if (arm32_osk_hide_pending && (int)(now - arm32_osk_hide_pending_deadline) >= 0) {
+        arm32_osk_hide_pending = FALSE;
+        if (arm32_osk_state == 1) {
+            arm32_osk_begin_hide(arm32_osk_hide_pending_why);
+        } else {
+            arm32_osk_ours = FALSE;
+            log_line("ARM32 osk: the keyboard was already gone when the delayed hide was due - nothing to do");
+        }
+    }
+    if (arm32_osk_hide_stage) arm32_osk_hide_progress(now);
+    if (arm32_osk_want) arm32_osk_show_progress(now);
+    if (arm32_osk_dismissed_by_user) {
+        if (!text_input_active) {
+            arm32_osk_dismissed_by_user = FALSE;
+            arm32_osk_tap_since_dismiss = FALSE;
+            log_line("ARM32 osk: the game's text focus ended after the user closed the keyboard");
+        } else if (arm32_osk_tap_since_dismiss && arm32_osk_pointer_up_tick && (now - arm32_osk_pointer_up_tick) >= 300u) {
+            arm32_osk_pointer_up_tick = 0;
+            arm32_osk_tap_since_dismiss = FALSE;
+            arm32_osk_dismissed_by_user = FALSE;
+            if (arm32_osk_eligible() && arm32_osk_state != 1 && !arm32_osk_want) {
+                log_line("ARM32 osk: tap while the text box still has focus - opening the keyboard again");
+                arm32_osk_want = TRUE;
+                arm32_osk_attempts = 0;
+                arm32_osk_want_since = now;
+            }
+        }
+    }
+}
+
+/* a finger was lifted: after a user dismissal this is the "tap on the text box again" signal */
+static void arm32_osk_note_pointer_up(void)
+{
+    if (!arm32_osk_dismissed_by_user) return;
+    arm32_osk_tap_since_dismiss = TRUE;
+    arm32_osk_pointer_up_tick = GetTickCount();
 }
 
 static void arm32_osk_show(const char *why)
 {
+    static volatile LONG logged;
     char line[220];
     BOOL eligible = arm32_osk_eligible();
 
-    wsprintfA(line, "ARM32 osk: show requested (%s) eligible=%d policy=%s touchActive=%d visible=%d", why ? why : "?", (int)eligible,
-              arm32_osk_policy_names[arm32_osk_policy], (int)arm32_input_touch_active(), (int)arm32_osk_visible_now());
-    log_line(line);
+    if (InterlockedIncrement(&logged) <= 80) {
+        wsprintfA(line, "ARM32 osk: show requested (%s) eligible=%d policy=%s touchActive=%d state=%d", why ? why : "?", (int)eligible,
+                  arm32_osk_policy_names[arm32_osk_policy], (int)arm32_input_touch_active(), arm32_osk_state);
+        log_line(line);
+    }
     if (!eligible) return;
+    if (arm32_osk_hide_pending) {
+        arm32_osk_hide_pending = FALSE;
+        log_line("ARM32 osk: delayed hide cancelled - the game asked for the keyboard again right away (it stays up)");
+    }
+    if (arm32_osk_want) return;        /* a request is already in flight: restarting it could send a second (state blind) Toggle */
+    if (arm32_osk_dismissed_by_user && !arm32_osk_tap_since_dismiss) {
+        log_line("ARM32 osk: show ignored - the user closed the keyboard and has not tapped since");
+        return;
+    }
+    if (arm32_osk_hide_stage) {
+        arm32_osk_show_after_hide = TRUE;
+        log_line("ARM32 osk: show requested while a hide is in flight - it will run when the hide is done");
+        return;
+    }
+    arm32_osk_hide_when_visible = FALSE;
+    arm32_osk_dismissed_by_user = FALSE;
+    arm32_osk_tap_since_dismiss = FALSE;
     arm32_osk_want = TRUE;
     arm32_osk_attempts = 0;
-    arm32_osk_poll();
+    arm32_osk_want_since = GetTickCount();
+    arm32_osk_last_detect = 0;
+    /* the state check, the actions and the game's Showing event happen in arm32_osk_poll on the next loop pass (never inside the game's call) */
+}
+
+static void arm32_osk_begin_hide(const char *why)
+{
+    char line[200];
+    unsigned count = 0;
+
+    arm32_osk_init_signals();
+    if (arm32_osk_pane2) arm32_osk_hide_methods[count++] = ARM32_OSK_HIDE_TRYHIDE;
+    if (arm32_osk_is_win11() && (arm32_osk_signal == ARM32_OSK_SIG_FIP || arm32_osk_signal == ARM32_OSK_SIG_PANE)) {
+        /* Windows 11: SC_CLOSE to the invisible IPTip_Main_Window is not what closes the keyboard of TextInputHost, and the shell reports the
+         * result of a Toggle itself (Hiding callback) - Toggle first, SC_CLOSE only as the fallback */
+        arm32_osk_hide_methods[count++] = ARM32_OSK_HIDE_TOGGLE;
+        if (arm32_osk_find_window()) arm32_osk_hide_methods[count++] = ARM32_OSK_HIDE_CLOSE;
+    } else {
+        if (arm32_osk_find_window()) arm32_osk_hide_methods[count++] = ARM32_OSK_HIDE_CLOSE;
+        if (arm32_osk_signal == ARM32_OSK_SIG_FIP || arm32_osk_signal == ARM32_OSK_SIG_PANE) arm32_osk_hide_methods[count++] = ARM32_OSK_HIDE_TOGGLE;
+    }
+    if (!count) {
+        arm32_osk_ours = FALSE;
+        log_line("ARM32 osk: hide requested but there is no way to hide the keyboard (no InputPane, no TabTip window)");
+        return;
+    }
+    arm32_osk_hide_count = count;
+    arm32_osk_hide_stage = 1;
+    arm32_osk_hide_retries = 0;
+    arm32_osk_hide_retry_pending = FALSE;
+    wsprintfA(line, "ARM32 osk: hide requested (%s): %u method(s), first %s", why ? why : "?", count, arm32_osk_hide_names[arm32_osk_hide_methods[0]]);
+    log_line(line);
+    arm32_osk_hide_start_method(arm32_osk_hide_methods[0], GetTickCount());
+    arm32_osk_last_detect = 0;
 }
 
 static void arm32_osk_hide(const char *why)
 {
-    HWND tip;
+    BOOL show_in_flight = arm32_osk_want && arm32_osk_attempts > 0;
 
+    arm32_osk_last_hide_tick = GetTickCount();
     arm32_osk_want = FALSE;
-    tip = arm32_osk_find_window();
-    /* only close a keyboard this host opened (TryHide also runs once at startup, and the user may use the keyboard on his own) */
-    if (arm32_osk_opened_by_us && tip && IsWindowVisible(tip)) {
-        char line[160];
-        PostMessageW(tip, ARM32_WM_SYSCOMMAND, ARM32_SC_CLOSE, 0);
-        wsprintfA(line, "ARM32 osk: hide requested (%s): closing the touch keyboard window %p", why ? why : "?", (void *)tip);
-        log_line(line);
+    arm32_osk_show_after_hide = FALSE;
+    arm32_osk_dismissed_by_user = FALSE;
+    arm32_osk_tap_since_dismiss = FALSE;
+    if (arm32_osk_hide_stage) return;
+    if (!arm32_osk_ours && show_in_flight) {
+        /* the Toggle is on its way and the keyboard is not visible yet: hide it as soon as it shows up (otherwise it stays unowned) */
+        arm32_osk_hide_when_visible = TRUE;
+        arm32_osk_hide_when_visible_deadline = GetTickCount() + 4000u;
+        arm32_osk_last_detect = 0;
+        log_line("ARM32 osk: hide requested while the keyboard is still coming up - it will be hidden as soon as it is visible");
+        return;
     }
-    arm32_osk_opened_by_us = FALSE;
+    /* only close a keyboard this host opened (TryHide also runs once at startup, and the user may use the keyboard on his own) */
+    if (!arm32_osk_ours) return;
+    arm32_osk_hide_when_visible = FALSE;
+    /* games hide and re-show in one go (1.2.8 after Enter: TryHide, then TryShow 62 ms later for the same chat box - Surface 2 log 2026-10-21):
+     * wait ARM32_OSK_HIDE_DELAY_MS so such a pair leaves the keyboard up instead of closing and reopening it; arm32_osk_poll runs the hide */
+    if (!arm32_osk_hide_pending) {
+        arm32_osk_hide_pending = TRUE;
+        arm32_osk_hide_pending_deadline = GetTickCount() + ARM32_OSK_HIDE_DELAY_MS;
+        arm32_osk_hide_pending_why = why;
+    }
 }
 
 /* rectangle of the visible touch keyboard in swap-chain buffer pixels (what CoreWindow.Bounds / OccludedRect use) */
 static BOOL arm32_osk_rect_buffer(float rect[4])
 {
     static float last[4];
-    HWND tip = arm32_osk_find_window();
+    HWND tip;
     RECT window_rect;
     RECT client;
     POINT top_left;
@@ -20883,8 +21773,31 @@ static BOOL arm32_osk_rect_buffer(float rect[4])
     LONG client_height;
     BOOL changed;
 
-    if (!tip || !IsWindowVisible(tip) || !game_window || !GetWindowRect(tip, &window_rect) || !GetClientRect(game_window, &client)) {
-        return FALSE;
+    /* IsWindowVisible and the window rectangle say nothing about a hidden keyboard: only report it when the state signal says it is up */
+    if (arm32_osk_state != 1 || !game_window) return FALSE;
+    if (arm32_osk_is_win11()) {
+        /* Windows 11: IPTip_Main_Window is a 0x0 window (22631 log: rect=(0,0,0,0)), the keyboard of TextInputHost is reported by the shell:
+         * IFrameworkInputPane::Location (accurate there, (0,540,2400,1080) while shown), else the rectangle of the last Showing callback */
+        BOOL have = FALSE;
+        memset(&window_rect, 0, sizeof(window_rect));
+        if (arm32_osk_fip &&
+            SUCCEEDED(((HRESULT (WINAPI *)(void *, RECT *))((void **)arm32_osk_fip[0])[6])(arm32_osk_fip, &window_rect)) &&
+            window_rect.right > window_rect.left && window_rect.bottom > window_rect.top) {
+            have = TRUE;
+        }
+        if (!have && arm32_osk_cb_kind == 1 && arm32_osk_cb_rect[2] > arm32_osk_cb_rect[0] && arm32_osk_cb_rect[3] > arm32_osk_cb_rect[1]) {
+            window_rect.left = arm32_osk_cb_rect[0];
+            window_rect.top = arm32_osk_cb_rect[1];
+            window_rect.right = arm32_osk_cb_rect[2];
+            window_rect.bottom = arm32_osk_cb_rect[3];
+            have = TRUE;
+        }
+        if (!have || !GetClientRect(game_window, &client)) return FALSE;
+    } else {
+        tip = arm32_osk_find_window();
+        if (!tip || !GetWindowRect(tip, &window_rect) || !GetClientRect(game_window, &client)) {
+            return FALSE;
+        }
     }
     top_left.x = window_rect.left;
     top_left.y = window_rect.top;
@@ -20920,6 +21833,23 @@ static BOOL arm32_osk_rect_buffer(float rect[4])
         log_line(line);
     }
     return TRUE;
+}
+
+/* the 1.2.8 OccludedRect: the keyboard rectangle, but held back while a finger is still down that touched before the keyboard appeared - the
+ * game moves the chat box above the keyboard at once, the lift then lands outside the text box and the game closes the keyboard again (Surface 2
+ * log 2026-10-21: TryShow on the press, keyboard up 94 ms later, TryHide 31 ms after that).  Capped at 3 s after the keyboard appeared. */
+static BOOL arm32_osk_rect_for_game(float rect[4])
+{
+    static DWORD logged_for;
+
+    if (arm32_osk_state == 1 && arm32_touch_any_active() && (GetTickCount() - arm32_osk_visible_since) < 3000u) {
+        if (logged_for != arm32_osk_visible_since) {
+            logged_for = arm32_osk_visible_since;
+            log_line("ARM32 osk: keyboard rectangle held back from the game until the finger is lifted (the chat box must not move under the finger)");
+        }
+        return FALSE;
+    }
+    return arm32_osk_rect_buffer(rect);
 }
 
 /* ---- diagnostics: which input mappers exist and which mode the game is in ---- */
@@ -21890,7 +22820,8 @@ static void arm32_boot_setup_paths_and_log(void)
     }
 
     /* first log_line() call of the process happens below */
-    wsprintfA(line, "Win32Craft 1.2.8 ARM32 Win32Bootstrap entered (host build %s %s)", __DATE__, __TIME__);
+    wsprintfA(line, "Win32Craft %s ARM32 Win32Bootstrap entered (host build %s %s)", host_is_0104 ? "Minecraft PE 0.10.4.40" : "1.2.8",
+              __DATE__, __TIME__);
     log_line(line);
     arm32_boot_narrow(narrow, sizeof(narrow), Win32CraftLogPathW);
     wsprintfA(line, "THIS LOG FILE: %s", Win32CraftLogPathW[0] ? narrow : "(not opened: win32craft.log cannot be created)");
@@ -22164,6 +23095,9 @@ static void arm32_boot_log_startup_summary(BYTE *image)
     log_line(line);
 }
 
+/* Minecraft PE 0.10.4.40 (WP8.1 XAML) host: toolkit, five units and x104_bootstrap (arm32/v0_10_4/HOST_DESIGN.md) */
+#include "win32_host_arm32_0104.inl"
+
 int WINAPI Win32Bootstrap(void)
 {
     WNDCLASSEXW klass;
@@ -22177,6 +23111,7 @@ int WINAPI Win32Bootstrap(void)
 
     game_image = image;
     game_window = NULL;
+    host_is_0104 = x104_image_matches(image);   /* quiet: selects the 0.10.4 host (PE machine 0x1C4 + SizeOfImage 0x00E6F000) before anything is logged */
     arm32_boot_start_tick = GetTickCount();
     game115_main_thread_id = GetCurrentThreadId();   /* log_115_main_thread_context() (watchdog) snapshots this thread */
     arm32_boot_setup_paths_and_log();
@@ -22188,6 +23123,8 @@ int WINAPI Win32Bootstrap(void)
     install_crash_trace();
     log_line("crash trace installed (unhandled + vectored exception handlers)");
     arm32_install_abort_traps();
+
+    if (host_is_0104) return x104_bootstrap(image);   /* Minecraft PE 0.10.4.40: everything else below is the 1.2.8 path */
 
     arm32_boot_step("identify image");
     code = arm32_boot_identify_image(image);

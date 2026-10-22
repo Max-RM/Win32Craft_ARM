@@ -1,0 +1,1758 @@
+==== win32craft.log opened 2026-10-21 22:31:13 (pid 4496) ====
+[      0 ms T1914] Win32Craft 1.2.8 ARM32 Win32Bootstrap entered (host build Oct 18 2026 11:32:53)
+[      0 ms T1914] THIS LOG FILE: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\win32craft.log
+[      0 ms T1914] WIN32CRAFT_DEBUG was not set: logging enabled by default on ARM32
+[      0 ms T1914] working directory at start: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft
+[      0 ms T1914] exe directory (package_path): C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft
+[      0 ms T1914] log file: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\win32craft.log (writable)
+[      0 ms T1914] Windows version (RtlGetVersion): 10.0 build 22631
+[      0 ms T1914] ARM32 watchdog started (stall reports from 5 s, heartbeat every 30 s)
+[      0 ms T1914] ARM32 bootstrap step: crash trace
+[      0 ms T1914] crash trace installed (unhandled + vectored exception handlers)
+[      0 ms T1914] ARM32 abort traps: crt=76F90000 signal=76FE5401 set_invalid_parameter_handler=76FE4CC1 set_purecall_handler=76FBFA31
+[      0 ms T1914] ARM32: SIGABRT handler installed
+[      0 ms T1914] ARM32: CRT invalid-parameter handler installed
+[      0 ms T1914] ARM32: CRT pure-call handler installed
+[      0 ms T1914] ARM32 bootstrap step: identify image
+[      0 ms T1914] game image: base=00D70000 preferred=00d70000 machine=01c4 magic=010b sections=8 SizeOfImage=01731000 entry=00b49b29 DllCharacteristics=8140 timestamp=5a336a17
+[      0 ms T1914] image identification: patched Minecraft 1.2.8 ARM32 exe (machine 0x01C4, SizeOfImage 0x01731000)
+[      0 ms T1914] host flags: host_is_128=1 host_is_115=0 host_is_116=0 host_is_windows7=0
+[      0 ms T1914] ARM32 bootstrap step: host options
+[      0 ms T1914] Win32 frame limit: display VSync
+[      0 ms T1914] ARM32 effective feature level cap: 9_1 (0x9100), source: default
+[      0 ms T1914] ARM32 effective input options: input=auto (default), touch-api=auto (default), osk=auto (default), input-log=0
+[      0 ms T1914] SUMMARY: Win32Craft 1.2.8 ARM32 host built Oct 18 2026 11:32:53 | pid 4496 | game image 00D70000 (SizeOfImage 01731000) | feature level cap 0x9100 (0 = game list) | frame limit VSync | log C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\win32craft.log | command line ["C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\Win32Craft.1.2.8-arm32.exe" ]
+[      0 ms T1914] ARM32 bootstrap step: HSTRING init
+[      0 ms T1914] api_compat ARM32: combase.dll=76970000 wintypes.dll=74F20000 native exports resolved 39/39 (0 missing): 
+[      0 ms T1914] HSTRING self-test PASSED (native=combase): create=0x00000000 dup=0x00000000 cmp=0x00000000/0 ref=0x00000000 concat=0x00000000 text=02DA33E0 len=10 joined=02DB5710 len=15
+[      0 ms T1914] ARM32 bootstrap step: RoInitialize
+[      0 ms T1914] RoInitialize(RO_INIT_MULTITHREADED) [native combase]: HRESULT 0x00000001
+[      0 ms T1914] ARM32 bootstrap step: user data
+[     31 ms T1914] roaming MinecraftPE options.txt already exists
+[     31 ms T1914] game data root (fake ApplicationData.LocalFolder): C:\Users\MaxRM\AppData\Roaming\MinecraftPE
+[     31 ms T1914] package root (fake Package.InstalledLocation): C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft
+[     31 ms T1914] ARM32 bootstrap step: IAT hooks
+[     31 ms T1914] ARM32 IAT hooks: game image base: 00D70000
+[     31 ms T1914] ARM32 hook _CxxThrowException: cell rva 00c374e4 currently 755B3A91 = VCRUNTIME140.dll+0x3a91 (image base 755B0000)
+[     31 ms T1914] ARM32 patch _CxxThrowException: cell 019A74E4 755B3A91 -> 75C9475B
+[     31 ms T1914] ARM32: C++ exception trace installed
+[     31 ms T1914] ARM32 hook GetActivationFactoryByPCWSTR: cell rva 00c37bf0 currently 75642C31 = vccorlib140.DLL+0x22c31 (image base 75620000)
+[     31 ms T1914] ARM32 patch GetActivationFactoryByPCWSTR: cell 019A7BF0 75642C31 -> 75CA3B0D
+[     31 ms T1914] ARM32: WinRT activation redirect installed (host fakes first, vccorlib for every other class)
+[     47 ms T1914] ARM32: Win32CraftActivationDispatcher set to the host activation factory
+[     47 ms T1914] ARM32 hook D3DCompile: cell rva 00c370b4 currently 75A68741 = D3DCOMPILER_47.dll+0x148741 (image base 75920000)
+[     47 ms T1914] ARM32 patch D3DCompile: cell 019A70B4 75A68741 -> 75C948F7
+[     47 ms T1914] ARM32: D3DCompile pass-through logger installed
+[     47 ms T1914] ARM32 hook D3DPreprocess: cell rva 00c370b0 currently 75A691E1 = D3DCOMPILER_47.dll+0x1491e1 (image base 75920000)
+[     47 ms T1914] ARM32 patch D3DPreprocess: cell 019A70B0 75A691E1 -> 75CA92F7
+[     47 ms T1914] ARM32: D3DPreprocess pass-through logger installed
+[     47 ms T1914] ARM32 hook D3D11CreateDevice: cell rva 00c37a50 currently 757A0A71 = d3d11.dll+0x70a71 (image base 75730000)
+[     47 ms T1914] ARM32 patch D3D11CreateDevice: cell 019A7A50 757A0A71 -> 75CA941F
+[     47 ms T1914] ARM32: D3D11CreateDevice hook installed (BGRA flag, feature level cap 0x9100)
+[     47 ms T1914] ARM32 patch ShowProfileCardUI: cell 022821FC 018BA2CD -> 75CA9731
+[     47 ms T1914] ARM32 patch ProcessPendingGameUI: cell 02282200 018BA2E9 -> 75CA974F
+[     47 ms T1914] ARM32 patch ShowProfileCardUIForUser: cell 02282208 018BA32D -> 75CA9767
+[     47 ms T1914] Minecraft 1.2.8 ARM32 Xbox TCUI no-ops installed: 3 of 3 cells
+[     47 ms T1914] ARM32: vccorlib compat and CreateFile2 hooks are intentionally not installed
+[     47 ms T1914] ARM32 IAT hooks: activation=ok d3d11=ok optional=ok
+[     47 ms T1914] IAT hooks installed
+[     47 ms T1914] module win32craft.dll: base=75C70000 file_size=444416 timestamp=bc99c29e image_size=00097000 path=C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\win32craft.dll
+[     47 ms T1914] module fmod_ARM.dll: base=752F0000 file_size=1118720 timestamp=58ec0d24 image_size=00153000 path=C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\fmod_ARM.dll
+[     47 ms T1914] module vccorlib140.dll: base=75620000 file_size=342504 timestamp=7a140d7d image_size=00053000 path=C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\vccorlib140.DLL
+[     47 ms T1914] module msvcp140.dll: base=75680000 file_size=559016 timestamp=d9ead96f image_size=0008a000 path=C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\MSVCP140.dll
+[     47 ms T1914] module concrt140.dll: base=755D0000 file_size=270728 timestamp=c8fdcc63 image_size=00042000 path=C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\CONCRT140.dll
+[     47 ms T1914] module vcruntime140.dll: base=755B0000 file_size=72976 timestamp=1d0d8a9b image_size=00014000 path=C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\VCRUNTIME140.dll
+[     47 ms T1914] module ucrtbase.dll: base=76F90000 file_size=786512 timestamp=50333084 image_size=000bd000 path=C:\Windows\System32\ucrtbase.dll
+[     47 ms T1914] module d3d11.dll: base=75730000 file_size=2034456 timestamp=a73ce50c image_size=001ec000 path=C:\Windows\SYSTEM32\d3d11.dll
+[     47 ms T1914] module dxgi.dll: base=754E0000 file_size=712152 timestamp=278e2d6a image_size=000ac000 path=C:\Windows\SYSTEM32\dxgi.dll
+[     47 ms T1914] module d3dcompiler_47.dll: base=75920000 file_size=3391488 timestamp=80b484ec image_size=00345000 path=C:\Windows\SYSTEM32\D3DCOMPILER_47.dll
+[     47 ms T1914] module combase.dll: base=76970000 file_size=2369128 timestamp=c901ccae image_size=0023d000 path=C:\Windows\System32\combase.dll
+[     47 ms T1914] module wintypes.dll: base=74F20000 file_size=794864 timestamp=9c499fd4 image_size=000be000 path=C:\Windows\SYSTEM32\wintypes.dll
+[     47 ms T1914] module note: the silent FMOD stub fmod_ARM.dll is 6144 bytes, the patched real one 1118720 bytes
+[     47 ms T1914] ARM32 bootstrap step: platform fixes
+[     47 ms T1914] ARM32 platform fixes: installing on image 00D70000
+[     47 ms T1914] ARM32 patch AppPlatform_Winrt::pickFile vtable[35]: cell 020D9630 012F30F9 -> 75CA9785
+[     47 ms T1914] Minecraft 1.2.8 ARM32 Win32 custom-skin picker installed
+[     47 ms T1914] ARM32 patch DirectoryPackAccessStrategy::getAsset vtable[11]: cell 020DDF2C 013A14BD -> 75CA9E43
+[     47 ms T1914] ARM32 patch ZipPackAccessStrategy::getAsset vtable[11]: cell 020DE598 013BE6B9 -> 75CA9E73
+[     47 ms T1914] ARM32 patch ZipPackAccessStrategyOwningFileAcccess::getAsset vtable[11]: cell 020DE5E8 013BE6B9 -> 75CA9E73
+[     47 ms T1914] ARM32 DirectoryPackWithEncryptionAccessStrategy getAsset cell 020DE004 = 013A23F1 (left unhooked)
+[     47 ms T1914] Minecraft 1.2.8 ARM32 getAsset overrides: directory=ok zip=ok zip-owning=ok
+[     47 ms T1914] ARM32 patch byte Xbox event string 'button.signin': 01B09E28 62 -> 21
+[     47 ms T1914] ARM32 patch byte Xbox event string 'button.xbl_signin': 01B1345C 62 -> 21
+[     47 ms T1914] Minecraft 1.2.8 ARM32 Xbox sign-in events disabled
+[     47 ms T1914] ARM32 platform fixes: pickFile=ok getAsset-overrides=ok xbox-signin=ok
+[     47 ms T1914] platform fixes installed
+[     47 ms T1914] ARM32 bootstrap step: input hooks
+[     47 ms T1914] ARM32 patch relative mouse hook: cell 020D9C30 012FE93D -> 75CAA323
+[     47 ms T1914] ARM32 patch absolute mouse hook: cell 020D9C14 012FE8F1 -> 75CAA3E1
+[     47 ms T1914] ARM32 patch toggle mouse hook: cell 020D9C68 012FE88D -> 75CAA473
+[     47 ms T1914] installed persistent HWND relative-mouse hooks (ARM32 std::function cells)
+[     47 ms T1914] input hooks installed
+[     47 ms T1914] ARM32 bootstrap step: touch input probe
+[     47 ms T1914] ARM32 input: user32 touch API: GetPointerType=yes GetPointerInfo=yes RegisterTouchWindow=yes GetTouchInputInfo=yes CloseTouchInputHandle=yes SetWindowFeedbackSetting=yes GetRawInputDeviceList=yes IsMouseInPointerEnabled=yes
+[     47 ms T1914] ARM32 input: raw device #0 type=keyboard virtual=0 name=\\?\Microsoft Keyboard RID\0
+[     47 ms T1914] ARM32 input: raw device #1 type=hid virtual=0 name=\\?\HID#ConvertedDevice&Col02#a&2334f901&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[     47 ms T1914] ARM32 input: raw device #2 type=keyboard virtual=0 name=\\?\HID#ConvertedDevice&Col01#a&2334f901&0&0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}
+[     47 ms T1914] ARM32 input: raw device #3 type=hid virtual=0 name=\\?\HID#HID_DEVICE_SYSTEM_VHF#8&31650e5e&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[     47 ms T1914] ARM32 input: raw device #4 type=hid virtual=0 name=\\?\HID#NTTS36672C&Col03#3&100837b2&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[     47 ms T1914] ARM32 input: raw device #5 type=hid virtual=0 name=\\?\HID#ACPI0011#3&1f273c3d&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[     47 ms T1914] ARM32 input: raw device #6 type=hid virtual=0 name=\\?\HID#NTTS36672C&Col02#3&100837b2&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[     47 ms T1914] ARM32 input: raw device #7 type=hid virtual=0 name=\\?\HID#NTTS36672C&Col01#3&100837b2&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[     47 ms T1914] ARM32 input: raw device #8 type=hid virtual=0 name=\\?\HID#ConvertedDevice&Col02#5&1e52e2e1&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[     47 ms T1914] ARM32 input: raw device #9 type=keyboard virtual=0 name=\\?\HID#ConvertedDevice&Col01#5&1e52e2e1&0&0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}
+[     47 ms T1914] ARM32 input: policy=auto touch-api=auto osk=auto digitizer=0x000000c5 maxTouches=10 mousePresent=1 mouseButtons=0 convertibleSlate=0 remoteSession=0 mouseInPointer=0 rawScan=ok rawMice=0 rawKeyboards=3 rawVirtual=0 touchOnlyMachine=0 initialSource=MOUSEKB
+[     47 ms T1914] ARM32 input: default input mode left at the game's choice (Mouse for DeviceFamily Windows.Desktop)
+[     47 ms T1914] ARM32 bootstrap step: client-state hook
+[     47 ms T1914] ARM32 patch ClientInstance vtable slot 3 (vf3 render/tick hook): cell 020AA764 00E8A281 -> 75CAA531
+[     47 ms T1914] Minecraft 1.2.8 client-state hook installed: cell 020AA764 original 00E8A281 hook 75CAA531; waiting for the game to call ClientInstance::vf3
+[     47 ms T1914] client-state hook installed
+[     47 ms T1914] Win32Craft 1.2.8 ARM32 mode active
+[     47 ms T1914] ARM32 bootstrap step: window class
+[     47 ms T1914] ARM32 bootstrap step: create window
+[     47 ms T1914] window size limit: client area capped at 2048x2048 (outer 2064x2087) for the current feature level
+[     62 ms T1914] ARM32 input: relative mouse allowed again
+[    140 ms T1914] HWND created: 000305F4, client area 1264x681
+[    140 ms T1914] ARM32 bootstrap step: touch input attach
+[    140 ms T1914] ARM32 input: window also registered for WM_TOUCH (multi-touch fallback used automatically when no WM_POINTER arrives)
+[    140 ms T1914] ARM32 input: touch handling active: api=pointer (requested auto) window=000305F4 feedbackDisabled=6/6 initialSource=MOUSEKB (WM_POINTER touch contacts are consumed without DefWindowProc, mouse/pen pointers are not)
+[    140 ms T1914] ARM32 bootstrap step: initialize_game_d3d
+[    140 ms T1914] calling game resource constructor
+[    140 ms T1914] game operator new: 018B929D
+[    140 ms T1914] game owner global cell (before): 00000000
+[    140 ms T1914] game owner allocation: 02DCA4D0
+[    140 ms T1914] game resource constructor returned
+[    140 ms T1914] game resource owner: 02DCA4D0
+[    140 ms T1914] game renderer: 059B9E88
+[    140 ms T1914] calling game D3D11 device initializer
+[    140 ms T1914] D3D11CreateDevice request: adapter=00000000 driver=1 flags=0x0 sdk=7 levels(7)=[B100 B000 A100 A000 9300 9200 9100 ] -> cap=0x9100 flags=0x20 levels(1)=[9100 ]
+[    406 ms T1914] D3D11CreateDevice driver=1 OK: HRESULT 0x00000000 selected feature level=0x9100 device=059CD3FC context=059CE73C
+[    406 ms T1914] game D3D11 device initializer returned
+[    406 ms T1914] game D3D11 device (owner+0xc0): 059CD3FC
+[    406 ms T1914] game D3D11 base context (renderer+0x110): 059CE73C
+[    406 ms T1914] game D3D11 Context2 (renderer+0x114): 059CE73C
+[    406 ms T1914] game D3D annotation (renderer+0x140): 059CE730
+[    406 ms T1914] game owner feature level (owner+0xb8) = 0x9100
+[    406 ms T1914] ID3D11Device::GetFeatureLevel = 0x9100
+[    406 ms T1914] texture/backbuffer size limit for this feature level: 2048
+[    406 ms T1914] ARM32 scissor fix: RSSetScissorRects vtable slot: 059CE7F4
+[    406 ms T1914] ARM32 scissor fix: RSSetScissorRects original: 75880DD1
+[    406 ms T1914] installed D3D11 HWND scissor fix
+[    406 ms T1914] HWND client size 1264x681
+[    406 ms T1914] creating HWND swap chain for game device
+[    406 ms T1914] IDXGIFactory::CreateSwapChain(HWND BGRA): HRESULT 0x00000000
+[    406 ms T1914] IDXGIFactory::MakeWindowAssociation(NO_ALT_ENTER): HRESULT 0x00000000
+[    406 ms T1914] HWND swap chain (IDXGISwapChain1): 05A432E8
+[    406 ms T1914] gfx: calling game InitTargets (startup) 1264x681
+[    406 ms T1914] game render target (+0x118): 05A43F64
+[    406 ms T1914] game depth target (+0x120): 05A444E4
+[    406 ms T1914] game backbuffer texture (+0x124): 05A41988
+[    406 ms T1914] HWND swap chain stored at renderer+0x104
+[    406 ms T1914] ARM32 patch IDXGISwapChain::Present (vtable slot 8): cell 754E3B30 755437C1 -> 75CAC97F
+[    406 ms T1914] ARM32 patch IDXGISwapChain1::Present1 (vtable slot 22): cell 754E3B68 755436A1 -> 75CAC991
+[    406 ms T1914] gfx: swap-chain Present/Present1 hooks active
+[    406 ms T1914] game Present(slot 8) 1 begin swap=05A432E8 sync=1 flags=0x0 (requested flags 0x0)
+[    422 ms T1914] game Present 1 end: HRESULT 0x00000000
+[    422 ms T1914] initial HWND backbuffer present: HRESULT 0x00000000
+[    422 ms T1914] game D3D11 device and HWND swap chain initialized
+[    422 ms T1914] Minecraft 1.2.8 D3D bootstrap ok
+[    422 ms T1914] ARM32 bootstrap step: initialize_game_app_128
+[    422 ms T1914] Minecraft 1.2.8 GameOwner global before AppMain construction: 02DCA4D0
+[    422 ms T1914] Minecraft 1.2.8 AppMain startup ctx 75CFE5D8 holder 75CFE618 CoreWindow 75CF5770; calling factory 01307B4D
+[    422 ms T1914] CoreWindow QI IID=94EA2B94-E9CC-49E0
+[    422 ms T1914] CoreWindow QI IID=94EA2B94-E9CC-49E0
+[    422 ms T1914] ARM32 WinRT fakes: 79 NULL vtable slots now log and return E_NOTIMPL
+[    422 ms T1914] ARM32 activation #1 Windows.System.Profile.AnalyticsInfo IID=1D5EE066-188D-5BA9-4387-ACAEB0E7E305
+[    422 ms T1914] redirected Windows.System.Profile.AnalyticsInfo
+[    422 ms T1914] AnalyticsInfo.VersionInfo returned Win32 version object
+[    422 ms T1914] AnalyticsVersionInfo.DeviceFamily returned Windows.Desktop
+[    422 ms T1914] ARM32 activation #2 Windows.System.Profile.AnalyticsInfo IID=1D5EE066-188D-5BA9-4387-ACAEB0E7E305
+[    422 ms T1914] redirected Windows.System.Profile.AnalyticsInfo
+[    422 ms T1914] AnalyticsInfo.DeviceForm returned Desktop
+[    422 ms T1914] CoreWindow.Dispatcher redirected to HWND dispatcher
+[    422 ms T1914] ARM32 activation #3 Windows.Devices.Input.MouseDevice IID=484A9045-6D70-49DB-8E68-46FFBD17D38D
+[    422 ms T1914] redirected Windows.Devices.Input.MouseDevice
+[    422 ms T1914] MouseDevice.GetForCurrentView redirected to HWND mouse
+[    422 ms T1914] CoreWindow QI IID=94EA2B94-E9CC-49E0
+[    422 ms T1914] CoreWindow.CharacterReceived handler: 059B0618
+[    422 ms T1914] 1.16 event invoke: 01399369
+[    422 ms T1914] CoreWindow.PointerPressed handler: 059B02B8
+[    422 ms T1914] 1.16 event invoke: 01306A9D
+[    422 ms T1914] CoreWindow.PointerMoved handler: 059B0798
+[    422 ms T1914] 1.16 event invoke: 01306A9D
+[    422 ms T1914] CoreWindow.PointerReleased handler: 059B0378
+[    422 ms T1914] 1.16 event invoke: 01306A9D
+[    422 ms T1914] CoreWindow.PointerWheelChanged handler: 059B0AF8
+[    422 ms T1914] 1.16 event invoke: 01306A9D
+[    422 ms T1914] CoreWindow.KeyDown handler: 059B0918
+[    422 ms T1914] 1.16 event invoke: 01399505
+[    422 ms T1914] CoreWindow.KeyUp handler: 059B0978
+[    422 ms T1914] 1.16 event invoke: 01399505
+[    422 ms T1914] ARM32 activation #4 Windows.UI.Text.Core.CoreTextServicesManager IID=1520A388-E2CF-4D65-AEB9-B32D86FE39B9
+[    422 ms T1914] redirected Windows.UI.Text.Core.CoreTextServicesManager
+[    422 ms T1914] CoreTextServicesManager.GetForCurrentView returned HWND manager
+[    422 ms T1914] CoreTextServicesManager.CreateEditContext returned HWND context
+[    422 ms T1914] CoreDispatcher.RunAsync queued handler=059B03D8 invoke=012E5059 depth=1
+[    422 ms T1914] ARM32 activation #5 Windows.ApplicationModel.Package IID=4E534BDF-2960-4878-97A4-9624DEB72F2D
+[    422 ms T1914] redirected Windows.ApplicationModel.Package
+[    422 ms T1914] ARM32 QI on fake kind=25 object=75CFB5EC IID=4207A996-CA2F-42F7-BDE8-8B10457A7F30 answered with the object itself
+[    422 ms T1914] ARM32 activation #6 Windows.Storage.ApplicationData IID=5612147B-E843-45E3-94D8-06169E3C8E17
+[    422 ms T1914] redirected Windows.Storage.ApplicationData
+[    422 ms T1914] ARM32 QI on fake kind=26 object=75CFB5F8 IID=4207A996-CA2F-42F7-BDE8-8B10457A7F30 answered with the object itself
+[    422 ms T1914] ARM32 activation #7 Windows.Storage.ApplicationData IID=5612147B-E843-45E3-94D8-06169E3C8E17
+[    422 ms T1914] redirected Windows.Storage.ApplicationData
+[    422 ms T1914] ApplicationData QI returned IApplicationData2
+[    422 ms T1914] ARM32 QI on fake kind=26 object=75CFB5F8 IID=4207A996-CA2F-42F7-BDE8-8B10457A7F30 answered with the object itself
+[    422 ms T1914] ARM32 activation #8 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[    422 ms T1914] redirected Windows.Networking.Connectivity.NetworkInformation
+[    422 ms T1914] ARM32 activation #9 Windows.Media.SpeechSynthesis.SpeechSynthesizer IID=00000035-0000-0000-C000-000000000046
+[    422 ms T1914] redirected Win7 SpeechSynthesizer activation factory
+[    422 ms T1914] Win7 SpeechSynthesizer activated local object
+[    422 ms T1914] ARM32 activation #10 Windows.ApplicationModel.Resources.Core.ResourceContext IID=41F752EF-12AF-41B9-AB36-B1EB4B512460
+[    422 ms T1914] redirected unpackaged ResourceContext factory
+[    422 ms T1914] Win7 ResourceContext.GetForCurrentView returned local context
+[    422 ms T1914] ARM32 activation #11 Windows.Media.SpeechSynthesis.SpeechSynthesizer IID=7D526ECC-7533-4C3F-85BE-888C2BAEEBDC
+[    422 ms T1914] redirected Win7 SpeechSynthesizer installed voices
+[    422 ms T1914] ARM32 activation #12 Windows.Media.Audio.AudioGraphSettings IID=A5D91CC6-C2EB-4A61-A214-1D66D75F83DA
+[    422 ms T1914] redirected unpackaged AudioGraphSettings factory
+[    422 ms T1914] Win32 AudioGraphSettings created
+[    422 ms T1914] ARM32 activation #13 Windows.Media.Audio.AudioGraph IID=76EC3132-E159-4AB7-A82A-17BEB4B31E94
+[    422 ms T1914] redirected unpackaged AudioGraph factory
+[    422 ms T1914] Win32 AudioGraph CreateAsync completed without UWP device
+[    422 ms T1914] Win32 AudioGraph async result reports unavailable audio
+[    422 ms T1914] CurrentApp listing completion callback: HRESULT 0x00000000
+[    422 ms T1914] ARM32 activation #14 Windows.Foundation.Metadata.ApiInformation IID=997439FE-F681-4A11-B416-C13A47E8BA36
+[    422 ms T1914] redirected Windows.Foundation.Metadata.ApiInformation
+[    422 ms T1914] ARM32 activation #15 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[    422 ms T1914] redirected Windows.Networking.Connectivity.NetworkInformation
+[    422 ms T1914] Win32 NetworkInformation: InternetConnectionProfile returned
+[    422 ms T1914] ConnectionProfile QI returned IConnectionProfile2
+[    422 ms T1914] ConnectionProfile ConnectionCost returned
+[    422 ms T1914] ConnectionProfile ConnectionCost returned
+[    422 ms T1914] CoreWindow QI IID=94EA2B94-E9CC-49E0
+[    422 ms T1914] ARM32 activation #16 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    422 ms T1914] redirected Windows.System.MemoryManager
+[    828 ms T1914] ARM32 activation #17 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    828 ms T1914] redirected Windows.System.MemoryManager
+[    828 ms T1914] ARM32 activation #18 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    828 ms T1914] redirected Windows.System.MemoryManager
+[    828 ms T1914] ARM32 activation #19 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    828 ms T1914] redirected Windows.System.MemoryManager
+[    828 ms T1914] ARM32 activation #20 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    828 ms T1914] redirected Windows.System.MemoryManager
+[    828 ms T1914] ARM32 activation #21 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    828 ms T1914] redirected Windows.System.MemoryManager
+[    828 ms T1914] ARM32 activation #22 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    828 ms T1914] redirected Windows.System.MemoryManager
+[    844 ms T1914] ARM32 activation #23 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    844 ms T1914] redirected Windows.System.MemoryManager
+[    844 ms T1914] ARM32 activation #24 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    844 ms T1914] redirected Windows.System.MemoryManager
+[    844 ms T1914] ARM32 activation #25 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    844 ms T1914] redirected Windows.System.MemoryManager
+[    844 ms T1914] ARM32 activation #26 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    844 ms T1914] redirected Windows.System.MemoryManager
+[    859 ms T1914] ARM32 activation #27 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[    859 ms T1914] redirected Windows.System.MemoryManager
+[   1140 ms T1914] ARM32 getAsset[dir] this=05AADEA0 path='manifest.json' result=1 out_length=530
+[   1172 ms T1914] ARM32 getAsset[dir] this=09777388 path='manifest.json' result=1 out_length=539
+[   1187 ms T1914] ARM32 getAsset[dir] this=05A8C8F0 path='manifest.json' result=1 out_length=490
+[   1203 ms T1914] ARM32 getAsset[dir] this=05A6ECB0 path='manifest.json' result=1 out_length=512
+[   1234 ms T1914] ARM32 getAsset[dir] this=05A47998 path='manifest.json' result=1 out_length=652
+[   1250 ms T1914] ARM32 getAsset[dir] this=09788368 path='contents.json' result=1 out_length=311220
+[   1281 ms T1914] ARM32 getAsset[dir] this=097BC648 path='contents.json' result=1 out_length=3408
+[   1281 ms T1914] ARM32 getAsset[dir] this=097BA7E0 path='contents.json' result=1 out_length=1193
+[   1297 ms T1914] ARM32 getAsset[dir] this=097BACE0 path='contents.json' result=1 out_length=243
+[   1297 ms T1914] ARM32 getAsset[dir] this=097BA560 path='contents.json' result=0 out_length=0
+[   1344 ms T1914] ARM32 activation #28 Windows.ApplicationModel.Package IID=4E534BDF-2960-4878-97A4-9624DEB72F2D
+[   1344 ms T1914] redirected Windows.ApplicationModel.Package
+[   1344 ms T1914] ARM32 QI on fake kind=25 object=75CFB5EC IID=4207A996-CA2F-42F7-BDE8-8B10457A7F30 answered with the object itself
+[   1390 ms T1914] ARM32 getAsset[dir] this=097BAAE0 path='manifest.json' result=1 out_length=463
+[   1406 ms T1914] ARM32 getAsset[dir] this=097BAAE0 path='skins.json' result=1 out_length=551
+[   1422 ms T1914] ARM32 getAsset[dir] this=097BAAE0 path='geometry.json' result=1 out_length=8114
+[   1750 ms T1914] ARM32 activation #29 Windows.Security.Cryptography.CryptographicBuffer IID=320B7E22-3CB0-4CDF-8663-1D28910065EB
+[   1750 ms T1914] redirected Windows.Security.Cryptography.CryptographicBuffer
+[   1750 ms T1914] redirected CryptographicBuffer.GenerateRandom
+[   1750 ms T1914] ARM32 activation #30 Windows.Security.Cryptography.CryptographicBuffer IID=320B7E22-3CB0-4CDF-8663-1D28910065EB
+[   1750 ms T1914] redirected Windows.Security.Cryptography.CryptographicBuffer
+[   1781 ms T1914] ARM32 activation #31 Windows.UI.Core.CoreWindow IID=4D239005-3C2A-41B1-9022-536BB9CF93B1
+[   1781 ms T1914] redirected Windows.UI.Core.CoreWindow
+[   1781 ms T1914] CoreWindow.GetForCurrentThread redirected to HWND window
+[   1781 ms T1914] CoreWindow.Dispatcher redirected to HWND dispatcher
+[   1781 ms T1914] ARM32 activation #32 Windows.ApplicationModel.Store.CurrentApp IID=D52DC065-DA3F-4685-995E-9B482EB5E603
+[   1781 ms T1914] redirected Windows.ApplicationModel.Store.CurrentApp
+[   1781 ms T1914] CurrentApp LicenseInformation returned
+[   1781 ms T1914] ARM32 activation #33 Windows.ApplicationModel.Store.CurrentApp IID=D52DC065-DA3F-4685-995E-9B482EB5E603
+[   1781 ms T1914] redirected Windows.ApplicationModel.Store.CurrentApp
+[   1781 ms T1914] CurrentApp LoadListingInformationAsync returned
+[   1781 ms T1914] CurrentApp listing GetResults returned ListingInformation
+[   1781 ms T1914] CurrentApp listing completion callback: HRESULT 0x00000000
+[   1781 ms T1914] ARM32 activation #34 Windows.Globalization.GeographicRegion IID=00000035-0000-0000-C000-000000000046
+[   1781 ms T2608] ARM32 activation #35 Windows.ApplicationModel.Store.CurrentApp IID=D52DC065-DA3F-4685-995E-9B482EB5E603
+[   1781 ms T1914] redirected Windows.Globalization.GeographicRegion
+[   1781 ms T2608] redirected Windows.ApplicationModel.Store.CurrentApp
+[   1781 ms T2608] CurrentApp receipt async operation returned
+[   1781 ms T1914] GeographicRegion activated as en-US/US
+[   1781 ms T2608] CurrentApp receipt GetResults returned non-null HSTRING
+[   1781 ms T1914] ARM32 QI on fake kind=37 object=75CFB6F0 IID=01E9A621-4A64-4ED9-954F-9EDEB07BD903 answered with the object itself
+[   1781 ms T2608] CurrentApp listing completion callback: HRESULT 0x00000000
+[   1781 ms T1914] ARM32 activation #36 Windows.Globalization.ApplicationLanguages IID=75B40847-0A4C-4A92-9565-FD63C95F7AED
+[   1781 ms T1914] redirected Windows.Globalization.ApplicationLanguages
+[   1781 ms T1914] ApplicationLanguages returned en-US vector
+[   1781 ms T1914] ARM32 activation #37 Windows.Foundation.Metadata.ApiInformation IID=997439FE-F681-4A11-B416-C13A47E8BA36
+[   1781 ms T1914] redirected Windows.Foundation.Metadata.ApiInformation
+[   1781 ms T1914] ApiInformation method query answered false
+[   1797 ms T1914] ARM32 getAsset[dir] this=097BA7E0 path='materials/common.json' result=1 out_length=79
+[   1812 ms T1914] ARM32 getAsset[dir] this=097BA7E0 path='materials/ui.material' result=1 out_length=5778
+[   1828 ms T1914] ARM32 getAsset[dir] this=097BA7E0 path='materials/ui3D.material' result=1 out_length=1884
+[   2140 ms T1914] ARM32 getAsset[dir] .lang override applied to 'texts/en_US.lang': 3 -> 103 bytes
+[   2953 ms T1914] ARM32 activation #38 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[   2953 ms T1914] redirected Windows.System.MemoryManager
+[   2953 ms T1914] ARM32 activation #39 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[   2953 ms T1914] redirected Windows.System.MemoryManager
+[   2953 ms T1914] ARM32 activation #40 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[   2953 ms T1914] redirected Windows.System.MemoryManager
+[   2953 ms T1914] ARM32 activation #41 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[   2953 ms T1914] redirected Windows.System.MemoryManager
+[   2953 ms T1914] ARM32 activation #42 Windows.ApplicationModel.Core.CoreApplication IID=0AACF7A4-5E1D-49DF-8034-FB6A68BC5ED1
+[   2953 ms T1914] redirected Windows.ApplicationModel.Core.CoreApplication
+[   2953 ms T1914] ARM32 activation #43 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[   2953 ms T1914] redirected Windows.System.MemoryManager
+[   2953 ms T1914] ARM32 activation #44 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[   2953 ms T1914] redirected Windows.System.MemoryManager
+[   2953 ms T1914] ARM32 activation #45 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[   2953 ms T1914] redirected Windows.System.MemoryManager
+[   2953 ms T1914] ARM32 activation #46 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[   2953 ms T1914] redirected Windows.System.MemoryManager
+[   2969 ms T1914] ARM32 activation #47 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[   2969 ms T1914] redirected Windows.System.MemoryManager
+[   2969 ms T1914] ARM32 activation #48 Windows.Graphics.Display.DisplayInformation IID=C6A02A6C-D452-44DC-BA07-96F3C6ADF9D1
+[   2969 ms T1914] redirected Windows.Graphics.Display.DisplayInformation
+[   2969 ms T1914] DisplayInformation.GetForCurrentView redirected to HWND display
+[   2969 ms T1914] DisplayInformation RawDpiX returned 96.0
+[   2969 ms T1914] DisplayInformation RawDpiX returned 96.0
+[   2969 ms T1914] ARM32 activation #49 Windows.Graphics.Display.DisplayInformation IID=C6A02A6C-D452-44DC-BA07-96F3C6ADF9D1
+[   2969 ms T1914] redirected Windows.Graphics.Display.DisplayInformation
+[   2969 ms T1914] DisplayInformation.GetForCurrentView redirected to HWND display
+[   2969 ms T1914] DisplayInformation RawDpiX returned 96.0
+[   2969 ms T1914] DisplayInformation RawDpiY returned 96.0
+[   2969 ms T1914] ARM32 activation #50 Windows.Graphics.Display.DisplayInformation IID=C6A02A6C-D452-44DC-BA07-96F3C6ADF9D1
+[   2969 ms T1914] redirected Windows.Graphics.Display.DisplayInformation
+[   2969 ms T1914] DisplayInformation.GetForCurrentView redirected to HWND display
+[   2969 ms T1914] DisplayInformation RawDpiX returned 96.0
+[   2969 ms T1914] ARM32 activation #51 Windows.Graphics.Display.DisplayInformation IID=C6A02A6C-D452-44DC-BA07-96F3C6ADF9D1
+[   2969 ms T1914] redirected Windows.Graphics.Display.DisplayInformation
+[   2969 ms T1914] DisplayInformation.GetForCurrentView redirected to HWND display
+[   2969 ms T1914] ARM32 activation #52 Windows.UI.ViewManagement.ApplicationView IID=AF338AE5-CF64-423C-85E5-F3E72448FB23
+[   2969 ms T1914] redirected Windows.UI.ViewManagement.ApplicationView
+[   2969 ms T1914] ApplicationView.GetForCurrentView returned HWND view
+[   2969 ms T1914] ApplicationView QI returned IApplicationView3
+[   2969 ms T1914] Minecraft 1.2.8 AppMain holder result: 75CFCF34
+[   2969 ms T1914] Minecraft 1.2.8 AppMain: 02D8EC60
+[   2969 ms T1914] Minecraft 1.2.8 AppPlatform: 05A44AD0
+[   2969 ms T1914] Minecraft 1.2.8 MinecraftGame: 05A687F0
+[   2969 ms T1914] Minecraft 1.2.8 AppMain init: platform size 1264x681, dpi scale x1000 y1000 (per mille), state 2, AppMain+4 restart=0
+[   2969 ms T1914] Minecraft 1.2.8 AppMain bootstrap ok
+[   2969 ms T1914] ARM32 bootstrap step: activate_game_app_128
+[   2969 ms T1914] Minecraft 1.2.8 AppPlatform made visible: state 1, visible byte 1
+[   2969 ms T1914] Minecraft 1.2.8 game resized to 1264x681
+[   2969 ms T1914] Minecraft 1.2.8 HID controller 05A45F38, input handler 05A44F00, input events enabled
+[   2969 ms T1914] Minecraft 1.2.8 HWND application activated
+[   2969 ms T1914] Minecraft 1.2.8 activation bootstrap ok
+[   2969 ms T1914] HID mouse mode: requested=0 actual=0 command=0
+[   2969 ms T1914] Minecraft 1.2.8 D3D/AppMain bootstrap ready
+[   2969 ms T1914] Win32 message/frame loop entered
+[   2969 ms T1914] ARM32 bootstrap step: main loop
+[   2984 ms T1914] VEH exception 0xe06d7363 at 76DB212F
+[   2984 ms T1914]   C++ throw: object=028fcdc0 throwinfo=779b067c
+[   2984 ms T1914] VEH: pc=76db212f lr=76db212f sp=028fcd10 cpsr=60000020
+[   2984 ms T1914]   r0=00000000 r1=00000000 r2=00000000 r3=00000000 r4=76db20f1 r5=028fce88
+[   2984 ms T1914]   r6=779b067c r7=028fcdc0 r8=09f38ca8 r9=778ebba4 r10=9264d1ea r11=028fcd68 r12=00000000
+[   2984 ms T1914]   VEH frame[0] = 75C7E53D
+[   2984 ms T1914]   VEH frame[1] = 77DAA179
+[   2984 ms T1914]   VEH frame[2] = 77DE88F1
+[   2984 ms T1914]   VEH frame[3] = 77DE9AAF
+[   2984 ms T1914]   VEH frame[4] = 76DB212F
+[   2984 ms T1914]   VEH frame[5] = 77CB6D99
+[   2984 ms T1914]   VEH frame[6] = 77975423
+[   2984 ms T1914]   VEH frame[7] = 7792E53F
+[   2984 ms T1914]   VEH frame[8] = 77914AAB
+[   2984 ms T1914]   VEH frame[9] = 7791490D
+[   2984 ms T1914]   VEH frame[10] = 77914A2B
+[   2984 ms T1914]   VEH frame[11] = 779203AF
+[   2984 ms T1914]   VEH frame[12] = 77914711
+[   2984 ms T1914]   VEH frame[13] = 7791BFED
+[   2984 ms T1914]   VEH frame[14] = 7791115D
+[   2984 ms T1914]   VEH frame[15] = 77933C03
+[   2984 ms T1914]   VEH frame[16] = 7793450D
+[   2984 ms T1914]   VEH frame[17] = 770A0023
+[   2984 ms T1914]   VEH frame[18] = 770C7B27
+[   2984 ms T1914]   VEH frame[19] = 770C8F2B
+[   2984 ms T1914]   VEH frame[20] = 77D56239
+[   2984 ms T1914]   VEH frame[21] = 770C778B
+[   2984 ms T1914]   VEH frame[22] = 75C7BF09
+[   2984 ms T1914]   VEH frame[23] = 75C75B73
+[   2984 ms T1914]   VEH frame[24] = 018B9ACF (game rva 00b49ace)
+[   2984 ms T1914]   VEH frame[25] = 77BE54B1
+[   2984 ms T1914]   VEH frame[26] = 77D7BF75
+[   2984 ms T1914]   VEH stack sp+174: 01400171 -> game rva 00690170
+[   2984 ms T1914]   VEH stack sp+20c: 013e0173 -> game rva 00670172
+[   2984 ms T1914]   VEH stack sp+2bc: 012339ed -> game rva 004c39ec
+[   2984 ms T1914]   VEH stack sp+564: 023b00a9 -> game rva 016400a8
+[   2984 ms T1914]   VEH stack sp+56c: 01735a45 -> game rva 009c5a44
+[   2984 ms T1914]   VEH stack sp+5c0: 01b542a4 -> game rva 00de42a4
+[   2984 ms T1914]   VEH stack sp+5cc: 0173e697 -> game rva 009ce696
+[   2984 ms T1914]   VEH stack sp+5ec: 00e96f99 -> game rva 00126f98
+[   2984 ms T1914]   VEH stack sp+d20: 02140000 -> game rva 013d0000
+[   2984 ms T1914]   VEH stack sp+e28: 01000074 -> game rva 00290074
+[   2984 ms T1914] VEH exception 0xe06d7363 at 76DB212F
+[   2984 ms T1914]   C++ throw: object=00000000 throwinfo=00000000
+[   2984 ms T1914] VEH: pc=76db212f lr=76db212f sp=028faed8 cpsr=60000020
+[   2984 ms T1914]   r0=00000792 r1=00000793 r2=00000794 r3=00000795 r4=76db20f1 r5=028fb000
+[   2984 ms T1914]   r6=00000000 r7=00000000 r8=028faff8 r9=779c14d8 r10=00000800 r11=028faf30 r12=0000079e
+[   2984 ms T1914]   VEH frame[0] = 75C7E53D
+[   2984 ms T1914]   VEH frame[1] = 77DAA179
+[   2984 ms T1914]   VEH frame[2] = 77DE88F1
+[   2984 ms T1914]   VEH frame[3] = 77DE9AAF
+[   2984 ms T1914]   VEH frame[4] = 76DB212F
+[   2984 ms T1914]   VEH frame[5] = 77CB6D99
+[   2984 ms T1914]   VEH frame[6] = 7797500F
+[   2984 ms T1914]   VEH frame[7] = 7791499F
+[   2984 ms T1914]   VEH frame[8] = 77914949
+[   2984 ms T1914]   VEH frame[9] = 7791CE1D
+[   2984 ms T1914]   VEH frame[10] = 77929C09
+[   2984 ms T1914]   VEH frame[11] = 77CB66E3
+[   2984 ms T1914]   VEH frame[12] = 77D563F1
+[   2984 ms T1914]   VEH frame[13] = 77CB7199
+[   2984 ms T1914]   VEH frame[14] = 77CB606B
+[   2984 ms T1914]   VEH frame[15] = 77CB6A7D
+[   2984 ms T1914]   VEH frame[16] = 77CB720F
+[   2984 ms T1914]   VEH frame[17] = 77927FAD
+[   2984 ms T1914]   VEH frame[18] = 77D565F1
+[   2984 ms T1914]   VEH frame[19] = 77DE9AAF
+[   2984 ms T1914]   VEH frame[20] = 76DB212F
+[   2984 ms T1914]   VEH frame[21] = 77CB6D99
+[   2984 ms T1914]   VEH frame[22] = 77975423
+[   2984 ms T1914]   VEH frame[23] = 7792E53F
+[   2984 ms T1914]   VEH frame[24] = 77914AAB
+[   2984 ms T1914]   VEH frame[25] = 7791490D
+[   2984 ms T1914]   VEH frame[26] = 77914A2B
+[   2984 ms T1914]   VEH frame[27] = 779203AF
+[   2984 ms T1914]   VEH frame[28] = 77914711
+[   2984 ms T1914]   VEH frame[29] = 7791BFED
+[   2984 ms T1914]   VEH frame[30] = 7791115D
+[   2984 ms T1914]   VEH frame[31] = 77933C03
+[   2984 ms T1914]   VEH frame[32] = 7793450D
+[   2984 ms T1914]   VEH frame[33] = 770A0023
+[   2984 ms T1914]   VEH frame[34] = 770C7B27
+[   2984 ms T1914]   VEH frame[35] = 770C8F2B
+[   2984 ms T1914]   VEH frame[36] = 77D56239
+[   2984 ms T1914]   VEH frame[37] = 770C778B
+[   2984 ms T1914]   VEH frame[38] = 75C7BF09
+[   2984 ms T1914]   VEH frame[39] = 75C75B73
+[   2984 ms T1914]   VEH frame[40] = 018B9ACF (game rva 00b49ace)
+[   2984 ms T1914]   VEH frame[41] = 77BE54B1
+[   2984 ms T1914]   VEH frame[42] = 77D7BF75
+[   2984 ms T1914]   VEH stack sp+a08: 02140026 -> game rva 013d0026
+[   3015 ms T1914] ARM32 input target: platform=05A44AD0 controller=05A45F38 handler=05A44F00 actual=0 command=0 hold25=0
+[   3015 ms T1914] mouse event: x=935 y=538 action=0 pressed=0 payload=0
+[   3015 ms T1914] resize requested: 1600x649
+[   3015 ms T1914] IDXGISwapChain::ResizeBuffers(HWND): HRESULT 0x00000000
+[   3015 ms T1914] gfx: calling game InitTargets (resize) 1600x649
+[   3015 ms T1914] game render target (+0x118): 09F38CE4
+[   3015 ms T1914] game depth target (+0x120): 09F38764
+[   3015 ms T1914] game backbuffer texture (+0x124): 09815488
+[   3031 ms T1914] HWND resize validation Present: HRESULT 0x00000000
+[   3031 ms T1914] HWND swap chain targets resized and rebound
+[   3031 ms T1914] Minecraft 1.2.8 HWND target and UI size synchronized
+[   3031 ms T1914] mouse event: x=1235 y=4 action=0 pressed=0 payload=0
+[   3031 ms T1914] ARM32 activation #53 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[   3031 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[   3031 ms T1914] ARM32 InputPane.TryHide accepted (fake input pane)
+[   3031 ms T1914] CoreText focus left: Win32 text input deactivated
+[   3031 ms T1914] CoreDispatcher.RunAsync invoked handler=059B03D8 invoke=012E5059 result=0x00000000 relative=0 guard=1
+[   3031 ms T1914] Minecraft 1.2.8 scene: UI cursor
+[   3031 ms T1914] frame 1: entering render_game_target_128
+[   3047 ms T09c0] ARM32 activation #54 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[   3047 ms T09c0] redirected Windows.Networking.Connectivity.NetworkInformation
+[   3047 ms T09c0] Win32 NetworkInformation: InternetConnectionProfile returned
+[   3047 ms T09c0] ConnectionProfile QI returned IConnectionProfile2
+[   3047 ms T09c0] ConnectionProfile ConnectionCost returned
+[   3047 ms T09c0] ConnectionProfile ConnectionCost returned
+[   3047 ms T1914] Minecraft 1.2.8 live render client: 09F64BC8
+[   3047 ms T1914] Minecraft 1.2.8 ClientInstance::vf3 hook call #1: self=09F64BC8 thread=6420 +2989 ms since hook install r1=00000000 r2=00000001 r3=75caa531
+[   3047 ms T1914] Minecraft 1.2.8 ClientInstance::vf3 hook call #2: self=09F64BC8 thread=6420 +2989 ms since hook install r1=00000001 r2=00000001 r3=75caa531
+[   3187 ms T1914] D3DCompile #1 ok: source=C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32 entry=main target=vs_4_0_level_9_1 bytes=977 macros=[VERSION=37120 ]
+[   3203 ms T1914] D3DCompile #2 ok: source=C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32 entry=main target=ps_4_0_level_9_1 bytes=941 macros=[VERSION=37120 ]
+[   3359 ms T1914] frame 1 complete: 390 ms since the loop started, this frame took 328 ms
+[   3375 ms T1914] mouse event: x=1235 y=4 action=0 pressed=0 payload=0
+[   3375 ms T1914] Minecraft 1.2.8 client-state: ClientInstance 09F64BC8 captured after 1 frames / 336 ms of waiting
+[   3375 ms T1914] Minecraft 1.2.8 client-state: ClientInstance 09F64BC8 accepted (owner=05A687F0 keyboard=0981B670 level_renderer=00000000 local_scene_stack=05A84828)
+[   3375 ms T1914] frame 2: entering render_game_target_128
+[   3390 ms T1914] Minecraft 1.2.8 ClientInstance::vf3 hook call #3: self=09F64BC8 thread=6420 +3333 ms since hook install r1=00000000 r2=00000001 r3=75caa531
+[   3390 ms T1914] frame 2 complete: 421 ms since the loop started, this frame took 15 ms
+[   3390 ms T1914] frame 3: entering render_game_target_128
+[   3406 ms T1914] frame 3 complete: 437 ms since the loop started, this frame took 16 ms
+[   3406 ms T1914] ARM32 input: InputHandler 05A894C0 has 8 mapper(s): Gaze,Keyboard,Mouse,GamePad,Touch,Motion,DeviceButton,Behavior
+[   3406 ms T1914] ARM32 input: game input mode (start) -> Mouse (host source=MOUSEKB, policy=auto, active touch contacts=0)
+[   3406 ms T1914] frame 5 complete: 437 ms since the loop started, this frame took 0 ms
+[   3453 ms T1914] frame 10 complete: 484 ms since the loop started, this frame took 16 ms
+[   3625 ms T1914] frame 30 complete: 656 ms since the loop started, this frame took 0 ms
+[   3890 ms T1914] ARM32 touch: first PT_TOUCH WM_POINTERDOWN received - the pointer API works on this device
+[   3890 ms T1914] ARM32 touch: GetPointerInfo id=84 type=2 flags=0x00016017 ptPixelLocation=(1099,441) lParam screen=(1099,441) client=(1099,418)
+[   3890 ms T1914] ARM32 touch: FIRST touch contact. HID state: controller=05A45F38 +0xa0(relative actual)=0 +0x25=0 command(+0x28)=0 input_events_enabled=1 text_input_active=0 mouse_capture_active=0 relative_requested=0 initial_menu_cursor_guard=1
+[   3890 ms T1914] ARM32 input: source MOUSEKB -> TOUCH (WM_POINTERDOWN)
+[   3890 ms T1914] ARM32 touch: initial main-menu cursor guard released by touch
+[   3890 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(1099,418) buffer=(1099,418)
+[   3890 ms T1914] ARM32 touch: down id=84 slot=0 client=(1099,418) via WM_POINTERDOWN (active contacts: 1)
+[   3890 ms T1914] frame 60 complete: 921 ms since the loop started, this frame took 0 ms
+[   3922 ms T1914] ARM32 input: game input mode Mouse -> Touch (host source=TOUCH, policy=auto, active touch contacts=1)
+[   3922 ms T1914] ARM32 input: the game is in Touch mode - the on-screen touch controls (joystick / jump / sneak) are drawn by TouchMapper::render once a world is open
+[   3937 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=0 client=(1099,418) buffer=(1099,418)
+[   3937 ms T1914] ARM32 touch: up id=84 slot=0 client=(1099,418) held 47 ms (WM_POINTERUP)
+[   4453 ms T1914] frame 120 complete: 1484 ms since the loop started, this frame took 0 ms
+[   5406 ms T0810] VEH exception 0xe06d7363 at 76DB212F
+[   5406 ms T0810]   C++ throw: object=0ea1f948 throwinfo=0208e9c8
+[   5406 ms T0810] VEH: pc=76db212f lr=76db212f sp=0ea1f8e8 cpsr=60000020
+[   5406 ms T0810]   r0=02cd0000 r1=0ea1f710 r2=02cd00c0 r3=00000000 r4=76db20f1 r5=0208e9e4
+[   5406 ms T0810]   r6=0ea1fb18 r7=0ea1f978 r8=09fd65d0 r9=0a14db40 r10=09fd65e0 r11=0ea1f940 r12=02cd00c0
+[   5406 ms T0810]   VEH frame[0] = 75C7E53D
+[   5406 ms T0810]   VEH frame[1] = 77DAA179
+[   5406 ms T0810]   VEH frame[2] = 77DE88F1
+[   5406 ms T0810]   VEH frame[3] = 77DE9AAF
+[   5406 ms T0810]   VEH frame[4] = 76DB212F
+[   5406 ms T0810]   VEH frame[5] = 75682979
+[   5406 ms T0810]   VEH frame[6] = 00E6D3F3 (game rva 000fd3f2)
+[   5406 ms T0810]   VEH frame[7] = 00E6D4F3 (game rva 000fd4f2)
+[   5406 ms T0810]   VEH frame[8] = 00E6E569 (game rva 000fe568)
+[   5406 ms T0810]   VEH frame[9] = 00E6ECC3 (game rva 000fecc2)
+[   5406 ms T0810]   VEH frame[10] = 01140671 (game rva 003d0670)
+[   5406 ms T0810]   VEH frame[11] = 0123A3E3 (game rva 004ca3e2)
+[   5406 ms T0810]   VEH frame[12] = 0123C76F (game rva 004cc76e)
+[   5406 ms T0810]   VEH frame[13] = 00E7892B (game rva 0010892a)
+[   5406 ms T0810]   VEH frame[14] = 00E79FDF (game rva 00109fde)
+[   5406 ms T0810]   VEH frame[15] = 00E789A7 (game rva 001089a6)
+[   5406 ms T0810]   VEH frame[16] = 0114A74B (game rva 003da74a)
+[   5406 ms T0810]   VEH frame[17] = 01148EC5 (game rva 003d8ec4)
+[   5406 ms T0810]   VEH frame[18] = 00E6DF85 (game rva 000fdf84)
+[   5406 ms T0810]   VEH frame[19] = 00E6D67F (game rva 000fd67e)
+[   5406 ms T0810]   VEH frame[20] = 7568F7E7
+[   5406 ms T0810]   VEH frame[21] = 77D92A43
+[   5406 ms T0810]   VEH frame[22] = 77D61EF3
+[   5406 ms T0810]   VEH frame[23] = 77BE54B1
+[   5406 ms T0810]   VEH frame[24] = 77D7BF75
+[   5406 ms T0810]   VEH stack sp+01c: 0208e9c8 -> game rva 0131e9c8
+[   5406 ms T0810]   VEH stack sp+020: 00d70000 -> game rva 00000000
+[   5406 ms T0810]   VEH stack sp+040: 00d70000 -> game rva 00000000
+[   5406 ms T0810]   VEH stack sp+048: 0208e9e4 -> game rva 0131e9e4
+[   5406 ms T0810]   VEH stack sp+060: 020a6734 -> game rva 01336734
+[   5406 ms T0810]   VEH stack sp+070: 020a6314 -> game rva 01336314
+[   5406 ms T0810]   VEH stack sp+0bc: 0208e9c8 -> game rva 0131e9c8
+[   5406 ms T0810]   VEH stack sp+0c0: 00d70000 -> game rva 00000000
+[   5406 ms T0810]   VEH stack sp+104: 00e6d3f3 -> game rva 000fd3f2
+[   5406 ms T0810]   VEH stack sp+10c: 00e6d4f3 -> game rva 000fd4f2
+[   5406 ms T0810]   VEH stack sp+124: 00e6e569 -> game rva 000fe568
+[   5406 ms T0810]   VEH stack sp+13c: 00e6ecc3 -> game rva 000fecc2
+[   5406 ms T0810]   VEH stack sp+16c: 01140671 -> game rva 003d0670
+[   5406 ms T0810]   VEH stack sp+194: 0123a3e3 -> game rva 004ca3e2
+[   5406 ms T0810]   VEH stack sp+1b4: 0115aaa9 -> game rva 003eaaa8
+[   5406 ms T0810]   VEH stack sp+1d4: 0123c76f -> game rva 004cc76e
+[   5406 ms T0810]   VEH stack sp+1e4: 00e7892b -> game rva 0010892a
+[   5406 ms T0810]   VEH stack sp+1ec: 0114be53 -> game rva 003dbe52
+[   5406 ms T0810]   VEH stack sp+224: 00e79fdf -> game rva 00109fde
+[   5406 ms T0810]   VEH stack sp+23c: 00e789a7 -> game rva 001089a6
+[   5406 ms T0810]   VEH stack sp+24c: 0114aaaf -> game rva 003daaae
+[   5406 ms T0810]   VEH stack sp+274: 0114a74b -> game rva 003da74a
+[   5406 ms T0810]   VEH stack sp+288: 020ced4c -> game rva 0135ed4c
+[   5406 ms T0810]   VEH stack sp+2c0: 0232e000 -> game rva 015be000
+[   5406 ms T0810]   VEH stack sp+2ec: 00e6d65d -> game rva 000fd65c
+[   5406 ms T0810]   VEH stack sp+2fc: 01148ec5 -> game rva 003d8ec4
+[   5406 ms T0810]   VEH stack sp+30c: 00d70000 -> game rva 00000000
+[   5406 ms T0810]   VEH stack sp+324: 00e6df85 -> game rva 000fdf84
+[   5406 ms T0810]   VEH stack sp+32c: 00d70000 -> game rva 00000000
+[   5406 ms T0810]   VEH stack sp+334: 00d70000 -> game rva 00000000
+[   5406 ms T0810]   VEH stack sp+34c: 00e6d67f -> game rva 000fd67e
+[   5406 ms T0810]   VEH stack sp+370: 00d70000 -> game rva 00000000
+[   5406 ms T0810]   VEH stack sp+3d0: 01000100 -> game rva 00290100
+[   5406 ms T0810]   VEH stack sp+4d4: 00d70000 -> game rva 00000000
+[   6390 ms T1914] ARM32 getAsset[dir] .lang override applied to 'texts/en_US.lang': 340197 -> 340267 bytes
+[   6406 ms T1914] ARM32 getAsset[dir] .lang override applied to 'texts/en_US.lang': 3 -> 103 bytes
+[   9922 ms T1914] ARM32 getAsset[dir] start_screen override applied to 'ui/start_screen.json': 20315 -> 20276 bytes
+[  10672 ms T1090] ARM32 watchdog: NO PROGRESS for 5 s in step 'main loop' (loop passes=237 frames started=238 done=237) - a game frame call has not returned
+[  11344 ms T1914] ARM32 activation #55 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  11344 ms T1914] redirected Windows.System.MemoryManager
+[  11344 ms T1914] ARM32 activation #56 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  11344 ms T1914] redirected Windows.System.MemoryManager
+[  11875 ms T1914] ARM32 activation #57 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  11875 ms T1914] redirected Windows.System.MemoryManager
+[  11875 ms T1914] ARM32 activation #58 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  11875 ms T1914] redirected Windows.System.MemoryManager
+[  11875 ms T1914] ARM32 activation #59 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  11875 ms T1914] redirected Windows.System.MemoryManager
+[  11875 ms T1914] ARM32 activation #60 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  11875 ms T1914] redirected Windows.System.MemoryManager
+[  11890 ms T1914] slow frame 238: 6468 ms
+[  11906 ms T1914] resize requested: 1600x649
+[  11906 ms T1914] resize: swap-chain size unchanged
+[  11906 ms T1914] ARM32 touch: GetPointerInfo id=85 type=2 flags=0x00016017 ptPixelLocation=(1241,381) lParam screen=(1241,381) client=(1241,358)
+[  11906 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(1241,358) buffer=(1241,358)
+[  11906 ms T1914] ARM32 touch: down id=85 slot=0 client=(1241,358) via WM_POINTERDOWN (active contacts: 1)
+[  11906 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=0 client=(1241,358) buffer=(1241,358)
+[  11906 ms T1914] ARM32 touch: up id=85 slot=0 client=(1241,358) held 0 ms (WM_POINTERUP)
+[  11906 ms T1914] ARM32 touch: GetPointerInfo id=86 type=2 flags=0x00016017 ptPixelLocation=(1133,383) lParam screen=(1133,383) client=(1133,360)
+[  11906 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(1133,360) buffer=(1133,360)
+[  11906 ms T1914] ARM32 touch: down id=86 slot=0 client=(1133,360) via WM_POINTERDOWN (active contacts: 1)
+[  11906 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=0 client=(1133,360) buffer=(1133,360)
+[  11906 ms T1914] ARM32 touch: up id=86 slot=0 client=(1133,360) held 0 ms (WM_POINTERUP)
+[  11906 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(1093,370) buffer=(1093,370)
+[  11906 ms T1914] ARM32 touch: down id=87 slot=0 client=(1093,370) via WM_POINTERDOWN (active contacts: 1)
+[  11906 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=0 client=(1093,370) buffer=(1093,370)
+[  11906 ms T1914] ARM32 touch: up id=87 slot=0 client=(1093,370) held 0 ms (WM_POINTERUP)
+[  11906 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(1097,357) buffer=(1097,357)
+[  11906 ms T1914] ARM32 touch: down id=88 slot=0 client=(1097,357) via WM_POINTERDOWN (active contacts: 1)
+[  11906 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=0 client=(1097,357) buffer=(1097,357)
+[  11906 ms T1914] ARM32 touch: up id=88 slot=0 client=(1097,357) held 0 ms (WM_POINTERUP)
+[  11922 ms T1914] ARM32 input: WM_MOUSEMOVE without a real displacement ignored while touch is the active source
+[  11922 ms T1914] ARM32 activation #61 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  11922 ms T1914] redirected Windows.System.MemoryManager
+[  11922 ms T1914] ARM32 activation #62 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  11922 ms T1914] redirected Windows.System.MemoryManager
+[  12031 ms T1914] ListingInformation ProductListings returned empty map
+[  12031 ms T1914] ProductListings QI returned empty IIterable
+[  12031 ms T1914] NetworkNames IIterable::First returned empty iterator
+[  12031 ms T1914] ProductListings QI returned empty IIterable
+[  12094 ms T1914] D3DCompile #3 ok: source=C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32 entry=main target=vs_4_0_level_9_1 bytes=1012 macros=[VERSION=37120 ]
+[  12219 ms T1090] ARM32 watchdog: main thread is progressing again after 6 s (step 'main loop')
+[  12484 ms T1914] ARM32 input: WM_MOUSEMOVE without a real displacement ignored while touch is the active source
+[  12484 ms T1914] LicenseInformation ProductLicenses returned empty map
+[  12484 ms T1914] ProductListings QI returned empty IIterable
+[  12484 ms T1914] NetworkNames IIterable::First returned empty iterator
+[  12484 ms T1914] ProductListings QI returned empty IIterable
+[  12515 ms T1914] CoreDispatcher.RunAsync queued handler=0F4F0620 invoke=012E5059 depth=1
+[  12547 ms T1914] ARM32 activation #63 Windows.ApplicationModel.Store.CurrentApp IID=844E0071-9E4F-4F79-995A-5F91172E6CEF
+[  12547 ms T1914] redirected CurrentApp ICurrentAppWithConsumables
+[  12547 ms T1914] CurrentApp GetUnfulfilledConsumablesAsync returned
+[  12547 ms T1914] CurrentApp unfulfilled GetResults returned empty vector
+[  12547 ms T1914] UnfulfilledConsumables QI returned empty IIterable
+[  12547 ms T1914] CurrentApp listing completion callback: HRESULT 0x00000000
+[  12547 ms T1914] CoreDispatcher.RunAsync invoked handler=0F4F0620 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[  13687 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(749,300) buffer=(749,300)
+[  13687 ms T1914] ARM32 touch: down id=90 slot=0 client=(749,300) via WM_POINTERDOWN (active contacts: 1)
+[  13703 ms T1914] frame 300 complete: 10734 ms since the loop started, this frame took 16 ms
+[  13750 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=0 client=(749,300) buffer=(749,300)
+[  13750 ms T1914] ARM32 touch: up id=90 slot=0 client=(749,300) held 63 ms (WM_POINTERUP)
+[  13765 ms T1914] ARM32 activation #64 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  13765 ms T1914] redirected Windows.System.MemoryManager
+[  13765 ms T1914] ARM32 activation #65 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  13765 ms T1914] redirected Windows.System.MemoryManager
+[  13969 ms T1914] ARM32 input: WM_MOUSEMOVE without a real displacement ignored while touch is the active source
+[  14906 ms T1914] Minecraft 1.2.8 ClientInstance::vf3 hook call #100: self=09F64BC8 thread=6420 +14851 ms since hook install r1=00000000 r2=00000000 r3=75caa531
+[  15078 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(699,247) buffer=(699,247)
+[  15078 ms T1914] ARM32 touch: down id=91 slot=0 client=(699,247) via WM_POINTERDOWN (active contacts: 1)
+[  15109 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=0 client=(699,247) buffer=(699,247)
+[  15109 ms T1914] ARM32 touch: up id=91 slot=0 client=(699,247) held 31 ms (WM_POINTERUP)
+[  15125 ms T1914] ARM32 activation #66 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  15125 ms T1914] redirected Windows.System.MemoryManager
+[  15125 ms T1914] ARM32 activation #67 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  15125 ms T1914] redirected Windows.System.MemoryManager
+[  15156 ms T1914] ARM32 activation #68 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  15156 ms T1914] redirected Windows.System.MemoryManager
+[  15156 ms T1914] ARM32 activation #69 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  15156 ms T1914] redirected Windows.System.MemoryManager
+[  15219 ms T1914] ARM32 activation #70 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  15219 ms T1914] redirected Windows.System.MemoryManager
+[  15219 ms T1914] ARM32 activation #71 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  15219 ms T1914] redirected Windows.System.MemoryManager
+[  16203 ms T09c0] VEH exception 0xe06d7363 at 76DB212F
+[  16203 ms T09c0]   C++ throw: object=0a83f7b8 throwinfo=0208e9c8
+[  16203 ms T09c0] VEH: pc=76db212f lr=76db212f sp=0a83f758 cpsr=60000030
+[  16203 ms T09c0]   r0=00000000 r1=0a83f560 r2=77d66bc1 r3=00000000 r4=76db20f1 r5=0208e9e4
+[  16203 ms T09c0]   r6=0a83f988 r7=0a83f7e8 r8=0ee08848 r9=09826ed8 r10=0ee08858 r11=0a83f7b0 r12=76fad3b9
+[  16203 ms T09c0]   VEH frame[0] = 75C7E53D
+[  16203 ms T09c0]   VEH frame[1] = 77DAA179
+[  16203 ms T09c0]   VEH frame[2] = 77DE88F1
+[  16203 ms T09c0]   VEH frame[3] = 77DE9AAF
+[  16203 ms T09c0]   VEH frame[4] = 76DB212F
+[  16203 ms T09c0]   VEH frame[5] = 75682979
+[  16203 ms T09c0]   VEH frame[6] = 00E6D3F3 (game rva 000fd3f2)
+[  16203 ms T09c0]   VEH frame[7] = 00E6D4F3 (game rva 000fd4f2)
+[  16203 ms T09c0]   VEH frame[8] = 00E6E569 (game rva 000fe568)
+[  16203 ms T09c0]   VEH frame[9] = 00E6ECC3 (game rva 000fecc2)
+[  16203 ms T09c0]   VEH frame[10] = 01140671 (game rva 003d0670)
+[  16203 ms T09c0]   VEH frame[11] = 0123A3E3 (game rva 004ca3e2)
+[  16203 ms T09c0]   VEH frame[12] = 0123C76F (game rva 004cc76e)
+[  16203 ms T09c0]   VEH frame[13] = 00E7892B (game rva 0010892a)
+[  16203 ms T09c0]   VEH frame[14] = 00E79FDF (game rva 00109fde)
+[  16203 ms T09c0]   VEH frame[15] = 00E789A7 (game rva 001089a6)
+[  16203 ms T09c0]   VEH frame[16] = 0114A74B (game rva 003da74a)
+[  16203 ms T09c0]   VEH frame[17] = 01148EC5 (game rva 003d8ec4)
+[  16203 ms T09c0]   VEH frame[18] = 00E6DF85 (game rva 000fdf84)
+[  16203 ms T09c0]   VEH frame[19] = 00E6D67F (game rva 000fd67e)
+[  16203 ms T09c0]   VEH frame[20] = 7568F7E7
+[  16203 ms T09c0]   VEH frame[21] = 77D92A43
+[  16203 ms T09c0]   VEH frame[22] = 77D61EF3
+[  16203 ms T09c0]   VEH frame[23] = 77BE54B1
+[  16203 ms T09c0]   VEH frame[24] = 77D7BF75
+[  16203 ms T09c0]   VEH stack sp+01c: 0208e9c8 -> game rva 0131e9c8
+[  16203 ms T09c0]   VEH stack sp+020: 00d70000 -> game rva 00000000
+[  16203 ms T09c0]   VEH stack sp+040: 00d70000 -> game rva 00000000
+[  16203 ms T09c0]   VEH stack sp+048: 0208e9e4 -> game rva 0131e9e4
+[  16203 ms T09c0]   VEH stack sp+060: 020a6734 -> game rva 01336734
+[  16203 ms T09c0]   VEH stack sp+070: 020a6314 -> game rva 01336314
+[  16203 ms T09c0]   VEH stack sp+0bc: 0208e9c8 -> game rva 0131e9c8
+[  16203 ms T09c0]   VEH stack sp+0c0: 00d70000 -> game rva 00000000
+[  16203 ms T09c0]   VEH stack sp+104: 00e6d3f3 -> game rva 000fd3f2
+[  16203 ms T09c0]   VEH stack sp+10c: 00e6d4f3 -> game rva 000fd4f2
+[  16203 ms T09c0]   VEH stack sp+124: 00e6e569 -> game rva 000fe568
+[  16203 ms T09c0]   VEH stack sp+13c: 00e6ecc3 -> game rva 000fecc2
+[  16203 ms T09c0]   VEH stack sp+16c: 01140671 -> game rva 003d0670
+[  16203 ms T09c0]   VEH stack sp+194: 0123a3e3 -> game rva 004ca3e2
+[  16203 ms T09c0]   VEH stack sp+1b4: 0115aaa9 -> game rva 003eaaa8
+[  16203 ms T09c0]   VEH stack sp+1d4: 0123c76f -> game rva 004cc76e
+[  16203 ms T09c0]   VEH stack sp+1e4: 00e7892b -> game rva 0010892a
+[  16203 ms T09c0]   VEH stack sp+1ec: 0114be53 -> game rva 003dbe52
+[  16203 ms T09c0]   VEH stack sp+224: 00e79fdf -> game rva 00109fde
+[  16203 ms T09c0]   VEH stack sp+23c: 00e789a7 -> game rva 001089a6
+[  16203 ms T09c0]   VEH stack sp+24c: 0114aaaf -> game rva 003daaae
+[  16203 ms T09c0]   VEH stack sp+274: 0114a74b -> game rva 003da74a
+[  16203 ms T09c0]   VEH stack sp+288: 020ced4c -> game rva 0135ed4c
+[  16203 ms T09c0]   VEH stack sp+2c0: 0232e000 -> game rva 015be000
+[  16203 ms T09c0]   VEH stack sp+2ec: 00e6d65d -> game rva 000fd65c
+[  16203 ms T09c0]   VEH stack sp+2fc: 01148ec5 -> game rva 003d8ec4
+[  16203 ms T09c0]   VEH stack sp+30c: 00d70000 -> game rva 00000000
+[  16203 ms T09c0]   VEH stack sp+324: 00e6df85 -> game rva 000fdf84
+[  16203 ms T09c0]   VEH stack sp+32c: 00d70000 -> game rva 00000000
+[  16203 ms T09c0]   VEH stack sp+334: 00d70000 -> game rva 00000000
+[  16203 ms T09c0]   VEH stack sp+34c: 00e6d67f -> game rva 000fd67e
+[  16219 ms T09c0]   VEH stack sp+370: 00d70000 -> game rva 00000000
+[  16219 ms T09c0]   VEH stack sp+3d0: 01000100 -> game rva 00290100
+[  16219 ms T09c0]   VEH stack sp+4d4: 00d70000 -> game rva 00000000
+[  16781 ms T1914] slow frame 399: 1672 ms
+[  17547 ms T1914] ARM32 getAsset[dir] .lang override applied to 'texts/en_US.lang': 340197 -> 340267 bytes
+[  17547 ms T1914] ARM32 getAsset[dir] .lang override applied to 'texts/en_US.lang': 3 -> 103 bytes
+[  17890 ms T1914] ARM32 getAsset[dir] start_screen override applied to 'ui/start_screen.json': 20315 -> 20276 bytes
+[  18234 ms T184c] VEH exception 0xe06d7363 at 76DB212F
+[  18234 ms T09c0] VEH exception 0xe06d7363 at 76DB212F
+[  18234 ms T184c]   C++ throw: object=0bc9f680 throwinfo=0208e9c8
+[  18234 ms T184c] VEH: pc=76db212f lr=76db212f sp=0bc9f620 cpsr=60000020
+[  18234 ms T09c0]   C++ throw: object=0a83f7b8 throwinfo=0208e9c8
+[  18234 ms T184c]   r0=02cd0000 r1=00008000 r2=00008008 r3=00000000 r4=76db20f1 r5=0208e9e4
+[  18234 ms T184c]   r6=0bc9f850 r7=0bc9f6b0 r8=0ee08ed8 r9=0a11d990 r10=0ee08ee8 r11=0bc9f678 r12=0bc9f430
+[  18234 ms T09c0] VEH: pc=76db212f lr=76db212f sp=0a83f758 cpsr=60000020
+[  18234 ms T184c]   VEH frame[0] = 75C7E53D
+[  18234 ms T184c]   VEH frame[1] = 77DAA179
+[  18234 ms T09c0]   r0=02cd0000 r1=00008000 r2=00008008 r3=00000000 r4=76db20f1 r5=0208e9e4
+[  18234 ms T184c]   VEH frame[2] = 77DE88F1
+[  18234 ms T184c]   VEH frame[3] = 77DE9AAF
+[  18234 ms T09c0]   r6=0a83f988 r7=0a83f7e8 r8=1393c530 r9=12b44fc0 r10=1393c540 r11=0a83f7b0 r12=0a83f568
+[  18234 ms T184c]   VEH frame[4] = 76DB212F
+[  18234 ms T184c]   VEH frame[5] = 75682979
+[  18234 ms T09c0]   VEH frame[0] = 75C7E53D
+[  18234 ms T184c]   VEH frame[6] = 00E6D3F3 (game rva 000fd3f2)
+[  18234 ms T184c]   VEH frame[7] = 00E6D4F3 (game rva 000fd4f2)
+[  18234 ms T09c0]   VEH frame[1] = 77DAA179
+[  18234 ms T184c]   VEH frame[8] = 00E6E569 (game rva 000fe568)
+[  18234 ms T09c0]   VEH frame[2] = 77DE88F1
+[  18234 ms T184c]   VEH frame[9] = 00E6ECC3 (game rva 000fecc2)
+[  18234 ms T09c0]   VEH frame[3] = 77DE9AAF
+[  18234 ms T184c]   VEH frame[10] = 01140671 (game rva 003d0670)
+[  18234 ms T184c]   VEH frame[11] = 0123A3E3 (game rva 004ca3e2)
+[  18234 ms T09c0]   VEH frame[4] = 76DB212F
+[  18234 ms T184c]   VEH frame[12] = 0123C76F (game rva 004cc76e)
+[  18234 ms T09c0]   VEH frame[5] = 75682979
+[  18234 ms T09c0]   VEH frame[6] = 00E6D3F3 (game rva 000fd3f2)
+[  18234 ms T184c]   VEH frame[13] = 00E7892B (game rva 0010892a)
+[  18234 ms T09c0]   VEH frame[7] = 00E6D4F3 (game rva 000fd4f2)
+[  18234 ms T184c]   VEH frame[14] = 00E79FDF (game rva 00109fde)
+[  18234 ms T09c0]   VEH frame[8] = 00E6E569 (game rva 000fe568)
+[  18250 ms T09c0]   VEH frame[9] = 00E6ECC3 (game rva 000fecc2)
+[  18250 ms T184c]   VEH frame[15] = 00E789A7 (game rva 001089a6)
+[  18250 ms T09c0]   VEH frame[10] = 01140671 (game rva 003d0670)
+[  18250 ms T184c]   VEH frame[16] = 0114A74B (game rva 003da74a)
+[  18250 ms T09c0]   VEH frame[11] = 0123A3E3 (game rva 004ca3e2)
+[  18250 ms T184c]   VEH frame[17] = 01148EC5 (game rva 003d8ec4)
+[  18250 ms T09c0]   VEH frame[12] = 0123C76F (game rva 004cc76e)
+[  18250 ms T184c]   VEH frame[18] = 00E6DF85 (game rva 000fdf84)
+[  18250 ms T09c0]   VEH frame[13] = 00E7892B (game rva 0010892a)
+[  18250 ms T09c0]   VEH frame[14] = 00E79FDF (game rva 00109fde)
+[  18250 ms T184c]   VEH frame[19] = 00E6D67F (game rva 000fd67e)
+[  18250 ms T09c0]   VEH frame[15] = 00E789A7 (game rva 001089a6)
+[  18250 ms T184c]   VEH frame[20] = 7568F7E7
+[  18250 ms T09c0]   VEH frame[16] = 0114A74B (game rva 003da74a)
+[  18250 ms T184c]   VEH frame[21] = 77D92A43
+[  18250 ms T09c0]   VEH frame[17] = 01148EC5 (game rva 003d8ec4)
+[  18250 ms T184c]   VEH frame[22] = 77D61EF3
+[  18250 ms T09c0]   VEH frame[18] = 00E6DF85 (game rva 000fdf84)
+[  18250 ms T184c]   VEH frame[23] = 77BE54B1
+[  18250 ms T09c0]   VEH frame[19] = 00E6D67F (game rva 000fd67e)
+[  18250 ms T184c]   VEH frame[24] = 77D7BF75
+[  18250 ms T09c0]   VEH frame[20] = 7568F7E7
+[  18250 ms T09c0]   VEH frame[21] = 77D92A43
+[  18250 ms T09c0]   VEH frame[22] = 77D61EF3
+[  18250 ms T09c0]   VEH frame[23] = 77BE54B1
+[  18250 ms T184c]   VEH stack sp+01c: 0208e9c8 -> game rva 0131e9c8
+[  18250 ms T09c0]   VEH frame[24] = 77D7BF75
+[  18250 ms T184c]   VEH stack sp+020: 00d70000 -> game rva 00000000
+[  18250 ms T09c0]   VEH stack sp+01c: 0208e9c8 -> game rva 0131e9c8
+[  18250 ms T184c]   VEH stack sp+040: 00d70000 -> game rva 00000000
+[  18250 ms T09c0]   VEH stack sp+020: 00d70000 -> game rva 00000000
+[  18250 ms T184c]   VEH stack sp+048: 0208e9e4 -> game rva 0131e9e4
+[  18250 ms T09c0]   VEH stack sp+040: 00d70000 -> game rva 00000000
+[  18250 ms T184c]   VEH stack sp+060: 020a6734 -> game rva 01336734
+[  18250 ms T09c0]   VEH stack sp+048: 0208e9e4 -> game rva 0131e9e4
+[  18250 ms T184c]   VEH stack sp+070: 020a6314 -> game rva 01336314
+[  18250 ms T09c0]   VEH stack sp+060: 020a6734 -> game rva 01336734
+[  18250 ms T184c]   VEH stack sp+0bc: 0208e9c8 -> game rva 0131e9c8
+[  18250 ms T09c0]   VEH stack sp+070: 020a6314 -> game rva 01336314
+[  18250 ms T184c]   VEH stack sp+0c0: 00d70000 -> game rva 00000000
+[  18250 ms T09c0]   VEH stack sp+0bc: 0208e9c8 -> game rva 0131e9c8
+[  18250 ms T184c]   VEH stack sp+104: 00e6d3f3 -> game rva 000fd3f2
+[  18250 ms T09c0]   VEH stack sp+0c0: 00d70000 -> game rva 00000000
+[  18250 ms T184c]   VEH stack sp+10c: 00e6d4f3 -> game rva 000fd4f2
+[  18250 ms T09c0]   VEH stack sp+104: 00e6d3f3 -> game rva 000fd3f2
+[  18250 ms T184c]   VEH stack sp+124: 00e6e569 -> game rva 000fe568
+[  18250 ms T09c0]   VEH stack sp+10c: 00e6d4f3 -> game rva 000fd4f2
+[  18250 ms T184c]   VEH stack sp+13c: 00e6ecc3 -> game rva 000fecc2
+[  18250 ms T09c0]   VEH stack sp+124: 00e6e569 -> game rva 000fe568
+[  18250 ms T184c]   VEH stack sp+16c: 01140671 -> game rva 003d0670
+[  18250 ms T09c0]   VEH stack sp+13c: 00e6ecc3 -> game rva 000fecc2
+[  18250 ms T184c]   VEH stack sp+194: 0123a3e3 -> game rva 004ca3e2
+[  18250 ms T09c0]   VEH stack sp+16c: 01140671 -> game rva 003d0670
+[  18250 ms T184c]   VEH stack sp+1b4: 0115aaa9 -> game rva 003eaaa8
+[  18250 ms T09c0]   VEH stack sp+194: 0123a3e3 -> game rva 004ca3e2
+[  18250 ms T184c]   VEH stack sp+1d4: 0123c76f -> game rva 004cc76e
+[  18250 ms T09c0]   VEH stack sp+1b4: 0115aaa9 -> game rva 003eaaa8
+[  18250 ms T184c]   VEH stack sp+1e4: 00e7892b -> game rva 0010892a
+[  18250 ms T09c0]   VEH stack sp+1d4: 0123c76f -> game rva 004cc76e
+[  18250 ms T184c]   VEH stack sp+1ec: 0114be53 -> game rva 003dbe52
+[  18250 ms T09c0]   VEH stack sp+1e4: 00e7892b -> game rva 0010892a
+[  18250 ms T184c]   VEH stack sp+224: 00e79fdf -> game rva 00109fde
+[  18250 ms T09c0]   VEH stack sp+1ec: 0114be53 -> game rva 003dbe52
+[  18250 ms T184c]   VEH stack sp+23c: 00e789a7 -> game rva 001089a6
+[  18250 ms T09c0]   VEH stack sp+224: 00e79fdf -> game rva 00109fde
+[  18250 ms T184c]   VEH stack sp+24c: 0114aaaf -> game rva 003daaae
+[  18250 ms T09c0]   VEH stack sp+23c: 00e789a7 -> game rva 001089a6
+[  18250 ms T184c]   VEH stack sp+274: 0114a74b -> game rva 003da74a
+[  18250 ms T09c0]   VEH stack sp+24c: 0114aaaf -> game rva 003daaae
+[  18250 ms T184c]   VEH stack sp+288: 020ced4c -> game rva 0135ed4c
+[  18250 ms T09c0]   VEH stack sp+274: 0114a74b -> game rva 003da74a
+[  18250 ms T184c]   VEH stack sp+2c0: 0232e000 -> game rva 015be000
+[  18250 ms T09c0]   VEH stack sp+288: 020ced4c -> game rva 0135ed4c
+[  18250 ms T184c]   VEH stack sp+2ec: 00e6d65d -> game rva 000fd65c
+[  18250 ms T09c0]   VEH stack sp+2c0: 0232e000 -> game rva 015be000
+[  18250 ms T184c]   VEH stack sp+2fc: 01148ec5 -> game rva 003d8ec4
+[  18250 ms T09c0]   VEH stack sp+2ec: 00e6d65d -> game rva 000fd65c
+[  18250 ms T184c]   VEH stack sp+30c: 00d70000 -> game rva 00000000
+[  18250 ms T09c0]   VEH stack sp+2fc: 01148ec5 -> game rva 003d8ec4
+[  18250 ms T184c]   VEH stack sp+324: 00e6df85 -> game rva 000fdf84
+[  18250 ms T09c0]   VEH stack sp+30c: 00d70000 -> game rva 00000000
+[  18250 ms T184c]   VEH stack sp+32c: 00d70000 -> game rva 00000000
+[  18250 ms T09c0]   VEH stack sp+324: 00e6df85 -> game rva 000fdf84
+[  18250 ms T184c]   VEH stack sp+334: 00d70000 -> game rva 00000000
+[  18250 ms T09c0]   VEH stack sp+32c: 00d70000 -> game rva 00000000
+[  18250 ms T184c]   VEH stack sp+34c: 00e6d67f -> game rva 000fd67e
+[  18250 ms T09c0]   VEH stack sp+334: 00d70000 -> game rva 00000000
+[  18250 ms T184c]   VEH stack sp+370: 00d70000 -> game rva 00000000
+[  18250 ms T09c0]   VEH stack sp+34c: 00e6d67f -> game rva 000fd67e
+[  18250 ms T184c]   VEH stack sp+3d0: 01000100 -> game rva 00290100
+[  18250 ms T09c0]   VEH stack sp+370: 00d70000 -> game rva 00000000
+[  18250 ms T184c]   VEH stack sp+4d4: 00d70000 -> game rva 00000000
+[  18250 ms T09c0]   VEH stack sp+3d0: 01000100 -> game rva 00290100
+[  18250 ms T09c0]   VEH stack sp+4d4: 00d70000 -> game rva 00000000
+[  18297 ms T1914] ARM32 activation #72 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18297 ms T1914] redirected Windows.System.MemoryManager
+[  18297 ms T1914] ARM32 activation #73 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18297 ms T1914] redirected Windows.System.MemoryManager
+[  18297 ms T1914] ARM32 activation #74 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18297 ms T1914] redirected Windows.System.MemoryManager
+[  18297 ms T1914] ARM32 activation #75 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18297 ms T1914] redirected Windows.System.MemoryManager
+[  18406 ms T1914] ARM32 activation #76 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18406 ms T1914] redirected Windows.System.MemoryManager
+[  18406 ms T1914] ARM32 activation #77 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18406 ms T1914] redirected Windows.System.MemoryManager
+[  18422 ms T1914] ARM32 activation #78 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18422 ms T1914] redirected Windows.System.MemoryManager
+[  18422 ms T1914] ARM32 activation #79 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18422 ms T1914] redirected Windows.System.MemoryManager
+[  18422 ms T1914] ARM32 activation #80 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18422 ms T1914] redirected Windows.System.MemoryManager
+[  18422 ms T1914] ARM32 activation #81 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18422 ms T1914] redirected Windows.System.MemoryManager
+[  18437 ms T1914] ARM32 activation #82 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18437 ms T1914] redirected Windows.System.MemoryManager
+[  18437 ms T1914] ARM32 activation #83 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  18437 ms T1914] redirected Windows.System.MemoryManager
+[  18515 ms T1914] D3DCompile #13 produced compiler messages (target=vs_4_0_level_9_1):
+[  18515 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(57,2-30): warning X3205: conversion from larger type to smaller, possible loss of data
+[  18656 ms T1914] D3DCompile #17 produced compiler messages (target=vs_4_0_level_9_1):
+[  18656 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(58,2-30): warning X3205: conversion from larger type to smaller, possible loss of data
+[  18703 ms T1914] D3DCompile #19 produced compiler messages (target=vs_4_0_level_9_1):
+[  18703 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(59,2-30): warning X3205: conversion from larger type to smaller, possible loss of data
+[  18750 ms T1914] D3DCompile #20 produced compiler messages (target=ps_4_0_level_9_1):
+[  18750 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.fragment.hlsl(52,2-23): warning X3205: conversion from larger type to smaller, possible loss of data
+[  18906 ms T1914] D3DCompile #24 produced compiler messages (target=vs_4_0_level_9_1):
+[  18906 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(56,2-30): warning X3205: conversion from larger type to smaller, possible loss of data
+[  19140 ms T1914] D3DCompile #33 produced compiler messages (target=vs_4_0_level_9_1):
+[  19140 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(57,2-30): warning X3205: conversion from larger type to smaller, possible loss of data
+[  19140 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(131,2-60): warning X3205: conversion from larger type to smaller, possible loss of data
+[  19140 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(138,2-46): warning X3205: conversion from larger type to smaller, possible loss of data
+[  19312 ms T1914] D3DCompile #39 produced compiler messages (target=vs_4_0_level_9_1):
+[  19312 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(59,2-30): warning X3205: conversion from larger type to smaller, possible loss of data
+[  19312 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(133,2-60): warning X3205: conversion from larger type to smaller, possible loss of data
+[  19312 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(140,2-46): warning X3205: conversion from larger type to smaller, possible loss of data
+[  19531 ms T1914] D3DCompile #47 produced compiler messages (target=vs_4_0_level_9_1):
+[  19531 ms T1914]   D3DCompile message: C:\Users\MaxRM\Desktop\Programs\MPMC_Launcher_ARM64\installed_versions\Win32\Minecraft-1.2.8.0_ARM32_extracted\Minecraft_1.2.8.0_ARM32_Win32Craft\data\shaders\hlsl\renderchunk.vertex.hlsl(58,2-30): warning X3205: conversion from larger type to smaller, possible loss of data
+[  22406 ms T1090] ARM32 watchdog: NO PROGRESS for 5 s in step 'main loop' (loop passes=403 frames started=404 done=403) - a game frame call has not returned
+[  22437 ms T1914] slow frame 404: 5593 ms
+[  22937 ms T1090] ARM32 watchdog: main thread is progressing again after 5 s (step 'main loop')
+[  24453 ms T1914] slow frame 405: 2016 ms
+[  24515 ms T1914] ARM32 activation #84 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  24515 ms T1914] redirected Windows.System.MemoryManager
+[  25047 ms T1914] ARM32 activation #85 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  25047 ms T1914] redirected Windows.System.MemoryManager
+[  26203 ms T1914] ARM32 activation #86 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  26203 ms T1914] redirected Windows.System.MemoryManager
+[  26203 ms T1914] ARM32 activation #87 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  26203 ms T1914] redirected Windows.System.MemoryManager
+[  26265 ms T1914] ARM32 activation #88 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  26265 ms T1914] redirected Windows.System.MemoryManager
+[  26265 ms T1914] ARM32 activation #89 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  26265 ms T1914] redirected Windows.System.MemoryManager
+[  26906 ms T1914] ARM32 activation #90 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  26906 ms T1914] redirected Windows.System.MemoryManager
+[  26906 ms T1914] ARM32 activation #91 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[  26906 ms T1914] redirected Windows.System.MemoryManager
+[  26953 ms T1914] CoreDispatcher.RunAsync queued handler=11618400 invoke=012E5059 depth=1
+[  26953 ms T1914] CoreDispatcher.RunAsync queued handler=116186A0 invoke=012E5059 depth=2
+[  27047 ms T1914] Minecraft 1.2.8 relative mouse delegate invoked: this=12C92338 controller=05A45F38 guard=0 actual=0
+[  27047 ms T1914] CoreDispatcher.RunAsync invoked handler=11618400 invoke=012E5059 result=0x00000000 relative=1 guard=0
+[  27047 ms T1914] Minecraft 1.2.8 absolute mouse delegate invoked: this=12C91ED8 controller=05A45F38
+[  27047 ms T1914] CoreDispatcher.RunAsync invoked handler=116186A0 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[  27047 ms T1914] Minecraft 1.2.8 scene: gameplay capture
+[  27047 ms T1914] HID mouse mode: requested=1 actual=0 command=2
+[  27047 ms T1914] ARM32 input: relative mouse suppressed (touch is the active input device)
+[  27062 ms T1914] HID mouse mode: requested=1 actual=0 command=0
+[  28844 ms T1914] frame 600 complete: 25875 ms since the loop started, this frame took 16 ms
+[  30062 ms T1090] ARM32 heartbeat: up 30 s, step 'main loop', loop passes=684, frames done=684 (+684 in the last 30 s)
+[  33047 ms T184c] ARM32 activation #92 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[  33047 ms T184c] redirected Windows.Networking.Connectivity.NetworkInformation
+[  33047 ms T184c] Win32 NetworkInformation: InternetConnectionProfile returned
+[  33047 ms T184c] ConnectionProfile QI returned IConnectionProfile2
+[  33047 ms T184c] ConnectionProfile ConnectionCost returned
+[  33047 ms T184c] ConnectionProfile ConnectionCost returned
+[  36437 ms T1914] frame 1200 complete: 33468 ms since the loop started, this frame took 15 ms
+[  43906 ms T1914] frame 1800 complete: 40937 ms since the loop started, this frame took 16 ms
+[  51281 ms T1914] frame 2400 complete: 48312 ms since the loop started, this frame took 16 ms
+[  58734 ms T1914] frame 3000 complete: 55765 ms since the loop started, this frame took 15 ms
+[  60062 ms T1090] ARM32 heartbeat: up 60 s, step 'main loop', loop passes=3110, frames done=3110 (+2426 in the last 30 s)
+[  63062 ms T184c] ARM32 activation #93 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[  63062 ms T184c] redirected Windows.Networking.Connectivity.NetworkInformation
+[  63062 ms T184c] Win32 NetworkInformation: InternetConnectionProfile returned
+[  63062 ms T184c] ConnectionProfile QI returned IConnectionProfile2
+[  63062 ms T184c] ConnectionProfile ConnectionCost returned
+[  63062 ms T184c] ConnectionProfile ConnectionCost returned
+[  65625 ms T1914] ARM32 touch stats (periodic): down=7 up=7 moveMsgs=24 movesQueued=0 slotsFull=0 canceled=0 captureLost=0 queueFailed=0 wmTouch=0 legacyFromTouch=0 legacyMouse=6 pointerMouse=0 pointerPen=0 pointerOther=0 sourceSwitches=1 source=TOUCH touchApi=pointer
+[  65640 ms T1914] frame 3600 complete: 62671 ms since the loop started, this frame took 15 ms
+[  70047 ms T1914] Minecraft 1.2.8 ClientInstance::vf3 hook call #1000: self=09F64BC8 thread=6420 +69988 ms since hook install r1=00000000 r2=00000000 r3=75caa531
+[  72828 ms T1914] frame 4200 complete: 69859 ms since the loop started, this frame took 16 ms
+[  79469 ms T1914] frame 4800 complete: 76500 ms since the loop started, this frame took 0 ms
+[  86015 ms T1914] frame 5400 complete: 83046 ms since the loop started, this frame took 15 ms
+[  90422 ms T1090] ARM32 heartbeat: up 90 s, step 'main loop', loop passes=5791, frames done=5791 (+2681 in the last 30 s)
+[  92969 ms T1914] frame 6000 complete: 90000 ms since the loop started, this frame took 16 ms
+[  93078 ms T184c] ARM32 activation #94 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[  93078 ms T184c] redirected Windows.Networking.Connectivity.NetworkInformation
+[  93078 ms T184c] Win32 NetworkInformation: InternetConnectionProfile returned
+[  93078 ms T184c] ConnectionProfile QI returned IConnectionProfile2
+[  93078 ms T184c] ConnectionProfile ConnectionCost returned
+[  93078 ms T184c] ConnectionProfile ConnectionCost returned
+[ 100437 ms T1914] frame 6600 complete: 97468 ms since the loop started, this frame took 0 ms
+[ 107625 ms T1914] frame 7200 complete: 104656 ms since the loop started, this frame took 0 ms
+[ 114937 ms T1914] frame 7800 complete: 111968 ms since the loop started, this frame took 15 ms
+[ 120422 ms T1090] ARM32 heartbeat: up 120 s, step 'main loop', loop passes=8233, frames done=8233 (+2442 in the last 30 s)
+[ 122453 ms T1914] frame 8400 complete: 119484 ms since the loop started, this frame took 0 ms
+[ 123094 ms T184c] ARM32 activation #95 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[ 123094 ms T184c] redirected Windows.Networking.Connectivity.NetworkInformation
+[ 123094 ms T184c] Win32 NetworkInformation: InternetConnectionProfile returned
+[ 123094 ms T184c] ConnectionProfile QI returned IConnectionProfile2
+[ 123094 ms T184c] ConnectionProfile ConnectionCost returned
+[ 123094 ms T184c] ConnectionProfile ConnectionCost returned
+[ 129765 ms T1914] frame 9000 complete: 126796 ms since the loop started, this frame took 15 ms
+[ 137140 ms T1914] frame 9600 complete: 134171 ms since the loop started, this frame took 15 ms
+[ 143750 ms T1914] frame 10200 complete: 140781 ms since the loop started, this frame took 16 ms
+[ 144844 ms T1914] ARM32 input: WM_MOUSEMOVE without a real displacement ignored while touch is the active source
+[ 144844 ms T1914] ARM32 input: WM_MOUSEMOVE without a real displacement ignored while touch is the active source
+[ 145219 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(1155,400) buffer=(1155,400)
+[ 145219 ms T1914] ARM32 touch: down id=93 slot=0 client=(1155,400) via WM_POINTERDOWN (active contacts: 1)
+[ 145250 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1151,403) buffer=(1151,403)
+[ 145265 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1141,408) buffer=(1141,408)
+[ 145281 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1130,414) buffer=(1130,414)
+[ 145297 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1118,420) buffer=(1118,420)
+[ 145312 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1109,425) buffer=(1109,425)
+[ 145328 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1095,433) buffer=(1095,433)
+[ 145328 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1089,435) buffer=(1089,435)
+[ 145359 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1077,442) buffer=(1077,442)
+[ 145375 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1067,449) buffer=(1067,449)
+[ 145375 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1062,452) buffer=(1062,452)
+[ 145406 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1053,457) buffer=(1053,457)
+[ 145406 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1049,458) buffer=(1049,458)
+[ 145422 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1043,461) buffer=(1043,461)
+[ 145422 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1041,462) buffer=(1041,462)
+[ 145437 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1038,464) buffer=(1038,464)
+[ 145437 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1037,465) buffer=(1037,465)
+[ 145453 ms T1914] ARM32 touch: item queued slot=0 btn=0 data=0 client=(1036,465) buffer=(1036,465)
+[ 145484 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=0 client=(1036,465) buffer=(1036,465)
+[ 145484 ms T1914] ARM32 touch: up id=93 slot=0 client=(1036,465) held 265 ms (WM_POINTERUP)
+[ 145547 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(163,392) buffer=(163,392)
+[ 145547 ms T1914] ARM32 touch: down id=94 slot=0 client=(163,392) via WM_POINTERDOWN (active contacts: 1)
+[ 145640 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=0 client=(163,392) buffer=(163,392)
+[ 145640 ms T1914] ARM32 touch: up id=94 slot=0 client=(163,392) held 93 ms (WM_POINTERUP)
+[ 145703 ms T1914] ARM32 touch: item queued slot=0 btn=1 data=1 client=(182,400) buffer=(182,400)
+[ 145703 ms T1914] ARM32 touch: down id=95 slot=0 client=(182,400) via WM_POINTERDOWN (active contacts: 1)
+[ 145937 ms T1914] ARM32 touch: item queued slot=1 btn=1 data=1 client=(1130,390) buffer=(1130,390)
+[ 145937 ms T1914] ARM32 touch: down id=96 slot=1 client=(1130,390) via WM_POINTERDOWN (active contacts: 2)
+[ 145969 ms T1914] ARM32 touch: item queued slot=1 btn=0 data=0 client=(1132,388) buffer=(1132,388)
+[ 145984 ms T1914] ARM32 touch: item queued slot=1 btn=0 data=0 client=(1137,383) buffer=(1137,383)
+[ 145984 ms T1914] ARM32 touch: item queued slot=1 btn=0 data=0 client=(1142,379) buffer=(1142,379)
+[ 146187 ms T1914] ARM32 touch: up id=96 slot=1 client=(1189,322) held 250 ms (WM_POINTERUP)
+[ 146515 ms T1914] ARM32 touch: down id=97 slot=1 client=(1461,486) via WM_POINTERDOWN (active contacts: 2)
+[ 146578 ms T1914] ARM32 touch: up id=97 slot=1 client=(1461,486) held 63 ms (WM_POINTERUP)
+[ 146640 ms T1914] ARM32 touch: down id=98 slot=1 client=(1457,496) via WM_POINTERDOWN (active contacts: 2)
+[ 146687 ms T1914] ARM32 touch: up id=98 slot=1 client=(1457,496) held 47 ms (WM_POINTERUP)
+[ 146781 ms T1914] ARM32 touch: up id=95 slot=0 client=(182,400) held 1078 ms (WM_POINTERUP)
+[ 147281 ms T1914] ARM32 touch: down id=99 slot=0 client=(1455,493) via WM_POINTERDOWN (active contacts: 1)
+[ 147359 ms T1914] ARM32 touch: up id=99 slot=0 client=(1455,493) held 78 ms (WM_POINTERUP)
+[ 147437 ms T1914] ARM32 touch: down id=100 slot=0 client=(1456,490) via WM_POINTERDOWN (active contacts: 1)
+[ 147484 ms T1914] ARM32 touch: up id=100 slot=0 client=(1456,490) held 47 ms (WM_POINTERUP)
+[ 148047 ms T1914] ARM32 touch: down id=101 slot=0 client=(1453,490) via WM_POINTERDOWN (active contacts: 1)
+[ 148062 ms T1914] ARM32 touch: up id=101 slot=0 client=(1453,490) held 15 ms (WM_POINTERUP)
+[ 148140 ms T1914] ARM32 touch: down id=102 slot=0 client=(1456,484) via WM_POINTERDOWN (active contacts: 1)
+[ 148187 ms T1914] ARM32 touch: up id=102 slot=0 client=(1456,484) held 47 ms (WM_POINTERUP)
+[ 148734 ms T1914] ARM32 touch: down id=103 slot=0 client=(779,49) via WM_POINTERDOWN (active contacts: 1)
+[ 148859 ms T1914] ARM32 touch: up id=103 slot=0 client=(781,47) held 125 ms (WM_POINTERUP)
+[ 149344 ms T1914] ARM32 touch: down id=104 slot=0 client=(777,34) via WM_POINTERDOWN (active contacts: 1)
+[ 149437 ms T1914] ARM32 touch: up id=104 slot=0 client=(777,34) held 93 ms (WM_POINTERUP)
+[ 150031 ms T1914] ARM32 touch: down id=105 slot=0 client=(781,32) via WM_POINTERDOWN (active contacts: 1)
+[ 150047 ms T1914] ARM32 activation #96 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 150047 ms T1914] redirected Windows.System.MemoryManager
+[ 150047 ms T1914] ARM32 activation #97 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 150047 ms T1914] redirected Windows.System.MemoryManager
+[ 150140 ms T1914] ARM32 touch: up id=105 slot=0 client=(781,32) held 109 ms (WM_POINTERUP)
+[ 150140 ms T1914] Minecraft 1.2.8 scene: UI cursor
+[ 150140 ms T1914] HID mouse mode: requested=0 actual=0 command=0
+[ 150140 ms T1914] ARM32 input: relative mouse allowed again
+[ 150781 ms T1914] ARM32 touch: down id=106 slot=0 client=(687,279) via WM_POINTERDOWN (active contacts: 1)
+[ 150828 ms T1914] ARM32 touch: up id=106 slot=0 client=(687,279) held 47 ms (WM_POINTERUP)
+[ 150844 ms T1914] CoreDispatcher.RunAsync queued handler=19808FC8 invoke=012E5059 depth=1
+[ 150859 ms T1914] Minecraft 1.2.8 relative mouse delegate invoked: this=1A748A88 controller=05A45F38 guard=0 actual=0
+[ 150859 ms T1914] CoreDispatcher.RunAsync invoked handler=19808FC8 invoke=012E5059 result=0x00000000 relative=1 guard=0
+[ 150859 ms T1914] Minecraft 1.2.8 scene: gameplay capture
+[ 150859 ms T1914] HID mouse mode: requested=1 actual=0 command=1
+[ 150859 ms T1914] ARM32 input: relative mouse suppressed (touch is the active input device)
+[ 150875 ms T1914] HID mouse mode: requested=1 actual=0 command=0
+[ 150890 ms T1090] ARM32 heartbeat: up 150 s, step 'main loop', loop passes=10797, frames done=10797 (+2564 in the last 30 s)
+[ 150906 ms T1914] ARM32 touch stats (periodic): down=21 up=21 moveMsgs=258 movesQueued=38 slotsFull=0 canceled=0 captureLost=0 queueFailed=0 wmTouch=0 legacyFromTouch=0 legacyMouse=9 pointerMouse=0 pointerPen=0 pointerOther=0 sourceSwitches=1 source=TOUCH touchApi=pointer
+[ 150922 ms T1914] frame 10800 complete: 147953 ms since the loop started, this frame took 16 ms
+[ 151375 ms T1914] ARM32 touch: down id=107 slot=0 client=(751,24) via WM_POINTERDOWN (active contacts: 1)
+[ 151375 ms T1914] ARM32 activation #98 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 151375 ms T1914] redirected Windows.System.MemoryManager
+[ 151375 ms T1914] ARM32 activation #99 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 151375 ms T1914] redirected Windows.System.MemoryManager
+[ 151469 ms T1914] CoreDispatcher.RunAsync queued handler=2A70E9B8 invoke=012E5059 depth=1
+[ 151500 ms T1914] ARM32 touch: up id=107 slot=0 client=(751,24) held 125 ms (WM_POINTERUP)
+[ 151500 ms T1914] Minecraft 1.2.8 absolute mouse delegate invoked: this=2A64FE48 controller=05A45F38
+[ 151500 ms T1914] CoreDispatcher.RunAsync invoked handler=2A70E9B8 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 151500 ms T1914] Minecraft 1.2.8 scene: UI cursor
+[ 151500 ms T1914] HID mouse mode: requested=0 actual=0 command=2
+[ 151500 ms T1914] ARM32 input: relative mouse allowed again
+[ 151515 ms T1914] HID mouse mode: requested=0 actual=0 command=0
+[ 152344 ms T1914] ARM32 touch: down id=108 slot=0 client=(46,612) via WM_POINTERDOWN (active contacts: 1)
+[ 152344 ms T1914] ARM32 touch: up id=108 slot=0 client=(46,612) held 0 ms (WM_POINTERUP)
+[ 152375 ms T1914] CoreDispatcher.RunAsync queued handler=2A70EA78 invoke=012E5059 depth=1
+[ 152375 ms T1914] CoreText TextUpdating handler: 2A70E958
+[ 152375 ms T1914] CoreText NotifySelectionChanged: 0..0
+[ 152375 ms T1914] CoreText focus entered: Win32 text input activated
+[ 152375 ms T1914] ARM32 activation #100 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 152375 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 152375 ms T1914] ARM32 InputPane.TryShow accepted (fake input pane; the Windows touch keyboard is driven by the host, see ARM32 osk lines)
+[ 152375 ms T1914] ARM32 osk: show requested (InputPane.TryShow) eligible=1 policy=auto touchActive=1 state=-1
+[ 152375 ms T1914] CoreDispatcher.RunAsync invoked handler=2A70EA78 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 152437 ms T1914] ARM32 osk: signals: IFrameworkInputPane create=0x00000000 advise=0x00000000 | InputPane interop=0x8000001d getForWindow=0x80004005 TryHide=no | dwm-cloak verdict=0 | primary=IFrameworkInputPane
+[ 152437 ms T1914] ARM32 osk: keyboard hidden (signal IFrameworkInputPane, was -1)
+[ 152437 ms T1914] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[ 152453 ms T1914] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[ 152812 ms T1914] ARM32 osk: keyboard VISIBLE (signal IFrameworkInputPane, was 0)
+[ 152812 ms T1914] ARM32 InputPane Showing event: the game registered no handler
+[ 152812 ms T1914] ARM32 osk: the keyboard is visible (437 ms after the request, 1 attempt(s))
+[ 152828 ms T1914] ARM32 osk: shell Showing callback #1 rect=(0,540,2400,1080)
+[ 152828 ms T1914] ARM32 osk: snapshot (after the shell callback): win11=1 tipWindow=1 visible=0 cloak=0 rect=(0,0,0,0) | fip hr=0x00000000 rect=(0,540,2400,1080) | pane hr=0x80004005 bottom=0 | textInputHost=0 visible=0 | callbacks kind=1 rect=(0,540,2400,1080) | state=1 assumed=0 detect=1
+[ 153109 ms T184c] ARM32 activation #101 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[ 153109 ms T184c] redirected Windows.Networking.Connectivity.NetworkInformation
+[ 153109 ms T184c] Win32 NetworkInformation: InternetConnectionProfile returned
+[ 153109 ms T184c] ConnectionProfile QI returned IConnectionProfile2
+[ 153109 ms T184c] ConnectionProfile ConnectionCost returned
+[ 153109 ms T184c] ConnectionProfile ConnectionCost returned
+[ 154031 ms T1914] keyboard event: key=68 mapped=68 state=1
+[ 154031 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0064 bytes=1 sequence=0
+[ 154031 ms T1914] keyboard event: key=68 mapped=68 state=0
+[ 154578 ms T1914] keyboard event: key=83 mapped=83 state=1
+[ 154578 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0073 bytes=1 sequence=1
+[ 154578 ms T1914] keyboard event: key=83 mapped=83 state=0
+[ 154734 ms T1914] keyboard event: key=83 mapped=83 state=1
+[ 154734 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0073 bytes=1 sequence=2
+[ 154734 ms T1914] keyboard event: key=83 mapped=83 state=0
+[ 154922 ms T1914] keyboard event: key=83 mapped=83 state=1
+[ 154922 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0073 bytes=1 sequence=3
+[ 154922 ms T1914] keyboard event: key=83 mapped=83 state=0
+[ 155109 ms T1914] keyboard event: key=83 mapped=83 state=1
+[ 155109 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0073 bytes=1 sequence=4
+[ 155109 ms T1914] keyboard event: key=83 mapped=83 state=0
+[ 155265 ms T1914] keyboard event: key=88 mapped=88 state=1
+[ 155265 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0078 bytes=1 sequence=5
+[ 155265 ms T1914] keyboard event: key=88 mapped=88 state=0
+[ 155422 ms T1914] keyboard event: key=68 mapped=68 state=1
+[ 155422 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0064 bytes=1 sequence=6
+[ 155422 ms T1914] keyboard event: key=68 mapped=68 state=0
+[ 155547 ms T1914] keyboard event: key=83 mapped=83 state=1
+[ 155547 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0073 bytes=1 sequence=7
+[ 155547 ms T1914] keyboard event: key=83 mapped=83 state=0
+[ 155828 ms T1914] keyboard event: key=13 mapped=13 state=1
+[ 155828 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+000A bytes=1 sequence=8
+[ 155828 ms T1914] keyboard event: key=13 mapped=13 state=0
+[ 155844 ms T1914] CoreDispatcher.RunAsync queued handler=11618AC0 invoke=012E5059 depth=1
+[ 155859 ms T1914] ARM32 activation #102 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 155859 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 155859 ms T1914] ARM32 InputPane.TryHide accepted (fake input pane)
+[ 155859 ms T1914] ARM32 osk: hide requested (InputPane.TryHide): 2 method(s), first ITipInvocation::Toggle
+[ 155875 ms T1914] ARM32 osk: hide: ITipInvocation::Toggle hr=0x00000000
+[ 155875 ms T1914] CoreText focus left: Win32 text input deactivated
+[ 155875 ms T1914] CoreDispatcher.RunAsync invoked handler=11618AC0 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 155906 ms T1914] ARM32 osk: shell Hiding callback #2 rect=(0,540,2400,1080)
+[ 155906 ms T1914] ARM32 osk: snapshot (after the shell callback): win11=1 tipWindow=1 visible=0 cloak=0 rect=(0,0,0,0) | fip hr=0x00000000 rect=(0,0,0,0) | pane hr=0x80004005 bottom=0 | textInputHost=0 visible=0 | callbacks kind=2 rect=(0,540,2400,1080) | state=1 assumed=0 detect=0
+[ 155906 ms T1914] ARM32 osk: keyboard hidden (signal IFrameworkInputPane, was 1)
+[ 155906 ms T1914] ARM32 InputPane Hiding event: the game registered no handler
+[ 155906 ms T1914] ARM32 osk: the keyboard is hidden
+[ 156937 ms T1914] ARM32 touch: down id=118 slot=0 client=(1201,593) via WM_POINTERDOWN (active contacts: 1)
+[ 157015 ms T1914] ARM32 touch: up id=118 slot=0 client=(1201,593) held 78 ms (WM_POINTERUP)
+[ 157547 ms T1914] ARM32 touch: down id=119 slot=0 client=(1221,608) via WM_POINTERDOWN (active contacts: 1)
+[ 157609 ms T1914] ARM32 touch: up id=119 slot=0 client=(1221,608) held 62 ms (WM_POINTERUP)
+[ 157609 ms T1914] CoreDispatcher.RunAsync queued handler=0F667908 invoke=012E5059 depth=1
+[ 157609 ms T1914] CoreText TextUpdating handler: 0F6677E8
+[ 157609 ms T1914] CoreText NotifySelectionChanged: 0..0
+[ 157609 ms T1914] CoreText focus entered: Win32 text input activated
+[ 157609 ms T1914] ARM32 activation #103 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 157609 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 157609 ms T1914] ARM32 InputPane.TryShow accepted (fake input pane; the Windows touch keyboard is driven by the host, see ARM32 osk lines)
+[ 157609 ms T1914] ARM32 osk: show requested (InputPane.TryShow) eligible=1 policy=auto touchActive=1 state=0
+[ 157609 ms T1914] CoreDispatcher.RunAsync invoked handler=0F667908 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 157625 ms T1914] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[ 157625 ms T1914] ARM32 osk: Toggle suppressed - the previous Toggle was less than 2 s ago
+[ 158406 ms T1914] frame 11400 complete: 155437 ms since the loop started, this frame took 16 ms
+[ 160140 ms T1914] ARM32 osk: show attempt 2: TabTip window exists -> ITipInvocation::Toggle
+[ 160140 ms T1914] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[ 162656 ms T1914] ARM32 osk: show attempt 3: TabTip window exists -> ITipInvocation::Toggle
+[ 162656 ms T1914] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[ 165156 ms T1914] ARM32 osk: show attempt 4: TabTip window exists -> ITipInvocation::Toggle
+[ 165156 ms T1914] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[ 165797 ms T1914] frame 12000 complete: 162828 ms since the loop started, this frame took 16 ms
+[ 167656 ms T1914] ARM32 osk: the touch keyboard did NOT appear after 4 attempts - giving up; text can still be typed on a hardware keyboard (send this log)
+[ 167656 ms T1914] ARM32 osk: snapshot (gave up): win11=1 tipWindow=1 visible=0 cloak=0 rect=(0,0,0,0) | fip hr=0x00000000 rect=(0,540,2400,1080) | pane hr=0x80004005 bottom=0 | textInputHost=0 visible=0 | callbacks kind=2 rect=(0,540,2400,1080) | state=0 assumed=0 detect=0
+[ 171953 ms T1914] frame 12600 complete: 168984 ms since the loop started, this frame took 16 ms
+[ 176640 ms T1914] ARM32 touch: down id=135 slot=0 client=(204,642) via WM_POINTERDOWN (active contacts: 1)
+[ 176719 ms T1914] ARM32 touch: up id=135 slot=0 client=(204,642) held 79 ms (WM_POINTERUP)
+[ 177359 ms T1914] ARM32 input: source TOUCH -> MOUSEKB (key VK=0x4a)
+[ 177359 ms T1914] keyboard event: key=74 mapped=74 state=1
+[ 177359 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=9
+[ 177359 ms T1914] keyboard event: key=74 mapped=74 state=0
+[ 177406 ms T1914] ARM32 input: TouchMapper reset called (input source switched to mouse/keyboard)
+[ 177453 ms T1914] keyboard event: key=74 mapped=74 state=1
+[ 177453 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=10
+[ 177453 ms T1914] keyboard event: key=74 mapped=74 state=0
+[ 177578 ms T1914] keyboard event: key=74 mapped=74 state=1
+[ 177578 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=11
+[ 177594 ms T1914] keyboard event: key=74 mapped=74 state=0
+[ 177687 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=12
+[ 177765 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=13
+[ 179515 ms T1914] mouse event: x=991 y=276 action=0 pressed=0 payload=0
+[ 179562 ms T1914] mouse event: x=991 y=276 action=0 pressed=0 payload=0
+[ 179578 ms T1914] ARM32 input: game input mode Touch -> Mouse (host source=MOUSEKB, policy=auto, active touch contacts=0)
+[ 179609 ms T1914] mouse event: x=991 y=276 action=0 pressed=0 payload=0
+[ 179625 ms T1914] mouse event: x=991 y=276 action=0 pressed=0 payload=0
+[ 180234 ms T1914] frame 13200 complete: 177265 ms since the loop started, this frame took 0 ms
+[ 180890 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+000A bytes=1 sequence=14
+[ 180890 ms T1090] ARM32 heartbeat: up 180 s, step 'main loop', loop passes=13262, frames done=13262 (+2465 in the last 30 s)
+[ 180906 ms T1914] CoreDispatcher.RunAsync queued handler=11618820 invoke=012E5059 depth=1
+[ 180906 ms T1914] CoreText NotifySelectionChanged: 0..0
+[ 180906 ms T1914] CoreDispatcher.RunAsync invoked handler=11618820 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 181703 ms T1914] mouse event: x=991 y=276 action=0 pressed=0 payload=0
+[ 182453 ms T1914] ARM32 input: source MOUSEKB -> TOUCH (WM_POINTERDOWN)
+[ 182453 ms T1914] ARM32 touch: down id=144 slot=0 client=(195,634) via WM_POINTERDOWN (active contacts: 1)
+[ 182469 ms T1914] ARM32 input: game input mode Mouse -> Touch (host source=TOUCH, policy=auto, active touch contacts=1)
+[ 182469 ms T1914] ARM32 input: the game is in Touch mode - the on-screen touch controls (joystick / jump / sneak) are drawn by TouchMapper::render once a world is open
+[ 182515 ms T1914] ARM32 touch: up id=144 slot=0 client=(195,634) held 62 ms (WM_POINTERUP)
+[ 183125 ms T2568] ARM32 activation #104 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[ 183125 ms T2568] redirected Windows.Networking.Connectivity.NetworkInformation
+[ 183125 ms T2568] Win32 NetworkInformation: InternetConnectionProfile returned
+[ 183125 ms T2568] ConnectionProfile QI returned IConnectionProfile2
+[ 183125 ms T2568] ConnectionProfile ConnectionCost returned
+[ 183125 ms T2568] ConnectionProfile ConnectionCost returned
+[ 187422 ms T1914] frame 13800 complete: 184453 ms since the loop started, this frame took 16 ms
+[ 189281 ms T1914] ARM32 touch: down id=153 slot=0 client=(41,626) via WM_POINTERDOWN (active contacts: 1)
+[ 189281 ms T1914] ARM32 touch: up id=153 slot=0 client=(41,626) held 0 ms (WM_POINTERUP)
+[ 189297 ms T1914] CoreDispatcher.RunAsync queued handler=0F01F700 invoke=012E5059 depth=1
+[ 189312 ms T1914] ARM32 activation #105 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 189312 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 189312 ms T1914] ARM32 InputPane.TryHide accepted (fake input pane)
+[ 189312 ms T1914] CoreText focus left: Win32 text input deactivated
+[ 189312 ms T1914] CoreDispatcher.RunAsync invoked handler=0F01F700 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 189859 ms T1914] ARM32 touch: down id=154 slot=0 client=(37,611) via WM_POINTERDOWN (active contacts: 1)
+[ 189859 ms T1914] ARM32 touch: up id=154 slot=0 client=(37,611) held 0 ms (WM_POINTERUP)
+[ 189890 ms T1914] CoreDispatcher.RunAsync queued handler=0EE30428 invoke=012E5059 depth=1
+[ 189890 ms T1914] CoreText TextUpdating handler: 0EE307E8
+[ 189890 ms T1914] CoreText NotifySelectionChanged: 0..0
+[ 189890 ms T1914] CoreText focus entered: Win32 text input activated
+[ 189890 ms T1914] ARM32 activation #106 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 189890 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 189890 ms T1914] ARM32 InputPane.TryShow accepted (fake input pane; the Windows touch keyboard is driven by the host, see ARM32 osk lines)
+[ 189890 ms T1914] ARM32 osk: show requested (InputPane.TryShow) eligible=1 policy=auto touchActive=1 state=0
+[ 189890 ms T1914] CoreDispatcher.RunAsync invoked handler=0EE30428 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 189906 ms T1914] ARM32 osk: shell Hiding callback #7 rect=(0,540,2400,1080)
+[ 189906 ms T1914] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[ 189906 ms T1914] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[ 190250 ms T1914] ARM32 osk: shell Showing callback #8 rect=(0,540,2400,1080)
+[ 190250 ms T1914] ARM32 osk: keyboard VISIBLE (signal IFrameworkInputPane, was 0)
+[ 190250 ms T1914] ARM32 InputPane Showing event: the game registered no handler
+[ 190250 ms T1914] ARM32 osk: the keyboard is visible (360 ms after the request, 1 attempt(s))
+[ 191140 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0073 bytes=1 sequence=15
+[ 191172 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=16
+[ 191281 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=17
+[ 191312 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0061 bytes=1 sequence=18
+[ 191390 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006B bytes=1 sequence=19
+[ 191469 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=20
+[ 191547 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0061 bytes=1 sequence=21
+[ 191578 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=22
+[ 191594 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+007A bytes=1 sequence=23
+[ 191656 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=24
+[ 191703 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0078 bytes=1 sequence=25
+[ 191765 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0061 bytes=1 sequence=26
+[ 191797 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=27
+[ 191969 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0073 bytes=1 sequence=28
+[ 192000 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006A bytes=1 sequence=29
+[ 192109 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+006D bytes=1 sequence=30
+[ 192172 ms T1914] Minecraft 1.2.8 text event queued: codepoint=U+0061 bytes=1 sequence=31
+[ 192781 ms T1914] CoreDispatcher.RunAsync queued handler=0EE30428 invoke=012E5059 depth=1
+[ 192781 ms T1914] ARM32 activation #107 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 192781 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 192781 ms T1914] ARM32 InputPane.TryHide accepted (fake input pane)
+[ 192781 ms T1914] ARM32 osk: hide requested (InputPane.TryHide): 2 method(s), first ITipInvocation::Toggle
+[ 192781 ms T1914] ARM32 osk: hide: ITipInvocation::Toggle hr=0x00000000
+[ 192781 ms T1914] CoreText focus left: Win32 text input deactivated
+[ 192781 ms T1914] CoreDispatcher.RunAsync invoked handler=0EE30428 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 192844 ms T1914] ARM32 osk: shell Hiding callback #9 rect=(0,540,2400,1080)
+[ 192844 ms T1914] ARM32 osk: keyboard hidden (signal IFrameworkInputPane, was 1)
+[ 192844 ms T1914] ARM32 InputPane Hiding event: the game registered no handler
+[ 192844 ms T1914] ARM32 osk: the keyboard is hidden
+[ 194359 ms T1914] ARM32 touch: down id=173 slot=0 client=(30,628) via WM_POINTERDOWN (active contacts: 1)
+[ 194359 ms T1914] ARM32 touch: up id=173 slot=0 client=(26,625) held 0 ms (WM_POINTERUP)
+[ 194375 ms T1914] CoreDispatcher.RunAsync queued handler=0E4A4DA0 invoke=012E5059 depth=1
+[ 194375 ms T1914] CoreText TextUpdating handler: 0E4A4EC0
+[ 194375 ms T1914] CoreText NotifySelectionChanged: 0..0
+[ 194375 ms T1914] CoreText focus entered: Win32 text input activated
+[ 194375 ms T1914] ARM32 activation #108 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 194375 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 194375 ms T1914] ARM32 InputPane.TryShow accepted (fake input pane; the Windows touch keyboard is driven by the host, see ARM32 osk lines)
+[ 194375 ms T1914] ARM32 osk: show requested (InputPane.TryShow) eligible=1 policy=auto touchActive=1 state=0
+[ 194375 ms T1914] CoreDispatcher.RunAsync invoked handler=0E4A4DA0 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 194390 ms T1914] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[ 194390 ms T1914] ARM32 osk: Toggle suppressed - the previous Toggle was less than 2 s ago
+[ 195094 ms T1914] ARM32 touch stats (periodic): down=30 up=30 moveMsgs=285 movesQueued=38 slotsFull=0 canceled=0 captureLost=0 queueFailed=0 wmTouch=0 legacyFromTouch=0 legacyMouse=30 pointerMouse=0 pointerPen=0 pointerOther=0 sourceSwitches=3 source=TOUCH touchApi=pointer
+[ 195109 ms T1914] frame 14400 complete: 192140 ms since the loop started, this frame took 15 ms
+[ 195969 ms T1914] ARM32 touch: down id=174 slot=0 client=(31,618) via WM_POINTERDOWN (active contacts: 1)
+[ 195969 ms T1914] ARM32 touch: up id=174 slot=0 client=(31,618) held 0 ms (WM_POINTERUP)
+[ 195984 ms T1914] CoreDispatcher.RunAsync queued handler=0E4A53A0 invoke=012E5059 depth=1
+[ 196000 ms T1914] ARM32 activation #109 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 196000 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 196000 ms T1914] ARM32 InputPane.TryHide accepted (fake input pane)
+[ 196000 ms T1914] ARM32 osk: hide requested while the keyboard is still coming up - it will be hidden as soon as it is visible
+[ 196000 ms T1914] CoreText focus left: Win32 text input deactivated
+[ 196000 ms T1914] CoreDispatcher.RunAsync invoked handler=0E4A53A0 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 196437 ms T1914] ARM32 touch: down id=175 slot=0 client=(29,617) via WM_POINTERDOWN (active contacts: 1)
+[ 196437 ms T1914] ARM32 touch: up id=175 slot=0 client=(29,617) held 0 ms (WM_POINTERUP)
+[ 196453 ms T1914] CoreDispatcher.RunAsync queued handler=0E4A51C0 invoke=012E5059 depth=1
+[ 196469 ms T1914] CoreText TextUpdating handler: 0E4A50A0
+[ 196469 ms T1914] CoreText NotifySelectionChanged: 0..0
+[ 196469 ms T1914] CoreText focus entered: Win32 text input activated
+[ 196469 ms T1914] ARM32 activation #110 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 196469 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 196469 ms T1914] ARM32 InputPane.TryShow accepted (fake input pane; the Windows touch keyboard is driven by the host, see ARM32 osk lines)
+[ 196469 ms T1914] ARM32 osk: show requested (InputPane.TryShow) eligible=1 policy=auto touchActive=1 state=0
+[ 196469 ms T1914] CoreDispatcher.RunAsync invoked handler=0E4A51C0 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 196484 ms T1914] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[ 196484 ms T1914] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[ 196859 ms T1914] ARM32 osk: shell Showing callback #10 rect=(0,540,2400,1080)
+[ 196859 ms T1914] ARM32 osk: keyboard VISIBLE (signal IFrameworkInputPane, was 0)
+[ 196859 ms T1914] ARM32 InputPane Showing event: the game registered no handler
+[ 196859 ms T1914] ARM32 osk: the keyboard is visible (390 ms after the request, 1 attempt(s))
+[ 201969 ms T1914] frame 15000 complete: 199000 ms since the loop started, this frame took 0 ms
+[ 208937 ms T1914] frame 15600 complete: 205968 ms since the loop started, this frame took 15 ms
+[ 211344 ms T1090] ARM32 heartbeat: up 211 s, step 'main loop', loop passes=15796, frames done=15796 (+2534 in the last 30 s)
+[ 211453 ms T1914] CoreDispatcher.RunAsync queued handler=1E55EF70 invoke=012E5059 depth=1
+[ 211469 ms T1914] ARM32 activation #111 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 211469 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 211469 ms T1914] ARM32 InputPane.TryHide accepted (fake input pane)
+[ 211469 ms T1914] ARM32 osk: hide requested (InputPane.TryHide): 2 method(s), first ITipInvocation::Toggle
+[ 211469 ms T1914] ARM32 osk: hide: ITipInvocation::Toggle hr=0x00000000
+[ 211469 ms T1914] CoreText focus left: Win32 text input deactivated
+[ 211469 ms T1914] CoreDispatcher.RunAsync invoked handler=1E55EF70 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 211469 ms T1914] CoreDispatcher.RunAsync queued handler=1E55EBB0 invoke=012E5059 depth=1
+[ 211484 ms T1914] Minecraft 1.2.8 relative mouse delegate invoked: this=0F875568 controller=05A45F38 guard=0 actual=0
+[ 211484 ms T1914] CoreDispatcher.RunAsync invoked handler=1E55EBB0 invoke=012E5059 result=0x00000000 relative=1 guard=0
+[ 211484 ms T1914] Minecraft 1.2.8 scene: gameplay capture
+[ 211484 ms T1914] HID mouse mode: requested=1 actual=0 command=1
+[ 211484 ms T1914] ARM32 input: relative mouse suppressed (touch is the active input device)
+[ 211531 ms T1914] ARM32 osk: shell Hiding callback #11 rect=(0,540,2400,1080)
+[ 211531 ms T1914] ARM32 osk: keyboard hidden (signal IFrameworkInputPane, was 1)
+[ 211531 ms T1914] ARM32 InputPane Hiding event: the game registered no handler
+[ 211531 ms T1914] ARM32 osk: the keyboard is hidden
+[ 211531 ms T1914] HID mouse mode: requested=1 actual=0 command=0
+[ 212859 ms T1914] ARM32 touch: down id=205 slot=0 client=(1191,393) via WM_POINTERDOWN (active contacts: 1)
+[ 213000 ms T1914] ARM32 touch: down id=206 slot=1 client=(305,510) via WM_POINTERDOWN (active contacts: 2)
+[ 213125 ms T1914] ARM32 touch: up id=205 slot=0 client=(1301,429) held 266 ms (WM_POINTERUP)
+[ 213140 ms T184c] ARM32 activation #112 Windows.Networking.Connectivity.NetworkInformation IID=5074F851-950D-4165-9C15-365619481EEA
+[ 213140 ms T184c] redirected Windows.Networking.Connectivity.NetworkInformation
+[ 213140 ms T184c] Win32 NetworkInformation: InternetConnectionProfile returned
+[ 213140 ms T184c] ConnectionProfile QI returned IConnectionProfile2
+[ 213140 ms T184c] ConnectionProfile ConnectionCost returned
+[ 213140 ms T184c] ConnectionProfile ConnectionCost returned
+[ 213703 ms T1914] ARM32 touch: up id=206 slot=1 client=(305,510) held 703 ms (WM_POINTERUP)
+[ 213844 ms T1914] ARM32 touch: down id=207 slot=0 client=(174,386) via WM_POINTERDOWN (active contacts: 1)
+[ 213890 ms T1914] ARM32 touch: down id=208 slot=1 client=(1282,388) via WM_POINTERDOWN (active contacts: 2)
+[ 213953 ms T1914] ARM32 touch: up id=207 slot=0 client=(174,386) held 109 ms (WM_POINTERUP)
+[ 214015 ms T1914] ARM32 touch: down id=209 slot=0 client=(171,386) via WM_POINTERDOWN (active contacts: 2)
+[ 214078 ms T1914] ARM32 touch: up id=208 slot=1 client=(1183,370) held 188 ms (WM_POINTERUP)
+[ 214437 ms T1914] ARM32 touch: down id=210 slot=1 client=(1450,472) via WM_POINTERDOWN (active contacts: 2)
+[ 214500 ms T1914] ARM32 touch: up id=210 slot=1 client=(1450,472) held 63 ms (WM_POINTERUP)
+[ 214578 ms T1914] ARM32 touch: down id=211 slot=1 client=(1452,468) via WM_POINTERDOWN (active contacts: 2)
+[ 214640 ms T1914] ARM32 touch: up id=211 slot=1 client=(1452,468) held 62 ms (WM_POINTERUP)
+[ 214906 ms T1914] ARM32 touch: down id=212 slot=1 client=(1473,476) via WM_POINTERDOWN (active contacts: 2)
+[ 214969 ms T1914] ARM32 touch: up id=212 slot=1 client=(1473,476) held 63 ms (WM_POINTERUP)
+[ 215047 ms T1914] ARM32 touch: down id=213 slot=1 client=(1459,474) via WM_POINTERDOWN (active contacts: 2)
+[ 215094 ms T1914] ARM32 touch: up id=213 slot=1 client=(1459,474) held 47 ms (WM_POINTERUP)
+[ 215281 ms T1914] ARM32 touch: up id=209 slot=0 client=(171,386) held 1266 ms (WM_POINTERUP)
+[ 215640 ms T1914] ARM32 touch: down id=214 slot=0 client=(806,48) via WM_POINTERDOWN (active contacts: 1)
+[ 215687 ms T1914] ARM32 touch: up id=214 slot=0 client=(806,48) held 47 ms (WM_POINTERUP)
+[ 216094 ms T1914] ARM32 touch: down id=215 slot=0 client=(798,32) via WM_POINTERDOWN (active contacts: 1)
+[ 216094 ms T1914] ARM32 activation #113 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 216094 ms T1914] redirected Windows.System.MemoryManager
+[ 216094 ms T1914] ARM32 activation #114 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 216094 ms T1914] redirected Windows.System.MemoryManager
+[ 216094 ms T1914] CoreDispatcher.RunAsync queued handler=0E4A56A0 invoke=012E5059 depth=1
+[ 216109 ms T1914] Minecraft 1.2.8 absolute mouse delegate invoked: this=0F8793F8 controller=05A45F38
+[ 216109 ms T1914] CoreDispatcher.RunAsync invoked handler=0E4A56A0 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 216109 ms T1914] Minecraft 1.2.8 scene: UI cursor
+[ 216109 ms T1914] HID mouse mode: requested=0 actual=0 command=2
+[ 216109 ms T1914] ARM32 input: relative mouse allowed again
+[ 216125 ms T1914] HID mouse mode: requested=0 actual=0 command=0
+[ 216140 ms T1914] ARM32 touch: up id=215 slot=0 client=(798,32) held 46 ms (WM_POINTERUP)
+[ 216297 ms T1914] frame 16200 complete: 213328 ms since the loop started, this frame took 16 ms
+[ 216750 ms T1914] ARM32 touch: down id=216 slot=0 client=(570,513) via WM_POINTERDOWN (active contacts: 1)
+[ 216828 ms T1914] ARM32 touch: up id=216 slot=0 client=(570,513) held 78 ms (WM_POINTERUP)
+[ 217422 ms T1914] ARM32 activation #115 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 217422 ms T1914] redirected Windows.System.MemoryManager
+[ 217422 ms T1914] ARM32 activation #116 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 217422 ms T1914] redirected Windows.System.MemoryManager
+[ 217781 ms T1914] ARM32 activation #117 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 217781 ms T1914] redirected Windows.System.MemoryManager
+[ 217781 ms T1914] ARM32 activation #118 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 217781 ms T1914] redirected Windows.System.MemoryManager
+[ 218359 ms T1914] ARM32 activation #119 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 218359 ms T1914] redirected Windows.System.MemoryManager
+[ 218359 ms T1914] ARM32 activation #120 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 218359 ms T1914] redirected Windows.System.MemoryManager
+[ 218719 ms T1914] slow frame 16242: 1891 ms
+[ 220219 ms T1914] ARM32 getAsset[dir] .lang override applied to 'texts/en_US.lang': 340197 -> 340267 bytes
+[ 220219 ms T1914] ARM32 getAsset[dir] .lang override applied to 'texts/en_US.lang': 3 -> 103 bytes
+[ 220594 ms T1914] ARM32 getAsset[dir] start_screen override applied to 'ui/start_screen.json': 20315 -> 20276 bytes
+[ 221000 ms T1914] ARM32 activation #121 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221000 ms T1914] redirected Windows.System.MemoryManager
+[ 221000 ms T1914] ARM32 activation #122 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221000 ms T1914] redirected Windows.System.MemoryManager
+[ 221000 ms T1914] ARM32 activation #123 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221000 ms T1914] redirected Windows.System.MemoryManager
+[ 221000 ms T1914] ARM32 activation #124 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221000 ms T1914] redirected Windows.System.MemoryManager
+[ 221094 ms T1914] ARM32 activation #125 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221094 ms T1914] redirected Windows.System.MemoryManager
+[ 221094 ms T1914] ARM32 activation #126 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221094 ms T1914] redirected Windows.System.MemoryManager
+[ 221109 ms T1914] ARM32 activation #127 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221109 ms T1914] redirected Windows.System.MemoryManager
+[ 221109 ms T1914] ARM32 activation #128 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221109 ms T1914] redirected Windows.System.MemoryManager
+[ 221109 ms T1914] ARM32 activation #129 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221109 ms T1914] redirected Windows.System.MemoryManager
+[ 221109 ms T1914] ARM32 activation #130 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221109 ms T1914] redirected Windows.System.MemoryManager
+[ 221109 ms T1914] ARM32 activation #131 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221109 ms T1914] redirected Windows.System.MemoryManager
+[ 221109 ms T1914] ARM32 activation #132 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 221109 ms T1914] redirected Windows.System.MemoryManager
+[ 222234 ms T1914] slow frame 16243: 3515 ms
+[ 222937 ms T1914] ARM32 touch: down id=217 slot=0 client=(1051,84) via WM_POINTERDOWN (active contacts: 1)
+[ 223000 ms T1914] ARM32 touch: up id=217 slot=0 client=(1051,84) held 63 ms (WM_POINTERUP)
+[ 223890 ms T1914] ARM32 touch: down id=218 slot=0 client=(690,458) via WM_POINTERDOWN (active contacts: 1)
+[ 223969 ms T1914] ARM32 touch: up id=218 slot=0 client=(690,458) held 79 ms (WM_POINTERUP)
+[ 223984 ms T1914] ARM32 activation #133 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 223984 ms T1914] redirected Windows.System.MemoryManager
+[ 223984 ms T1914] ARM32 activation #134 Windows.System.MemoryManager IID=5C6C279C-D7CA-4779-9188-4057219CE64C
+[ 223984 ms T1914] redirected Windows.System.MemoryManager
+[ 224297 ms T2568] VEH exception 0xe06d7363 at 76DB212F
+[ 224297 ms T2568]   C++ throw: object=02ecf418 throwinfo=0208e9c8
+[ 224297 ms T2568] VEH: pc=76db212f lr=76db212f sp=02ecf3b8 cpsr=60000020
+[ 224297 ms T2568]   r0=4c81c42c r1=02ecf1b0 r2=725a137b r3=000003e5 r4=76db20f1 r5=0208e9e4
+[ 224297 ms T2568]   r6=02ecf5e8 r7=02ecf448 r8=2ab20148 r9=11174fa8 r10=2ab20158 r11=02ecf410 r12=7265c728
+[ 224297 ms T2568]   VEH frame[0] = 75C7E53D
+[ 224297 ms T2568]   VEH frame[1] = 77DAA179
+[ 224297 ms T2568]   VEH frame[2] = 77DE88F1
+[ 224297 ms T2568]   VEH frame[3] = 77DE9AAF
+[ 224297 ms T2568]   VEH frame[4] = 76DB212F
+[ 224297 ms T2568]   VEH frame[5] = 75682979
+[ 224297 ms T2568]   VEH frame[6] = 00E6D3F3 (game rva 000fd3f2)
+[ 224297 ms T2568]   VEH frame[7] = 00E6D4F3 (game rva 000fd4f2)
+[ 224297 ms T2568]   VEH frame[8] = 00E6E569 (game rva 000fe568)
+[ 224297 ms T2568]   VEH frame[9] = 00E6ECC3 (game rva 000fecc2)
+[ 224297 ms T2568]   VEH frame[10] = 01140671 (game rva 003d0670)
+[ 224297 ms T2568]   VEH frame[11] = 0123A3E3 (game rva 004ca3e2)
+[ 224297 ms T2568]   VEH frame[12] = 0123C76F (game rva 004cc76e)
+[ 224297 ms T2568]   VEH frame[13] = 00E7892B (game rva 0010892a)
+[ 224297 ms T2568]   VEH frame[14] = 00E79FDF (game rva 00109fde)
+[ 224297 ms T2568]   VEH frame[15] = 00E789A7 (game rva 001089a6)
+[ 224297 ms T2568]   VEH frame[16] = 0114A74B (game rva 003da74a)
+[ 224297 ms T2568]   VEH frame[17] = 01148EC5 (game rva 003d8ec4)
+[ 224297 ms T2568]   VEH frame[18] = 00E6DF85 (game rva 000fdf84)
+[ 224297 ms T2568]   VEH frame[19] = 00E6D67F (game rva 000fd67e)
+[ 224297 ms T2568]   VEH frame[20] = 7568F7E7
+[ 224297 ms T2568]   VEH frame[21] = 77D92A43
+[ 224297 ms T2568]   VEH frame[22] = 77D61EF3
+[ 224297 ms T2568]   VEH frame[23] = 77BE54B1
+[ 224297 ms T2568]   VEH frame[24] = 77D7BF75
+[ 224297 ms T2568]   VEH stack sp+01c: 0208e9c8 -> game rva 0131e9c8
+[ 224297 ms T2568]   VEH stack sp+020: 00d70000 -> game rva 00000000
+[ 224297 ms T2568]   VEH stack sp+040: 00d70000 -> game rva 00000000
+[ 224297 ms T2568]   VEH stack sp+048: 0208e9e4 -> game rva 0131e9e4
+[ 224297 ms T2568]   VEH stack sp+060: 020a6734 -> game rva 01336734
+[ 224297 ms T2568]   VEH stack sp+070: 020a6314 -> game rva 01336314
+[ 224297 ms T2568]   VEH stack sp+0bc: 0208e9c8 -> game rva 0131e9c8
+[ 224297 ms T2568]   VEH stack sp+0c0: 00d70000 -> game rva 00000000
+[ 224297 ms T2568]   VEH stack sp+104: 00e6d3f3 -> game rva 000fd3f2
+[ 224297 ms T2568]   VEH stack sp+10c: 00e6d4f3 -> game rva 000fd4f2
+[ 224297 ms T2568]   VEH stack sp+124: 00e6e569 -> game rva 000fe568
+[ 224297 ms T2568]   VEH stack sp+13c: 00e6ecc3 -> game rva 000fecc2
+[ 224297 ms T2568]   VEH stack sp+16c: 01140671 -> game rva 003d0670
+[ 224297 ms T2568]   VEH stack sp+194: 0123a3e3 -> game rva 004ca3e2
+[ 224297 ms T2568]   VEH stack sp+1b4: 0115aaa9 -> game rva 003eaaa8
+[ 224297 ms T2568]   VEH stack sp+1d4: 0123c76f -> game rva 004cc76e
+[ 224297 ms T2568]   VEH stack sp+1e4: 00e7892b -> game rva 0010892a
+[ 224297 ms T2568]   VEH stack sp+1ec: 0114be53 -> game rva 003dbe52
+[ 224297 ms T2568]   VEH stack sp+224: 00e79fdf -> game rva 00109fde
+[ 224297 ms T2568]   VEH stack sp+23c: 00e789a7 -> game rva 001089a6
+[ 224297 ms T2568]   VEH stack sp+24c: 0114aaaf -> game rva 003daaae
+[ 224297 ms T2568]   VEH stack sp+274: 0114a74b -> game rva 003da74a
+[ 224297 ms T2568]   VEH stack sp+288: 020ced4c -> game rva 0135ed4c
+[ 224297 ms T2568]   VEH stack sp+2c0: 0232e000 -> game rva 015be000
+[ 224297 ms T2568]   VEH stack sp+2ec: 00e6d65d -> game rva 000fd65c
+[ 224297 ms T2568]   VEH stack sp+2fc: 01148ec5 -> game rva 003d8ec4
+[ 224297 ms T2568]   VEH stack sp+30c: 00d70000 -> game rva 00000000
+[ 224297 ms T2568]   VEH stack sp+324: 00e6df85 -> game rva 000fdf84
+[ 224297 ms T2568]   VEH stack sp+32c: 00d70000 -> game rva 00000000
+[ 224297 ms T2568]   VEH stack sp+334: 00d70000 -> game rva 00000000
+[ 224297 ms T2568]   VEH stack sp+34c: 00e6d67f -> game rva 000fd67e
+[ 224297 ms T2568]   VEH stack sp+370: 00d70000 -> game rva 00000000
+[ 224297 ms T2568]   VEH stack sp+3d0: 01000100 -> game rva 00290100
+[ 224297 ms T2568]   VEH stack sp+4d4: 00d70000 -> game rva 00000000
+[ 225515 ms T1914] ARM32 touch: down id=219 slot=0 client=(128,520) via WM_POINTERDOWN (active contacts: 1)
+[ 225812 ms T1914] ARM32 touch: up id=219 slot=0 client=(47,326) held 297 ms (WM_POINTERUP)
+[ 226312 ms T184c] VEH exception 0xe06d7363 at 76DB212F
+[ 226312 ms T184c]   C++ throw: object=0bc9f680 throwinfo=0208e9c8
+[ 226312 ms T184c] VEH: pc=76db212f lr=76db212f sp=0bc9f620 cpsr=60000030
+[ 226312 ms T184c]   r0=00000000 r1=0bc9f428 r2=77d66bc1 r3=00000000 r4=76db20f1 r5=0208e9e4
+[ 226312 ms T1664] VEH exception 0xe06d7363 at 76DB212F
+[ 226312 ms T1664]   C++ throw: object=0896f4d8 throwinfo=0208e9c8
+[ 226312 ms T1664] VEH: pc=76db212f lr=76db212f sp=0896f478 cpsr=60000020
+[ 226312 ms T1664]   r0=00000000 r1=0896f280 r2=77d66bc1 r3=00000000 r4=76db20f1 r5=0208e9e4
+[ 226312 ms T1664]   r6=0896f6a8 r7=0896f508 r8=0a11c2b0 r9=27e0f310 r10=0a11c2c0 r11=0896f4d0 r12=76fad3b9
+[ 226312 ms T184c]   r6=0bc9f850 r7=0bc9f6b0 r8=2ab20260 r9=13a9a220 r10=2ab20270 r11=0bc9f678 r12=76fad3b9
+[ 226312 ms T1664]   VEH frame[0] = 75C7E53D
+[ 226312 ms T184c]   VEH frame[0] = 75C7E53D
+[ 226312 ms T1664]   VEH frame[1] = 77DAA179
+[ 226312 ms T184c]   VEH frame[1] = 77DAA179
+[ 226312 ms T1664]   VEH frame[2] = 77DE88F1
+[ 226312 ms T184c]   VEH frame[2] = 77DE88F1
+[ 226312 ms T1664]   VEH frame[3] = 77DE9AAF
+[ 226312 ms T184c]   VEH frame[3] = 77DE9AAF
+[ 226312 ms T1664]   VEH frame[4] = 76DB212F
+[ 226312 ms T184c]   VEH frame[4] = 76DB212F
+[ 226312 ms T1664]   VEH frame[5] = 75682979
+[ 226312 ms T184c]   VEH frame[5] = 75682979
+[ 226312 ms T1664]   VEH frame[6] = 00E6D3F3 (game rva 000fd3f2)
+[ 226312 ms T184c]   VEH frame[6] = 00E6D3F3 (game rva 000fd3f2)
+[ 226312 ms T1664]   VEH frame[7] = 00E6D4F3 (game rva 000fd4f2)
+[ 226312 ms T184c]   VEH frame[7] = 00E6D4F3 (game rva 000fd4f2)
+[ 226312 ms T1664]   VEH frame[8] = 00E6E569 (game rva 000fe568)
+[ 226312 ms T184c]   VEH frame[8] = 00E6E569 (game rva 000fe568)
+[ 226312 ms T1664]   VEH frame[9] = 00E6ECC3 (game rva 000fecc2)
+[ 226312 ms T184c]   VEH frame[9] = 00E6ECC3 (game rva 000fecc2)
+[ 226312 ms T1664]   VEH frame[10] = 01140671 (game rva 003d0670)
+[ 226312 ms T184c]   VEH frame[10] = 01140671 (game rva 003d0670)
+[ 226312 ms T1664]   VEH frame[11] = 0123A3E3 (game rva 004ca3e2)
+[ 226312 ms T184c]   VEH frame[11] = 0123A3E3 (game rva 004ca3e2)
+[ 226312 ms T1664]   VEH frame[12] = 0123C76F (game rva 004cc76e)
+[ 226312 ms T184c]   VEH frame[12] = 0123C76F (game rva 004cc76e)
+[ 226312 ms T1664]   VEH frame[13] = 00E7892B (game rva 0010892a)
+[ 226312 ms T184c]   VEH frame[13] = 00E7892B (game rva 0010892a)
+[ 226312 ms T1664]   VEH frame[14] = 00E79FDF (game rva 00109fde)
+[ 226312 ms T184c]   VEH frame[14] = 00E79FDF (game rva 00109fde)
+[ 226312 ms T1664]   VEH frame[15] = 00E789A7 (game rva 001089a6)
+[ 226312 ms T184c]   VEH frame[15] = 00E789A7 (game rva 001089a6)
+[ 226312 ms T1664]   VEH frame[16] = 0114A74B (game rva 003da74a)
+[ 226312 ms T184c]   VEH frame[16] = 0114A74B (game rva 003da74a)
+[ 226312 ms T1664]   VEH frame[17] = 01148EC5 (game rva 003d8ec4)
+[ 226312 ms T184c]   VEH frame[17] = 01148EC5 (game rva 003d8ec4)
+[ 226312 ms T1664]   VEH frame[18] = 00E6DF85 (game rva 000fdf84)
+[ 226312 ms T184c]   VEH frame[18] = 00E6DF85 (game rva 000fdf84)
+[ 226312 ms T1664]   VEH frame[19] = 00E6D67F (game rva 000fd67e)
+[ 226312 ms T184c]   VEH frame[19] = 00E6D67F (game rva 000fd67e)
+[ 226312 ms T1664]   VEH frame[20] = 7568F7E7
+[ 226312 ms T184c]   VEH frame[20] = 7568F7E7
+[ 226312 ms T1664]   VEH frame[21] = 77D92A43
+[ 226312 ms T184c]   VEH frame[21] = 77D92A43
+[ 226312 ms T1664]   VEH frame[22] = 77D61EF3
+[ 226312 ms T184c]   VEH frame[22] = 77D61EF3
+[ 226312 ms T1664]   VEH frame[23] = 77BE54B1
+[ 226312 ms T184c]   VEH frame[23] = 77BE54B1
+[ 226312 ms T1664]   VEH frame[24] = 77D7BF75
+[ 226312 ms T184c]   VEH frame[24] = 77D7BF75
+[ 226312 ms T1664]   VEH stack sp+01c: 0208e9c8 -> game rva 0131e9c8
+[ 226312 ms T184c]   VEH stack sp+01c: 0208e9c8 -> game rva 0131e9c8
+[ 226312 ms T1664]   VEH stack sp+020: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+020: 00d70000 -> game rva 00000000
+[ 226312 ms T1664]   VEH stack sp+040: 00d70000 -> game rva 00000000
+[ 226312 ms T1664]   VEH stack sp+048: 0208e9e4 -> game rva 0131e9e4
+[ 226312 ms T1664]   VEH stack sp+060: 020a6734 -> game rva 01336734
+[ 226312 ms T1664]   VEH stack sp+070: 020a6314 -> game rva 01336314
+[ 226312 ms T1664]   VEH stack sp+0bc: 0208e9c8 -> game rva 0131e9c8
+[ 226312 ms T1664]   VEH stack sp+0c0: 00d70000 -> game rva 00000000
+[ 226312 ms T1664]   VEH stack sp+104: 00e6d3f3 -> game rva 000fd3f2
+[ 226312 ms T1664]   VEH stack sp+10c: 00e6d4f3 -> game rva 000fd4f2
+[ 226312 ms T1664]   VEH stack sp+124: 00e6e569 -> game rva 000fe568
+[ 226312 ms T1664]   VEH stack sp+13c: 00e6ecc3 -> game rva 000fecc2
+[ 226312 ms T1664]   VEH stack sp+16c: 01140671 -> game rva 003d0670
+[ 226312 ms T1664]   VEH stack sp+194: 0123a3e3 -> game rva 004ca3e2
+[ 226312 ms T1664]   VEH stack sp+1b4: 0115aaa9 -> game rva 003eaaa8
+[ 226312 ms T1664]   VEH stack sp+1d4: 0123c76f -> game rva 004cc76e
+[ 226312 ms T184c]   VEH stack sp+040: 00d70000 -> game rva 00000000
+[ 226312 ms T1664]   VEH stack sp+1e4: 00e7892b -> game rva 0010892a
+[ 226312 ms T184c]   VEH stack sp+048: 0208e9e4 -> game rva 0131e9e4
+[ 226312 ms T1664]   VEH stack sp+1ec: 0114be53 -> game rva 003dbe52
+[ 226312 ms T184c]   VEH stack sp+060: 020a6734 -> game rva 01336734
+[ 226312 ms T1664]   VEH stack sp+224: 00e79fdf -> game rva 00109fde
+[ 226312 ms T184c]   VEH stack sp+070: 020a6314 -> game rva 01336314
+[ 226312 ms T1664]   VEH stack sp+23c: 00e789a7 -> game rva 001089a6
+[ 226312 ms T184c]   VEH stack sp+0bc: 0208e9c8 -> game rva 0131e9c8
+[ 226312 ms T1664]   VEH stack sp+24c: 0114aaaf -> game rva 003daaae
+[ 226312 ms T184c]   VEH stack sp+0c0: 00d70000 -> game rva 00000000
+[ 226312 ms T1664]   VEH stack sp+274: 0114a74b -> game rva 003da74a
+[ 226312 ms T184c]   VEH stack sp+104: 00e6d3f3 -> game rva 000fd3f2
+[ 226312 ms T1664]   VEH stack sp+288: 020ced4c -> game rva 0135ed4c
+[ 226312 ms T184c]   VEH stack sp+10c: 00e6d4f3 -> game rva 000fd4f2
+[ 226312 ms T1664]   VEH stack sp+2c0: 0232e000 -> game rva 015be000
+[ 226312 ms T184c]   VEH stack sp+124: 00e6e569 -> game rva 000fe568
+[ 226312 ms T1664]   VEH stack sp+2ec: 00e6d65d -> game rva 000fd65c
+[ 226312 ms T184c]   VEH stack sp+13c: 00e6ecc3 -> game rva 000fecc2
+[ 226312 ms T1664]   VEH stack sp+2fc: 01148ec5 -> game rva 003d8ec4
+[ 226312 ms T184c]   VEH stack sp+16c: 01140671 -> game rva 003d0670
+[ 226312 ms T1664]   VEH stack sp+30c: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+194: 0123a3e3 -> game rva 004ca3e2
+[ 226312 ms T1664]   VEH stack sp+324: 00e6df85 -> game rva 000fdf84
+[ 226312 ms T184c]   VEH stack sp+1b4: 0115aaa9 -> game rva 003eaaa8
+[ 226312 ms T1664]   VEH stack sp+32c: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+1d4: 0123c76f -> game rva 004cc76e
+[ 226312 ms T1664]   VEH stack sp+334: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+1e4: 00e7892b -> game rva 0010892a
+[ 226312 ms T1664]   VEH stack sp+34c: 00e6d67f -> game rva 000fd67e
+[ 226312 ms T184c]   VEH stack sp+1ec: 0114be53 -> game rva 003dbe52
+[ 226312 ms T1664]   VEH stack sp+370: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+224: 00e79fdf -> game rva 00109fde
+[ 226312 ms T1664]   VEH stack sp+3d0: 01000100 -> game rva 00290100
+[ 226312 ms T184c]   VEH stack sp+23c: 00e789a7 -> game rva 001089a6
+[ 226312 ms T1664]   VEH stack sp+4d4: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+24c: 0114aaaf -> game rva 003daaae
+[ 226312 ms T184c]   VEH stack sp+274: 0114a74b -> game rva 003da74a
+[ 226312 ms T184c]   VEH stack sp+288: 020ced4c -> game rva 0135ed4c
+[ 226312 ms T184c]   VEH stack sp+2c0: 0232e000 -> game rva 015be000
+[ 226312 ms T184c]   VEH stack sp+2ec: 00e6d65d -> game rva 000fd65c
+[ 226312 ms T184c]   VEH stack sp+2fc: 01148ec5 -> game rva 003d8ec4
+[ 226312 ms T184c]   VEH stack sp+30c: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+324: 00e6df85 -> game rva 000fdf84
+[ 226312 ms T184c]   VEH stack sp+32c: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+334: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+34c: 00e6d67f -> game rva 000fd67e
+[ 226312 ms T184c]   VEH stack sp+370: 00d70000 -> game rva 00000000
+[ 226312 ms T184c]   VEH stack sp+3d0: 01000100 -> game rva 00290100
+[ 226312 ms T184c]   VEH stack sp+4d4: 00d70000 -> game rva 00000000
+[ 227500 ms T1914] ARM32 touch: down id=220 slot=0 client=(106,303) via WM_POINTERDOWN (active contacts: 1)
+[ 227578 ms T1914] ARM32 touch: up id=220 slot=0 client=(106,303) held 78 ms (WM_POINTERUP)
+[ 227969 ms T1914] ARM32 touch: down id=221 slot=0 client=(1147,120) via WM_POINTERDOWN (active contacts: 1)
+[ 228031 ms T1914] ARM32 touch: up id=221 slot=0 client=(1147,120) held 62 ms (WM_POINTERUP)
+[ 228031 ms T1914] CoreDispatcher.RunAsync queued handler=11618460 invoke=012E5059 depth=1
+[ 228047 ms T1914] CoreText TextUpdating handler: 11618BE0
+[ 228047 ms T1914] CoreText NotifySelectionChanged: 5..5
+[ 228047 ms T1914] CoreText focus entered: Win32 text input activated
+[ 228047 ms T1914] ARM32 activation #135 Windows.UI.ViewManagement.InputPane IID=95F4AF3A-EF47-424A-9741-FD2815EBA2BD
+[ 228047 ms T1914] ARM32 redirected InputPane factory to its fake (no on-screen keyboard on the HWND host)
+[ 228047 ms T1914] ARM32 InputPane.TryShow accepted (fake input pane; the Windows touch keyboard is driven by the host, see ARM32 osk lines)
+[ 228047 ms T1914] ARM32 osk: show requested (InputPane.TryShow) eligible=1 policy=auto touchActive=1 state=0
+[ 228047 ms T1914] CoreDispatcher.RunAsync invoked handler=11618460 invoke=012E5059 result=0x00000000 relative=0 guard=0
+[ 228062 ms T1914] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[ 228078 ms T1914] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[ 228359 ms T2c70] VEH exception 0xe06d7363 at 76DB212F
+[ 228359 ms T2c70]   C++ throw: object=0a93f648 throwinfo=0208e9c8
+[ 228359 ms T2c70] VEH: pc=76db212f lr=76db212f sp=0a93f5e8 cpsr=60000020
+[ 228359 ms T2c70]   r0=00000000 r1=0a93f3f0 r2=77d66bc1 r3=00000000 r4=76db20f1 r5=0208e9e4
+[ 228359 ms T2c70]   r6=0a93f818 r7=0a93f678 r8=0a11c080 r9=0e58c4d0 r10=0a11c090 r11=0a93f640 r12=76fad3b9
+[ 228359 ms T2c70]   VEH frame[0] = 75C7E53D
+[ 228359 ms T2c70]   VEH frame[1] = 77DAA179
+[ 228359 ms T2c70]   VEH frame[2] = 77DE88F1
+[ 228359 ms T2c70]   VEH frame[3] = 77DE9AAF
+[ 228359 ms T2c70]   VEH frame[4] = 76DB212F
+[ 228359 ms T2c70]   VEH frame[5] = 75682979
+[ 228359 ms T2c70]   VEH frame[6] = 00E6D3F3 (game rva 000fd3f2)
+[ 228359 ms T2c70]   VEH frame[7] = 00E6D4F3 (game rva 000fd4f2)
+[ 228359 ms T2c70]   VEH frame[8] = 00E6E569 (game rva 000fe568)
+[ 228359 ms T2c70]   VEH frame[9] = 00E6ECC3 (game rva 000fecc2)
+[ 228359 ms T2c70]   VEH frame[10] = 01140671 (game rva 003d0670)
+[ 228359 ms T2c70]   VEH frame[11] = 0123A3E3 (game rva 004ca3e2)
+[ 228359 ms T2c70]   VEH frame[12] = 0123C76F (game rva 004cc76e)
+[ 228359 ms T2c70]   VEH frame[13] = 00E7892B (game rva 0010892a)
+[ 228359 ms T2c70]   VEH frame[14] = 00E79FDF (game rva 00109fde)
+[ 228359 ms T2c70]   VEH frame[15] = 00E789A7 (game rva 001089a6)
+[ 228359 ms T2c70]   VEH frame[16] = 0114A74B (game rva 003da74a)
+[ 228359 ms T2c70]   VEH frame[17] = 01148EC5 (game rva 003d8ec4)
+[ 228359 ms T2c70]   VEH frame[18] = 00E6DF85 (game rva 000fdf84)
+[ 228359 ms T2c70]   VEH frame[19] = 00E6D67F (game rva 000fd67e)
+[ 228359 ms T2c70]   VEH frame[20] = 7568F7E7
+[ 228359 ms T2c70]   VEH frame[21] = 77D92A43
+[ 228359 ms T2c70]   VEH frame[22] = 77D61EF3
+[ 228359 ms T2c70]   VEH frame[23] = 77BE54B1
+[ 228359 ms T2c70]   VEH frame[24] = 77D7BF75
+[ 228359 ms T2c70]   VEH stack sp+01c: 0208e9c8 -> game rva 0131e9c8
+[ 228359 ms T2c70]   VEH stack sp+020: 00d70000 -> game rva 00000000
+[ 228359 ms T2c70]   VEH stack sp+040: 00d70000 -> game rva 00000000
+[ 228359 ms T2c70]   VEH stack sp+048: 0208e9e4 -> game rva 0131e9e4
+[ 228359 ms T2c70]   VEH stack sp+060: 020a6734 -> game rva 01336734
+[ 228359 ms T2c70]   VEH stack sp+070: 020a6314 -> game rva 01336314
+[ 228359 ms T2c70]   VEH stack sp+0bc: 0208e9c8 -> game rva 0131e9c8
+[ 228359 ms T2c70]   VEH stack sp+0c0: 00d70000 -> game rva 00000000
+[ 228359 ms T2c70]   VEH stack sp+104: 00e6d3f3 -> game rva 000fd3f2
+[ 228359 ms T2c70]   VEH stack sp+10c: 00e6d4f3 -> game rva 000fd4f2
+[ 228359 ms T2c70]   VEH stack sp+124: 00e6e569 -> game rva 000fe568
+[ 228359 ms T2c70]   VEH stack sp+13c: 00e6ecc3 -> game rva 000fecc2
+[ 228359 ms T2c70]   VEH stack sp+16c: 01140671 -> game rva 003d0670
+[ 228359 ms T2c70]   VEH stack sp+194: 0123a3e3 -> game rva 004ca3e2
+[ 228359 ms T2c70]   VEH stack sp+1b4: 0115aaa9 -> game rva 003eaaa8
+[ 228359 ms T2c70]   VEH stack sp+1d4: 0123c76f -> game rva 004cc76e
+[ 228359 ms T2c70]   VEH stack sp+1e4: 00e7892b -> game rva 0010892a
+[ 228359 ms T2c70]   VEH stack sp+1ec: 0114be53 -> game rva 003dbe52
+[ 228359 ms T2c70]   VEH stack sp+224: 00e79fdf -> game rva 00109fde
+[ 228359 ms T2c70]   VEH stack sp+23c: 00e789a7 -> game rva 001089a6
+[ 228359 ms T2c70]   VEH stack sp+24c: 0114aaaf -> game rva 003daaae
+[ 228359 ms T2c70]   VEH stack sp+274: 0114a74b -> game rva 003da74a
+[ 228359 ms T2c70]   VEH stack sp+288: 020ced4c -> game rva 0135ed4c
+[ 228359 ms T2c70]   VEH stack sp+2c0: 0232e000 -> game rva 015be000
+[ 228359 ms T2c70]   VEH stack sp+2ec: 00e6d65d -> game rva 000fd65c
+[ 228359 ms T2c70]   VEH stack sp+2fc: 01148ec5 -> game rva 003d8ec4
+[ 228359 ms T2c70]   VEH stack sp+30c: 00d70000 -> game rva 00000000
+[ 228359 ms T2c70]   VEH stack sp+324: 00e6df85 -> game rva 000fdf84
+[ 228359 ms T2c70]   VEH stack sp+32c: 00d70000 -> game rva 00000000
+[ 228359 ms T2c70]   VEH stack sp+334: 00d70000 -> game rva 00000000
+[ 228359 ms T2c70]   VEH stack sp+34c: 00e6d67f -> game rva 000fd67e
+[ 228359 ms T2c70]   VEH stack sp+370: 00d70000 -> game rva 00000000
+[ 228359 ms T2c70]   VEH stack sp+3d0: 01000100 -> game rva 00290100
+[ 228359 ms T2c70]   VEH stack sp+4d4: 00d70000 -> game rva 00000000
+[ 228437 ms T1914] ARM32 osk: shell Showing callback #12 rect=(0,540,2400,1080)
+[ 228437 ms T1914] ARM32 osk: keyboard VISIBLE (signal IFrameworkInputPane, was 0)
+[ 228437 ms T1914] ARM32 InputPane Showing event: the game registered no handler
+[ 228437 ms T1914] ARM32 osk: the keyboard is visible (390 ms after the request, 1 attempt(s))
+[ 230390 ms T1664] VEH exception 0xe06d7363 at 76DB212F
+[ 230390 ms T1664]   C++ throw: object=0896f4d8 throwinfo=0208e9c8
+[ 230390 ms T1664] VEH: pc=76db212f lr=76db212f sp=0896f478 cpsr=60000020
+[ 230390 ms T1664]   r0=00000000 r1=0896f280 r2=77d66bc1 r3=00000000 r4=76db20f1 r5=0208e9e4
+[ 230390 ms T1664]   r6=0896f6a8 r7=0896f508 r8=2ab207d8 r9=27e0ee78 r10=2ab207e8 r11=0896f4d0 r12=76fad3b9
+[ 230390 ms T1664]   VEH frame[0] = 75C7E53D
+[ 230390 ms T1664]   VEH frame[1] = 77DAA179
+[ 230390 ms T1664]   VEH frame[2] = 77DE88F1
+[ 230390 ms T1664]   VEH frame[3] = 77DE9AAF
+[ 230390 ms T1664]   VEH frame[4] = 76DB212F
+[ 230390 ms T1664]   VEH frame[5] = 75682979
+[ 230390 ms T1664]   VEH frame[6] = 00E6D3F3 (game rva 000fd3f2)
+[ 230390 ms T1664]   VEH frame[7] = 00E6D4F3 (game rva 000fd4f2)
+[ 230390 ms T1664]   VEH frame[8] = 00E6E569 (game rva 000fe568)
+[ 230390 ms T1664]   VEH frame[9] = 00E6ECC3 (game rva 000fecc2)
+[ 230390 ms T1664]   VEH frame[10] = 01140671 (game rva 003d0670)
+[ 230390 ms T1664]   VEH frame[11] = 0123A3E3 (game rva 004ca3e2)
+[ 230390 ms T1664]   VEH frame[12] = 0123C76F (game rva 004cc76e)
+[ 230390 ms T1664]   VEH frame[13] = 00E7892B (game rva 0010892a)
+[ 230390 ms T1664]   VEH frame[14] = 00E79FDF (game rva 00109fde)
+[ 230390 ms T1664]   VEH frame[15] = 00E789A7 (game rva 001089a6)
+[ 230390 ms T1664]   VEH frame[16] = 0114A74B (game rva 003da74a)
+[ 230390 ms T1664]   VEH frame[17] = 01148EC5 (game rva 003d8ec4)
+[ 230390 ms T1664]   VEH frame[18] = 00E6DF85 (game rva 000fdf84)
+[ 230390 ms T1664]   VEH frame[19] = 00E6D67F (game rva 000fd67e)
+[ 230390 ms T1664]   VEH frame[20] = 7568F7E7
+[ 230390 ms T1664]   VEH frame[21] = 77D92A43
+[ 230390 ms T1664]   VEH frame[22] = 77D61EF3
+[ 230390 ms T1664]   VEH frame[23] = 77BE54B1
+[ 230390 ms T1664]   VEH frame[24] = 77D7BF75
+[ 230390 ms T1664]   VEH stack sp+01c: 0208e9c8 -> game rva 0131e9c8
+[ 230390 ms T1664]   VEH stack sp+020: 00d70000 -> game rva 00000000
+[ 230390 ms T1664]   VEH stack sp+040: 00d70000 -> game rva 00000000
+[ 230390 ms T1664]   VEH stack sp+048: 0208e9e4 -> game rva 0131e9e4
+[ 230390 ms T1664]   VEH stack sp+060: 020a6734 -> game rva 01336734
+[ 230390 ms T1664]   VEH stack sp+070: 020a6314 -> game rva 01336314
+[ 230390 ms T1664]   VEH stack sp+0bc: 0208e9c8 -> game rva 0131e9c8
+[ 230390 ms T1664]   VEH stack sp+0c0: 00d70000 -> game rva 00000000
+[ 230390 ms T1664]   VEH stack sp+104: 00e6d3f3 -> game rva 000fd3f2
+[ 230390 ms T1664]   VEH stack sp+10c: 00e6d4f3 -> game rva 000fd4f2
+[ 230390 ms T1664]   VEH stack sp+124: 00e6e569 -> game rva 000fe568
+[ 230390 ms T1664]   VEH stack sp+13c: 00e6ecc3 -> game rva 000fecc2
+[ 230390 ms T1664]   VEH stack sp+16c: 01140671 -> game rva 003d0670
+[ 230390 ms T1664]   VEH stack sp+194: 0123a3e3 -> game rva 004ca3e2
+[ 230390 ms T1664]   VEH stack sp+1b4: 0115aaa9 -> game rva 003eaaa8
+[ 230390 ms T1664]   VEH stack sp+1d4: 0123c76f -> game rva 004cc76e
+[ 230390 ms T1664]   VEH stack sp+1e4: 00e7892b -> game rva 0010892a
+[ 230390 ms T1664]   VEH stack sp+1ec: 0114be53 -> game rva 003dbe52
+[ 230390 ms T1664]   VEH stack sp+224: 00e79fdf -> game rva 00109fde
+[ 230390 ms T1664]   VEH stack sp+23c: 00e789a7 -> game rva 001089a6
+[ 230390 ms T1664]   VEH stack sp+24c: 0114aaaf -> game rva 003daaae
+[ 230390 ms T1664]   VEH stack sp+274: 0114a74b -> game rva 003da74a
+[ 230390 ms T1664]   VEH stack sp+288: 020ced4c -> game rva 0135ed4c
+[ 230390 ms T1664]   VEH stack sp+2c0: 0232e000 -> game rva 015be000
+[ 230390 ms T1664]   VEH stack sp+2ec: 00e6d65d -> game rva 000fd65c
+[ 230390 ms T1664]   VEH stack sp+2fc: 01148ec5 -> game rva 003d8ec4
+[ 230390 ms T1664]   VEH stack sp+30c: 00d70000 -> game rva 00000000
+[ 230390 ms T1664]   VEH stack sp+324: 00e6df85 -> game rva 000fdf84
+[ 230390 ms T1664]   VEH stack sp+32c: 00d70000 -> game rva 00000000
+[ 230390 ms T1664]   VEH stack sp+334: 00d70000 -> game rva 00000000
+[ 230390 ms T1664]   VEH stack sp+34c: 00e6d67f -> game rva 000fd67e
+[ 230390 ms T1664]   VEH stack sp+370: 00d70000 -> game rva 00000000
+[ 230390 ms T1664]   VEH stack sp+3d0: 01000100 -> game rva 00290100
+[ 230390 ms T1664]   VEH stack sp+4d4: 00d70000 -> game rva 00000000
+[ 230453 ms T1914] frame 16800 complete: 227484 ms since the loop started, this frame took 16 ms
+[ 232390 ms T1914] ARM32 osk: shell Hiding callback #14 rect=(0,540,2400,1080)
+[ 232390 ms T1914] ARM32 osk: keyboard hidden (signal IFrameworkInputPane, was 1)
+[ 232390 ms T1914] ARM32 osk: the keyboard was closed by the user (its X); the game keeps the text focus - a tap on it opens the keyboard again
+[ 232390 ms T1914] ARM32 InputPane Hiding event: the game registered no handler
+[ 233047 ms T1914] message loop ended (WM_QUIT, wParam=0) after 17008 frames, 230078 ms
+[ 233047 ms T1914] ARM32 touch stats (exit): down=49 up=49 moveMsgs=604 movesQueued=80 slotsFull=0 canceled=0 captureLost=0 queueFailed=0 wmTouch=0 legacyFromTouch=0 legacyMouse=39 pointerMouse=0 pointerPen=0 pointerOther=0 sourceSwitches=3 source=TOUCH touchApi=pointer
+[ 233047 ms T1914] Win32Bootstrap returning 0
+[ 233047 ms T1914] ARM32 exit guard armed (30 s): returning into the CRT exit()

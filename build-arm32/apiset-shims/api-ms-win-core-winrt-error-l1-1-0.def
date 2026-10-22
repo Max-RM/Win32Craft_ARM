@@ -1,7 +1,0 @@
-LIBRARY api-ms-win-core-winrt-error-l1-1-0.dll
-EXPORTS
-GetRestrictedErrorInfo=COMBASE.GetRestrictedErrorInfo
-RoFailFastWithErrorContext=COMBASE.RoFailFastWithErrorContext
-RoOriginateError=COMBASE.RoOriginateError
-RoTransformError=COMBASE.RoTransformError
-SetRestrictedErrorInfo=COMBASE.SetRestrictedErrorInfo

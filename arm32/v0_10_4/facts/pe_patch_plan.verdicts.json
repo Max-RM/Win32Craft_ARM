@@ -1,0 +1,362 @@
+{
+ "area": "pe_patch_plan",
+ "verdicts": [
+  {
+   "id": "pe_patch_plan.exe_identity",
+   "verdict": "CONFIRMED",
+   "note": "Own PE parser: PE32 ARMNT 0x1C4, e_lfanew 0x120, optional hdr 0x138, section table 0x218, ImageBase 0x400000, SizeOfImage 0xE6E000 (file 0x170), entry 0x20095D, Characteristics 0x122, DllCharacteristics 0x9140 (file 0x17E), checksum 0, subsystem 2 (GUI), OS/subsys 6.2, sha256 6c0a8adc...b29f3, size 14759424 = 0xE13600 = EOF (no overlay), 12171 pdata entries, no .rsrc/cert/bound/delay dirs. Extra not in finder text: a CodeView debug directory exists (dd[6] 0x20BDC0/0x38), harmless."
+  },
+  {
+   "id": "pe_patch_plan.section_table",
+   "verdict": "CONFIRMED",
+   "note": "All six sections reproduced (VS/VA/RS/RP/flags incl. .text 0x1000/0x209364/0x400/0x209400, .reloc flags 0x42000040). Header bytes 0x308..0x400 are all zero and the table ends at 0x330, so a 7th header at 0x308 fits (SizeOfHeaders 0x400)."
+  },
+  {
+   "id": "pe_patch_plan.aslr_relocs",
+   "verdict": "CONFIRMED",
+   "note": "664 blocks; type3 41574, type7 20349, type0 325 pad. Reloc at 0x200AC8 is HIGHLOW (hInstance literal 0x400000). No reloc in the IAT (0x20B000..0x20B6C8) nor in 0x20A364..0x20B000. Additionally decoded the target of every HIGHLOW and every movw/movt (type 7) pair: no relocated pointer points into 0x20A364..0x20B000, so the trampoline slack is unreferenced."
+  },
+  {
+   "id": "pe_patch_plan.tls_directory",
+   "verdict": "CONFIRMED",
+   "note": "TLS dir at 0x300F40: start VA 0x124D000, end 0x124D008, index VA 0x122B240 (RVA 0xE2B240, bss, zero on disk), callbacks VA 0x60BDBC (RVA 0x20BDBC) whose first entry is 0, zero-fill 0, chars 0x300000. No callbacks, nothing to patch."
+  },
+  {
+   "id": "pe_patch_plan.load_config",
+   "verdict": "CONFIRMED",
+   "note": "Load config at 0x300EF8 size 0x48, only SecurityCookie VA 0x11C9F60 set (all other dwords 0); [0xDC9F60] = 0xBB40E64E on disk."
+  },
+  {
+   "id": "pe_patch_plan.import_table",
+   "verdict": "CONFIRMED",
+   "note": "24 descriptors at 0x33AC88 (size 0x1F4). Compared all 410 import cells (IAT RVA + DLL + name) of the JSON against my own parse: 0 mismatches. Ordinals checked against System32 exports: WS2_32 #115 WSAStartup / #116 WSACleanup etc, XAudio2_8 #1 = XAudio2Create. Per-DLL counts vccorlib120_app 50 / msvcp120_app 123 / msvcr120_app 149 / WS2_32 19."
+  },
+  {
+   "id": "pe_patch_plan.runtime_dll_exports_needed",
+   "verdict": "CONFIRMED",
+   "note": "Resolved every import name: exe -> 322/322 (0 missing), msvcp120_app -> msvcr120_app 160/160, vccorlib120_app -> msvcr120_app 38/38 + msvcp120_app 7/7; no forwarded exports. No desktop ARM VC120 exists to rename to (x86 msvcr120 lacks _exit_app; my count of plain-C imports missing there is 12, finder said 13 incl. setjmp - immaterial). Not mentioned by finder: vccorlib120_app also imports OLEAUT32.dll by ordinal (#4,#6,#7)."
+  },
+  {
+   "id": "pe_patch_plan.iat_getactivationfactory",
+   "verdict": "CONFIRMED",
+   "note": "IAT cell 0x20B5FC = vccorlib120_app.DLL!?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z (export RVA 0x2091D, Thumb). Thunk 0x200308 (movw ip/movt ip/ldr.w pc,[ip]) has exactly one caller, the 14-byte wrapper 0x2001E4, which has 36 callers. ABI re-derived from a different caller: Application::Start at 0x1EED0A..0x1EED1A passes r0=L\"Windows.UI.Xaml.Application\", r1=&GUID, r2=&out; the mangled name agrees (void*, Guid&, void**)."
+  },
+  {
+   "id": "pe_patch_plan.iat_operator_new_delete",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0x20B5E0 = msvcr120_app!??2@YAPAXI@Z (thunk 0x200430, 1767 direct callers by the arm32re index); delete cell 0x20B5DC (thunk 0x20043C)."
+  },
+  {
+   "id": "pe_patch_plan.iat_cxxthrow",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0x20B5D4 = msvcr120_app!_CxxThrowException (thunk 0x200448, 563 direct callers); __CxxFrameHandler3 cell 0x20B5D0."
+  },
+  {
+   "id": "pe_patch_plan.iat_other_host_cells",
+   "verdict": "CONFIRMED",
+   "note": "Re-checked by name: D3DCompile 0x20B000, D3DReflect 0x20B004, D3D11CreateDevice 0x20B1A4, CreateDXGIFactory1 0x20B1AC, XAudio2_8 #1 0x20B05C, RoInitialize 0x20B178, WindowsCreateString 0x20B198 / CreateStringReference 0x20B188 / DeleteString 0x20B19C / DuplicateString 0x20B194 / GetStringRawBuffer 0x20B18C / GetStringLen 0x20B190, CreateFile2 0x20B08C, CreateThread 0x20B0E8, WSAStartup #115 0x20B054, WSACleanup #116 0x20B00C."
+  },
+  {
+   "id": "pe_patch_plan.crt_startup_path",
+   "verdict": "CONFIRMED",
+   "note": "0x20095C (pdata start, len 0x12): push {fp,lr}; bl 0x200E6C; pop; b.w 0x200970. 0x200970 takes the spin lock [0xE342C4]/state [0xE342C8], _initterm_e(0x20BDA0,0x20BDB4) (entries: 0 then 0x200878, 0x2004F8, 0x1FFECC, 0x29BA0), _initterm(0x20B6C8,0x20BD9C): 437 slots, 436 non-null, slot0 = __getmainargs wrapper 0x200910; then the command-line skip loop; bl 0x203EFC at 0x200A72 with r0=relocated hInstance literal, r1=0, r2=ptr after program name, r3=0; r0 stored to [r4+4] (VA 0x122B248) then _exit_app/_cexit if flags are zero. Note for the host: r3 is 0 here, i.e. it is NOT a usable nCmdShow (0 = SW_HIDE)."
+  },
+  {
+   "id": "pe_patch_plan.crt_vccorlib_apartment_init",
+   "verdict": "CONFIRMED",
+   "note": "Disassembled the shipped vccorlib120_app!InitializeData (RVA 0x20224): arg 0 -> skip, arg 1 -> RoInitialize(0) (STA), any other (2) -> RoInitialize(1) (MTA); literal cell 0x230DC = api-ms-win-core-winrt-l1-1-0!RoInitialize. [0xDC9F5C] = 2 on disk and is only read by XIA entry 0x1FFECC and its atexit thunk. [0xE2B03C] lies in bss (zero on disk) and has a single reference (sub_200878), so that RoInitialize never runs. Hence the host's RoInitialize -> S_FALSE (0x00000001) is explained by the exe's own CRT, which also corrects the friend_audit guess that win32craft.dll's load path did it."
+  },
+  {
+   "id": "pe_patch_plan.crt_static_initialisers",
+   "verdict": "CONFIRMED",
+   "note": "Re-did the backward direct-call closure of wrapper 0x2001E4: 130 functions, intersection with the 436 non-null XCA entries is empty. Still only direct calls (virtual/indirect not followed), so keep the DllMain fallback as the finder says."
+  },
+  {
+   "id": "pe_patch_plan.patch_callsite",
+   "verdict": "CONFIRMED",
+   "note": "0x200A72 (file 0x1FFE72) bytes 03F043FA = bl 0x203EFC; preceded by 16 48 00 23 00 21 (ldr r0,[pc]; movs r3,#0; movs r1,#0). 0x200970 is a pdata start. 0x203EFC (len 0xE) is an empty frame + b.w 0x20405C; 0x20405C does GetCmdArguments -> bl 0x1F42A4 (user main) -> 0x1EECBC Application::Start. Entry SP is 8-aligned for the callee (10-register push). My own BL encoder gives 09F077FC for target 0x20A364."
+  },
+  {
+   "id": "pe_patch_plan.patch_trampoline",
+   "verdict": "CONFIRMED",
+   "note": "Capstone decode of dff808c0 fc44 dcf800c0 6047 c83ec600 at 0x20A364: ldr.w ip,[pc,#8]; add ip,pc; ldr.w ip,[ip]; bx ip; literal 0xC63EC8 + 0x20A36C = 0xE6E234 (the Win32Bootstrap IAT cell). File 0x209764..0x209800 (0x9C bytes) is all zero; last pdata function 0x20A328 ends 0x20A35E, its pool word at 0x20A360 is a HIGHLOW reloc ending at 0x20A364; no reloc, pdata entry or pointer covers 0x20A364..0x20A374. Same scheme as the device-proven 1.2.8 patcher (VS bump +0x10 here, +0x14 there)."
+  },
+  {
+   "id": "pe_patch_plan.patch_new_section",
+   "verdict": "CONFIRMED",
+   "note": "Wrote my own applier from scratch (descriptors copied, name/hint/ILT/IAT layout following the 1.2.8 patcher): output size 14760448 and sha256 453ce59a2100dd7d...b15db31 are identical to the finder's, VS 0x23C, cell 0xE6E234, hint 0xE6E218; diff vs stock touches exactly 0x126,0x140,0x170,0x17E,0x1A0,0x220,0x308-0x32F,0x1FFE72,0x209764. llvm-readobj independently parses the result (7 sections, 25 imports, last = win32craft.dll!Win32Bootstrap, .d3imp flags 0xC0000040)."
+  },
+  {
+   "id": "pe_patch_plan.patch_size_of_image",
+   "verdict": "CONFIRMED",
+   "note": "align(0xE6E000+0x23C,0x1000) = 0xE6F000 = 15134720 as printed by llvm-readobj; no collision with other IMAGE_SIZE_* constants in the host."
+  },
+  {
+   "id": "pe_patch_plan.patch_text_virtual_size",
+   "verdict": "CONFIRMED",
+   "note": "0x209364 + 0x10 = 0x209374 (file 0x220); 0x1000+0x209374 = 0x20A374 covers the trampoline; the page end 0x20B000 is where .rdata starts so the page is already mapped executable. (JSON arm_rva 0x1000 is just the .text VA.)"
+  },
+  {
+   "id": "pe_patch_plan.patch_dllchars",
+   "verdict": "CONFIRMED",
+   "note": "File 0x17E holds 0x9140 (bytes 40 91); 0x8140 clears only APPCONTAINER 0x1000; TS-aware, NX, DYNAMIC_BASE kept."
+  },
+  {
+   "id": "pe_patch_plan.vclibs_dll_patch",
+   "verdict": "CONFIRMED",
+   "note": "Stronger proof than the checksum test: for all three DLLs the Authenticode SHA-256 computed with DllCharacteristics restored to 0x1140 occurs inside the embedded Microsoft signature blob (the as-is hash does not), so the copies are byte-genuine Microsoft.VCLibs.120.Phone files with exactly one bit cleared. Offsets 0x14E/0x14E/0x15E, reconstructed-original and patched sha256 values in the JSON all reproduce; the checksum rule reproduces. Nit: vccorlib120_app FileVersion string is '12.0.30113.0' (msvcr/msvcp: '12.00.30113.0'); AppxManifest MinVersion is 12.0.30113.0."
+  },
+  {
+   "id": "pe_patch_plan.api_sets_rt81",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced the classification: 32 api-set names over exe + 3 DLLs + win32craft.dll, 24 appear [ok] in loadcheck_rt81_6.3.9600_OK.txt served by KERNEL32/KERNELBASE/combase (crt-string only via the app-local overlay), the same 8 are absent. The statement 'likely present, winblue schema shared with WP8.1' is an assumption, not evidence: the same repo documents that RT 8.1 lacks heap-l2-1-0 and about 20 further contracts."
+  },
+  {
+   "id": "pe_patch_plan.api_sets_rt81.eight_unproven",
+   "verdict": "UNVERIFIABLE",
+   "note": "Whether errorhandling-l1-1-2, localization-l1-2-1, debug-l1-1-1, fibers-l1-1-1, heap-l1-2-0, libraryloader-l1-1-1, processenvironment-l1-2-0, rtlsupport-l1-2-0 exist on RT 8.1 cannot be decided offline. Fallback feasibility checked: all 26 functions imported from them (IsDebuggerPresent, Fls*, Heap*, FormatMessageW, LCMapStringEx, GetCommandLineW, RtlLookupFunctionEntry, RtlPcToFileHeader, RtlUnwindEx, ...) are present in the ARM kernel32.lib of SDK 10.0.19041, so make_arm32_apiset_shims.py can generate forwarders; whether RT 8.1's real KERNEL32 exports the Rtl* ones is unverified."
+  },
+  {
+   "id": "pe_patch_plan.loadcheck_coverage",
+   "verdict": "CONFIRMED",
+   "note": "loadcheck.c: modules[] is hard-coded (1.2.8 names) in mainCRTStartup; a missing file only prints 'not found ... (skipped)' without incrementing g_total_fail; LoadLibraryExA(dll,NULL,0) with SetDllDirectory(folder) runs the VC120 DllMains; names and ordinals are both resolved; the patched exe itself is never mapped; runtime GetProcAddress is invisible. All as stated."
+  },
+  {
+   "id": "pe_patch_plan.hook_alternative_sites",
+   "verdict": "CONFIRMED",
+   "note": "0x1EED0A-0x1EED30: GetActivationFactory(L\"Windows.UI.Xaml.Application\", IID bytes 97 99 49 06 B4 F7 FE 45 B7 63 75 77 D1 D3 CB 4A, &out) then call [vtbl+0x1C] (slot 7 = IApplicationStatics::Start) with the callback; another helper at 0x1EE476 uses slot 9 (LoadComponent with location), consistent with slot 7 = Start."
+  },
+  {
+   "id": "pe_patch_plan.isa_no_hw_divide",
+   "verdict": "CONFIRMED",
+   "note": "Independent capstone scan of all 12171 pdata ranges (760,827 decoded units incl. literal-pool noise): 0 SDIV/UDIV, 0 VFPv4 fma, 0 FP16 vcvtb/t, 0 ARMv8 acquire/release; the only odd decode (vcvta at 0x61D6A) is pool data before sub_61D70. Same scan over msvcr120_app / msvcp120_app / vccorlib120_app (305k units): 0 hits. No Tegra-3 ISA blocker found in the exe or the three DLLs."
+  },
+  {
+   "id": "pe_patch_plan.host_identification",
+   "verdict": "CONFIRMED",
+   "note": "friend win32craft.dll exports Win32Bootstrap (RVA 0x23A9, ordinal 27); SizeOfImage 0xE6F000 is unique among the IMAGE_SIZE_* constants in win32_host.c / the repo."
+  },
+  {
+   "id": "pe_patch_plan.friend_patcher_deltas",
+   "verdict": "CONFIRMED",
+   "note": "Byte diff of the friend's Win32Craft.0.10.4-arm32.exe against my from-scratch build: only .text VS (0x220), .d3imp VS 0x24C vs 0x23C (0x310), flags 0xE0000060 vs 0xC0000040 (0x32C), the BL (to 0xE6E23C) and the trampoline location (literal 0xFFFFFFF0). Everything else identical, so the friend's output equals stock plus the same edit table."
+  },
+  {
+   "id": "friend.dr_wsd_role",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. The whole of 0x1DB158..0x1DB7BE (1638 bytes) contains no [reg,#0xC8] (ID3D11DeviceContext::ClearRenderTargetView slot 50); it does ResizeBuffers (swapchain +0x34), the CreateSwapChainForComposition call [reg,#0x60] at 0x1DB3FE/0x1DB400, a QI with the IID at 0x6DF288 and SetMatrixTransform at 0x1DB578."
+  },
+  {
+   "id": "friend.matrix_transform_reason",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. 0x1DB578 ldr.w r3,[r3,#0x88] = vtable index 34; counting IUnknown 3 + IDXGIObject 4 + SubObject 1 + SwapChain 10 + SwapChain1 11 gives IDXGISwapChain2 slots 29..35 with SetMaximumFrameLatency = 31 (0x7C) and SetMatrixTransform = 34 (0x88). The friend log line claiming slot 0x88 is SetMaximumFrameLatency is wrong. Patch bytes at 0x1DB56C (fb6b 17f10801) and landing 0x1DB5A4 also confirmed."
+  },
+  {
+   "id": "friend.appmain_ready_setter",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. 0x1DA2D8 Invoke: bl 0x471E8 then dmb; strb 1,[[this+4]+8]; 0x471E8 stores client+0xC=holder and calls client->vtable[7] (+0x1C); RunAsync is issued from the AppMain ctor at 0x1D9FA4 (alloc 0x58, make delegate 0x1D9B68, bl 0x1DA4A4 with the IThreadPoolStatics string)."
+  },
+  {
+   "id": "friend.appmain_tick_role",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. Callers of 0x1DA5B4 are only 0x1DF70E (Hiding, px=0) and 0x1DF75C (Showing, OccludedRect.Height); body locks AppMain+0x10, multiplies by [platform+0x40], calls 0x59578. Labelled AppMain::SetKeyboardHeight."
+  },
+  {
+   "id": "friend.client_delta_164",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. 0x59578: s1=[0x740D40] (GUI scale inverse), str.w r1,[r0,#0x164] after vcvt, then [client+0x6C]->vtable[0x78/4=30] with only the screen as argument - no delta."
+  },
+  {
+   "id": "friend.client_vf32_role",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. 0x58830: r2==0 skips screen creation; r1==0 -> new(0x388)+StartMenuScreen ctor 0x995EC, else new(0x160)+0x8FA14; setScreen 0x59638; tail 0x1D86A4 (leave-game base). Not a startup entry."
+  },
+  {
+   "id": "friend.client118_setter_5d31c",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. 0x5D31C stores vtable 0x340508 (rtti .?AVImageButton@@ confirmed), 16.0f to +0x110/+0x114, zeros +0x118/+0x11C: ImageButton ctor, not the client."
+  },
+  {
+   "id": "friend.root_cause_diagnosis",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. The AppMain ctor starts the init job through the ThreadPool (0x1D9FA4 -> 0x1DA4A4) and the job calls client->vtable[7]; the host-visible '+0x118 NULL' was a race with that worker, as stated. Friend log timeline (AppMain at 297 ms, client fields read at ~406 ms, worker activations at 453 ms) is consistent."
+  },
+  {
+   "id": "friend.shader_suffix_fl",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. 0xD73FC compares r1 against 0xA100, 0x9300, 0xA000, 0xB000, 0xB100; 0x9300 -> L\"_level_9_3\" (0x6351F0), the four others -> empty string, anything else builds 'Unkonwn feature level' + the function name and throws std::runtime_error. 9_1 (0x9100) and 9_2 therefore throw: relevant to the 9_1 constraint."
+  },
+  {
+   "id": "friend.dispatcher_timer_claim",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. 0x1DF8A4 OnTick: polls IsAppInitialized (AppMain+0x3C) via 0x1DA310, Stop() through vtable +0x30 (slot 12), sets visibility via 0x1E1CF0 (x2), calls 0x1DA634 then the render-loop starter 0x1DA8A8; interval literal 0x7A120 = 500000 x 100 ns = 50 ms. It is a readiness poller, not the frame driver."
+  },
+  {
+   "id": "friend.runframe_role",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. 0x1DA634 takes the scoped_lock, Window::Current (0x1DAC80) + CoreWindow (0x1DAACC), calls AppPlatform_Winrt init 0x4B55C, reads panel size through 0x1DAA58 and calls client setSize; XAML-object arguments, not a frame function."
+  },
+  {
+   "id": "friend.host_wm_size_and_present",
+   "verdict": "CONFIRMED",
+   "note": "friend_audit verdict WRONG reproduced. 0x1DBB10 does swapchain vtable +0x20 (Present) and compares 0x887A0005/0x887A0007, then calls owner [DR+0x74] vtable slots. Nit: the audit quotes the AppMain slot-0/1 ret stub as 0x40BF60, that is a VA; the RVA is 0xBF60 (push {fp,lr}; mov fp,sp; pop {fp,pc}), and AppMain vtable 0xDC8830 slots 0 and 1 both point to it."
+  },
+  {
+   "id": "friend.shader_count_45",
+   "verdict": "UNVERIFIABLE",
+   "note": "Agree: the delivered win32craft.log has no shader lines (only the D3DCompile hook install), the only D3DCompile caller is 0xD6C94 in sub_D6A3C; the count/timing claim cannot be derived statically."
+  },
+  {
+   "id": "friend.host_first_clear_and_white",
+   "verdict": "UNVERIFIABLE",
+   "note": "Agree: structurally nothing clears the back buffer (no Clear in 0x1DB158, render loop never entered), but the exact white cannot be proven offline."
+  },
+  {
+   "id": "friend.host_thread_apartment",
+   "verdict": "CORRECTED",
+   "note": "The audit's reason for RoInitialize = S_FALSE ('most likely win32craft.dll's own load path') is wrong, and 'the real main thread is STA' is not what the binary does: the exe CRT's XIA entry 0x1FFECC calls vccorlib120_app!InitializeData(2) = RoInitialize(RO_INIT_MULTITHREADED) on the process main thread before Win32Bootstrap is reached (see pe_patch_plan.crt_vccorlib_apartment_init). The XAML UI thread (STA) is created inside Application::Start, which a host that fakes Application never has."
+  },
+  {
+   "id": "friend.exe_identity",
+   "verdict": "CONFIRMED",
+   "note": "Same data as pe_patch_plan.exe_identity."
+  },
+  {
+   "id": "friend.patch_dllchars",
+   "verdict": "CONFIRMED",
+   "note": "File 0x17E, 0x9140 -> 0x8140."
+  },
+  {
+   "id": "friend.patch_import_dir",
+   "verdict": "CONFIRMED",
+   "note": "dd[1] -> (0xE6E000, 0x208), descriptor 24 {ILT 0xE6E22C, name 0xE6E208, IAT 0xE6E234, hint 0xE6E218}; matches my build."
+  },
+  {
+   "id": "friend.patch_section_geometry",
+   "verdict": "CONFIRMED",
+   "note": "Friend VS is 0x24C (includes trampoline), RVA 0xE6E000, raw 0xE13600, RS 0x400, SizeOfImage 0xE6F000."
+  },
+  {
+   "id": "friend.patch_section_flags_rwx",
+   "verdict": "CONFIRMED",
+   "note": "Friend flags 0xE0000060 in the header at file 0x32C (diff vs my 0xC0000040 build); the risk statement is a reasonable precaution, not a proven RT failure."
+  },
+  {
+   "id": "friend.patch_callsite",
+   "verdict": "CONFIRMED",
+   "note": "0x200A72 bl 0x203EFC; the friend bl lands on 0xE6E23C (disp from 0x200A76 = 0xC6D7C6 < 16 MiB)."
+  },
+  {
+   "id": "friend.patch_trampoline",
+   "verdict": "CONFIRMED",
+   "note": "Friend trampoline at file 0xE1383C, literal 0xFFFFFFF0 = 0xE6E234 - (0xE6E23C + 8)."
+  },
+  {
+   "id": "friend.patch_bootstrap_iat",
+   "verdict": "CONFIRMED",
+   "note": "ILT and IAT cell both hold hint RVA 0xE6E218, hint 'Win32Bootstrap'."
+  },
+  {
+   "id": "friend.patch_sizeofimage_marker",
+   "verdict": "CONFIRMED",
+   "note": "friend win32_host.c lines 188-189: IMAGE_SIZE_0104_ARM_PATCHED 0x00E6F000 / STOCK 0x00E6E000; used at line 22023."
+  },
+  {
+   "id": "friend.vclibs_appcontainer",
+   "verdict": "CONFIRMED",
+   "note": "All three DLLs 0x1140 -> 0x0140; see pe_patch_plan.vclibs_dll_patch."
+  },
+  {
+   "id": "friend.iat_d3dcompile",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0x20B000 re-derived from my own import parse (name and DLL match)."
+  },
+  {
+   "id": "friend.iat_d3dreflect",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0x20B004 re-derived from my own import parse (name and DLL match)."
+  },
+  {
+   "id": "friend.iat_d3d11createdevice",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0x20B1A4 re-derived from my own import parse (name and DLL match)."
+  },
+  {
+   "id": "friend.iat_createdxgifactory1",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0x20B1AC re-derived from my own import parse (name and DLL match)."
+  },
+  {
+   "id": "friend.iat_cxxthrow",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0x20B5D4 re-derived from my own import parse (name and DLL match)."
+  },
+  {
+   "id": "friend.iat_operator_new",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0x20B5E0 re-derived from my own import parse (name and DLL match)."
+  },
+  {
+   "id": "friend.iat_getactivationfactory",
+   "verdict": "CONFIRMED",
+   "note": "Cell 0x20B5FC re-derived from my own import parse (name and DLL match)."
+  },
+  {
+   "id": "friend.boot_chain",
+   "verdict": "CONFIRMED",
+   "note": "Entry 0x20095C -> bl 0x200E6C -> b.w 0x200970 -> bl 0x203EFC at 0x200A72."
+  },
+  {
+   "id": "friend.user_main_application_start",
+   "verdict": "CONFIRMED",
+   "note": "0x20405C calls bl 0x1F42A4 at 0x2040C6; Application::Start 0x1EECBC via slot 7 as verified."
+  },
+  {
+   "id": "friend.matrix_transform_patch_bytes",
+   "verdict": "CONFIRMED",
+   "note": "Original bytes fb6b 17f10801 at 0x1DB56C; replacement 00 20 00 f0 19 b8 lands at 0x1DB5A4 (b.w disp 0x32 from 0x1DB572)."
+  },
+  {
+   "id": "friend.swapchain_create_slot",
+   "verdict": "CORRECTED",
+   "note": "Slot 0x60 (index 24, IDXGIFactory2::CreateSwapChainForComposition) is right, but the call is at 0x1DB3FE/0x1DB400 (ldr r4,[r4,#0x60]; blx r4); the audit's anchor 0x1DB3B2 is the return check of the preceding GetParent call (vtable +0x18).",
+   "corrected_arm_rva": "0x001DB400"
+  },
+  {
+   "id": "friend.make_dr",
+   "verdict": "CONFIRMED",
+   "note": "0x1DCE2C pdata start: operator new(0x84), ctor wrapper 0x1DC5A4, out[0]=obj+0xC, out[1]=ctrl block."
+  },
+  {
+   "id": "friend.dr_global_singleton",
+   "verdict": "CONFIRMED",
+   "note": "RVA 0xE2AFC4 is referenced only by DR ctor 0x1DAE5A (write) and getter 0x4B054 (throws runtime_error when NULL)."
+  },
+  {
+   "id": "friend.dr_create_device",
+   "verdict": "CONFIRMED",
+   "note": "Level array {B100,B000,A100,A000,9300} built at 0x1DAFDA..0x1DAFF2, count 5, D3D11CreateDevice thunk call at 0x1DB028."
+  },
+  {
+   "id": "friend.setsize_semantics",
+   "verdict": "CORRECTED",
+   "note": "Thresholds 0x3E8/0x320/0x190 at 0x597C0/0x597EE/0x59806 giving 4/3/2/1 and the store to VA 0x11DE814 are right, but 'exactly 4/3/2/1' misses a branch: for width >= 0x3E8 and a platform float (s18) > 15.0 the scale becomes 6.0 (0x597E4)."
+  },
+  {
+   "id": "friend.startmenu_screen",
+   "verdict": "CONFIRMED",
+   "note": "rtti .?AVStartMenuScreen@Touch@@ vtable 0x34266C, alloc 0x388, ctor 0x995EC."
+  }
+ ],
+ "missing": [
+  "Entry-register contract not spelled out for the host: at the patch point r2 = ANSI command-line tail, r3 = 0 (a CRT leftover, NOT nCmdShow; 0 would be SW_HIDE) - the host must call ShowWindow with its own value.",
+  "vccorlib120_app.dll imports OLEAUT32.dll by ordinal (#4,#6,#7) in addition to api sets; not in the ship/verify lists (present on any Windows, loadcheck would catch it).",
+  "XAudio2_8.dll (#1) and dxgi.dll are imported by the 0.10.4 exe but the 1.2.8 RT log never exercised them (1.2.8 imports fmod, d3d11, D3DCOMPILER_47, WS2_32): RT 8.1 presence is unproven; loadcheck on the 0.10.4 set covers it.",
+  "No ground truth for the 8 unproven api-set contracts. A cheap cross-check not mentioned: the RT image's own Microsoft.VCLibs.120.00 framework package (WindowsApps) holds the same three DLLs in their Store flavour; compare its import list with the Phone copies. A shim fallback exists and all 26 needed functions are in the ARM kernel32.lib, but tools/make_arm32_apiset_shims.py scans dist-arm32/package (1.2.8) by default and must be run with --pe on the 0.10.4 exe + 3 DLLs + host.",
+  "There is still no 0.10.4 patcher script, no DLL-patch mode and no automated V1-V7 checker; the profile is a table only (my from-scratch builder reproduces the sha256, so V1-V7 are automatable offline).",
+  "The post-return CRT path (msvcr120_app!_exit_app / _cexit after Win32Bootstrap returns) was never exercised on desktop; the host should clean up and call ExitProcess itself rather than rely on it.",
+  "Authenticode blobs of the three VC120 DLLs are left in place but invalid; a code-integrity policy that checks signatures on RT could reject them. Optional hardening (clear dd[4] and truncate) is not evaluated.",
+  "Finder md section 6 says the 8 contracts are 'probably native'; this is unsupported (see api_sets_rt81). Treat as unknown until loadcheck runs.",
+  "Not in scope of this area but blocking for the 9_1 goal: getShaderModelSuffix (0xD73FC) throws for 9_1/9_2 and the device level list has no 9_1 (see friend.shader_suffix_fl); a PE-level patch table does not cover them."
+ ]
+}

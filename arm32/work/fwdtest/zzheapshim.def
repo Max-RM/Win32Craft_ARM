@@ -1,4 +1,0 @@
-LIBRARY zzheapshim.dll
-EXPORTS
-LocalFree=KERNEL32.LocalFree
-LocalAlloc=KERNEL32.LocalAlloc

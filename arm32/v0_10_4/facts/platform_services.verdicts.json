@@ -1,0 +1,172 @@
+{
+ "area": "platform_services",
+ "reviewer_method": "Re-derived with arm32re.py (ARM32_EXE = 0.10.4.40 exe) plus own scans of the disassembly (all 12171 pdata functions), using different anchors than the cited ones: guid/imports/impcallers/callers, RTTI vtables, raw UTF-16 string scan of the exe, field-offset store/load scans, reverse/forward call-graph reachability, ARM SDK import libs (xaudio2_8.lib, WS2_32.lib) for ordinals, extraction of the Store VCLibs.120 appx for export/import checks, and the device loadcheck log. friend_audit.* was NOT re-checked here (separate reviewer area); only the places where it overlaps platform_services were cross-read.",
+ "global_checks": {
+  "arm_rva_pdata_starts": "All 24 function-type arm_rva values (0x4E840, 0x4E8E0, 0x494C0, 0x4F780, 0x480D8, 0x1DAB28, 0x1DAD20, 0x4E69C, 0x50FF0, 0x4EF14, 0x4E350, 0x1DA4A4, 0x114078, 0x4B7CC, 0x1D9DD4, 0x32DB4 and the helpers 0x2001E4, 0x4E7E4, 0x4EA38, 0x1DA160, 0x1DA8A8, 0x1DA9D4, 0x11556C, 0x50EAC, 0x4AEB8, 0x4EAF8, 0xEFA00, 0x1062D8, 0x106454, 0x106630, 0x10E9D4, 0x10DAFC, 0xF91FC, 0x57B84, 0xA230C, 0xA040C) are exact .pdata function starts. 0x200308 is a thunk (not pdata) as stated.",
+  "expected_bytes": "Every non-null expected_bytes matches the file byte-for-byte (15/15). Data RVAs (vtable 0x33FB20/0xDB8028/0xDB86EC, global 0xDDD7E0, IAT cells 0x20B5FC/0x20B05C) read back as claimed; AppPlatform vtable cells 0x33FB94/0x33FB7C/0x33FB6C/0x33FBC0 contain 0x450FF1/0x44E351/0x44EF15/0x44EAF9 (VA|1)."
+ },
+ "verdicts": [
+  {
+   "id": "platform_services.activation.gaf_import",
+   "verdict": "CONFIRMED",
+   "note": "imports lists 0x20B5FC = vccorlib120_app.DLL!?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z; pre-load bytes 18c33300 match. Wrapper 0x2001E4 = push.w{fp,lr}; mov fp,sp; pop.w; b.w 0x200308 (bytes 2de90048 eb46 bde80048 00f08bb8), 36 callers, thunk 0x200308 has exactly one caller (the wrapper) so no activation bypasses it inside the exe. Call shape reproduced from callers (r0 = L\"...\" literal, r1 = stack GUID, r2 = out). No RoGetActivationFactory/RoActivateInstance import in the exe (only api-ms-win-core-winrt-l1-1-0!RoInitialize). Caveat see missing[M4]: the three _app runtimes call the real RoGetActivationFactory themselves and are not covered by this hook."
+  },
+  {
+   "id": "platform_services.activation.inventory",
+   "verdict": "CONFIRMED",
+   "note": "Re-counted the 36 call sites from `callers 2001e4`: 22 platform (VibrationDevice 4af14, NetworkInformation 4b164, AsyncCausalityTracer x5 4b76c/4b832/4b8fc/4b9be/4ba68, MemoryManager x2 4e6f8/4e79c, Package 4e89c, CurrentAppSimulator x2 4b4ba/4e998, Http x7 1086f4/1087fc/10890e/10c644/10c740/10c898/10c994, ThreadPool x2 1da512/1140ec, ApplicationData 1dab84) + 14 UI/input. Raw UTF-16 scan of the whole exe for Windows./Microsoft./Platform. class names: no Windows.Storage.StorageFile/StorageFolder/FileIO/Pickers, no Windows.Globalization, no Networking.Sockets, no Windows.Web.Http.HttpClient, no MediaFoundation; only Windows.Storage.ApplicationData from Storage."
+  },
+  {
+   "id": "platform_services.package.current",
+   "verdict": "CONFIRMED",
+   "note": "0x4E840 pdata start, bytes match. IID bytes on the stack decode to {4E534BDF-2960-4878-97A4-9624DEB72F2D}, class literal at 0x20FE50 (movw/movt 0x60FE50), helper 0x4E7E4 calls [vtbl+0x18] = slot 6 with out in r1; one caller (AppPlatform_Winrt ctor at 0x49564)."
+  },
+  {
+   "id": "platform_services.package.installed_location",
+   "verdict": "CONFIRMED",
+   "note": "0x4E8E0 uses [vtbl+0x1C] (IPackage slot 7); QueryInterface is slot 0 with IID bytes at 0x20FBC8 (guid 4207A996-CA2F-42F7-BDE8-8B10457A7F30 has exactly 2 refs: ctor 0x4959A and createApp 0x1D9EB2); 0x4EA38 calls [vtbl+0x30] = IStorageItem slot 12 then WindowsDuplicateString and WindowsDeleteString on the original. Extra requirement for the fake: the HSTRING returned by get_Path is WindowsDeleteString'd by the caller, so it must be a real heap HSTRING (WindowsCreateString), not a reference string; IStorageFolder/IPackage fakes must be correctly ref-counted because the game AddRef/Releases them (slots 1/2) around every use. 0x480D8 truncation re-read: ldrh.w r8,[r1] ... strb.w r8,[r3,r2]."
+  },
+  {
+   "id": "platform_services.appplatform.ctor_layout",
+   "verdict": "CORRECTED",
+   "note": "Reproduced: size 0x88 (operator new(0x88)+memset at 0x1D9E1A..0x1D9E2A), vptr 0x33FB20, +0x14 narrowed InstalledLocation path (string at sb=this+0x14, assigned at 0x49650), +0x2C HIDController (ctor 0x1103FC, no WinRT activation inside it), +0x30=0x780 and +0x34=0x438 (mov.w at 0x49500/0x49506), critical_section ctor on this+0x50, deque init on this+0x70, +0x48/+0x4C zeroed, base ctor 0x4726C stores `this` into RVA 0xDDD7E0. CORRECTION: the ctor does NOT set +0x38 (pixels-per-mm float). Scan of all stores to platform+0x38 shows the only writer is AppPlatform_Winrt::initialize 0x4B55C (vstr s0,[r6,#0x38] at 0x4B5EA/0x4B64C, reached from AppMain::AttachToPanel 0x1DA634). getPixelsPerMM (vf18, vldr s0,[r0,#0x38]) therefore returns 0.0 until AttachToPanel has run; this is also the real startup order (init job first, AttachToPanel only after AppMain+0x3C==1), so the game tolerates 0.0 during client init. Also AppMain::createApp stores the client into platform+0x10 right after creating it (ldr r2,[holder]; str client,[r2,#0x10] at 0x1D9E7A)."
+  },
+  {
+   "id": "platform_services.appplatform.global",
+   "verdict": "CONFIRMED",
+   "note": "Base ctor 0x4726C: movw/movt 0x11DD7E0 then str r4,[r3]. xref users reproduced (vtable +0xA0 in 0xA040C and 0x1A673C, +0x38 in several loaders). 0xDDD7E4 counter: vf10 0x4E4D4 decrements it, returns 0 if <0 else 0xFFFFFFFE (re-read)."
+  },
+  {
+   "id": "platform_services.appplatform.vtable",
+   "verdict": "CONFIRMED",
+   "note": "rtti: .?AVAppPlatform_Winrt@@ 0x33FB20, .?AVAppPlatform@@ 0x33F890, AppPlatformListener 0x33F940. Re-dumped all slots: 1=0x4EB90, 2=0x4F028, 3=0x47818, 9=0x4EB18, 10=0x4E4D4, 12=0x4F800, 14=0x4F780, 16/17/18=0x4ED00/0x4ECE0/0x4ECC0 (return [this+0x30]/[this+0x34]/s0=[this+0x38]), 19=0x4EF14, 23=0x4E350, 29=0x50FF0, 30=0x47690, 31..34=0x4FAC4/0x4EDAD/0x50F2D/0x47740, 35=0x47618, 39=0x475F0, 40=0x4EAF8, 41=0x4476F0, 42=0x47644. Base slots 1,2,25 = _purecall, base 29 = 0xBF60 no-op, base 40 = 0x475E0. Cell RVAs 0x33FB94 (29), 0x33FB7C (23), 0x33FB6C (19), 0x33FBC0 (40) are correct. Nit: the table has 43 slots 0..42, so it ends at 0x33FBCC, not 0x33FBC8; slots 11/26/28 -> 0x17FD40 (ret 1), slots 7/21/22/27 -> 0x29BA0 (ret 0), no-op 0xBF60. Patch hint: the cells contain absolute VAs (module base + RVA, Thumb bit set, relocated by the loader), so a patch must write (actual_base + 0xBF60)|1, not the literal 0xBF61."
+  },
+  {
+   "id": "platform_services.assets.read_asset_file",
+   "verdict": "CONFIRMED",
+   "note": "0x4F780: add r1,r0,#0x14 (install path), operator+ with \"/data/\" (0x60FF3C), then base 0x4792C (fopen at 0x47946). Nuance: getImagePath (0x4EB90, r0 this, r1 sret string, r2 name, r3 bool) returns this+0x14 + \"/data/images/\" + name when the bool is true (not a bare \"/data/images/\" prefix) and the unchanged name when false. Extracted package confirms layout: data/{fonts,images,lang,materials,shaders}, no sound/DLL files in the folder. libpng string \"1.5.13\" at 0x20FF34 reproduced (loadPNG 0x4F028 uses std::ifstream, i.e. msvcp120_app _Fiopen)."
+  },
+  {
+   "id": "platform_services.assets.narrow_ctor",
+   "verdict": "CONFIRMED",
+   "note": "0x480D8 re-read: per element `ldrh.w r8,[r1]` ... `strb.w r8,[r3,r2]`; callers 0x49638 (platform ctor) and 0x1D9F50 (createApp). Both game paths are therefore ASCII-only."
+  },
+  {
+   "id": "platform_services.appdata.current",
+   "verdict": "CORRECTED",
+   "note": "0x1DAB28 bytes match; IID {5612147B-E843-45E3-94D8-06169E3C8E17}; callers createApp + three App2 handlers (OnLaunched 0x1E3A30, OnResuming lambda 0x1E3C34, OnSuspending lambda 0x1E3DA0) reproduced; get_LocalFolder = slot 12 (0x1DAD20 uses [vtbl+0x30]). CORRECTION to the 'slots 8 and 10' paragraph: the two helpers are NOT both IApplicationData calls. In OnLaunched (0x1E3B12..0x1E3B26) the chain is r0=ApplicationData.Current -> sub_1E621C (slot 10, offset 0x28 = get_LocalSettings, returns IApplicationDataContainer) -> sub_1E6278 on THAT result (slot 8, offset 0x20 = IApplicationDataContainer::get_Values) -> MainPage::vf11 (0x1DF4C4, ignores its argument). sub_1E6278 does `mov r3,r0; ldr r3,[r3]` with no NULL check, so the advice 'return S_OK with a NULL out pointer for slots 8 and 10' crashes: a NULL LocalSettings from slot 10 is dereferenced in sub_1E6278 (same chain in OnResuming 0x1E3C52/0x1E3C5A and OnSuspending 0x1E3DBE/0x1E3DC6). Needed on those paths (only if the real App2/MainPage handlers are run, i.e. the faithful architecture): a fake IApplicationData whose slot 10 returns a non-NULL fake IApplicationDataContainer whose slot 8 (get_Values) returns S_OK + NULL (a NULL IPropertySet is harmless, vf11/vf10 ignore it). IApplicationData slot 8 is never called on the container's behalf. None of this is on the createApp boot path."
+  },
+  {
+   "id": "platform_services.appdata.local_folder_path",
+   "verdict": "CONFIRMED",
+   "note": "createApp 0x1D9E84 bl 0x1DAD20 (LocalFolder), QI with IID at 0x20FBC8 (movw 0xFBC8 at 0x1D9EB2), get_Path 0x4EA38, narrow 0x480D8, assign (sub_D730) into client+0x78 (0x1D9F5A) and client+0x90 (0x1D9F72). Second anchor: MinecraftClient::vf7 0x57B84 uses client+0x78 (0x57BD4/0x57BD8/0x57BEC/0x57F30) and builds +0xB4 (0x57C0E, 0x57E26, 0x57EEA) and +0x90 (0x57F2C); strings /games 0x211EDC, /com.mojang 0x211EE4 (also used by 0x1A8288), /minecraftpe 0x211EF0, /options.txt 0x227CBC (only user 0xA2DE6), /minecraftWorlds 0x2D25B8 (only user 0x1A8316), /clientId.txt 0x2DDC68 (only user 0x1D84BC). No 'screenshots' or 'logs' string exists (screenshot names come from the caller of savePNG)."
+  },
+  {
+   "id": "platform_services.appdata.win32_file_api",
+   "verdict": "CONFIRMED",
+   "note": "impcallers reproduced: CreateFile2 from leveldb WinRTEnv (0x1F500, 0x20174, 0x2033C) and 0x1069D0/0x10676C (stat/list); fopen users 0x47946, 0x510A6, 0x53388, 0x5387A, 0xA2A7A, 0xA2D72, 0x125BD2, 0x1A6E92, 0x1A7D14, 0x1A80DA; narrow->HSTRING conversion in 0x1EDF0 is the only WindowsCreateString user, so the real combase HSTRING functions must stay. loadcheck_rt81_6.3.9600_OK.txt lines 56 and 64 show file-l1-2-1 and file-l2-1-1 served by KERNELBASE."
+  },
+  {
+   "id": "platform_services.memory.manager",
+   "verdict": "CONFIRMED",
+   "note": "0x4E69C/0x4E740 slots 6/7 (offsets 0x18/0x1C); GUID bytes decode to {5C6C279C-D7CA-4779-9188-4057219CE64C}. vf40 0x4EAF8 = limit - usage (subs/sbc.w, r0:r1). 0xA040C compares the 64-bit result signed-high-word first, then low word > 0x1EA00000 -> vector 0xDDED14, > 0xE600000 -> 0xDDED20, else 0xDDED2C. Options::init 0xA230C is called from MinecraftClient::vf7 at 0x57E40 and calls 0xA040C at 0xA25EC, 0xA260C, 0xA263A (three sites, the text says 'twice'); another consumer at 0xA0AF8. A returned value of 0x40000000 selects the high vector (note this is a tuning decision for a 2 GB 32-bit Surface RT, not a correctness requirement)."
+  },
+  {
+   "id": "platform_services.vibration.vibrate",
+   "verdict": "CONFIRMED",
+   "note": "0x50FF0 re-read: GetDefault (0x4AEB8), Cancel = [vtbl+0x1C] first, then Vibrate = [vtbl+0x18] with r2:r3 = ms*10000 (mul by 0x2710, asr #31 for the high word), deadline GetTickCount64()+ms stored to this+0x48/+0x4C. pumpInput 0x50EAC exits immediately when both deadline words are 0 (cbnz r3 / cbz r2 at 0x50ED6/0x50ED8), so the no-op cell patch really keeps Cancel from ever being called. Rest of pumpInput: loops pollInputEvent (0x4B300) until it returns 0 then calls the HIDController no-op 0xBF60."
+  },
+  {
+   "id": "platform_services.network.is_enabled",
+   "verdict": "CONFIRMED",
+   "note": "0x4EF14 reproduced: GetInternetConnectionProfile (statics slot 7), NULL profile handled (cbz), profile slot 7 level must equal 3, QI with IID at 0x20FBE8, slot 7 byte. Supports the cell-patch recommendation. Not reproduced: the 'not on the boot path' claim cannot be proven statically because the caller goes through a client-held platform pointer; best available evidence: among the 106 functions that contain `ldr rX,[rY,#0x4C]; blx rX`, the only one reachable by direct calls from MinecraftClient::vf7/createApp is MinecraftClient::setScreen 0x59638 (a Screen virtual, not the platform). IID E2045145-... identity (IConnectionProfile2) stays medium."
+  },
+  {
+   "id": "platform_services.store.buy",
+   "verdict": "CONFIRMED",
+   "note": "0x4E350 reproduced: L\"TODO\" (0x210034) via WindowsCreateStringReference twice, 0x4E93C LicenseInformation, 0x4EA9C ProductLicenses, Lookup/IsActive, 0x4B44C purchase flow at 0x4E452. Constant-return slots 11/26/28 -> 0x17FD40 (movs r0,#1) re-read. Boot-path claim supported by the same reachability scan as above (slot 0x5C from vf7/createApp reaches only a D3D device-context call in 0xD97B8). The semantic name 'buy' is inferred, but the no-op patch is safe because slot 23 is void in the base class (0xBF60 no-op in AppPlatform's own vtable)."
+  },
+  {
+   "id": "platform_services.threadpool.run_async",
+   "verdict": "CORRECTED",
+   "note": "Core claims reproduced: 0x1DA4A4 IID {B6BF67DD-84BD-44F8-AC1C-93EBCB9DBA91}, class L\"Windows.System.Threading.ThreadPool\" (0x2481C0), [vtbl+0x18], called from createApp at 0x1D9FA4 with the delegate from 0x1D9B68; lambda 0x1DA2D8 -> runInit 0x471E8 (client+0xC = holder; client->vtbl[7]) -> then strb 1,[captured+8] (= AppMain+0x3C) + registerListener. WorkItemHandler primary vptr 0xDB892C: slot 3 = 0x11556C (if *obj == that vptr: ldr r0,[r0,#0x54] (functor), vtbl[1](functor, r1=operation); else forwards to the foreign object's slot 3). CORRECTIONS / additions: (1) The ordering advice 'start the init job only after ... AppPlatform sizes are set' is backwards. The real order is init job first, sizes later: MainPage::OnTick (0x1DF8A4) waits for IsAppInitialized (AppMain+0x3C), then calls AttachToPanel 0x1DA634 (sets platform sizes, runs 0x4B55C, client->setSize) and StartRenderLoop. AttachToPanel/setSize BEFORE the job has set client+0xC crashes (setSize -> 0x586EC -> platform NULL). Client init itself calls setSize only with the client's own +0x20/+0x24 (0x1D8552, slot 20), it never reads platform width/height. What the job really needs before it starts is (a) createApp finished its stores (client, platform, LocalFolder strings: all done before RunAsync at 0x1D9FA4) and (b) a live D3D11 device/DeviceResources (MaterialManager::load -> D3DCompile at 0x580D0, textures); the AppMain ctor continues after createApp with DR::setOwner (0x1D9D90), which the render loop (not the init job) needs. (2) createApp releases the returned IAsyncAction immediately (ldr [r3,#8] Release at 0x1D9FAE) and then the handler (0x1D9FB8), so the fake must hold its own references for the lifetime of the worker. (3) The pointer passed to RunAsync is the delegate object itself (r0 = result of 0x1D9B68); COM-level Invoke is vtbl slot 3 at offset 0 of it."
+  },
+  {
+   "id": "platform_services.threadpool.run_priority_options",
+   "verdict": "CONFIRMED",
+   "note": "0x114078 reproduced: IID/class as above, `ldr r4,[r4,#0x20]` slot 8, args (this r0, handler r1, priority r2, options r3, IAsyncAction** [sp]); wrapper args (r0 handler, r1 prio, r2 opts); callers 0x111E68, 0x1DA95E (priority 1, options 1), 0x1DD40E. Render loop 0x1DA160 re-read in full: QI of the passed IAsyncAction for IID at 0x20FBD8 only when non-NULL (NULL operation => NULL deref), get_Status [vtbl+0x1C], loop while status == 0, per iteration scoped_lock(AppMain+0x10), if AppMain+0x3C: pumpInput 0x50EAC, client vtbl[19] (0x4C), DR::present 0x1DBB10; no Sleep/vsync wait in the loop body (busy loop while not ready). StopRenderLoop 0x1DA9D4 = QI + slot 9 (0x24) Cancel. StartRenderLoop 0x1DA8A8 first re-queries the action stored at AppMain+0xC (QI + Status) and only creates a new loop when it is NULL or Status != Started, so after Cancel the fake must report Status != 0 (2 Canceled) so a resume can restart it. Additional consumers see missing[M3]."
+  },
+  {
+   "id": "platform_services.causality.tracer",
+   "verdict": "CONFIRMED",
+   "note": "Five wrappers at 0x4B7CC/0x4B708/0x4B898/0x4BA04/0x4B95C with the cited slots; callers are Store/HTTP/PPL code only (0x48000-0x4E000 and 0x10C000-0x10E000). `Concurrency::task` machinery imports (_ScheduleTask, _TaskCollection::*, _NewCollection, event) are referenced only from functions in those two address ranges, so no PPL task is created on the boot path. IAsyncCausalityTracerStatics IID {50850B26-267E-451B-A890-AB6A370245EE} is the published one."
+  },
+  {
+   "id": "platform_services.http.rest_job",
+   "verdict": "CONFIRMED",
+   "note": "Independent re-scan of all instructions in 0xF9000-0x111000: stores to [rX,#0xD8] exist only in 0x10DAFC (ctor, value 0 at 0x10DB96) and an unrelated 0x10409C; loads of +0xD8 only in the dtor 0x10DD90 and in vf2 0x10E9D4 (at 0x10ED56 it loads the client and calls its slot, NULL => access violation); no `add rX,rY,#0xD8`. WinRTRestRequestJob vtable (0xDB86EC) functions all lie inside that range. Raw string scan of the exe: only two URLs exist (https://authserver.mojang.com 0x23CAAC, https://peoapi.minecraft.net 0x23CACC, both referenced only from 0xF91FC) and Windows.Web.Http.HttpClient does not exist as a string. Job factory 0xF9C30 callers are all Realms/MCO screens (0x78DAE, 0x84F84, 0x86166, 0x86442, 0x86948, 0x8DC70, 0x8EF3C, 0x8F084). Consequence worth stating: tapping 'Play on Realms' (or any MCO screen) will crash on the NULL client unless 0x10E9D4 is patched."
+  },
+  {
+   "id": "platform_services.boot.create_app_sequence",
+   "verdict": "CORRECTED",
+   "note": "Steps (1)-(4) reproduced instruction by instruction (createApp is entered from the AppMain ctor 0x1D9D14 at 0x1D9D88 with r0 = AppMain+0x34; the ctor then calls DR::setOwner 0x1DBBC0). CORRECTION to the ordering inside the job: MinecraftClient::vf7 (0x57B84) order is mkdir tree (0x57BE2) -> terrain.meta/items.meta -> registry 0x1D426C -> Options::init 0x57E40 (MemoryManager) -> Minecraft::init-after-platform 0x1D84B0 (clientId.txt, setSize with the client's own 1x1 size, REST service construction at 0x1D8572) -> lang -> Textures ctor 0x57F68 -> startup/background/ingame .images -> MaterialManager::load 0x580D0 (D3DCompile) -> Gui/ScreenChooser/GameRenderer -> Font 0x58230 -> ProgressScreen + MinecraftClient::setScreen 0x5830E -> ScreenChooser::setScreen(1) 0x5831A (StartMenuScreen) -> ONLY THEN SoundEngine ctor 0x5833C (XAudio2Create+CreateMasteringVoice, memset'd 0xA2C-byte object so a failed XAudio2Create leaves [this+4] NULL) -> registerSounds 0x58378 -> InputHolder 0x5839C. The text 'SoundEngine ctor ... then the initial StartMenuScreen' has the order reversed: the main menu is created before audio, so an audio failure shows up after the first screen exists. Platform sizes (+0x30/+0x34) and +0x38 are not set by anything in this sequence (see ctor_layout)."
+  },
+  {
+   "id": "platform_services.audio.xaudio2_import",
+   "verdict": "CONFIRMED",
+   "note": "imports: 0x20B05C = XAudio2_8.dll!#1. The Windows Kits 10.0.19041 ARM xaudio2_8.lib short-import header for XAudio2Create carries ordinal hint 1 (by-ordinal import) and this machine's XAudio2_8.dll also exports 1 = XAudio2Create, so the ordinal is right for the ARM DLL as well. Only two users (0x106316 in the SoundSystemRT ctor, 0x10664C in vf10). Call args reproduced: r0 = this+4, r1 = 0, r2 = 1."
+  },
+  {
+   "id": "platform_services.audio.soundsystemrt",
+   "verdict": "CONFIRMED",
+   "note": "rtti SoundSystemRT 0xDB8028 (base 0xDB7FDC); slots 0/9/10 = 0x1063E8/0x106688/0x106630 (cells 0xDB804C/0xDB8050 correct). CreateMasteringVoice args reproduced (r1 = this+8, r2 = 2, r3 = 0xAC44, stack 0,0,0,6; IXAudio2 slot 7). getSourceVoice 0x106454: CreateSourceVoice slot 5 [vtbl+0x14] with s0 = 2.0 and callback AudioCallbackHandler (vtable 0xDB8008) at voice+0x18, voice slot 12 SetVolume, SubmitSourceBuffer slot 21, Start slot 19; no NULL check of [this+4] (ldr r4,[r6,#4]; ldr r4,[r4]), as claimed; CreateMasteringVoice result is not checked (a failure there only makes CreateSourceVoice fail, which is handled). Embedded PCM confirmed: header {1 ch, 2 bytes, 44100, 0x230D frames} at RVA 0x345748, no audio files in the package folder. Note SoundEngine::ctor (0xEFA00) is the SoundSystemRT ctor's derived class, called on a memset(0xA2C) object, so the NULL-on-failure assumption holds."
+  },
+  {
+   "id": "platform_services.net.raknet_winsock",
+   "verdict": "CONFIRMED",
+   "note": "19 WS2_32 imports; every ordinal re-checked against the ARM WS2_32.Lib import headers (115 WSAStartup, 116 WSACleanup, 57, 17, 111, 6, 21, 20, 2, 52, 7, 3, 12, 11, 9, 15, 8; WSAIoctl by name) and against this machine's ws2_32 export table. WSAStartup in RakPeer ctor at 0x3311A, createUdpSocket 0x3F7A6, WSAIoctl in enumerateLocalAddresses 0x3FBD2, CreateThread in RakPeer::vf1 0x33B9E/0x33BF2. No connect/listen/select/send/recv imports."
+  },
+  {
+   "id": "platform_services.misc.time_locale_device",
+   "verdict": "CONFIRMED",
+   "note": "Strings: en_US 0x211F24 (users 0x57E78, 0xF3D3A), lang/en_US.lang 0x23AB88 (0xF3CE0), <getPlatformStringVar NotImplemented> (0x4769E), UNKNOWN (also used by 0xF5428). Import users for GetTickCount64, QueryPerformanceCounter, GetLocalTime (leveldb WinLogger), _time64 re-listed. No GetUserDefaultLocaleName/GetLocaleInfoEx/rand_s/GetTempPath-type import exists, so no extra locale or random-source service is needed."
+  },
+  {
+   "id": "platform_services.imports.apiset_status",
+   "verdict": "UNVERIFIABLE",
+   "note": "Inventory reproduced (16 contracts; loadcheck log lines 38-73 show com-l1-1-1, file-l1-2-1, file-l2-1-1, handle, processthreads-l1-1-2, profile, string, synch-l1-2-0, sysinfo-l1-2-1, util, winrt-error-l1-1-0/-1-1, winrt-string, winrt-l1-1-0 as served natively; the exe imports neither heap-l2-1-0 nor libraryloader-l2-1-0). The open point cannot be settled offline: no log or schema on this PC lists errorhandling-l1-1-2 (the extracted Store VCLibs.120 DLLs import only errorhandling-l1-1-1, so they give no positive evidence for -1-2). localization-l1-2-1 has positive indirect evidence (msvcp120_app/msvcr120_app/vccorlib120_app of the 8.1 Store framework import it). Recommendation unchanged and sound (ship an app-local api-ms-win-core-errorhandling-l1-1-2.dll forwarder; the loadcheck log proves app-local api-set DLLs are honoured: heap-l2-1-0 and libraryloader-l2-1-0 are served from the game folder)."
+  },
+  {
+   "id": "platform_services.imports.vc120_app_runtime",
+   "verdict": "CONFIRMED",
+   "note": "Extracted msvcr120_app/msvcp120_app/vccorlib120_app from the VCLibs.120 12.0.21005.1 ARM appx into scratch and compared against the exe's imports: 322 checked, 0 missing; all three have DllCharacteristics 0x1140 (APPCONTAINER bit 0x1000 set). Their own api-set imports are all 8.1 Store-framework contracts (heap-l1-2-0, debug-l1-1-1, fibers-l1-1-1, interlocked-l1-2-0, rtlsupport-l1-2-0, timezone-l1-1-0, datetime-l1-1-1, processenvironment-l1-2-0, libraryloader-l1-1-1, localization-l1-2-1, eventing-provider for vcamp only)."
+  },
+  {
+   "id": "platform_services.headline.threadpool_is_friends_missing_piece",
+   "verdict": "CONFIRMED",
+   "note": "Reproduced end to end: client+0xC and the whole vf7 init (texture manager +0x118 at 0x57F72/0x57F68 Textures ctor, Font +0x11C via 0x58230, shaders, options, first screen) run only inside the RunAsync work item (0x1DA2D8 -> 0x471E8 -> vtbl[7]); AppMain+0x3C is set by the same lambda. A host that never invokes the delegate leaves those fields NULL, and a host that calls setSize/StartMenuScreen code itself before the job finished hits the client+0xC==NULL path."
+  },
+  {
+   "id": "platform_services.headline.render_loop_async_info",
+   "verdict": "CONFIRMED",
+   "note": "IAsyncInfo IID bytes at 0x20FBD8 (guid 00000036-0000-0000-C000-000000000046, 27 refs: render loop, Start/StopRenderLoop and the PPL task machinery). slots used: get_Status 7 (0x1C), Cancel 9 (0x24), Release 2; fake must also keep working when queried repeatedly from two threads."
+  },
+  {
+   "id": "platform_services.headline.http_dead_code",
+   "verdict": "CONFIRMED",
+   "note": "See platform_services.http.rest_job."
+  }
+ ],
+ "missing": [
+  "M1 IApplicationDataContainer (LocalSettings) fake is missing from the facts: IApplicationData::get_LocalSettings is slot 10 (0x28) and its result is dereferenced by sub_1E6278 (get_Values, slot 8 of IApplicationDataContainer); the 'NULL out pointer' advice crashes. Only matters when App2::OnLaunched/OnResuming/OnSuspending (0x1E3A30/0x1E3C34/0x1E3DA0) are executed (faithful/hybrid architecture).",
+  "M2 IAsyncAction fake lifecycle is under-specified: needs COM refcounting that survives createApp's immediate Release of the returned action and handler (0x1D9FAE/0x1D9FB8); QueryInterface for IAsyncInfo (IID at 0x20FBD8) and IUnknown/IAsyncAction; thread-safe get_Status (7) polled continuously by the render thread; Cancel (9) sets Canceled(2) and the stored action at AppMain+0xC (also HID+0x24, MainPage+0x6C) is re-queried by StartRenderLoop so Status must stay != 0 after Cancel; Id(6)/ErrorCode(8)/Close(10) trivial. The operation argument passed to Invoke must be non-NULL (render loop dereferences it unconditionally).",
+  "M3 The ThreadPool fake must also cope with two more RunWithPriorityAndOptionsAsync consumers that are not the render loop: HID::Initialize 0x111C1C (call 0x111E68, action stored at HID+0x24, body 0x110940) and the MainPage ctor 0x1DCF5C (call 0x1DD40E, action stored at MainPage+0x6C, body 0x1DE0BC). Both bodies do CreateCoreIndependentInputSource + Dispatcher.ProcessEvents(ProcessUntilQuit) and never return; HID::Initialize is reached from AppPlatform_Winrt::initialize 0x4B55C (via AttachToPanel). The fake must run them on their own threads with matching fake CoreIndependentInputSource/dispatcher objects, or return a never-completing dummy action without running them (input area decision).",
+  "M4 The VC120 _app runtimes activate WinRT classes themselves through the real RoGetActivationFactory (api-ms-win-core-winrt-l1-1-0), which the exe-side hook on 0x20B5FC does not see: msvcr120_app.dll contains L\"Windows.System.Threading.ThreadPool\", ThreadPoolTimer, Windows.ApplicationModel.Core.CoreApplication, Windows.ApplicationModel.Package, Windows.Storage.ApplicationData and Windows.Security.Cryptography.CryptographicBuffer (ConcRT). Reachability found: ThreadPool via InitOnceExecuteOnce(sub_1C124) from _TaskCollection::_Schedule/_RunAndWait/_Cancel (PPL scheduling, only used by the Store/HTTP code), Package/ApplicationData only via tmpfile/tmpnam/_wtmpnam. None is on the boot path, but any PPL task (e.g. if the buy cell is not patched) goes to the real WinRT on RT 8.1; hook RoGetActivationFactory in the app-local copies if that must be controlled.",
+  "M5 Dependencies of the init job not listed in the platform facts: a live ID3D11Device/DeviceResources (shaders are compiled with D3DCompile and textures created inside the job, MaterialManager::load at 0x580D0), COM/WinRT initialised on the worker thread (delegate stubs call CoGetContextToken/CoGetObjectContext at 0x109394, 0x1094F2, 0x10961E, 0x113EDC, 0x48E44, 0x10D8F0, 0x11131A), and the writable LocalFolder directory existing. In a bypass design the host must also replay MainPage::OnTick 0x1DF8A4 itself: wait for AppMain+0x3C == 1, call AttachToPanel 0x1DA634 (platform sizes, +0x38 scale, HID init, client->setSize) and only then StartRenderLoop 0x1DA8A8; nothing else starts the render loop.",
+  "M6 Vtable-cell patches must write relocated absolute addresses ((module base + RVA)|1, e.g. the no-op 0xBF60); the facts write the literal '0xBF60|1'.",
+  "M7 Realms: any MCO screen reached from 'Play on Realms' crashes at WinRTRestRequestJob::vf2 0x10E9D4 (NULL IHttpClient at job+0xD8, load at 0x10ED56). The facts say 'make sure unreachable or patch'; the concrete safe patch point and the fact that the button is on the start menu should be stated.",
+  "M8 Not traced: callers of platform vf19 (isNetworkEnabled) and vf23, and of SoundSystem vf9/vf10 (which re-runs XAudio2Create and InitializeCriticalSectionEx on the same object, leaking the first IXAudio2). Boot-path exclusion for vf19/vf23 is supported only by direct-call reachability.",
+  "M9 Process-level requirement implicit in the CRT: RoInitialize is called pre-main at 0x2008D2 only if the global at RVA 0xE2B03C is set; the facts do not say which apartment the host's main thread should be in (the original is the XAML STA)."
+ ],
+ "counts": {"confirmed": 25, "corrected": 4, "refuted": 0, "unverifiable": 1}
+}

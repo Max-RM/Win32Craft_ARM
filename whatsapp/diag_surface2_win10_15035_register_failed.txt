@@ -1,0 +1,634 @@
+diag 10/18/2026 22:20:55  Microsoft Windows NT 10.0.15035.0
+
+==== Get-AppxPackage ====
+
+
+==== AppXDeployment-Server (last 40) ====
+
+
+TimeCreated      : 10/18/2026 10:20:24 PM
+Id               : 404
+LevelDisplayName : Error
+Message          : AppX Deployment operation failed for package ru.computershik.sup_0.2.0.8_arm__7p434m16tbgc6 with error 0x80073CFD. The specific error text for this failure is: Windows cannot install package 
+                   ru.computershik.sup because this package requires a higher Windows version. The package requested Windows version 6.3 with AppModel version 1, while the current Windows version is 6.3 with AppModel 
+                   version 0.
+
+TimeCreated      : 10/18/2026 10:20:24 PM
+Id               : 401
+LevelDisplayName : Error
+Message          : Deployment Register operation with target volume C: on Package ru.computershik.sup_0.2.0.8_arm__7p434m16tbgc6 from:  (AppxManifest.xml)  failed with error 0x80073CFD. See 
+                   http://go.microsoft.com/fwlink/?LinkId=235160 for help diagnosing app deployment issues.
+
+TimeCreated      : 10/18/2026 10:20:23 PM
+Id               : 605
+LevelDisplayName : Information
+Message          : The last successful state reached was Evaluated. Failure occurred before reaching the next state PrerequisitesChecked. hr: 0x80073CFD
+
+TimeCreated      : 10/18/2026 10:20:23 PM
+Id               : 411
+LevelDisplayName : Error
+Message          : Windows cannot install package ru.computershik.sup because this package requires a higher Windows version. The package requested Windows version 6.3 with AppModel version 1, while the current Windows 
+                   version is 6.3 with AppModel version 0.
+
+TimeCreated      : 10/18/2026 10:20:23 PM
+Id               : 613
+LevelDisplayName : Information
+Message          : Adding uri to the list of Uris: C:\Users\hamed\Desktop\Sup_WhatsApp_0.2.0.8_ARM_Win10\AppxManifest.xml.
+
+TimeCreated      : 10/18/2026 10:20:23 PM
+Id               : 607
+LevelDisplayName : Information
+Message          : Deployment Register operation on package ru.computershik.sup_0.2.0.8_arm__7p434m16tbgc6 has been de-queued and is running for user SID S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/18/2026 10:20:23 PM
+Id               : 10002
+LevelDisplayName : Verbose
+Message          : Creating Resiliency File C:\ProgramData\Microsoft\Windows\AppRepository\fb717720-c3ed-4db4-b58a-35efda6854be_S-1-5-21-1621877077-2829851068-1651121114-1001_1.rslc for Register Operation on Package 
+                   ru.computershik.sup_0.2.0.8_arm__7p434m16tbgc6.
+
+TimeCreated      : 10/18/2026 10:20:23 PM
+Id               : 603
+LevelDisplayName : Information
+Message          : Started deployment Register operation on a package with main parameter: AppxManifest.xml and Options: DevelopmentModeOption. See http://go.microsoft.com/fwlink/?LinkId=235160 for help diagnosing app 
+                   deployment issues.
+
+TimeCreated      : 10/18/2026 7:33:25 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/18/2026 7:33:25 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/18/2026 7:13:25 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/18/2026 7:13:25 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/18/2026 7:11:18 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/18/2026 7:11:18 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/18/2026 7:07:32 PM
+Id               : 603
+LevelDisplayName : Information
+Message          : Started deployment SetDefaultVolumeOperation operation on a package with main parameter:  and Options: 0. See http://go.microsoft.com/fwlink/?LinkId=235160 for help diagnosing app deployment issues.
+
+TimeCreated      : 10/7/2026 1:13:42 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/7/2026 1:13:42 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/7/2026 12:53:42 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/7/2026 12:53:42 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/7/2026 12:53:35 PM
+Id               : 603
+LevelDisplayName : Information
+Message          : Started deployment SetDefaultVolumeOperation operation on a package with main parameter:  and Options: 0. See http://go.microsoft.com/fwlink/?LinkId=235160 for help diagnosing app deployment issues.
+
+TimeCreated      : 10/7/2026 12:52:10 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/7/2026 12:52:10 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/6/2026 3:45:32 AM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/6/2026 3:45:32 AM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/4/2026 8:49:20 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/4/2026 8:49:20 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/4/2026 8:29:20 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/4/2026 8:29:20 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/4/2026 8:29:13 PM
+Id               : 603
+LevelDisplayName : Information
+Message          : Started deployment SetDefaultVolumeOperation operation on a package with main parameter:  and Options: 0. See http://go.microsoft.com/fwlink/?LinkId=235160 for help diagnosing app deployment issues.
+
+TimeCreated      : 10/4/2026 8:27:18 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/4/2026 8:27:18 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/4/2026 6:56:32 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/4/2026 6:56:32 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/4/2026 6:36:32 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/4/2026 6:36:32 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/4/2026 6:36:25 PM
+Id               : 603
+LevelDisplayName : Information
+Message          : Started deployment SetDefaultVolumeOperation operation on a package with main parameter:  and Options: 0. See http://go.microsoft.com/fwlink/?LinkId=235160 for help diagnosing app deployment issues.
+
+TimeCreated      : 10/4/2026 6:34:32 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/4/2026 6:34:32 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+TimeCreated      : 10/4/2026 5:42:10 PM
+Id               : 819
+LevelDisplayName : Verbose
+Message          : The following packages will be installed: . The following packages will be removed: 
+
+TimeCreated      : 10/4/2026 5:42:10 PM
+Id               : 818
+LevelDisplayName : Verbose
+Message          : Determining packages to be installed during logon for user: S-1-5-21-1621877077-2829851068-1651121114-1001.
+
+
+
+
+
+==== TWinUI (last 40) ====
+
+
+TimeCreated      : 10/18/2026 8:43:01 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 8:35:57 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 8:35:40 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 8:06:22 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 8:06:20 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 8:05:46 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 8:04:59 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 8:04:57 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 8:04:56 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 7:21:06 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 7:11:48 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.WindowsStore_8wekyb3d8bbwe!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 7:11:29 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 7:11:28 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.Cortana_cw5n1h2txyewy!CortanaUI was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 7:11:27 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/18/2026 4:34:08 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/17/2026 7:25:01 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/17/2026 7:08:08 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/17/2026 7:07:50 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/17/2026 7:00:11 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.Apprep.ChxApp_cw5n1h2txyewy!App was activated for the Windows.Protocol contract successfully.
+
+TimeCreated      : 10/17/2026 7:00:10 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.Apprep.ChxApp_cw5n1h2txyewy!App was activated for the Windows.Protocol contract successfully.
+
+TimeCreated      : 10/17/2026 6:59:46 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.Apprep.ChxApp_cw5n1h2txyewy!App was activated for the Windows.Protocol contract successfully.
+
+TimeCreated      : 10/17/2026 6:59:46 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.Apprep.ChxApp_cw5n1h2txyewy!App was activated for the Windows.Protocol contract successfully.
+
+TimeCreated      : 10/17/2026 6:55:02 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/15/2026 1:51:01 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app ActiproSoftwareLLC.562882FEEB491_24pqs290vpjk0!App was activated for the Windows.File contract successfully.
+
+TimeCreated      : 10/14/2026 11:27:09 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/14/2026 11:18:41 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/14/2026 11:18:17 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/8/2026 12:27:13 AM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/7/2026 2:08:22 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/7/2026 1:25:06 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/7/2026 1:25:03 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/7/2026 1:16:47 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.MicrosoftEdge_8wekyb3d8bbwe!ContentProcess was activated for the Windows.ComponentUI contract successfully.
+
+TimeCreated      : 10/7/2026 1:16:46 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.MicrosoftEdge_8wekyb3d8bbwe!ContentProcess was activated for the Windows.ComponentUI contract successfully.
+
+TimeCreated      : 10/7/2026 1:16:46 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.MicrosoftEdge_8wekyb3d8bbwe!ContentProcess was activated for the Windows.ComponentUI contract successfully.
+
+TimeCreated      : 10/7/2026 1:16:45 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.MicrosoftEdge_8wekyb3d8bbwe!MicrosoftEdge was activated for the Windows.Protocol contract successfully.
+
+TimeCreated      : 10/7/2026 12:56:57 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/7/2026 12:52:50 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.WindowsStore_8wekyb3d8bbwe!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/7/2026 12:52:24 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/7/2026 12:52:18 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewy!App was activated for the Windows.Launch contract successfully.
+
+TimeCreated      : 10/7/2026 12:52:16 PM
+Id               : 5950
+LevelDisplayName : Information
+Message          : The app Microsoft.Windows.Cortana_cw5n1h2txyewy!CortanaUI was activated for the Windows.Launch contract successfully.
+
+
+
+
+
+==== AppModel-Runtime Admin (last 40) ====
+
+
+TimeCreated      : 10/18/2026 7:05:03 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/18/2026 7:05:03 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/18/2026 7:05:03 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 10/18/2026 7:05:03 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 10/7/2026 12:51:28 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/7/2026 12:51:28 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 10/7/2026 12:51:28 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/7/2026 12:51:28 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 10/4/2026 8:26:59 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/4/2026 8:26:59 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/4/2026 8:26:59 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 10/4/2026 8:26:59 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 10/4/2026 6:34:19 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/4/2026 6:34:19 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/4/2026 6:34:19 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 10/4/2026 6:34:19 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 10/4/2026 5:19:58 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/4/2026 5:19:58 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 10/4/2026 5:19:58 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 10/4/2026 5:19:58 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 9/6/2026 6:21:17 AM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 9/6/2026 6:21:17 AM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 9/6/2026 6:21:17 AM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 9/6/2026 6:21:17 AM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 9/6/2026 6:09:23 AM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 9/6/2026 6:09:23 AM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 9/6/2026 6:09:23 AM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 9/6/2026 6:09:23 AM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 8/29/2026 12:42:46 PM
+Id               : 41
+LevelDisplayName : Information
+Message          : Successfully deleted AppContainer F508037F.PowerDVDMobileforUltra_7j1xgptdajq4j.
+
+TimeCreated      : 8/29/2026 12:42:46 PM
+Id               : 39
+LevelDisplayName : Information
+Message          : Successfully created AppContainer F508037F.PowerDVDMobileforUltra_7j1xgptdajq4j.
+
+TimeCreated      : 8/29/2026 12:42:15 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 8/29/2026 12:42:15 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 8/29/2026 12:42:15 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 8/29/2026 12:42:15 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 8/26/2026 10:44:06 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 8/26/2026 10:44:06 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 8/26/2026 10:44:06 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 8/26/2026 10:44:06 PM
+Id               : 37
+LevelDisplayName : Error
+Message          : App Container profile failed with error 0x800700B7 because it was unable to register the AppContainer SID.
+
+TimeCreated      : 8/16/2026 7:24:41 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+TimeCreated      : 8/16/2026 7:24:41 PM
+Id               : 40
+LevelDisplayName : Information
+Message          : AppContainer onecore\ds\security\gina\profile\profext\appcontainer.cpp Line:1957 Usermode Font Driver Host microsoft.windows.fontdrvhost was not created because it already exists.
+
+
+
+
+
+==== Application log: WhatsApp.exe / ru.computershik.sup (last 20) ====
+

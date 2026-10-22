@@ -1,0 +1,583 @@
+==== win32craft.log opened 2026-10-21 23:57:37 (pid 2932) ====
+[      0 ms T1640] Win32Craft Minecraft PE 0.10.4.40 ARM32 Win32Bootstrap entered (host build Oct 21 2026 12:49:11)
+[      0 ms T1640] THIS LOG FILE: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\win32craft.log
+[      0 ms T1640] WIN32CRAFT_DEBUG was not set: logging enabled by default on ARM32
+[      0 ms T1640] working directory at start: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft
+[      0 ms T1640] exe directory (package_path): C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft
+[      0 ms T1640] log file: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\win32craft.log (writable)
+[      0 ms T1640] Windows version (RtlGetVersion): 10.0 build 15035
+[      0 ms T1640] ARM32 watchdog started (stall reports from 5 s, heartbeat every 30 s)
+[      0 ms T1640] ARM32 bootstrap step: crash trace
+[      0 ms T1640] crash trace installed (unhandled + vectored exception handlers)
+[      0 ms T1640] ARM32 abort traps: crt=74DF0000 signal=74E294E1 set_invalid_parameter_handler=74E29161 set_purecall_handler=74E74BC1
+[      0 ms T1640] ARM32: SIGABRT handler installed
+[      0 ms T1640] ARM32: CRT invalid-parameter handler installed
+[      0 ms T1640] ARM32: CRT pure-call handler installed
+[      0 ms T1640] X104: Win32Craft Minecraft PE 0.10.4.40 (Windows Phone 8.1 XAML build) ARM32 host, built Oct 21 2026 12:49:11, thread 1640 = UI thread
+[      0 ms T1640] ARM32 bootstrap step: X104 identify image
+[      0 ms T1640] X104 game image: base=00C60000 SizeOfImage=00e6f000 sections=7 entry=0020095d DllCharacteristics=8140 (expected 7 sections, entry 0020095d, 8140)
+[      0 ms T1640] ARM32 bootstrap step: X104 host options
+[      0 ms T1640] Win32 frame limit: display VSync
+[      0 ms T1640] ARM32 effective feature level cap: 9_1 (0x9100), source: default
+[      0 ms T1640] ARM32 effective input options: input=auto (default), touch-api=auto (default), osk=auto (default), input-log=0
+[      0 ms T1640] X104 options: present=hwnd full-res=1 fullscreen=0 trace-fakes=0 vsync=0 max-fps=0 selftest-fakes=0 window=1280x720 (default, clamped to the work area when the window is created) (feature level cap 0x9100, osk/input options as in ARM32.md)
+[      0 ms T1640] X104 SUMMARY: pid 2932 | game image 00C60000 | game root (= exe dir = cwd = Package.InstalledLocation) C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft | log see THIS LOG FILE line above
+[      0 ms T1640] ARM32 bootstrap step: X104 HSTRING / RoInitialize
+[      0 ms T1640] api_compat ARM32: combase.dll=75230000 wintypes.dll=71880000 native exports resolved 39/39 (0 missing): 
+[      0 ms T1640] HSTRING self-test PASSED (native=combase): create=0x00000000 dup=0x00000000 cmp=0x00000000/0 ref=0x00000000 concat=0x00000000 text=006D0100 len=10 joined=006F31E0 len=15
+[      0 ms T1640] X104 RoInitialize(MTA) [expected S_FALSE 0x00000001: vccorlib InitializeData(2) already initialised this thread]: HRESULT 0x00000001
+[      0 ms T1640] X104: SetProcessDPIAware ok (real pixels, no DPI virtualisation; the host reports 96 dpi / scale 1.0 to the game)
+[      0 ms T1640] ARM32 bootstrap step: X104 touch probe
+[      0 ms T1640] ARM32 input: user32 touch API: GetPointerType=yes GetPointerInfo=yes RegisterTouchWindow=yes GetTouchInputInfo=yes CloseTouchInputHandle=yes SetWindowFeedbackSetting=yes GetRawInputDeviceList=yes IsMouseInPointerEnabled=yes
+[      0 ms T1640] ARM32 input: raw device #0 type=hid virtual=0 name=\\?\HID#NVDAF180&Col02#3&17297b8b&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[      0 ms T1640] ARM32 input: raw device #1 type=hid virtual=0 name=\\?\HID#MSHW0102&Col03#4&eb556f2&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[      0 ms T1640] ARM32 input: raw device #2 type=hid virtual=0 name=\\?\HID#MSHW0100&Col02#3&3564eebb&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[      0 ms T1640] ARM32 input: raw device #3 type=hid virtual=0 name=\\?\HID#MSHW0102&Col02#4&eb556f2&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[      0 ms T1640] ARM32 input: raw device #4 type=hid virtual=0 name=\\?\HID#MSHW0100&Col01#3&3564eebb&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+[     15 ms T1640] ARM32 input: raw device #5 type=keyboard virtual=0 name=\\?\HID#NVDAF180&Col01#3&17297b8b&0&0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}
+[     15 ms T1640] ARM32 input: policy=auto touch-api=auto osk=auto digitizer=0x000000c1 maxTouches=5 mousePresent=1 mouseButtons=0 convertibleSlate=0 remoteSession=0 mouseInPointer=0 rawScan=ok rawMice=0 rawKeyboards=1 rawVirtual=0 touchOnlyMachine=0 initialSource=MOUSEKB
+[     15 ms T1640] ARM32 bootstrap step: X104 platform_install
+[     15 ms T1640] X104 platform: install begin (image 00C60000)
+[     15 ms T1640] X104 platform: options: --offline=0 --bypass-network=0 --bypass-vibrate=0 --data-dir not given
+[     15 ms T1640] X104 platform: data root candidate (%APPDATA%\MinecraftPE\0.10.4): C:\Users\hamed\AppData\Roaming\MinecraftPE\0.10.4
+[     15 ms T1640] X104 platform: game root=C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft data root=C:\Users\hamed\AppData\Roaming\MinecraftPE\0.10.4 (source %APPDATA%\MinecraftPE\0.10.4) writable=1
+[     15 ms T1640] X104 platform: the game creates C:\Users\hamed\AppData\Roaming\MinecraftPE\0.10.4\games\com.mojang\minecraftpe (options.txt, clientId.txt, minecraftWorlds) below the data root; assets are read from C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data
+[     15 ms T1640] X104 platform: MemoryManager decision: physical RAM 1990 MiB -> usage=0000000010000000 limit=0000000040000000 (hex hi/lo), free for the game = 768 MiB -> Options tier BEST (free memory > 0x1EA00000, ~490 MiB)
+[     15 ms T1640] ARM32 patch AppPlatform_Winrt vf23 buy -> return 0: cell 00F9FB7C 00CAE351 -> 00C89BA1
+[     15 ms T1640] X104 platform: patched AppPlatform cell 0033fb7c (AppPlatform_Winrt vf23 buy -> return 0): function 0004e350 -> shared stub 00029ba0
+[     15 ms T1640] X104 platform: cell 0033fb6c (vf19 isNetworkEnabled) not patched: served by the NetworkInformation fake
+[     15 ms T1640] X104 platform: cell 0033fb94 (vf29 vibrate) not patched: served by the VibrationDevice fake
+[     15 ms T1640] X104 platform: cell 0033fbc0 (vf40 getFreeMemory) not patched: served by the MemoryManager fake; cell 0033fb88 (vf26 touch-only) left alone
+[     15 ms T1640] X104 platform: XAudio2 probe: RoInitialize(MTA) on the install thread = 0x00000001 S_FALSE (S_FALSE = already initialised by the boot)
+[    140 ms T1640] X104 platform: XAudio2 probe ok (XAudio2Create + CreateMasteringVoice 2ch/44100 succeeded and were released; the game creates its own engine in the init job)
+[    140 ms T1640] X104 platform: Windows.Web.Http.* is NOT faked (decision: dead code - IHttpClient at WinRTRestRequestJob+0xD8 is never assigned); the real runtime answers. Visible effect: tapping 'Play on Realms' crashes at WinRTRestRequestJob::vf2 0x10E9D4 (load at 0x10ED56) - known, no patch for M1
+[    140 ms T1640] X104 platform: install done (offline=0, xaudio2=ok)
+[    140 ms T1640] ARM32 bootstrap step: X104 IAT hooks
+[    140 ms T1640] ARM32 hook GetActivationFactoryByPCWSTR (X104 router): cell rva 0020b5fc currently 6890091D = vccorlib120_app.DLL+0x2091d (image base 688E0000)
+[    140 ms T1640] ARM32 patch GetActivationFactoryByPCWSTR (X104 router): cell 00E6B5FC 6890091D -> 60F12265
+[    140 ms T1640] X104: WinRT activation router installed; original vccorlib function 6890091D
+[    140 ms T1640] ARM32 hook _CxxThrowException: cell rva 0020b5d4 currently 612992DD = msvcr120_app.dll+0x392dd (image base 61260000)
+[    140 ms T1640] ARM32 patch _CxxThrowException: cell 00E6B5D4 612992DD -> 60F249D3
+[    140 ms T1640] ARM32: C++ exception trace installed
+[    140 ms T1640] ARM32 hook D3DCompile: cell rva 0020b000 currently 721FD8D1 = D3DCOMPILER_47.dll+0x14d8d1 (image base 720B0000)
+[    140 ms T1640] ARM32 patch D3DCompile: cell 00E6B000 721FD8D1 -> 60F24B6F
+[    140 ms T1640] ARM32: D3DCompile pass-through logger installed
+[    140 ms T1640] ARM32 hook abort: cell rva 0020b530 currently 612A6181 = msvcr120_app.dll+0x46181 (image base 61260000)
+[    140 ms T1640] ARM32 patch abort: cell 00E6B530 612A6181 -> 60F24F75
+[    140 ms T1640] ARM32 hook terminate: cell rva 0020b4f0 currently 61297BB1 = msvcr120_app.dll+0x37bb1 (image base 61260000)
+[    140 ms T1640] ARM32 patch terminate: cell 00E6B4F0 61297BB1 -> 60F24FD7
+[    140 ms T1640] ARM32 hook _purecall: cell rva 0020b5c8 currently 612A2B51 = msvcr120_app.dll+0x42b51 (image base 61260000)
+[    140 ms T1640] ARM32 patch _purecall: cell 00E6B5C8 612A2B51 -> 60F25039
+[    140 ms T1640] ARM32 hook _exit_app: cell rva 0020b588 currently 6127A77D = msvcr120_app.dll+0x1a77d (image base 61260000)
+[    140 ms T1640] ARM32 patch _exit_app: cell 00E6B588 6127A77D -> 60F2509B
+[    140 ms T1640] ARM32 hook _exit: cell rva 0020b590 currently 6127A769 = msvcr120_app.dll+0x1a769 (image base 61260000)
+[    140 ms T1640] ARM32 patch _exit: cell 00E6B590 6127A769 -> 60F250FB
+[    140 ms T1640] ARM32 hook raiseCOMException: cell rva 0020b680 currently 688F9445 = vccorlib120_app.DLL+0x19445 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseCOMException: cell 00E6B680 688F9445 -> 60F25159
+[    140 ms T1640] ARM32 hook raiseObjectDisposed: cell rva 0020b684 currently 688F9405 = vccorlib120_app.DLL+0x19405 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseObjectDisposed: cell 00E6B684 688F9405 -> 60F25343
+[    140 ms T1640] ARM32 hook raiseDisconnected: cell rva 0020b688 currently 688F93C5 = vccorlib120_app.DLL+0x193c5 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseDisconnected: cell 00E6B688 688F93C5 -> 60F253C9
+[    140 ms T1640] ARM32 hook raiseWrongThread: cell rva 0020b68c currently 688F9385 = vccorlib120_app.DLL+0x19385 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseWrongThread: cell 00E6B68C 688F9385 -> 60F2544F
+[    140 ms T1640] ARM32 hook raiseClassNotRegistered: cell rva 0020b690 currently 688F9345 = vccorlib120_app.DLL+0x19345 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseClassNotRegistered: cell 00E6B690 688F9345 -> 60F254D5
+[    140 ms T1640] ARM32 hook raiseChangedState: cell rva 0020b694 currently 688F9305 = vccorlib120_app.DLL+0x19305 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseChangedState: cell 00E6B694 688F9305 -> 60F2555B
+[    140 ms T1640] ARM32 hook raiseOutOfBounds: cell rva 0020b698 currently 688F92C5 = vccorlib120_app.DLL+0x192c5 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseOutOfBounds: cell 00E6B698 688F92C5 -> 60F255E1
+[    140 ms T1640] ARM32 hook raiseInvalidArgument: cell rva 0020b69c currently 688F9285 = vccorlib120_app.DLL+0x19285 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseInvalidArgument: cell 00E6B69C 688F9285 -> 60F25667
+[    140 ms T1640] ARM32 hook raiseOutOfMemory: cell rva 0020b6a0 currently 688F9245 = vccorlib120_app.DLL+0x19245 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseOutOfMemory: cell 00E6B6A0 688F9245 -> 60F256ED
+[    140 ms T1640] ARM32 hook raiseAccessDenied: cell rva 0020b6a4 currently 688F9205 = vccorlib120_app.DLL+0x19205 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseAccessDenied: cell 00E6B6A4 688F9205 -> 60F25773
+[    140 ms T1640] ARM32 hook raiseFailure: cell rva 0020b6a8 currently 688F91C5 = vccorlib120_app.DLL+0x191c5 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseFailure: cell 00E6B6A8 688F91C5 -> 60F257F9
+[    140 ms T1640] ARM32 hook raiseOperationCanceled: cell rva 0020b6ac currently 688F9185 = vccorlib120_app.DLL+0x19185 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseOperationCanceled: cell 00E6B6AC 688F9185 -> 60F2587F
+[    140 ms T1640] ARM32 hook raiseNullReference: cell rva 0020b6b0 currently 688F9145 = vccorlib120_app.DLL+0x19145 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseNullReference: cell 00E6B6B0 688F9145 -> 60F25905
+[    140 ms T1640] ARM32 hook raiseInvalidCast: cell rva 0020b6b4 currently 688F9105 = vccorlib120_app.DLL+0x19105 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseInvalidCast: cell 00E6B6B4 688F9105 -> 60F2598B
+[    140 ms T1640] ARM32 hook raiseNotImplemented: cell rva 0020b6b8 currently 688F90C5 = vccorlib120_app.DLL+0x190c5 (image base 688E0000)
+[    140 ms T1640] ARM32 patch raiseNotImplemented: cell 00E6B6B8 688F90C5 -> 60F25A11
+[    140 ms T1640] X104 diagnostic IAT hooks: 20 of 20 installed (abort/terminate/_purecall/_exit*/Platform exception raisers)
+[    140 ms T1640] ARM32 bootstrap step: X104 VC120 diagnostics
+[    140 ms T1640] X104 modules: 48 loaded at the start of the bootstrap
+[    140 ms T1640] X104 module 00C60000 size 00e6f000 C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\Win32Craft.0.10.4-arm32.exe
+[    140 ms T1640] X104 module 772D0000 size 0016d000 C:\Windows\SYSTEM32\ntdll.dll
+[    140 ms T1640] X104 module 74EE0000 size 00080000 C:\Windows\System32\KERNEL32.DLL
+[    140 ms T1640] X104 module 74680000 size 001a8000 C:\Windows\System32\KERNELBASE.dll
+[    140 ms T1640] X104 module 75230000 size 00226000 C:\Windows\System32\combase.dll
+[    140 ms T1640] X104 module 74DF0000 size 000ab000 C:\Windows\System32\ucrtbase.dll
+[    140 ms T1640] X104 module 734E0000 size 00083000 C:\Windows\SYSTEM32\dxgi.dll
+[    140 ms T1640] X104 module 75B90000 size 000b1000 C:\Windows\System32\RPCRT4.dll
+[    140 ms T1640] X104 module 75C70000 size 0007c000 C:\Windows\System32\msvcrt.dll
+[    140 ms T1640] X104 module 723D0000 size 00215000 C:\Windows\SYSTEM32\d3d11.dll
+[    140 ms T1640] X104 module 744A0000 size 0001b000 C:\Windows\System32\win32u.dll
+[    140 ms T1640] X104 module 74450000 size 00047000 C:\Windows\System32\bcryptPrimitives.dll
+[    140 ms T1640] X104 module 75130000 size 00022000 C:\Windows\System32\gdi32.dll
+[    140 ms T1640] X104 module 75EA0000 size 00117000 C:\Windows\System32\user32.dll
+[    140 ms T1640] X104 module 75D00000 size 0005a000 C:\Windows\System32\WS2_32.dll
+[    140 ms T1640] X104 module 74540000 size 00139000 C:\Windows\System32\gdi32full.dll
+[    140 ms T1640] X104 module 744C0000 size 00080000 C:\Windows\System32\msvcp_win.dll
+[    140 ms T1640] X104 module 75160000 size 0003d000 C:\Windows\System32\sechost.dll
+[    140 ms T1640] X104 module 720B0000 size 0031b000 C:\Windows\SYSTEM32\D3DCOMPILER_47.dll
+[    140 ms T1640] X104 module 688E0000 size 0004d000 C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\vccorlib120_app.DLL
+[    140 ms T1640] X104 module 629F0000 size 00089000 C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\msvcp120_app.dll
+[    140 ms T1640] X104 module 751A0000 size 0008c000 C:\Windows\System32\OLEAUT32.dll
+[    140 ms T1640] X104 module 61260000 size 00099000 C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\msvcr120_app.dll
+[    140 ms T1640] X104 module 73E00000 size 00013000 C:\Windows\SYSTEM32\CRYPTSP.dll
+[    140 ms T1640] X104 module 60F00000 size 00097000 C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\win32craft.dll
+[    140 ms T1640] X104 module 75FC0000 size 012a8000 C:\Windows\System32\SHELL32.dll
+[    140 ms T1640] X104 module 74EA0000 size 00034000 C:\Windows\System32\cfgmgr32.dll
+[    140 ms T1640] X104 module 750B0000 size 00074000 C:\Windows\System32\shcore.dll
+[    140 ms T1640] X104 module 74830000 size 0052d000 C:\Windows\System32\windows.storage.dll
+[    140 ms T1640] X104 module 759D0000 size 0006b000 C:\Windows\System32\advapi32.dll
+[    140 ms T1640] X104 module 75980000 size 00041000 C:\Windows\System32\shlwapi.dll
+[    140 ms T1640] X104 module 74440000 size 0000f000 C:\Windows\System32\kernel.appcore.dll
+[    140 ms T1640] X104 module 743F0000 size 00044000 C:\Windows\System32\powrprof.dll
+[    140 ms T1640] X104 module 743D0000 size 00011000 C:\Windows\System32\profapi.dll
+[    140 ms T1640] X104 module 75AC0000 size 000c8000 C:\Windows\System32\COMDLG32.dll
+[    140 ms T1640] X104 module 69270000 size 00084000 C:\Windows\WinSxS\arm_microsoft.windows.common-controls_6595b64144ccf1df_5.82.15035.0_none_8b4b24405c72f913\COMCTL32.dll
+[    140 ms T1640] X104 module 70940000 size 00014000 C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\VCRUNTIME140.dll
+[    140 ms T1640] X104 module 00690000 size 00003000 C:\Windows\SYSTEM32\XAudio2_8.dll
+[    140 ms T1640] X104 module 67990000 size 00067000 C:\Windows\SYSTEM32\xaudio2_9.DLL
+[    140 ms T1640] X104 module 704D0000 size 00055000 C:\Windows\SYSTEM32\MMDevAPI.DLL
+[    140 ms T1640] X104 module 715B0000 size 0000a000 C:\Windows\SYSTEM32\AVRT.dll
+[    140 ms T1640] X104 module 73280000 size 0001e000 C:\Windows\SYSTEM32\DEVOBJ.dll
+[    140 ms T1640] X104 module 71DB0000 size 00143000 C:\Windows\SYSTEM32\PROPSYS.dll
+[    140 ms T1640] X104 module 75C50000 size 00020000 C:\Windows\System32\IMM32.DLL
+[    140 ms T1640] X104 module 71880000 size 000ca000 C:\Windows\SYSTEM32\wintypes.dll
+[    140 ms T1640] X104 module 72FA0000 size 0006b000 C:\Windows\system32\uxtheme.dll
+[    140 ms T1640] X104 module 75A40000 size 00077000 C:\Windows\System32\clbcatq.dll
+[    140 ms T1640] X104 module 6FA70000 size 000bf000 C:\Windows\SYSTEM32\AUDIOSES.DLL
+[    140 ms T1640] ARM32 patch VC120 RoGetActivationFactory log forwarder: cell 612C51B8 752CA381 -> 60F25A99
+[    140 ms T1640] X104 VC120: msvcr120_app.dll at 61260000: RoGetActivationFactory forwarder installed (cell 612C51B8, original 752CA381)
+[    140 ms T1640] X104 VC120: msvcp120_app.dll at 629F0000 has no RoGetActivationFactory import (it cannot activate WinRT classes itself)
+[    140 ms T1640] ARM32 patch VC120 RoGetActivationFactory log forwarder: cell 689030E4 752CA381 -> 60F25A99
+[    140 ms T1640] X104 VC120: vccorlib120_app.dll at 688E0000: RoGetActivationFactory forwarder installed (cell 689030E4, original 752CA381)
+[    140 ms T1640] X104 VC120 diagnostics: 2 RoGetActivationFactory forwarder(s) installed (a real activation by msvcr120_app / vccorlib120_app now appears as 'X104 VC120 RoGetActivationFactory')
+[    140 ms T1640] ARM32 bootstrap step: X104 panel_install
+[    140 ms T1640] X104 panel: install: feature level cap 0x9100, presentation path B (HWND swap chain), full resolution
+[    140 ms T1640] ARM32 hook D3D11CreateDevice: cell rva 0020b1a4 currently 72467991 = d3d11.dll+0x97991 (image base 723D0000)
+[    140 ms T1640] ARM32 patch D3D11CreateDevice: cell 00E6B1A4 72467991 -> 60F25D51
+[    140 ms T1640] X104 panel: install: D3D11CreateDevice hook installed (cell 00E6B1A4 -> 60F25D51, original 72467991)
+[    140 ms T1640] X104 panel: profile string already patched by the exe patcher (0x31) - "_level_9_1" verified
+[    140 ms T1640] X104 panel: profile string already "_level_9_1" (31, feature level cap) - nothing to patch
+[    140 ms T1640] X104 panel: getShaderModelSuffix bytes verified
+[    140 ms T1640] ARM32 patch byte Default GPU row resolution scale 0.5f -> 1.0f (rva 0xDC8856): 01A28856 00 -> 80
+[    140 ms T1640] X104 panel: resolution float 0.5 -> 1.0 (full resolution; --half-res keeps the game's half-resolution row)
+[    140 ms T1640] X104 panel: cwd ok ("C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft")
+[    140 ms T1640] X104 panel: shader include file present (C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\ShaderConstants.fxh, 1154 bytes)
+[    156 ms T1640] ARM32 patch IDXGIFactory2 vtable cell 24 (CreateSwapChainForComposition): cell 734E1450 7350B881 -> 60F2C329
+[    156 ms T1640] X104 panel: dxgi Factory2 vtable 734E13F0: cell 24 7350B881 -> stub (throw-away factory of install); CreateSwapChainForHwnd (cell 15) = 7352AEA1
+[    156 ms T1640] ARM32 bootstrap step: X104 async/input/app install
+[    156 ms T1640] X104 async: install ok (nothing to patch in the game image)
+[    156 ms T1640] X104 input: install ok (no patches: the touch-only cell 0x0033fb88 is left alone)
+[    156 ms T1640] X104 app: install ok (nothing to patch; --trace-game-state=0)
+[    156 ms T1640] ARM32 bootstrap step: window class
+[    156 ms T1640] X104 window: work area 1920x1034 at (0,0), frame 22x56, effective client 1280x720, outer 1302x776 at (309,129)
+[    156 ms T1640] ARM32 bootstrap step: create window
+[    156 ms T1640] X104 HWND created (hidden until Window.Activate): 0005058C, client area 1280x720 (requested 1280x720)
+[    156 ms T1640] ARM32 bootstrap step: X104 unit init
+[    156 ms T1640] X104 async: init ok (ui thread 1640, dispatcher 006D0460)
+[    156 ms T1640] ARM32 input: window also registered for WM_TOUCH (multi-touch fallback used automatically when no WM_POINTER arrives)
+[    156 ms T1640] ARM32 input: touch handling active: api=pointer (requested auto) window=0005058C feedbackDisabled=6/6 initialSource=MOUSEKB (WM_POINTER touch contacts are consumed without DefWindowProc, mouse/pen pointers are not)
+[    156 ms T1640] X104 input: init ok (touch api pointer, input policy auto, osk policy auto, window 0005058C, CoreWindow obj=006FB8C8, EditBox obj=006FB358, Button obj=006FB4A8, Logo obj=006FB778)
+[    156 ms T1640] X104 panel: init: SwapChainPanel obj=00703B18 (serial 20) client 1280x720 (window 0005058C), CompositionScale 1.0, SizeChangedEventArgs obj=0070F110
+[    156 ms T1640] X104 app: init ok (window 0005058C, monitor 1920x1080)
+[    156 ms T1640] X104 flag: f_units_ready: all units initialised, window messages are routed to them from now on
+[    156 ms T1640] ARM32 bootstrap step: X104 verify WinMain wrapper
+[    156 ms T1640] ARM32 bootstrap step: X104 game WinMain
+[    156 ms T1640] X104: calling the game's WinMain wrapper (rva 0x203EFC, original-style arguments hInstance=00C60000, 0, command tail "", 1) on the UI thread; Application::Start will run the fake UI loop inside it
+[    156 ms T1640] X104 activation #1 Windows.UI.Xaml.Application IApplicationStatics {06499997-F7B4-45FE-B763-7577D1D3CB4A} -> unit app: 0x00000000 S_OK
+[    156 ms T1640] X104 app: Application::Start entered (callback=00708880, thread 1640, UI thread 1640)
+[    156 ms T1640] X104 activation #2 Windows.UI.Xaml.Application IApplicationFactory {93BBE361-BE5A-4EE3-B4A3-95118DC97A89} -> unit app: 0x00000000 S_OK
+[    156 ms T1640] X104 aggregate: IApplicationFactory.CreateInstance created Application obj=00703CF0 (serial 23): outer=006D3308 -> inner=00703D0C (IApplication) instance=00703D0C (IApplication), outer AddRef'd once and kept
+[    156 ms T1640] X104 app: CreateInstance(outer=006D3308 inner=00703D0C instance=00703D0C) for Application
+[    156 ms T1640] X104 event Application.Suspending: handler 00701560 added (token 0000010400000001, 1 registered)
+[    156 ms T1640] X104 event Application.Resuming: handler 006D0A88 added (token 0000010400000002, 1 registered)
+[    156 ms T1640] X104 app: initialisation callback returned 0x00000000 S_OK
+[    156 ms T1640] X104 app: calling IApplicationOverrides.OnLaunched(overrides=006D3310, args=00702EEC = ILaunchActivatedEventArgs view)
+[    156 ms T1640] X104 activation #3 Windows.UI.ViewManagement.StatusBar IStatusBarStatics {8B463FDF-422F-4561-8806-FB1289CADFB7} -> unit app: 0x00000000 S_OK
+[    156 ms T1640] X104 app: StatusBar.HideAsync (no status bar on the desktop: completed action returned)
+[    156 ms T1640] X104 activation #4 Windows.UI.Xaml.Controls.Page IPageFactory {DFA149AC-1849-445E-937C-40A9590CC076} -> unit app: 0x00000000 S_OK
+[    156 ms T1640] X104 aggregate: IPageFactory.CreateInstance created Page obj=00703F10 (serial 29): outer=006C9028 -> inner=00703F2C (IDependencyObject) instance=00703F50 (IPage), outer AddRef'd once and kept
+[    156 ms T1640] X104 app: Page CreateInstance(outer=006C9028) mainpage=006C9020 inner=00703F2C instance=00703F50 (page size 1280x720)
+[    156 ms T1640] X104 flag: f_mainpage_created: IPageFactory.CreateInstance seen, MainPage = outer - 8 recorded
+[    156 ms T1640] X104 activation #5 Windows.Foundation.Uri IUriRuntimeClassFactory {44A9796F-723E-4FDF-A218-033E75B0C084} -> unit app: 0x00000000 S_OK
+[    156 ms T1640] X104 app: Uri.CreateUri("ms-appx:///MainPage.xaml") -> 0070407C hr=00000000
+[    156 ms T1640] X104 activation #6 Windows.UI.Xaml.Application IApplicationStatics {06499997-F7B4-45FE-B763-7577D1D3CB4A} -> unit app: 0x00000000 S_OK
+[    156 ms T1640] X104 app: LoadComponentWithResourceLocation uri=ms-appx:///MainPage.xaml component=006C9020 location=0 (no-op: MainPage.xbf is never parsed, Page.FindName supplies the elements)
+[    156 ms T1640] X104 WARNING: refcount underflow on Uri obj=00704060 (serial 31) - clamped to 1
+[    156 ms T1640] X104 app: FindName("swapChainPanel") -> 00703B34 (hr=0x00000000 S_OK)
+[    156 ms T1640] X104 app: FindName("Logo") -> 006FB794 (hr=0x00000000 S_OK)
+[    156 ms T1640] X104 app: FindName("EditBox") -> 006FB374 (hr=0x00000000 S_OK)
+[    156 ms T1640] X104 app: FindName("Button") -> 006FB4C4 (hr=0x00000000 S_OK)
+[    156 ms T1640] X104 activation #7 Windows.UI.Xaml.Window IWindowStatics {93328409-4EA1-4AFA-83DC-0C4E73E88BB1} -> unit app: 0x00000000 S_OK
+[    156 ms T1640] X104 app: Window.Current (thread 1640) -> window object 0070CCC0
+[    156 ms T1640] X104 event CoreWindow.VisibilityChanged: handler 006CE178 added (token 0000010400000003, 1 registered)
+[    156 ms T1640] X104 input: CoreWindow.add_VisibilityChanged handler=006CE178 -> 0x00000000 S_OK
+[    156 ms T1640] X104 activation #8 Windows.Graphics.Display.DisplayInformation IDisplayInformationStatics {C6A02A6C-D452-44DC-BA07-96F3C6ADF9D1} -> unit app: 0x00000000 S_OK
+[    156 ms T1640] X104 app: DisplayInformation.GetForCurrentView (thread 1640) -> object 00704120
+[    171 ms T1640] X104 event DisplayInformation.DpiChanged: handler 006CBF90 added (token 0000010400000004, 1 registered)
+[    171 ms T1640] X104 event DisplayInformation.OrientationChanged: handler 006CE828 added (token 0000010400000005, 1 registered)
+[    171 ms T1640] X104 activation #9 Windows.Graphics.Display.DisplayInformation IDisplayInformationStatics {C6A02A6C-D452-44DC-BA07-96F3C6ADF9D1} -> unit app: 0x00000000 S_OK
+[    171 ms T1640] X104 event DisplayInformation.DisplayContentsInvalidated: handler 006C66A0 added (token 0000010400000006, 1 registered)
+[    171 ms T1640] X104 event SwapChainPanel.CompositionScaleChanged: handler 006C67F8 added (token 0000010400000007, 1 registered)
+[    171 ms T1640] X104 event SwapChainPanel.SizeChanged: handler 006C7FE8 added (token 0000010400000008, 1 registered)
+[    171 ms T1640] X104 activation #10 Windows.Phone.UI.Input.HardwareButtons IHardwareButtonsStatics {594B8780-DA66-4FD8-A776-7506BD0CBFA7} -> unit app: 0x00000000 S_OK
+[    171 ms T1640] X104 app: HardwareButtons.add_BackPressed handler=0070D0A8
+[    171 ms T1640] X104 event HardwareButtons.BackPressed: handler 0070D0A8 added (token 0000010400000009, 1 registered)
+[    171 ms T1640] X104 activation #11 Windows.UI.ViewManagement.InputPane IInputPaneStatics {95F4AF3A-EF47-424A-9741-FD2815EBA2BD} -> unit input: 0x00000000 S_OK
+[    171 ms T1640] X104 event InputPane.Hiding: handler 0070D4C8 added (token 000001040000000a, 1 registered)
+[    171 ms T1640] X104 input: InputPane.add_Hiding handler=0070D4C8 -> 0x00000000 S_OK
+[    171 ms T1640] X104 event InputPane.Showing: handler 0070CF88 added (token 000001040000000b, 1 registered)
+[    171 ms T1640] X104 input: InputPane.add_Showing handler=0070CF88 -> 0x00000000 S_OK
+[    171 ms T1640] X104 panel: D3D11CreateDevice request: adapter=00000000 driver=1 flags=0x0 sdk=7 levels(5)=[B100 B000 A100 A000 9300 ] -> cap=0x9100 flags=0x20 levels(1)=[9100 ]
+[    187 ms T1640] X104 panel: profile string already "_level_9_1" (31, device level differs from / confirms the cap) - nothing to patch
+[    187 ms T1640] X104 panel: selected feature level 0x9100, reported to the game 0x9300 (driver HARDWARE, device=00722C5C context=00723DBC, HRESULT 0x00000000)
+[    187 ms T1640] X104 panel: adapter "Software Adapter" VendorId=0000 DeviceId=0000 SubSys=00000000 Rev=0 DedicatedVideoMemory=0 MiB SharedSystemMemory=973 MiB DedicatedSystemMemory=0 MiB
+[    187 ms T1640] X104 panel: the game's own IDXGIFactory2 00709928 has the vtable 734E13F0 that is already patched (assumption confirmed: path B covers the game's factory)
+[    187 ms T1640] X104 panel: device diagnostics: driver=HARDWARE feature level actual=0x9100 reported to the game=0x9300
+[    187 ms T1640] X104 panel: D3D11_FEATURE_THREADING: DriverConcurrentCreates=0 DriverCommandLists=0
+[    187 ms T1640] X104 panel: D3D11_FEATURE_D3D9_OPTIONS: FullNonPow2TextureSupport=1
+[    187 ms T1640] X104 panel: D3D11_FEATURE_ARCHITECTURE_INFO: TileBasedDeferredRenderer=0
+[    187 ms T1640] ARM32 patch ID3D11Device vtable cell 3 (CreateBuffer): cell 723D6044 72457BF1 -> 60F2869D
+[    187 ms T1640] X104 panel: d3d11 device vtable 723D6038 (ID3D11Device): vtable[3] (CreateBuffer) 72457BF1 -> logging wrapper
+[    187 ms T1640] ARM32 patch ID3D11Device vtable cell 5 (CreateTexture2D): cell 723D604C 72457C11 -> 60F28AB5
+[    187 ms T1640] X104 panel: d3d11 device vtable 723D6038 (ID3D11Device): vtable[5] (CreateTexture2D) 72457C11 -> logging wrapper
+[    187 ms T1640] ARM32 patch CreateShaderResourceView: cell 723D6054 72457C91 -> 60F28F19
+[    187 ms T1640] ARM32 patch CreateRenderTargetView: cell 723D605C 72457CF1 -> 60F29135
+[    187 ms T1640] ARM32 patch CreateDepthStencilView: cell 723D6060 7246E981 -> 60F29351
+[    187 ms T1640] ARM32 patch CreateInputLayout: cell 723D6064 72457D61 -> 60F29575
+[    187 ms T1640] ARM32 patch CreateVertexShader: cell 723D6068 72457D91 -> 60F29999
+[    187 ms T1640] ARM32 patch CreatePixelShader: cell 723D6074 72457DC1 -> 60F29B91
+[    187 ms T1640] ARM32 patch CreateBlendState: cell 723D6088 72457DF1 -> 60F29D89
+[    187 ms T1640] ARM32 patch CreateDepthStencilState: cell 723D608C 72457E11 -> 60F2A10D
+[    187 ms T1640] ARM32 patch CreateRasterizerState: cell 723D6090 72457E31 -> 60F2A495
+[    187 ms T1640] ARM32 patch CreateSamplerState: cell 723D6094 72457E81 -> 60F2A815
+[    187 ms T1640] X104 panel: d3d11 device vtable 723D6038 (ID3D11Device): 10 of 10 Create* failure-logging wrappers installed (views, shaders, input layout, blend / depth-stencil / rasterizer / sampler states)
+[    187 ms T1640] X104 panel: d3d11 device vtable 723D6038 (ID3D11Device2) already carries the CreateBuffer/CreateTexture2D wrappers
+[    187 ms T1640] ARM32 patch VSSetConstantBuffers: cell 00723DDC 72584971 -> 60F2ABB5
+[    187 ms T1640] ARM32 patch PSSetShaderResources: cell 00723DE0 7258BC01 -> 60F2ACC1
+[    187 ms T1640] ARM32 patch PSSetShader: cell 00723DE4 72590FA1 -> 60F2ADB3
+[    187 ms T1640] ARM32 patch VSSetShader: cell 00723DEC 72591141 -> 60F2AE77
+[    187 ms T1640] ARM32 patch DrawIndexed: cell 00723DF0 72564EA1 -> 60F2AF3B
+[    187 ms T1640] ARM32 patch Draw: cell 00723DF4 725658A1 -> 60F2AFBD
+[    187 ms T1640] ARM32 patch DrawIndexedInstanced: cell 00723E10 72564AE1 -> 60F2B03B
+[    187 ms T1640] ARM32 patch DrawInstanced: cell 00723E14 72565561 -> 60F2B0D9
+[    187 ms T1640] ARM32 patch Map: cell 00723DF8 7256E9A1 -> 60F2B165
+[    187 ms T1640] ARM32 patch PSSetConstantBuffers: cell 00723E00 72584641 -> 60F2B39D
+[    187 ms T1640] ARM32 patch IASetInputLayout: cell 00723E04 7256DA81 -> 60F2B4A9
+[    187 ms T1640] ARM32 patch IASetVertexBuffers: cell 00723E08 7256E2F1 -> 60F2B569
+[    187 ms T1640] ARM32 patch IASetIndexBuffer: cell 00723E0C 7256D3D1 -> 60F2B6FF
+[    187 ms T1640] ARM32 patch OMSetRenderTargets: cell 00723E44 72575711 -> 60F2B7C9
+[    187 ms T1640] ARM32 patch OMSetBlendState: cell 00723E4C 7256FB41 -> 60F2B8C1
+[    187 ms T1640] ARM32 patch OMSetDepthStencilState: cell 00723E50 7256FF11 -> 60F2B9EF
+[    187 ms T1640] ARM32 patch RSSetState: cell 00723E6C 725783D1 -> 60F2BB17
+[    187 ms T1640] ARM32 patch RSSetViewports: cell 00723E70 72578C81 -> 60F2BC1B
+[    187 ms T1640] ARM32 patch RSSetScissorRects: cell 00723E74 72577FA1 -> 60F2BD27
+[    187 ms T1640] ARM32 patch ClearRenderTargetView: cell 00723E88 7255CCE1 -> 60F2BE27
+[    187 ms T1640] ARM32 patch ClearDepthStencilView: cell 00723E94 7255C551 -> 60F2BEEF
+[    187 ms T1640] X104 d3dtrace: ID3D11DeviceContext vtable 00723DC0 (ID3D11DeviceContext of D3D11CreateDevice): 21 of 21 cells wrapped (quiet, vertex-buffer stride fixer ON (--no-vb-stride-fix turns it off))
+[    187 ms T1640] X104 d3dtrace: vtable lives at ?+0x63dc0 (image base 006C0000); original DrawIndexed cell = 72564EA1 (d3d11.dll+0x194ea1 (image base 723D0000)), Draw = 725658A1, DrawIndexedInstanced = 72564AE1, ClearDepthStencilView = 7255C551
+[    187 ms T1640] X104 d3dtrace: context vtable 00723DC0 (ID3D11DeviceContext2) is already traced
+[    187 ms T1640] X104 activation #12 Windows.System.Threading.ThreadPool IThreadPoolStatics {B6BF67DD-84BD-44F8-AC1C-93EBCB9DBA91} -> unit async: 0x00000000 S_OK
+[    187 ms T1640] X104 async: item #1 created kind=RunWithPriorityAndOptionsAsync prio=1 opts=1 handler=0070D228 caller=rva 00114112
+[    187 ms T1640] X104 activation #13 Windows.UI.Xaml.Controls.Canvas ICanvasStatics {40CE5C46-2962-446F-AAFB-4CDC486939C9} -> unit app: 0x00000000 S_OK
+[    187 ms T1640] X104 app: Canvas.SetLeft(006FB380, 3000)
+[    187 ms T0f34] X104 async: item #1 started on thread 0f34 (0 ms after creation, RoInitialize 0x00000000)
+[    187 ms T1640] X104 activation #14 Windows.UI.Xaml.Controls.Canvas ICanvasStatics {40CE5C46-2962-446F-AAFB-4CDC486939C9} -> unit app: 0x00000000 S_OK
+[    187 ms T0f34] X104 input: independent input source #1 created (types=7) on thread 0f34
+[    187 ms T0f34] X104 panel: ISwapChainPanel::CreateCoreIndependentInputSource(types=7) on thread 3892 -> 0x00000000 S_OK source=0071BFDC
+[    187 ms T1640] X104 app: Canvas.SetLeft(006FB4D0, 3000)
+[    187 ms T0f34] X104 event CoreIndependentInputSource.PointerPressed: handler 0070D2E8 added (token 000001040000000c, 1 registered)
+[    187 ms T1640] X104 activation #15 Windows.ApplicationModel.Package IPackageStatics {4E534BDF-2960-4878-97A4-9624DEB72F2D} -> unit platform: 0x00000000 S_OK
+[    187 ms T0f34] X104 input: CoreIndependentInputSource.add_PointerPressed handler=0070D2E8 -> 0x00000000 S_OK
+[    187 ms T1640] X104 platform: Package.get_Current
+[    187 ms T0f34] X104 event CoreIndependentInputSource.PointerMoved: handler 0070D468 added (token 000001040000000d, 1 registered)
+[    187 ms T1640] X104 platform: Package.Current.InstalledLocation.Path -> C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft (hr 0x00000000)
+[    187 ms T0f34] X104 input: CoreIndependentInputSource.add_PointerMoved handler=0070D468 -> 0x00000000 S_OK
+[    187 ms T1640] X104 platform: Package.Current.InstalledLocation.Path -> C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft
+[    187 ms T0f34] X104 event CoreIndependentInputSource.PointerReleased: handler 0070D588 added (token 000001040000000e, 1 registered)
+[    187 ms T0f34] X104 input: CoreIndependentInputSource.add_PointerReleased handler=0070D588 -> 0x00000000 S_OK
+[    187 ms T0f34] X104 async: ProcessEvents(ProcessUntilQuit) blocks thread 0f34 (item #1) until Cancel or shutdown
+[    328 ms T1640] X104 VC120 RoGetActivationFactory #1 Windows.System.Threading.ThreadPoolTimer IActivationFactory {00000035-0000-0000-C000-000000000046} from msvcr120_app.dll+0x1bda7 (image base 61260000) -> 0x00000000 S_OK
+[    328 ms T1640] X104 VC120 RoGetActivationFactory #2 Windows.System.Threading.ThreadPool IActivationFactory {00000035-0000-0000-C000-000000000046} from msvcr120_app.dll+0x1c0ab (image base 61260000) -> 0x00000000 S_OK
+[    343 ms T1640] X104 activation #16 Windows.Storage.ApplicationData IApplicationDataStatics {5612147B-E843-45E3-94D8-06169E3C8E17} -> unit platform: 0x00000000 S_OK
+[    343 ms T1640] X104 platform: ApplicationData.get_Current
+[    343 ms T1640] X104 platform: ApplicationData.Current.LocalFolder.Path -> C:\Users\hamed\AppData\Roaming\MinecraftPE\0.10.4 (hr 0x00000000)
+[    343 ms T1640] X104 platform: ApplicationData.Current.LocalFolder.Path -> C:\Users\hamed\AppData\Roaming\MinecraftPE\0.10.4
+[    343 ms T1640] X104 activation #17 Windows.System.Threading.ThreadPool IThreadPoolStatics {B6BF67DD-84BD-44F8-AC1C-93EBCB9DBA91} -> unit async: 0x00000000 S_OK
+[    343 ms T1640] X104 async: item #2 created kind=RunAsync prio=0 opts=0 handler=034220D8 caller=rva 001da532
+[    343 ms T1640] X104 activation #18 Windows.UI.Xaml.DispatcherTimer IDispatcherTimerFactory {E9961E6E-3626-403A-AFE0-040D58165632} -> unit async: 0x00000000 S_OK
+[    343 ms T0a84] X104 async: item #2 started on thread 0a84 (0 ms after creation, RoInitialize 0x00000000)
+[    343 ms T1640] X104 aggregate: IDispatcherTimerFactory.CreateInstance created DispatcherTimer obj=04EE14F8 (serial 49): outer=00000000 -> inner=00000000 (IDispatcherTimer) instance=04EE1514 (IDispatcherTimer), outer AddRef'd once and kept
+[    343 ms T1640] X104 async: timer #1 created (outer=00000000, obj=04EE14F8, initially stopped, interval 0)
+[    343 ms T1640] X104 async: timer #1 interval = 000000000007a120 ticks (50 ms)
+[    343 ms T1640] X104 event DispatcherTimer.Tick: handler 03422198 added (token 000001040000000f, 1 registered)
+[    343 ms T1640] X104 async: timer #1 Start (interval 50 ms, was enabled=0, gate state: waiting for the first SizeChanged) on thread 1640
+[    343 ms T1640] X104 flag: f_timer_started: DispatcherTimer.Start
+[    343 ms T1640] X104 app: IActivatedEventArgs.get_PreviousExecutionState -> 0 (NotRunning)
+[    343 ms T1640] X104 activation #19 Windows.UI.Xaml.Window IWindowStatics {93328409-4EA1-4AFA-83DC-0C4E73E88BB1} -> unit app: 0x00000000 S_OK
+[    343 ms T1640] X104 app: Window.Current (thread 1640) -> window object 0070CCC0
+[    343 ms T1640] X104 app: Window.put_Content(00703F38) [the Page inner of IPageFactory.CreateInstance]
+[    343 ms T1640] X104 flag: f_content_set: Window.Content set: the MainPage constructor has returned
+[    343 ms T1640] X104 activation #20 Windows.UI.Xaml.Window IWindowStatics {93328409-4EA1-4AFA-83DC-0C4E73E88BB1} -> unit app: 0x00000000 S_OK
+[    343 ms T1640] X104 app: Window.Current (thread 1640) -> window object 0070CCC0
+[    343 ms T1640] X104 app: Window.Activate (thread 1640)
+[    390 ms T0a84] X104 activation #21 Windows.System.MemoryManager IMemoryManagerStatics {5C6C279C-D7CA-4779-9188-4057219CE64C} -> unit platform: 0x00000000 S_OK
+[    390 ms T0a84] X104 platform: MemoryManager.AppMemoryUsageLimit -> 0000000040000000
+[    390 ms T0a84] X104 activation #22 Windows.System.MemoryManager IMemoryManagerStatics {5C6C279C-D7CA-4779-9188-4057219CE64C} -> unit platform: 0x00000000 S_OK
+[    390 ms T0a84] X104 platform: MemoryManager.AppMemoryUsage -> 0000000010000000
+[    390 ms T0a84] X104 activation #23 Windows.System.MemoryManager IMemoryManagerStatics {5C6C279C-D7CA-4779-9188-4057219CE64C} -> unit platform: 0x00000000 S_OK
+[    390 ms T0a84] X104 platform: MemoryManager.AppMemoryUsageLimit -> 0000000040000000
+[    390 ms T0a84] X104 activation #24 Windows.System.MemoryManager IMemoryManagerStatics {5C6C279C-D7CA-4779-9188-4057219CE64C} -> unit platform: 0x00000000 S_OK
+[    390 ms T0a84] X104 platform: MemoryManager.AppMemoryUsage -> 0000000010000000
+[    406 ms T1640] X104 panel: WM_SIZE 1280x720 type=0 (client was 1280x720)
+[    406 ms T1640] X104 app: Window.Activate -> window shown (client 1280x720, visible=1, iconic=0) [Window.Activate]
+[    406 ms T1640] X104 app: OnLaunched -> hr=00000000 S_OK
+[    406 ms T1640] X104 flag: f_launched: OnLaunched returned
+[    406 ms T1640] X104 app: entering the UI loop (f_content_set=1, f_mainpage_created=1)
+[    406 ms T1640] X104 async: UI loop entered (thread 1640)
+[    453 ms T1640] X104 async: timer tick gate closed (no SizeChanged yet)
+[    453 ms T1640] X104 panel: first SizeChanged raising 1280x720 (prev 0x0) handlers=1 #1
+[    453 ms T1640] X104 activation #25 Windows.Graphics.Display.DisplayInformation IDisplayInformationStatics {C6A02A6C-D452-44DC-BA07-96F3C6ADF9D1} -> unit app: 0x00000000 S_OK
+[    453 ms T1640] X104 app: DisplayInformation.GetForCurrentView (thread 1640) -> object 00704120
+[    453 ms T1640] X104 app: DisplayInformation.get_NativeOrientation -> 1 (Landscape: no width/height swap)
+[    453 ms T1640] X104 app: DisplayInformation.get_CurrentOrientation -> 1 (Landscape)
+[    453 ms T1640] X104 app: DisplayInformation.get_LogicalDpi -> 96
+[    453 ms T1640] X104 panel: CreateSwapChainForComposition intercepted (factory 00709928 device 00722C5C output 00000000 out 006CD1E0, window 0005058C)
+[    453 ms T1640] X104 panel: requested desc: 1280x720 fmt=87 stereo=0 samples=1/0 usage=00000020 buffers=2 scaling=0 effect=3 alpha=3 flags=00000000
+[    468 ms T1640] X104 panel: SwapChain created via CreateSwapChainForHwnd attempt a hr=00000000 size=1280x720 (created; effect=3 scaling=0 buffers=2) chain=04FB94D0
+[    468 ms T1640] X104 panel: IDXGIFactory::MakeWindowAssociation(0005058C, NO_WINDOW_CHANGES|NO_ALT_ENTER) hr=0x00000000 S_OK
+[    468 ms T1640] X104 panel: swap chain 04FB94D0 (chain created by the HWND stub): IDXGISwapChain vtable 734E1000, IDXGISwapChain2 04FB94D0 vtable 734E1000 (the same vtable)
+[    468 ms T1640] ARM32 patch IDXGISwapChain vtable cell 8 (Present): cell 734E1020 73501401 -> 60F2D361
+[    468 ms T1640] X104 panel: IDXGISwapChain vtable 734E1000: vtable[8] (Present) 73501401 -> stub (frame accounting / pacing / --vsync; chain created by the HWND stub)
+[    468 ms T1640] ARM32 patch IDXGISwapChain2 vtable cell 34 (SetMatrixTransform): cell 734E1088 73533A01 -> 60F2D323
+[    468 ms T1640] X104 panel: IDXGISwapChain2 vtable[34] 73533A01 -> stub (SetMatrixTransform returns S_OK; an HWND chain would answer 0x887A0001) on vtable 734E1000
+[    468 ms T1640] X104 panel: HWND stub done: chain=04FB94D0 identity=04FB94D0 vtable=734E1000 attempt=a size=1280x720 (client 1280 x 720)
+[    468 ms T1640] X104 flag: f_swapchain_created (the HWND stub created the swap chain)
+[    468 ms T1640] X104 async: RunAsync #1 prio=1 from thread 1640 (ui=1) handler=04FAF1C0 caller=rva 00114044 (RunAsync)
+[    468 ms T1640] X104 panel: IDXGISwapChain2::SetMatrixTransform(0066DA10) on chain 04FB94D0 -> S_OK (HWND chain: the composition transform does not exist; the swap-chain buffer is stretched by DXGI)
+[    468 ms T1640] X104 panel: first SizeChanged raised 1280x720 (prev 0x0) handlers=1 invoked=1, the game's handler took 15 ms
+[    468 ms T1640] X104 flag: f_size_changed_done (first SizeChanged returned)
+[    468 ms T1640] X104 panel: SetSwapChain(04FB94D0) #1 identity=04FB94D0 vtable=734E1000 path=B (HWND)
+[    468 ms T1640] X104 panel: SetSwapChain(04FB94D0): the chain created by the HWND stub - nothing to attach (path B ok, attempt a)
+[    531 ms T1640] X104 async: timer #1 first Tick delivered (interval 50 ms, 1 handler(s), size-changed gate open)
+[    593 ms T0a84] D3DCompile #1 ok: source=data/shaders/dx11/color_uv.vertex.hlsl entry=main target=vs_4_0_level_9_1 bytes=658 macros=[(none)]
+[    609 ms T0a84] D3DCompile #2 ok: source=data/shaders/dx11/color_texture.fragment.hlsl entry=main target=ps_4_0_level_9_1 bytes=788 macros=[(none)]
+[    640 ms T0a84] D3DCompile #3 ok: source=data/shaders/dx11/color_uv.vertex.hlsl entry=main target=vs_4_0_level_9_1 bytes=639 macros=[(none)]
+[   1812 ms T0a84] D3DCompile #33 produced compiler messages (target=vs_4_0_level_9_1):
+[   1812 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(37,5-33): warning X3205: conversion from larger type to smaller, possible loss of data
+[   1843 ms T0a84] D3DCompile #35 produced compiler messages (target=vs_4_0_level_9_1):
+[   1843 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(38,5-33): warning X3205: conversion from larger type to smaller, possible loss of data
+[   1953 ms T0a84] D3DCompile #37 produced compiler messages (target=vs_4_0_level_9_1):
+[   1953 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(38,5-33): warning X3205: conversion from larger type to smaller, possible loss of data
+[   1953 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(77,5-67): warning X3205: conversion from larger type to smaller, possible loss of data
+[   1953 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(84,5-51): warning X3205: conversion from larger type to smaller, possible loss of data
+[   2000 ms T0a84] D3DCompile #39 produced compiler messages (target=vs_4_0_level_9_1):
+[   2000 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(38,5-33): warning X3205: conversion from larger type to smaller, possible loss of data
+[   2046 ms T0a84] D3DCompile #41 produced compiler messages (target=vs_4_0_level_9_1):
+[   2046 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(39,5-33): warning X3205: conversion from larger type to smaller, possible loss of data
+[   2109 ms T0a84] D3DCompile #43 produced compiler messages (target=vs_4_0_level_9_1):
+[   2109 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(39,5-33): warning X3205: conversion from larger type to smaller, possible loss of data
+[   2234 ms T0a84] D3DCompile #45 produced compiler messages (target=vs_4_0_level_9_1):
+[   2234 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(39,5-33): warning X3205: conversion from larger type to smaller, possible loss of data
+[   2234 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(78,5-67): warning X3205: conversion from larger type to smaller, possible loss of data
+[   2234 ms T0a84]   D3DCompile message: C:\Users\hamed\Desktop\Minecraft_PE_0.10.4.40_ARM32_Win32Craft\data\shaders\dx11\renderchunk.vertex.hlsl(85,5-51): warning X3205: conversion from larger type to smaller, possible loss of data
+[   2343 ms T0a84] X104 async: item #2 finished status=1 hr=00000000 after 2000 ms
+[   2406 ms T1640] X104 async: timer #1 Stop (was enabled=1, game ready (AppMain+0x3C)=1) on thread 1640
+[   2406 ms T1640] X104 flag: f_ready_tick - READY tick: the game stopped its timer (AppMain+0x3C==1)
+[   2406 ms T1640] X104 Logo.Visibility = 1 (Collapsed)
+[   2406 ms T1640] X104 activation #26 Windows.UI.Xaml.Window IWindowStatics {93328409-4EA1-4AFA-83DC-0C4E73E88BB1} -> unit app: 0x00000000 S_OK
+[   2406 ms T1640] X104 app: Window.Current (thread 1640) -> window object 0070CCC0
+[   2406 ms T1640] X104 event TextBox.TextChanged: handler 04FAE860 added (token 0000010400000010, 1 registered)
+[   2406 ms T1640] X104 input: ITextBox.add_TextChanged handler=04FAE860 -> 0x00000000 S_OK
+[   2406 ms T1640] X104 input: PreventKeyboardDisplayOnProgrammaticFocus=0
+[   2406 ms T1640] X104 input: ITextBox.put_AcceptsReturn(1)
+[   2406 ms T1640] X104 activation #27 Windows.System.Threading.ThreadPool IThreadPoolStatics {B6BF67DD-84BD-44F8-AC1C-93EBCB9DBA91} -> unit async: 0x00000000 S_OK
+[   2406 ms T1640] X104 async: item #3 created kind=RunWithPriorityAndOptionsAsync prio=1 opts=1 handler=04FAF040 caller=rva 00114112
+[   2406 ms T1640] X104 event CoreWindow.KeyDown: handler 04FAF0A0 added (token 0000010400000011, 1 registered)
+[   2406 ms T1640] X104 input: CoreWindow.add_KeyDown handler=04FAF0A0 -> 0x00000000 S_OK
+[   2406 ms T1640] X104 event CoreWindow.KeyUp: handler 04FAF100 added (token 0000010400000012, 1 registered)
+[   2406 ms T0850] X104 async: item #3 started on thread 0850 (0 ms after creation, RoInitialize 0x00000000)
+[   2406 ms T1640] X104 input: CoreWindow.add_KeyUp handler=04FAF100 -> 0x00000000 S_OK
+[   2406 ms T0850] X104 input: independent input source #2 created (types=7) on thread 0850
+[   2406 ms T1640] X104 activation #28 Windows.Graphics.Display.DisplayInformation IDisplayInformationStatics {C6A02A6C-D452-44DC-BA07-96F3C6ADF9D1} -> unit app: 0x00000000 S_OK
+[   2406 ms T0850] X104 panel: ISwapChainPanel::CreateCoreIndependentInputSource(types=7) on thread 2128 -> 0x00000000 S_OK source=0071AE9C
+[   2406 ms T1640] X104 app: DisplayInformation.GetForCurrentView (thread 1640) -> object 00704120
+[   2406 ms T0850] X104 event CoreIndependentInputSource.PointerPressed: handler 04FAF160 added (token 0000010400000013, 1 registered)
+[   2406 ms T1640] X104 app: DisplayInformation.get_RawDpiX -> 96
+[   2406 ms T0850] X104 input: CoreIndependentInputSource.add_PointerPressed handler=04FAF160 -> 0x00000000 S_OK
+[   2406 ms T1640] X104 app: DisplayInformation.get_RawDpiY -> 96
+[   2406 ms T0850] X104 event CoreIndependentInputSource.PointerMoved: handler 04FAE5C0 added (token 0000010400000014, 1 registered)
+[   2406 ms T0850] X104 input: CoreIndependentInputSource.add_PointerMoved handler=04FAE5C0 -> 0x00000000 S_OK
+[   2406 ms T0850] X104 event CoreIndependentInputSource.PointerReleased: handler 04FAE620 added (token 0000010400000015, 1 registered)
+[   2406 ms T0850] X104 input: CoreIndependentInputSource.add_PointerReleased handler=04FAE620 -> 0x00000000 S_OK
+[   2406 ms T0850] X104 async: ProcessEvents(ProcessUntilQuit) blocks thread 0850 (item #3) until Cancel or shutdown
+[   2406 ms T1640] X104 Logo.Visibility = 1 (Collapsed)
+[   2406 ms T1640] X104 activation #29 Windows.System.Threading.ThreadPool IThreadPoolStatics {B6BF67DD-84BD-44F8-AC1C-93EBCB9DBA91} -> unit async: 0x00000000 S_OK
+[   2406 ms T1640] X104 async: item #4 created kind=RunWithPriorityAndOptionsAsync prio=1 opts=1 handler=04FAEC20 caller=rva 00114112
+[   2406 ms T0a64] X104 async: item #4 started on thread 0a64 (0 ms after creation, RoInitialize 0x00000000)
+[   2421 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A96270 strides=01A3F630 offsets=07D6F7A8 stride[0]=0 stride[1]=0 offset[0]=0
+[   2421 ms T0a64] X104 panel: CreateInputLayout ok layout=066108E8 vs-bytecode=06918120 (1056 bytes) 2 elements: [POSITION 0 fmt6 slot0 off0 cls0] [TEXCOORD_ 0 fmt37 slot0 off12 cls0] 
+[   2421 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #1: the game bound buffer 06A96270 with stride 0 (from game rva 0xc6795) but input layout 066108E8 needs 16 bytes - re-bound with 16 before the draw
+[   2421 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A9CC70 strides=01A3F640 offsets=07D6F7A8 stride[0]=0 stride[1]=0 offset[0]=0
+[   2421 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #2: the game bound buffer 06A9CC70 with stride 0 (from game rva 0xc6795) but input layout 066108E8 needs 16 bytes - re-bound with 16 before the draw
+[   2421 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A9C370 strides=01A3F650 offsets=07D6F7A8 stride[0]=0 stride[1]=0 offset[0]=0
+[   2421 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #3: the game bound buffer 06A9C370 with stride 0 (from game rva 0xc6795) but input layout 066108E8 needs 16 bytes - re-bound with 16 before the draw
+[   2421 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A9C670 strides=01A3F660 offsets=07D6F7A8 stride[0]=0 stride[1]=0 offset[0]=0
+[   2421 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #4: the game bound buffer 06A9C670 with stride 0 (from game rva 0xc6795) but input layout 066108E8 needs 16 bytes - re-bound with 16 before the draw
+[   2421 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A9D570 strides=01A3F670 offsets=07D6F7A8 stride[0]=0 stride[1]=0 offset[0]=0
+[   2421 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #5: the game bound buffer 06A9D570 with stride 0 (from game rva 0xc6795) but input layout 066108E8 needs 16 bytes - re-bound with 16 before the draw
+[   2421 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A99EF0 strides=01A3F680 offsets=07D6F7A8 stride[0]=0 stride[1]=0 offset[0]=0
+[   2421 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #6: the game bound buffer 06A99EF0 with stride 0 (from game rva 0xc6795) but input layout 066108E8 needs 16 bytes - re-bound with 16 before the draw
+[   2421 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A9B470 strides=01A3F690 offsets=07D6F768 stride[0]=0 stride[1]=0 offset[0]=0
+[   2421 ms T0a64] X104 panel: CreateInputLayout ok layout=06AA74E8 vs-bytecode=0690BE70 (1048 bytes) 2 elements: [POSITION 0 fmt6 slot0 off0 cls0] [COLOR 0 fmt28 slot0 off12 cls0] 
+[   2421 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #7: the game bound buffer 06A9B470 with stride 0 (from game rva 0xc6795) but input layout 06AA74E8 needs 16 bytes - re-bound with 16 before the draw
+[   2421 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A9C970 strides=01A3F6A0 offsets=07D6F8B0 stride[0]=0 stride[1]=0 offset[0]=0
+[   2421 ms T0a64] X104 panel: CreateInputLayout ok layout=06AA7668 vs-bytecode=06918120 (1056 bytes) 2 elements: [POSITION 0 fmt6 slot0 off0 cls0] [TEXCOORD_ 0 fmt37 slot0 off12 cls0] 
+[   2421 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #8: the game bound buffer 06A9C970 with stride 0 (from game rva 0xc6795) but input layout 06AA7668 needs 16 bytes - re-bound with 16 before the draw
+[   2421 ms T0a64] X104 panel: CreateInputLayout ok layout=06AA7E68 vs-bytecode=06918120 (1056 bytes) 2 elements: [POSITION 0 fmt6 slot0 off0 cls0] [TEXCOORD_ 0 fmt37 slot0 off12 cls0] 
+[   2437 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A91070 strides=01A3F6B0 offsets=07D6F848 stride[0]=0 stride[1]=0 offset[0]=0
+[   2437 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #9: the game bound buffer 06A91070 with stride 0 (from game rva 0xc6795) but input layout 06AA7668 needs 16 bytes - re-bound with 16 before the draw
+[   2437 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A925F0 strides=01A3F6C0 offsets=07D6F7E8 stride[0]=0 stride[1]=0 offset[0]=0
+[   2437 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #10: the game bound buffer 06A925F0 with stride 0 (from game rva 0xc6795) but input layout 06AA7668 needs 16 bytes - re-bound with 16 before the draw
+[   2437 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06A8E2F0 strides=01A3F6D0 offsets=07D6F830 stride[0]=0 stride[1]=0 offset[0]=0
+[   2437 ms T0a64] X104 panel: CreateInputLayout ok layout=06AA83E8 vs-bytecode=050A1700 (1184 bytes) 3 elements: [POSITION 0 fmt6 slot0 off0 cls0] [COLOR 0 fmt28 slot0 off12 cls0] [TEXCOORD_ 0 fmt37 slot0 off16 cls0] 
+[   2437 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #11: the game bound buffer 06A8E2F0 with stride 0 (from game rva 0xc6795) but input layout 06AA83E8 needs 20 bytes - re-bound with 20 before the draw
+[   2484 ms T0a64] X104 d3dtrace: CELL REPLACED by the runtime: vtable 00723DC0 cell 12 (DrawIndexed) holds 72564EA1 (d3d11.dll+0x194ea1 (image base 723D0000)), our wrapper is 60F2AF3B, original was 72564EA1 - re-patching
+[   2484 ms T0a64] ARM32 patch DrawIndexed: cell 00723DF0 72564EA1 -> 60F2AF3B
+[   2484 ms T0a64] X104 d3dtrace: CELL REPLACED by the runtime: vtable 00723DC0 cell 13 (Draw) holds 725658A1 (d3d11.dll+0x1958a1 (image base 723D0000)), our wrapper is 60F2AFBD, original was 725658A1 - re-patching
+[   2484 ms T0a64] ARM32 patch Draw: cell 00723DF4 725658A1 -> 60F2AFBD
+[   2484 ms T0a64] X104 d3dtrace: CELL REPLACED by the runtime: vtable 00723DC0 cell 20 (DrawIndexedInstanced) holds 72564AE1 (d3d11.dll+0x194ae1 (image base 723D0000)), our wrapper is 60F2B03B, original was 72564AE1 - re-patching
+[   2484 ms T0a64] ARM32 patch DrawIndexedInstanced: cell 00723E10 72564AE1 -> 60F2B03B
+[   2484 ms T0a64] X104 d3dtrace: CELL REPLACED by the runtime: vtable 00723DC0 cell 21 (DrawInstanced) holds 72565561 (d3d11.dll+0x195561 (image base 723D0000)), our wrapper is 60F2B0D9, original was 72565561 - re-patching
+[   2484 ms T0a64] ARM32 patch DrawInstanced: cell 00723E14 72565561 -> 60F2B0D9
+[   2484 ms T0a64] X104 d3dtrace: CELL REPLACED by the runtime: vtable 00723DC0 cell 50 (ClearRenderTargetView) holds 7255CCE1 (d3d11.dll+0x18cce1 (image base 723D0000)), our wrapper is 60F2BE27, original was 7255CCE1 - re-patching
+[   2484 ms T0a64] ARM32 patch ClearRenderTargetView: cell 00723E88 7255CCE1 -> 60F2BE27
+[   2484 ms T0a64] X104 d3dtrace: CELL REPLACED by the runtime: vtable 00723DC0 cell 53 (ClearDepthStencilView) holds 7255C551 (d3d11.dll+0x18c551 (image base 723D0000)), our wrapper is 60F2BEEF, original was 7255C551 - re-patching
+[   2484 ms T0a64] ARM32 patch ClearDepthStencilView: cell 00723E94 7255C551 -> 60F2BEEF
+[   2484 ms T0a64] X104 present: FIRST Present returned 0x00000000 S_OK (sync=0 flags=00000000) 2484 ms after the process started
+[   2484 ms T0a64] frame 1 complete: 0 ms since the loop started, this frame took 0 ms
+[   2484 ms T0a64] X104 d3dtrace: IASetVertexBuffers STRIDE 0 from game rva 0xc6795: start=0 count=1 buffer0=06B4EC70 strides=01A3F6E0 offsets=07D6F7A8 stride[0]=0 stride[1]=0 offset[0]=0
+[   2484 ms T0a64] X104 panel: vertex-buffer STRIDE FIX #12: the game bound buffer 06B4EC70 with stride 0 (from game rva 0xc6795) but input layout 066108E8 needs 16 bytes - re-bound with 16 before the draw
+[   2484 ms T0a64] X104 present: Present #2 returned 0x00000000 S_OK (sync=0, 0 ms since the previous one)
+[   2484 ms T0a64] frame 2 complete: 0 ms since the loop started, this frame took 0 ms
+[   2500 ms T0a64] X104 present: Present #3 returned 0x00000000 S_OK (sync=0, 16 ms since the previous one)
+[   2500 ms T0a64] frame 3 complete: 16 ms since the loop started, this frame took 16 ms
+[   2515 ms T0a64] X104 present: Present #4 returned 0x00000000 S_OK (sync=0, 15 ms since the previous one)
+[   2515 ms T0a64] X104 present: Present #5 returned 0x00000000 S_OK (sync=0, 0 ms since the previous one)
+[   2515 ms T0a64] frame 5 complete: 31 ms since the loop started, this frame took 0 ms
+[   2531 ms T0a64] X104 present: Present #6 returned 0x00000000 S_OK (sync=0, 16 ms since the previous one)
+[   2531 ms T0a64] X104 present: Present #7 returned 0x00000000 S_OK (sync=0, 0 ms since the previous one)
+[   2546 ms T0a64] X104 present: Present #8 returned 0x00000000 S_OK (sync=0, 15 ms since the previous one)
+[   2546 ms T0a64] X104 present: Present #9 returned 0x00000000 S_OK (sync=0, 0 ms since the previous one)
+[   2546 ms T0a64] X104 present: Present #10 returned 0x00000000 S_OK (sync=0, 0 ms since the previous one)
+[   2546 ms T0a64] frame 10 complete: 62 ms since the loop started, this frame took 0 ms
+[   2562 ms T0a64] X104 present: Present #11 returned 0x00000000 S_OK (sync=0, 16 ms since the previous one)
+[   2562 ms T0a64] X104 present: Present #12 returned 0x00000000 S_OK (sync=0, 0 ms since the previous one)
+[   2562 ms T0a64] X104 present: Present #13 returned 0x00000000 S_OK (sync=0, 0 ms since the previous one)
+[   2593 ms T0a64] X104 present: Present #14 returned 0x00000000 S_OK (sync=0, 31 ms since the previous one)
+[   2640 ms T0a64] X104 present: Present #15 returned 0x00000000 S_OK (sync=0, 47 ms since the previous one)
+[   2671 ms T0a64] X104 present: Present #16 returned 0x00000000 S_OK (sync=0, 31 ms since the previous one)
+[   2687 ms T0a64] X104 present: Present #17 returned 0x00000000 S_OK (sync=0, 16 ms since the previous one)
+[   2703 ms T0a64] X104 present: Present #18 returned 0x00000000 S_OK (sync=0, 16 ms since the previous one)
+[   2718 ms T0a64] X104 present: Present #19 returned 0x00000000 S_OK (sync=0, 15 ms since the previous one)
+[   2734 ms T0a64] X104 present: Present #20 returned 0x00000000 S_OK (sync=0, 16 ms since the previous one)
+[   2906 ms T0a64] frame 30 complete: 422 ms since the loop started, this frame took 16 ms
+[   3406 ms T0a64] frame 60 complete: 922 ms since the loop started, this frame took 16 ms
+[   4203 ms T1640] X104 input: first WM_POINTER touch (id=1226) - the pointer API works on this device
+[   4203 ms T1640] ARM32 input: source MOUSEKB -> TOUCH (WM_POINTERDOWN)
+[   4203 ms T1640] ARM32 input: relative mouse allowed again
+[   4203 ms T1640] X104 input: pointer down id=1226 type=0 (touch) at (1164,634) via WM_POINTERDOWN handlers=2
+[   4343 ms T1640] X104 input: pointer up id=1226 type=0 at (1164,634) held 140 ms (WM_POINTERUP) handlers=2
+[   4375 ms T0a64] X104 activation #30 Windows.System.MemoryManager IMemoryManagerStatics {5C6C279C-D7CA-4779-9188-4057219CE64C} -> unit platform: 0x00000000 S_OK
+[   4375 ms T0a64] X104 platform: MemoryManager.AppMemoryUsageLimit -> 0000000040000000
+[   4375 ms T0a64] X104 activation #31 Windows.System.MemoryManager IMemoryManagerStatics {5C6C279C-D7CA-4779-9188-4057219CE64C} -> unit platform: 0x00000000 S_OK
+[   4375 ms T0a64] X104 platform: MemoryManager.AppMemoryUsage -> 0000000010000000
+[   4375 ms T0a64] X104 panel: CreateInputLayout ok layout=06AA7368 vs-bytecode=050AAA80 (920 bytes) 1 elements: [POSITION 0 fmt6 slot0 off0 cls0] 
+[   4406 ms T0a64] frame 120 complete: 1922 ms since the loop started, this frame took 16 ms
+[   5828 ms T1640] X104 input: pointer down id=1227 type=0 (touch) at (1112,196) via WM_POINTERDOWN handlers=2
+[   5906 ms T1640] X104 input: pointer up id=1227 type=0 at (1112,196) held 78 ms (WM_POINTERUP) handlers=2
+[   5921 ms T0a64] X104 async: RunAsync #2 prio=0 from thread 0a64 (ui=0) handler=06B62FA8 caller=rva 001142ec (RunAsync)
+[   5921 ms T1640] X104 input: TextBox put_Text len=6 -> TextChanged scheduled
+[   5921 ms T1640] X104 input: EditBox.Focus(3) -> osk show (text mode on, text len=6)
+[   5921 ms T1640] X104 text_input_active 0 -> 1 (EditBox.Focus)
+[   5921 ms T1640] ARM32 osk: show requested (EditBox.Focus) eligible=1 policy=auto touchActive=1 state=-1
+[   5921 ms T1640] X104 input: TextChanged raised (len=6, handlers=1)
+[   5937 ms T1640] ARM32 osk: signals: IFrameworkInputPane create=0x00000000 advise=0x00000000 | InputPane interop=0x8000001d getForWindow=0x80004005 TryHide=no | dwm-cloak verdict=0 | primary=IFrameworkInputPane
+[   5937 ms T1640] ARM32 osk: keyboard hidden (signal IFrameworkInputPane, was -1)
+[   5937 ms T1640] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[   5968 ms T1640] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[   6000 ms T1640] ARM32 osk: keyboard VISIBLE (signal IFrameworkInputPane, was 0)
+[   6000 ms T1640] ARM32 osk: OccludedRect reported to the game (buffer px) x=0 y=366 w=1280 h=354
+[   6000 ms T1640] X104 activation #32 Windows.UI.ViewManagement.InputPane IInputPaneStatics {95F4AF3A-EF47-424A-9741-FD2815EBA2BD} -> unit input: 0x00000000 S_OK
+[   6015 ms T1640] X104 input: InputPane Showing raised, occluded h=354 (rect 0,366 1280x354; keyboard rectangle from the host (TabTip window on Windows 8.1/10, shell rectangle on Windows 11)), handlers=1
+[   6015 ms T1640] ARM32 osk: the keyboard is visible (79 ms after the request, 1 attempt(s))
+[   6015 ms T1640] ARM32 osk: shell Showing callback #1 rect=(0,540,1920,1080), arrived 15 ms ago
+[   6015 ms T1640] ARM32 osk: snapshot (after the shell callback): win11=0 tipWindow=1 visible=1 cloak=1 rect=(0,540,1920,1080) | fip hr=0x00000000 rect=(0,540,1920,1080) | pane hr=0x80004005 bottom=0 | textInputHost=0 visible=0 | callbacks kind=1 rect=(0,540,1920,1080) | state=1 assumed=0 detect=1
+[   7218 ms T1640] X104 input: key down vk=48 repeat=1 scan=23 handlers=1
+[   7218 ms T1640] X104 input: WM_CHAR in text mode: U+0068 -> text changed, len=7 caret=7
+[   7218 ms T1640] X104 input: TextChanged raised (len=7, handlers=1)
+[   7406 ms T0a64] frame 300 complete: 4922 ms since the loop started, this frame took 31 ms
+[   7421 ms T1640] X104 input: key down vk=48 repeat=1 scan=23 handlers=1
+[   7421 ms T1640] X104 input: WM_CHAR in text mode: U+0068 -> text changed, len=8 caret=8
+[   7421 ms T1640] X104 input: TextChanged raised (len=8, handlers=1)
+[   7609 ms T1640] X104 input: key down vk=48 repeat=1 scan=23 handlers=1
+[   7609 ms T1640] X104 input: WM_CHAR in text mode: U+0068 -> text changed, len=9 caret=9
+[   7609 ms T1640] X104 input: TextChanged raised (len=9, handlers=1)
+[   7781 ms T1640] X104 input: key down vk=48 repeat=1 scan=23 handlers=1
+[   7781 ms T1640] X104 input: WM_CHAR in text mode: U+0068 -> text changed, len=10 caret=10
+[   7781 ms T1640] X104 input: TextChanged raised (len=10, handlers=1)
+[   8171 ms T1640] X104 input: key down vk=0d repeat=1 scan=1c handlers=1
+[   8171 ms T1640] X104 input: WM_CHAR in text mode: U+000D -> text changed, len=12 caret=12
+[   8171 ms T1640] X104 input: TextBox put_Text len=10 -> TextChanged scheduled
+[   8171 ms T1640] X104 input: TextChanged raised (len=12, handlers=1)
+[   8171 ms T1640] X104 input: TextChanged raised (len=10, handlers=1)
+[   8218 ms T0a64] X104 async: RunAsync #3 prio=0 from thread 0a64 (ui=0) handler=06B1A0A0 caller=rva 00111b9c (RunAsync)
+[   8218 ms T1640] X104 input: Button.Focus(3) -> osk hide (text mode off)
+[   8218 ms T1640] X104 text_input_active 1 -> 0 (Button.Focus)
+[   8218 ms T1640] ARM32 osk: hide requested (Button.Focus): 2 method(s), first SC_CLOSE
+[   8218 ms T1640] ARM32 osk: hide via SC_CLOSE to the TabTip window 0002003C posted=1
+[   8234 ms T1640] ARM32 osk: shell Hiding callback #2, arrived 0 ms ago
+[   8234 ms T1640] ARM32 osk: snapshot (after the shell callback): win11=0 tipWindow=1 visible=1 cloak=0 rect=(0,540,1920,1080) | fip hr=0x00000000 rect=(0,0,0,0) | pane hr=0x80004005 bottom=0 | textInputHost=0 visible=0 | callbacks kind=2 rect=(0,540,1920,1080) | state=1 assumed=0 detect=0
+[   8250 ms T1640] ARM32 osk: keyboard hidden (signal IFrameworkInputPane, was 1)
+[   8281 ms T1640] X104 input: InputPane Hiding raised, occluded h=0 (rect 0,0 0x0; hidden: empty rect), handlers=1
+[   8281 ms T1640] ARM32 osk: the keyboard is hidden
+[  10437 ms T1640] X104 app: WM_CLOSE -> exit requested
+[  10437 ms T1640] X104 app: request_exit(0) from thread 1640 (ui=1, game ready=1)
+[  10437 ms T1640] X104 app: exit proc started (code 0, thread 1640, launched=1, game ready=1)
+[  10437 ms T1640] X104 app: window state -> minimised / hidden (WM_SHOWWINDOW hide)
+[  10468 ms T1640] X104 app: raising Suspending (sender=00703D0C args=03437394, 1 handler(s) registered)
+[  10468 ms T1640] X104 activation #33 Windows.Storage.ApplicationData IApplicationDataStatics {5612147B-E843-45E3-94D8-06169E3C8E17} -> unit platform: 0x00000000 S_OK
+[  10468 ms T1640] X104 platform: ApplicationData.get_Current
+[  10468 ms T1640] X104 platform: ApplicationData.Current.LocalSettings -> container object (non-NULL: the Launched/Suspending handlers dereference it)
+[  10468 ms T1640] X104 platform: ApplicationData.Current.LocalSettings.Values -> NULL (S_OK)
+[  10500 ms T1640] X104 async: item #4 Cancel() on thread 1640 (status was 0 Started -> Canceled)
+[  10500 ms T1640] X104 app: Suspending raised to 1 handler(s)
+[  10500 ms T1640] X104 async: shutdown begins (workers running 3, queued 0, posted 11, executed 10)
+[  10500 ms T0850] X104 async: ProcessEvents(ProcessUntilQuit) on thread 0850 (item #3) returns: Cancel / shutdown
+[  10500 ms T0f34] X104 async: ProcessEvents(ProcessUntilQuit) on thread 0f34 (item #1) returns: Cancel / shutdown
+[  10500 ms T0850] X104 async: item #3 finished status=2 hr=00000000 after 8094 ms
+[  10500 ms T0f34] X104 async: item #1 finished status=2 hr=00000000 after 10313 ms
+[  10515 ms T0a64] X104 async: item #4 finished status=2 hr=00000000 after 8109 ms
+[  10531 ms T1640] X104 async: shutdown: all workers finished after 31 ms (cancelled 2 running, dropped 0 queued functions and 0 queued dispatcher actions)
+[  10531 ms T1640] X104 app: exit proc: workers stopped, leaving the UI loop (code 0)
+[  10531 ms T1640] X104 flag: f_quit: x104_ui_quit - the UI loop is leaving
+[  10531 ms T1640] X104 app: exit proc done
+[  10531 ms T1640] X104 async: UI loop left (code 0; passes 1600, queue items executed 11, still queued 0)
+[  10531 ms T1640] X104 app: Start: UI loop returned 0
+[  10531 ms T1640] X104: the game's WinMain returned 7176136
+[  10531 ms T1640] ARM32 bootstrap step: X104 shutdown
+[  10531 ms T1640] X104 input: shutdown (dropped input events before HID::Initialize: 0)
+[  10531 ms T1640] X104 panel: shutdown: 1 SizeChanged raised, 1 SetSwapChain call(s), swap chain created=1 (stub=1, attempt a), device creations 1, game threads still own the GPU objects
+[  10531 ms T1640] X104 app: shutdown (exit requested=1, launched=1, exit proc ran=1)
+[  10531 ms T1640] X104 platform: shutdown (Vibrate calls 0, Cancel calls 0, network profile requests 0, tracer calls 0, memory queries 6)
+[  10531 ms T1640] X104: Win32Bootstrap returning 7176136
+[  10531 ms T1640] ARM32 exit guard armed (30 s): returning into the CRT exit()
+[  10531 ms T1640] X104 game called _exit_app(006d7fc8, 00942000) from game rva 00200a82

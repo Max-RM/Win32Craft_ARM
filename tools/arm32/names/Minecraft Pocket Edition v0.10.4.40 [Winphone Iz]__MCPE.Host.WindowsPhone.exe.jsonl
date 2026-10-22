@@ -1,0 +1,310 @@
+{"rva": 300224, "label": "AppPlatform_Winrt::ctor"}
+{"rva": 1115132, "label": "HIDController::ctor"}
+{"rva": 1116480, "label": "HID:lambda_start_input_thread(createCoreIndependentInputSource+ProcessEvents)"}
+{"rva": 1117160, "label": "HID:lambda_set_text_select_focus_textbox"}
+{"rva": 1116060, "label": "HID:lambda_put_text_select_end"}
+{"rva": 1116264, "label": "HID:lambda_set_arrow_cursor"}
+{"rva": 1116372, "label": "HID:lambda_unfocus_textbox_focus_panel"}
+{"rva": 1118844, "label": "HID:IControl_Focus_helper(obj,state)"}
+{"rva": 1121056, "label": "HID:RunOnDispatcher_lambda(AppPlatform_Winrt::vf32)"}
+{"rva": 1114856, "label": "CoreCursor::ctor_helper(type,id)"}
+{"rva": 1119264, "label": "HID:get_CoreWindow_for_cursor"}
+{"rva": 307856, "label": "AppPlatform_Winrt::queueInputEvent(ev*) [lock cs+0x50, push deque+0x70]"}
+{"rva": 307968, "label": "AppPlatform_Winrt::pollInputEvent (dequeue+dispatch by ev.type)"}
+{"rva": 1126416, "label": "HID:onPointerPressed(this=lambda ctx->HID, sender, PointerEventArgs)"}
+{"rva": 1125136, "label": "HID:onPointerMoved"}
+{"rva": 1128144, "label": "HID:onPointerReleased"}
+{"rva": 1124536, "label": "HID:onKeyDown"}
+{"rva": 1124912, "label": "HID:onKeyUp"}
+{"rva": 1129868, "label": "HID:onTextChanged"}
+{"rva": 1121308, "label": "HID::Initialize(HID,CoreWindow,SwapChainPanel|null,TextBox,focusPanel)"}
+{"rva": 1136516, "label": "PointerEventArgs::get_CurrentPoint(default iface slot6)"}
+{"rva": 1136792, "label": "PointerPoint::get_PointerDevice(slot6)"}
+{"rva": 1136884, "label": "PointerPoint::get_Properties(slot13)"}
+{"rva": 1136700, "label": "CoreWindow::get_Dispatcher(slot9)"}
+{"rva": 1118964, "label": "HID:resolveCoreWindow(weakref at HID+0x14)"}
+{"rva": 300224, "label": "AppPlatform_Winrt::ctor(creates HIDController at +0x2c)"}
+{"rva": 348636, "label": "TouchInputHolder::ctor"}
+{"rva": 349764, "label": "CustomInputHolder::ctor"}
+{"rva": 353312, "label": "InputHolder:factory(selects touch/keyboard+mouse)"}
+{"rva": 631212, "label": "KeyboardInput::ctor"}
+{"rva": 631788, "label": "TouchscreenInput::ctor"}
+{"rva": 369104, "label": "MinecraftClient::useTouchscreen (vf16)"}
+{"rva": 1940948, "label": "MainPage_or_App:init_with_storage_path"}
+{"rva": 1135880, "label": "Delegate:Invoke(this,sender,args)->functor->vf1 [vtable0 slot3, typed event handler objects]"}
+{"rva": 1123172, "label": "Delegate:memberFnFunctor::vf1(functor,sender,args)->fn(HID,sender,args)"}
+{"rva": 1945108, "label": "DX::DeviceResources::DeviceResources (ctor body; sets g_DeviceResources, calls CreateDeviceResources)"}
+{"rva": 1951140, "label": "DX::DeviceResources::DeviceResources (make_shared construct wrapper)"}
+{"rva": 1953324, "label": "frame:make_shared<DX::DeviceResources> (0x84 alloc)"}
+{"rva": 1945536, "label": "DX::DeviceResources::CreateDeviceResources (D3D11CreateDevice)"}
+{"rva": 1945944, "label": "DX::DeviceResources::CreateWindowSizeDependentResources (swapchain/RTV/DSV/viewport)"}
+{"rva": 1948344, "label": "DX::DeviceResources::HandleDeviceLost"}
+{"rva": 1948432, "label": "DX::DeviceResources::Present (IDXGISwapChain::Present(0,0))"}
+{"rva": 1948620, "label": "DX::DeviceResources::SetCompositionScale"}
+{"rva": 1948608, "label": "DX::DeviceResources::RegisterDeviceNotify"}
+{"rva": 1948700, "label": "DX::DeviceResources::SetCurrentOrientation"}
+{"rva": 1948728, "label": "DX::DeviceResources::SetViewportDepth(min,max)"}
+{"rva": 1948764, "label": "DX::DeviceResources::SetDpi"}
+{"rva": 1948800, "label": "DX::DeviceResources::SetLogicalSize"}
+{"rva": 1942964, "label": "AppMain::onKeyboardHeightChanged(int px) [friend 'tick'; InputPane Showing/Hiding]"}
+{"rva": 1948880, "label": "DX::DeviceResources::BindRenderTarget (OMSetRenderTargets)"}
+{"rva": 1963776, "label": "MainPage:InputPane_Hiding_handler -> AppMain::onKeyboardHeightChanged(0)"}
+{"rva": 1948992, "label": "DX::DeviceResources::SetSwapChainPanel"}
+{"rva": 1963796, "label": "MainPage:InputPane_Showing_handler -> AppMain::onKeyboardHeightChanged(OccludedRect.Height)"}
+{"rva": 1949568, "label": "DX::DeviceResources::SetViewportSize(w,h,minZ,maxZ)"}
+{"rva": 365944, "label": "MinecraftClient::setKeyboardHeight(int) [client+0x164=px*guiInv; screen->vf30]"}
+{"rva": 1949628, "label": "DX::DeviceResources::ApplyResolutionOverride(scaleX*,scaleY*)"}
+{"rva": 1943720, "label": "AppMain::startRenderLoop [ThreadPool RunWithPriorityAndOptions(lambda_fc75)]"}
+{"rva": 1949780, "label": "DX::DeviceResources::Trim (IDXGIDevice3::Trim)"}
+{"rva": 1944020, "label": "AppMain::stopRenderLoop [IAsyncInfo::Cancel]"}
+{"rva": 1949876, "label": "DX::DeviceResources::ValidateDevice"}
+{"rva": 1941856, "label": "AppMain:renderLoop_body(capture,IAsyncAction) while Started: lock;if ready{platform poll;client->vf19;DR::present}"}
+{"rva": 1950716, "label": "frame:IDependencyObject::get_Dispatcher helper"}
+{"rva": 1942232, "label": "AppMain:initJob_lambda_Invoke -> sub_471e8(client,holder); sets AppMain+0x3C=1"}
+{"rva": 1945348, "label": "frame:lambda SwapChainPanel QI ISwapChainPanelNative->SetSwapChain"}
+{"rva": 291304, "label": "MinecraftClient:runInit(client,holder) [client+0xC=holder; client->vf7 init]"}
+{"rva": 307284, "label": "DX::DeviceResources::GetInstance (global 0xe2afc4)"}
+{"rva": 359300, "label": "MinecraftClient::init (vf7) [textures +0x118, font +0x11C, shaders, initial screen]"}
+{"rva": 1940756, "label": "MCPE_Host::AppMain::AppMain(shared_ptr<DeviceResources>)"}
+{"rva": 1940948, "label": "MCPE_Host::AppMain::createApp (new AppPlatform_Winrt + MinecraftClient + init thread)"}
+{"rva": 1935956, "label": "Minecraft::update (vf19) [ticks + render vf30]"}
+{"rva": 1941572, "label": "MCPE_Host::AppMain::~AppMain"}
+{"rva": 1942288, "label": "AppMain::isReady (byte AppMain+0x3C)"}
+{"rva": 1941856, "label": "MCPE_Host::AppMain render-loop WorkItemHandler body (lock; platform update; app vf19; Present)"}
+{"rva": 1943092, "label": "AppMain::onPanelSizeChanged(panel,..) [platform init/scale + client->setSize]"}
+{"rva": 1942288, "label": "MCPE_Host::AppMain::IsAppInitialized (byte +0x3c)"}
+{"rva": 308572, "label": "AppPlatform_Winrt::initialize(window/panel/textbox..) [HID::Initialize, dpi scale +0x38/0x3C/0x40]"}
+{"rva": 1942316, "label": "MCPE_Host::AppMain::OnWindowSizeChanged(panel,SizeChangedEventArgs)"}
+{"rva": 1948432, "label": "DX::DeviceResources::present (swapchain DR+0xC Present(0,0))"}
+{"rva": 1948608, "label": "DX::DeviceResources::setOwner (DR+0x74)"}
+{"rva": 1943092, "label": "MCPE_Host::AppMain::AttachToPanel (AppPlatform_Winrt init + size)"}
+{"rva": 1945536, "label": "DX::DeviceResources::CreateDeviceResources"}
+{"rva": 1943720, "label": "MCPE_Host::AppMain::StartRenderLoop (ThreadPool::RunAsync High/TimeSliced)"}
+{"rva": 1944020, "label": "MCPE_Host::AppMain::StopRenderLoop (IAsyncInfo::Cancel)"}
+RTV/DSV/viewport)"}
+{"rva": 1949876, "label": "DX::DeviceResources::CreateWindowSizeDependentResources (outer, SizeChanged)"}
+{"rva": 1940480, "label": "frame:WorkItemHandler ctor (render loop)"}
+{"rva": 1953324, "label": "make_shared<DX::DeviceResources>(out)"}
+{"rva": 1940672, "label": "MCPE_Host::AppMain::newMinecraftClient (0x168 alloc, ctor 54e90)"}
+{"rva": 1945108, "label": "DX::DeviceResources::ctor (writes global 0xE2AFC4)"}
+{"rva": 1953628, "label": "MCPE_Host::MainPage::MainPage (ctor)"}
+{"rva": 307284, "label": "DX::DeviceResources::get() [global 0xE2AFC4, throws if unset]"}
+{"rva": 881660, "label": "getShaderModelSuffix(featureLevel) [9_3 -> _level_9_3; >=10_0 -> ''; else throws]"}
+nderLoop)"}
+{"rva": 1964460, "label": "MCPE_Host::MainPage CoreWindow VisibilityChanged"}
+{"rva": 366136, "label": "MinecraftClient::setScreen(Screen*)"}
+{"rva": 1964040, "label": "MCPE_Host::MainPage SwapChainPanel SizeChanged (SetSwapChainPanel+SetLogicalSize+AppMain size)"}
+{"rva": 1963280, "label": "MCPE_Host::MainPage CompositionScaleChanged"}
+{"rva": 366392, "label": "MinecraftClient::setSize(w,h,scale)"}
+{"rva": 362544, "label": "MinecraftClient::leaveGame-ish (vf32) [StartMenuScreen only if arg2]"}
+{"rva": 1963644, "label": "MCPE_Host::MainPage DisplayInformation DpiChanged"}
+{"rva": 1963884, "label": "MCPE_Host::MainPage DisplayInformation OrientationChanged"}
+{"rva": 381724, "label": "ImageButton::ctor [NOT a texture-manager setter]"}
+{"rva": 1934512, "label": "Minecraft::init-after-platform [clientId.txt; calls setSize]"}
+}
+{"rva": 1953428, "label": "frame:DispatcherTimer create (50ms, +Tick)"}
+t+paths+init job RunAsync)"}
+{"rva": 1940756, "label": "AppMain::ctor(this, shared_ptr<DR>*)"}
+{"rva": 1935956, "label": "Minecraft::update (per-frame: vf28, timer, vf31 ticks, vf29 render, vf30)"}
+{"rva": 1940328, "label": "AppMain:make_initJob_delegate(WorkItemHandler lambda_c7b7)"}
++8=1)"}
+{"rva": 331436, "label": "AppPlatform_Winrt::update (drain UI task queue, timers)"}
+{"rva": 1940480, "label": "AppMain:make_renderLoop_delegate(WorkItemHandler lambda_fc75)"}
+{"rva": 1942692, "label": "ThreadPool::RunAsync(handler) via IThreadPoolStatics slot6"}
+{"rva": 879164, "label": "mce::ShaderProgram::ShaderProgram (D3DCompile call at d6c94)"}
+{"rva": 878028, "label": "mce::ShaderGroup::loadShader(type,name,defines)"}
+{"rva": 1130616, "label": "ThreadPool::RunWithPriorityAndOptionsAsync(handler,prio,opts) via IThreadPoolStatics slot8"}
+{"rva": 1964196, "label": "MainPage:Layout/Loaded_handler -> AppMain::onPanelSizeChanged + startRenderLoop (if ready)"}
+{"rva": 881660, "label": "shader:getShaderModelSuffix (9_3 -> _level_9_3, others '', 9_1/9_2 throw)"}
+{"rva": 881200, "label": "shader:getMajorShaderModel (11_x=5, else 4)"}
+{"rva": 881428, "label": "shader:getMinorShaderModel (10_1=1, else 0)"}
+{"rva": 326208, "label": "AppPlatform_Winrt::setScreenWidth(int) [+0x30]"}
+{"rva": 881912, "label": "shader:getShaderProfileType (vs/ps)"}
+ [+0x34]"}
+{"rva": 852408, "label": "mce::Shader::Shader (D3DReflect)"}
+{"rva": 831852, "label": "mce::Material parse defines (+R8G8B8A8_SNORM_UNSUPPORTED if FL<10_0)"}
+{"rva": 826580, "label": "mce::MaterialGroup::loadMaterialFile (.material JSON)"}
+{"rva": 761372, "label": "GameRenderer::render begin (viewport+bind RT)"}
+{"rva": 368916, "label": "MinecraftClient::render (vf29)"}
+{"rva": 812388, "label": "DX::GetDevicePtr (&DeviceResources+4)"}
+{"rva": 1972120, "label": "HardwareButtons::add_BackPressed(token*,delegate) via statics"}
+{"rva": 1963280, "label": "MainPage::OnCompositionScaleChanged"}
+{"rva": 2099548, "label": "CRT:entry thunk (/GS cookie init; falls into 0x200970) [PE entry 0x20095d]"}
+{"rva": 2099568, "label": "CRT:mainCRTStartup-like (initterm tables 0x20bda0/0x20b6c8; calls WinMain-wrapper at 0x200a72)"}
+{"rva": 2113276, "label": "startup:WinMain thunk -> 0x20405c"}
+{"rva": 2113628, "label": "startup:vccorlib [MTAThread] main wrapper (GetCmdArguments -> Array<String^> -> sub_1f42a4)"}
+{"rva": 2048676, "label": "startup:user main(Array<String^>^): new ApplicationInitializationCallback(lambda->new App2) ; Application::Start"}
+{"rva": 2009364, "label": "startup:ApplicationInitializationCallback delegate ctor (0x58 bytes, functor lambda_bd4a at +0x14)"}
+{"rva": 2024320, "label": "startup:ApplicationInitializationCallback lambda body: new App2 (alloc 0x34/align 0x40) -> App2::ctor 0x1e2b48"}
+{"rva": 2026684, "label": "startup:Application::Start(callback) via IApplicationStatics slot7 (0x1c)"}
+{"rva": 1977160, "label": "MCPE_Host::App2::App2 (ctor: composable base ctor + add_Suspending + add_Resuming)"}
+{"rva": 1977584, "label": "MCPE_Host::App2 base: IApplicationFactory::CreateInstance(outer=this+8,&inner=this+0x14)"}
+{"rva": 1980976, "label": "MCPE_Host::App2::OnLaunched(LaunchActivatedEventArgs^) [StatusBar hide, new MainPage, Window.Content=page, Window.Activate]"}
+{"rva": 1987712, "label": "App2 IApplicationOverrides::OnLaunched ABI wrapper (disposed-flag check +0x3c) -> 0x1e3a30"}
+{"rva": 1981856, "label": "MCPE_Host::App2::OnSuspending lambda (ApplicationData.LocalSettings.Values -> MainPage::vf10)"}
+{"rva": 1981492, "label": "MCPE_Host::App2::OnResuming lambda (ApplicationData.LocalSettings.Values -> MainPage::vf11)"}
+{"rva": 1979284, "label": "frame:StatusBar::GetForCurrentView helper (IStatusBarStatics slot6)"}
+{"rva": 1979660, "label": "frame:IStatusBar::HideAsync helper (slot7)"}
+{"rva": 2022872, "label": "MCPE_Host::MainPage::InitializeComponent (LoadComponent ms-appx:///MainPage.xaml + FindName swapChainPanel/Logo/EditBox/Button)"}
+{"rva": 1955956, "label": "MainPage:Page base composable ctor (IPageFactory::CreateInstance outer=this+8, inner=this+0x1c)"}
+{"rva": 2020216, "label": "frame:IFrameworkElement::FindName(name) helper (slot51)"}
+{"rva": 2024484, "label": "frame:Application::LoadComponentWithResourceLocation(component,uri,0) helper (IApplicationStatics slot9)"}
+{"rva": 1083552, "label": "frame:Windows.Foundation.Uri::CreateUri(hstring) helper"}
+{"rva": 1958076, "label": "MainPage:input-thread work item (ISwapChainPanel::CreateCoreIndependentInputSource(7); 3 empty pointer handlers; Dispatcher.ProcessEvents(ProcessUntilQuit))"}
+{"rva": 1964728, "label": "MainPage:Canvas.SetLeft(element,double) helper (ICanvasStatics slot8)"}
+{"rva": 1963544, "label": "MainPage:DisplayContentsInvalidated handler -> DeviceResources::ValidateDevice (sub_1dc0b4)"}
+{"rva": 1963240, "label": "MainPage:HardwareButtons.BackPressed handler (args->put_Handled(AppMain::sub_1da248))"}
+{"rva": 1942088, "label": "AppMain::HandleBackPressed (RTDynamicCast of current screen; returns handled)"}
+{"rva": 1964608, "label": "MCPE_Host::MainPage::vf10 SaveState/Suspend (Trim, StopRenderLoop, client suspend)"}
+{"rva": 1963204, "label": "MCPE_Host::MainPage::vf11 LoadState/Resume (client resume, StartRenderLoop)"}
+{"rva": 1944360, "label": "frame:ApplicationData::Current helper (IApplicationDataStatics slot6)"}
+{"rva": 1944704, "label": "frame:Window::Current helper (IWindowStatics slot6)"}
+{"rva": 1944268, "label": "frame:Window::get_CoreWindow helper (IWindow slot10)"}
+{"rva": 1944152, "label": "frame:IUIElement::get_RenderSize helper (slot23)"}
+{"rva": 1944864, "label": "frame:ApplicationData::get_LocalFolder helper (slot12)"}
+{"rva": 307032, "label": "frame:DisplayInformation::GetForCurrentView helper (IDisplayInformationStatics slot6)"}
+{"rva": 1960396, "label": "frame:InputPane::GetForCurrentView helper (IInputPaneStatics slot6)"}
+{"rva": 1972284, "label": "frame:DisplayInformation.add_DisplayContentsInvalidated static helper (IDisplayInformationStatics slot9)"}
+{"rva": 1972000, "label": "frame:IFrameworkElement::add_SizeChanged helper (slot47)"}
+{"rva": 1973488, "label": "frame:IUIElement::put_Visibility helper (slot22)"}
+{"rva": 2097636, "label": "frame:GetActivationFactory(classname,iid,out) thunk -> vccorlib IAT 0x20b5fc"}
+{"rva": 1073880, "label": "SoundSystemRT::ctor"}
+{"rva": 331436, "label": "AppPlatform_Winrt::pumpInput (drain queue via pollInputEvent; also keyboard-timeout StatusBar hide)"}
+{"rva": 326340, "label": "AppPlatform_Winrt::showKeyboard(const std::string& text,int maxLen,bool limit) [vtbl slot31]"}
+{"rva": 322988, "label": "AppPlatform_Winrt::hideKeyboard [vtbl slot32]"}
+{"rva": 331564, "label": "AppPlatform_Winrt::updateTextBoxText(const std::string&) [vtbl slot33]"}
+{"rva": 1131040, "label": "HID::ShowKeyboard(HID,HSTRING text,int maxLen,bool limit)->RunAsync(lambda_set_text_select_focus_textbox)"}
+{"rva": 1131536, "label": "HID::UpdateText(HID,HSTRING)->RunAsync(lambda_put_text_select_end)"}
+{"rva": 293376, "label": "AppPlatform::showKeyboard base: this+4=1"}
+{"rva": 292640, "label": "AppPlatform::hideKeyboard base: this+4=0"}
+{"rva": 292672, "label": "AppPlatform::isKeyboardVisible [vtbl slot34] returns this+4"}
+{"rva": 291692, "label": "AppPlatform::notifyListeners_onAppFocusGained (listener vf5)"}
+{"rva": 291796, "label": "AppPlatform::notifyListeners_onAppFocusLost (listener vf4)"}
+{"rva": 291900, "label": "AppPlatform::notifyListeners_onAppResumed (listener vf3)"}
+{"rva": 1943092, "label": "AppMain:attachUi(SwapChainPanel,TextBox,focusCtl) -> AppPlatform_Winrt::initInput"}
+{"rva": 308572, "label": "AppPlatform_Winrt::initInput(CoreWindow,SwapChainPanel,TextBox,focusCtl) -> HID::Initialize + dpi scale fields"}
+{"rva": 1964196, "label": "MainPage::OnTick(DispatcherTimer 50ms): when AppMain initialized -> stop timer, attachUi, start render"}
+{"rva": 1963240, "label": "MainPage::OnBackPressed(sender,BackPressedEventArgs)->put_Handled(AppMain::HandleBack)"}
+{"rva": 1942088, "label": "AppMain::HandleBack: if screen not Touch::StartMenuScreen queue back-event, return handled"}
+{"rva": 1963776, "label": "MainPage::OnInputPaneHiding -> AppMain::SetKeyboardHeight(0)"}
+{"rva": 1963796, "label": "MainPage::OnInputPaneShowing -> AppMain::SetKeyboardHeight(InputPane.OccludedRect.Height)"}
+{"rva": 1942964, "label": "AppMain::SetKeyboardHeight(h)"}
+{"rva": 365944, "label": "MinecraftClient::setKeyboardHeight(h*scale)"}
+{"rva": 1941856, "label": "AppMain::updateFrame (calls AppPlatform_Winrt::pumpInput)"}
+{"rva": 306732, "label": "AppPlatform_Winrt::queueBackEvent (ev type 4)"}
+{"rva": 1138564, "label": "Mouse::feed(button,down,x,y)"}
+{"rva": 1139780, "label": "Multitouch::feed(button,down,x,y,slot)"}
+{"rva": 320872, "label": "Keyboard::feed(key,down)"}
+{"rva": 320920, "label": "Keyboard::feedText(const std::string&,bool)"}
+{"rva": 1124300, "label": "HID:mapVirtualKey(vk)->game key"}
+{"rva": 1118716, "label": "HID:allocPointerSlot(pointerId)"}
+{"rva": 1119664, "label": "HID:diffTextAndFeedKeyboard(oldBuf,newWstr)"}
+{"rva": 1120736, "label": "HID:feedBackspaces"}
+{"rva": 1120404, "label": "HID:feedChars"}
+{"rva": 321600, "label": "platform:Package.Current (IPackageStatics{4E534BDF} get_Current slot6)"}
+{"rva": 321508, "label": "platform:IPackageStatics::get_Current helper (slot6)"}
+{"rva": 321760, "label": "platform:IPackage::get_InstalledLocation helper (slot7)"}
+{"rva": 322104, "label": "platform:IStorageItem::get_Path -> duplicated HSTRING (slot12)"}
+{"rva": 1944360, "label": "platform:ApplicationData.Current (IApplicationDataStatics{5612147B})"}
+{"rva": 1944520, "label": "platform:IApplicationDataStatics::get_Current helper (slot6)"}
+{"rva": 1944864, "label": "platform:IApplicationData::get_LocalFolder helper (slot12)"}
+{"rva": 321180, "label": "platform:MemoryManager.AppMemoryUsage (u64, slot6)"}
+{"rva": 321344, "label": "platform:MemoryManager.AppMemoryUsageLimit (u64, slot7)"}
+{"rva": 322296, "label": "AppPlatform_Winrt::getFreeMemory (vf40; limit-usage, u64 in r0:r1)"}
+{"rva": 306872, "label": "platform:VibrationDevice.GetDefault (IVibrationDeviceStatics{332FD2F1} slot6)"}
+{"rva": 331760, "label": "AppPlatform_Winrt::vibrate(ms) (vf29; Cancel+Vibrate(ms*10000 ticks); deadline +0x48)"}
+{"rva": 307464, "label": "platform:NetworkInformation.GetInternetConnectionProfile (INetworkInformationStatics{5074F851} slot7)"}
+{"rva": 323348, "label": "AppPlatform_Winrt::isNetworkEnabled(wifiOnly) (vf19)"}
+{"rva": 321852, "label": "platform:CurrentAppSimulator.LicenseInformation (ICurrentAppSimulatorStatics{F17F9DB1} slot6)"}
+{"rva": 320336, "label": "AppPlatform_Winrt::buyGame-ish (vf23; ProductLicenses.Lookup(TODO).IsActive else RequestProductPurchaseAsync)"}
+{"rva": 1942692, "label": "platform:ThreadPool.RunAsync(handler) (IThreadPoolStatics{B6BF67DD} slot6)"}
+{"rva": 309196, "label": "platform:AsyncCausalityTracer.TraceOperationCreation (slot6)"}
+{"rva": 309000, "label": "platform:AsyncCausalityTracer.TraceOperationCompletion (slot7)"}
+{"rva": 309400, "label": "platform:AsyncCausalityTracer.TraceOperationRelation (slot8)"}
+{"rva": 309764, "label": "platform:AsyncCausalityTracer.TraceSynchronousWorkStart (slot9)"}
+{"rva": 309596, "label": "platform:AsyncCausalityTracer.TraceSynchronousWorkCompletion (slot10)"}
+{"rva": 1074260, "label": "SoundSystemRT::getSourceVoice(WAVEFORMATEX*) (XAudio2 CreateSourceVoice slot5, reuse pool)"}
+{"rva": 1074640, "label": "SoundSystemRT::submitAndStart(voice,data,bytes) (SubmitSourceBuffer slot21 + Start slot19)"}
+{"rva": 1074824, "label": "SoundSystemRT::vf9 play(PCMSound*,float vol) (SetVolume slot12)"}
+{"rva": 1074736, "label": "SoundSystemRT::vf10 init (XAudio2Create + CreateMasteringVoice 2ch/44100)"}
+{"rva": 981504, "label": "SoundEngine::ctor (SoundSystemRT base ctor 1062d8)"}
+{"rva": 984040, "label": "SoundEngine::registerSounds (name -> embedded PCMSound globals)"}
+{"rva": 293164, "label": "AppPlatform::readAssetFile base (fopen rb/fread -> std::string)"}
+{"rva": 325504, "label": "AppPlatform_Winrt::readAssetFile(name) (vf14; this+0x14 + /data/ + name)"}
+{"rva": 322448, "label": "AppPlatform_Winrt::getImagePath(name,bool) (vf1; /data/images/)"}
+{"rva": 323624, "label": "AppPlatform_Winrt::loadPNG (vf2; libpng 1.5.13 over ifstream)"}
+{"rva": 292888, "label": "AppPlatform::loadTGA (vf3 base; sub_125bc4 fopen)"}
+{"rva": 325632, "label": "AppPlatform_Winrt::savePNG (vf12; name+.png, sub_51084 fopen/fwrite)"}
+{"rva": 322328, "label": "AppPlatform_Winrt::getDateString(int) (vf9; 'N s (UTC)')"}
+{"rva": 656396, "label": "game:memoryTier() (AppPlatform global vf40: >0x1EA00000 high, >0xE600000 mid, else low -> string)"}
+{"rva": 291436, "label": "AppPlatform::ctor (base; stores this into global 0xDDD7E0)"}
+{"rva": 208308, "label": "RakNet::RakPeer::ctor (WSAStartup)"}
+{"rva": 210060, "label": "RakNet::RakPeer::dtor (WSACleanup)"}
+{"rva": 259968, "label": "RakNet:createUdpSocket (socket(AF_INET,SOCK_DGRAM)+bind)"}
+{"rva": 260636, "label": "RakNet:sendto wrapper"}
+{"rva": 250728, "label": "RakNet:recvfrom wrapper"}
+{"rva": 261000, "label": "RakNet:enumerateLocalAddresses (WSAIoctl SIO_ADDRESS_LIST_QUERY?)"}
+{"rva": 203360, "label": "RakNet:SystemAddress::FromString (inet_addr/gethostbyname)"}
+{"rva": 128256, "label": "leveldb WinRTEnv: open file (CreateFile2)"}
+{"rva": 331436, "label": "AppPlatform_Winrt::pumpInput (drain input queue; cancel vibration when deadline +0x48 passed)"}
+{"rva": 357820, "label": "MinecraftClient::handleBack(bool) [vtbl slot24]"}
+{"rva": 1948620, "label": "DX::DeviceResources::SetCompositionScale"}
+{"rva": 261000, "label": "RakNet:enumerateLocalAddresses (WSAIoctl SIO_GET_INTERFACE_LIST 0x4004747F)"}
+{"rva": 295128, "label": "std::string(const wchar_t*,const wchar_t*) NARROWING ctor (truncates each UTF-16 unit to its low byte)"}
+{"rva": 658112, "label": "game:memoryTier consumer #1 (calls a040c)"}
+{"rva": 664332, "label": "Options::init (called from MinecraftClient::init at 57e40; uses memoryTier a040c twice for defaults; options.txt)"}
+{"rva": 656396, "label": "game:memoryTierVector() (platform vf40 free mem: >0x1EA00000 -> vec@0xDDED14, >0xE600000 -> vec@0xDDED20, else vec@0xDDED2C; used for view-distance lists)"}
+{"rva": 347792, "label": "MinecraftClient::ctor (this,0,0): Minecraft::ctor + zero fields; Options factory etc."}
+{"rva": 1932612, "label": "Minecraft::ctor (sets Minecraft vtbl, +0x20/+0x24=1, Timer* at +0xA8 0x24 bytes)"}
+{"rva": 290624, "label": "App::ctor (vtbl 0x33f824; +8 inited,+9 quit,+0xC platform**,+0x10 args vector)"}
+{"rva": 291344, "label": "App::getPlatform (vf8): **(this+0xC) or NULL"}
+{"rva": 291392, "label": "App::quit (vf21): this+9=1"}
+{"rva": 291424, "label": "App::wantToQuit (vf22): returns this+9"}
+{"rva": 363072, "label": "MinecraftClient::onAppFocusGained (listener vf5): +0x13C=1"}
+{"rva": 363088, "label": "MinecraftClient::onAppFocusLost (listener vf4)"}
+{"rva": 363176, "label": "MinecraftClient::onAppResumed (listener vf3): reload textures, +0x13C=1"}
+{"rva": 363248, "label": "MinecraftClient::onAppSuspended (listener vf2): textures unload, materials release, +0x13C=0"}
+{"rva": 363888, "label": "MinecraftClient::onLowMemory (listener vf1)"}
+{"rva": 366932, "label": "MinecraftClient::preUpdate (vf28): drain task deque(+0xF8/+0x104), frame++, Mtx_lock(+0x15C)"}
+{"rva": 355292, "label": "MinecraftClient::postUpdate (vf30)"}
+{"rva": 367244, "label": "MinecraftClient::tick (vf31)(i,n)"}
+{"rva": 1935012, "label": "Minecraft::leaveGame base (vf32 base): destroys +0x68/+0x50, +0xB0=0"}
+{"rva": 1935632, "label": "Minecraft::setGame (vf27): install unique_ptr at +0x68, +0xB0=1"}
+{"rva": 1935708, "label": "Minecraft::vf25 destroy world objects (+0x6C/+0x50/+0x40/+0x48/+0x68)"}
+{"rva": 596540, "label": "ScreenChooser::setScreen(id) -> createScreen + MinecraftClient::setScreen"}
+{"rva": 596184, "label": "ScreenChooser::createScreen(id 1..6): id1=Touch::StartMenuScreen(0x388, ctor 0x995ec)"}
+{"rva": 628204, "label": "Touch::StartMenuScreen::ctor"}
+{"rva": 591396, "label": "Screen::init(screen,client,w,h): +0xB0=client,+0xFC=client->font(+0x11C),+0xA4=w,+0xA8=h; vf2,vf3,vf31"}
+{"rva": 595432, "label": "Screen::setSize(w,h): +0xA4,+0xA8 then vf3"}
+{"rva": 901016, "label": "Textures::ctor(this,Options*,AppPlatform*) [size 0xB8; +0xC options,+0x10 platform]"}
+{"rva": 346272, "label": "Font factory (new 0x890; args: out, &textures-sp, font/default8.png, options)"}
+{"rva": 346816, "label": "Options factory (new 0x2D0, ctor 0x550dc) -> client+0x134"}
+{"rva": 346536, "label": "Gui factory (new 0xC30, ctor 0x6c684) -> client+0x130"}
+{"rva": 346460, "label": "GameRenderer factory (new 0x130, ctor 0xb86e4) -> client+0x10C"}
+{"rva": 367152, "label": "MinecraftClient::vf25 (destroy world)"}
+{"rva": 365520, "label": "MinecraftClient::createLevel-ish (vf26)"}
+{"rva": 366004, "label": "MinecraftClient::setGame wrapper (vf27)"}
+{"rva": 347000, "label": "ScreenChooser factory (new, stores client at +0) -> client+0xE8"}
+{"rva": 293652, "label": "AppPlatformListener::ctor (vtbl 0x33F940, platform=0)"}
+{"rva": 293568, "label": "AppPlatformListener::ctor+register (priority 1.0f; used by Gui etc.)"}
+{"rva": 293876, "label": "AppPlatformListener::registerListener(listener,float prio) [listener+4=g_platform]"}
+{"rva": 1940632, "label": "AppMain:new 8-byte AppPlatform* cell"}
+{"rva": 1917548, "label": "client init: registry setup (0x1D426C)"}
+{"rva": 843724, "label": "MaterialManager::load(path) (registers listener, loads shaders)"}
+{"rva": 353192, "label": "MinecraftClient::loadFancyOrSadMaterials (fancy.json/sad.json)"}
+{"rva": 1740988, "label": "createDirectories(base, parts[], n) via _access/_mkdir"}
+{"rva": 0, "label": "x"}
+{"rva": 2099826, "label": "pe_patch:WinMain call site bl 0x203efc (patched to trampoline at 0x20A364)"}
+{"rva": 2138980, "label": "pe_patch:trampoline slot in .text slack (16 B, zero in stock exe)"}
+{"rva": 2096844, "label": "CRT:XIA entry vccorlib InitializeData([0xDC9F5C]=2 -> RoInitialize MTA) + atexit UninitializeData"}
+{"rva": 2097028, "label": "CRT:atexit thunk vccorlib UninitializeData"}
+{"rva": 2099320, "label": "CRT:XIA entry pre-main init (EncodePointer(-1), _fmode/_commode, setusermatherr, RoInitialize if [0xE2B03C])"}
+{"rva": 2098424, "label": "CRT:XIA entry onexit table init (_calloc_crt 32x4)"}
+{"rva": 2100844, "label": "CRT:/GS security cookie init (cookie RVA 0xDC9F60 default 0xBB40E64E)"}
+{"rva": 2099472, "label": "CRT:XCA entry 0 __getmainargs wrapper"}
+{"rva": 2145696, "label": "CRT:XIA table (initterm_e) 0x20bda0..0x20bdb4"}
+{"rva": 2143944, "label": "CRT:XCA table (initterm) 0x20b6c8..0x20bd9c (437 slots, 436 non-null)"}
+{"rva": 3149632, "label": "PE:TLS directory (start 0x124d000 end 0x124d008 index 0x122b240 callbacks 0x60bdbc)"}
+{"rva": 2145724, "label": "PE:TLS callbacks array (empty, first entry NULL)"}
+{"rva": 3149560, "label": "PE:load config (size 0x48, SecurityCookie VA 0x11c9f60, no SafeSEH/CFG)"}
+{"rva": 2097928, "label": "IAT thunk vccorlib120_app!GetActivationFactoryByPCWSTR (IAT 0x20B5FC)"}

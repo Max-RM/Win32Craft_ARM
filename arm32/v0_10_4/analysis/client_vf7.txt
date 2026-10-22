@@ -1,0 +1,789 @@
+﻿function MinecraftClient::vf7  [00057b84..000583ea) len=2150
+00057b84: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+00057b88: 0df11c0b add.w    fp, sp, #0x1c               
+00057b8c: a9f764fc bl       #0x1458                       ; sub_1458
+00057b90: aab0     sub      sp, #0xa8                   
+00057b92: 6f46     mov      r7, sp                      
+00057b94: 6ff00103 mvn      r3, #1                      
+00057b98: 4ff0000a mov.w    sl, #0                      
+00057b9c: c7e91a33 strd     r3, r3, [r7, #0x68]         
+00057ba0: 41f6dc64 movw     r4, #0x1edc                   ; -> 0x00611edc str "/games"
+00057ba4: c0f26104 movt     r4, #0x61                   
+00057ba8: 41f6e468 movw     r8, #0x1ee4                   ; -> 0x00611ee4 str "/com.mojang"
+00057bac: c0f26108 movt     r8, #0x61                   
+00057bb0: 41f6f069 movw     sb, #0x1ef0                   ; -> 0x00611ef0 str "/minecraftpe"
+00057bb4: c0f26109 movt     sb, #0x61                   
+00057bb8: c7f808a0 str.w    sl, [r7, #8]                
+00057bbc: d0f88c30 ldr.w    r3, [r0, #0x8c]             
+00057bc0: 0646     mov      r6, r0                      
+00057bc2: 102b     cmp      r3, #0x10                   
+00057bc4: 5546     mov      r5, sl                      
+00057bc6: c7f89840 str.w    r4, [r7, #0x98]             
+00057bca: c7f89c80 str.w    r8, [r7, #0x9c]             
+00057bce: c7f8a090 str.w    sb, [r7, #0xa0]             
+00057bd2: 01d3     blo      #0x57bd8                    
+00057bd4: b06f     ldr      r0, [r6, #0x78]             
+00057bd6: 01e0     b        #0x57bdc                      ; sub_57bdc
+00057bd8: 06f17800 add.w    r0, r6, #0x78               
+00057bdc: 17f19801 adds.w   r1, r7, #0x98               
+00057be0: 0322     movs     r2, #3                      
+00057be2: 51f16bfa bl       #0x1a90bc                     ; sub_1a90bc
+00057be6: 17f13000 adds.w   r0, r7, #0x30               
+00057bea: 2246     mov      r2, r4                      
+00057bec: 06f17801 add.w    r1, r6, #0x78               
+00057bf0: c2f7a2f9 bl       #0x19f38                      ; sub_19f38
+00057bf4: 0146     mov      r1, r0                      
+00057bf6: 17f15000 adds.w   r0, r7, #0x50               
+00057bfa: 4246     mov      r2, r8                      
+00057bfc: b9f756f8 bl       #0x10cac                      ; sub_10cac
+00057c00: 0146     mov      r1, r0                      
+00057c02: 17f11800 adds.w   r0, r7, #0x18               
+00057c06: 4a46     mov      r2, sb                      
+00057c08: b9f750f8 bl       #0x10cac                      ; sub_10cac
+00057c0c: 0146     mov      r1, r0                      
+00057c0e: 06f1b400 add.w    r0, r6, #0xb4               
+00057c12: c1f789fa bl       #0x19128                      ; sub_19128
+00057c16: fb6a     ldr      r3, [r7, #0x2c]             
+00057c18: 102b     cmp      r3, #0x10                   
+00057c1a: 02d3     blo      #0x57c22                    
+00057c1c: b869     ldr      r0, [r7, #0x18]             
+00057c1e: a8f10dfc bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00057c22: 0f23     movs     r3, #0xf                    
+00057c24: fb62     str      r3, [r7, #0x2c]             
+00057c26: 0023     movs     r3, #0                      
+00057c28: bb62     str      r3, [r7, #0x28]             
+00057c2a: 3b76     strb     r3, [r7, #0x18]             
+00057c2c: 7b6e     ldr      r3, [r7, #0x64]             
+00057c2e: 102b     cmp      r3, #0x10                   
+00057c30: 02d3     blo      #0x57c38                    
+00057c32: 386d     ldr      r0, [r7, #0x50]             
+00057c34: a8f102fc bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00057c38: 0f23     movs     r3, #0xf                    
+00057c3a: 7b66     str      r3, [r7, #0x64]             
+00057c3c: 0023     movs     r3, #0                      
+00057c3e: 3b66     str      r3, [r7, #0x60]             
+00057c40: 87f85030 strb.w   r3, [r7, #0x50]             
+00057c44: 7b6c     ldr      r3, [r7, #0x44]             
+00057c46: 102b     cmp      r3, #0x10                   
+00057c48: 02d3     blo      #0x57c50                    
+00057c4a: 386b     ldr      r0, [r7, #0x30]             
+00057c4c: a8f1f6fb bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00057c50: 00f0acfc bl       #0x585ac                      ; sub_585ac
+00057c54: 0f23     movs     r3, #0xf                    
+00057c56: 41f60071 movw     r1, #0x1f00                   ; -> 0x00611f00 str "images/"
+00057c5a: c0f26101 movt     r1, #0x61                   
+00057c5e: c7f89430 str.w    r3, [r7, #0x94]             
+00057c62: 0023     movs     r3, #0                      
+00057c64: 17f18000 adds.w   r0, r7, #0x80               
+00057c68: 0722     movs     r2, #7                      
+00057c6a: c7f89030 str.w    r3, [r7, #0x90]             
+00057c6e: 87f88030 strb.w   r3, [r7, #0x80]             
+00057c72: b5f7bbfd bl       #0xd7ec                       ; sub_d7ec
+00057c76: 4020     movs     r0, #0x40                   
+00057c78: a8f1dafb bl       #0x200430                     ; thunk[msvcr120_app.dll!??2@YAPAXI@Z]
+00057c7c: 0446     mov      r4, r0                      
+00057c7e: 3c60     str      r4, [r7]                    
+00057c80: 1cb3     cbz      r4, #0x57cca                
+00057c82: 0023     movs     r3, #0                      
+00057c84: 2360     str      r3, [r4]                    
+00057c86: 6360     str      r3, [r4, #4]                
+00057c88: a360     str      r3, [r4, #8]                
+00057c8a: e360     str      r3, [r4, #0xc]              
+00057c8c: 2361     str      r3, [r4, #0x10]             
+00057c8e: 6361     str      r3, [r4, #0x14]             
+00057c90: a361     str      r3, [r4, #0x18]             
+00057c92: e361     str      r3, [r4, #0x1c]             
+00057c94: 2362     str      r3, [r4, #0x20]             
+00057c96: 6362     str      r3, [r4, #0x24]             
+00057c98: a362     str      r3, [r4, #0x28]             
+00057c9a: 41f60872 movw     r2, #0x1f08                   ; -> 0x00611f08 str "terrain.meta"
+00057c9e: c0f26102 movt     r2, #0x61                   
+00057ca2: e362     str      r3, [r4, #0x2c]             
+00057ca4: 2363     str      r3, [r4, #0x30]             
+00057ca6: 6363     str      r3, [r4, #0x34]             
+00057ca8: a363     str      r3, [r4, #0x38]             
+00057caa: 17f18001 adds.w   r1, r7, #0x80               
+00057cae: 17f13000 adds.w   r0, r7, #0x30               
+00057cb2: e363     str      r3, [r4, #0x3c]             
+00057cb4: c2f740f9 bl       #0x19f38                      ; sub_19f38
+00057cb8: 0146     mov      r1, r0                      
+00057cba: 0125     movs     r5, #1                      
+00057cbc: 0022     movs     r2, #0                      
+00057cbe: 2046     mov      r0, r4                      
+00057cc0: bd60     str      r5, [r7, #8]                
+00057cc2: 82f079fa bl       #0xda1b8                      ; sub_da1b8
+00057cc6: 0146     mov      r1, r0                      
+00057cc8: 00e0     b        #0x57ccc                      ; sub_57ccc
+00057cca: 0021     movs     r1, #0                      
+00057ccc: 0023     movs     r3, #0                      
+00057cce: 3846     mov      r0, r7                      
+00057cd0: 3b60     str      r3, [r7]                    
+00057cd2: 7b60     str      r3, [r7, #4]                
+00057cd4: fcf720fb bl       #0x54318                      ; sub_54318
+00057cd8: 4df6f838 movw     r8, #0xdbf8                   ; -> 0x011ddbf8 .data+0xa9ebf8
+00057cdc: c0f21d18 movt     r8, #0x11d                  
+00057ce0: 7b68     ldr      r3, [r7, #4]                
+00057ce2: d8f80400 ldr.w    r0, [r8, #4]                
+00057ce6: c8f80430 str.w    r3, [r8, #4]                
+00057cea: 3b68     ldr      r3, [r7]                    
+00057cec: c8f80030 str.w    r3, [r8]                    
+00057cf0: 08b1     cbz      r0, #0x57cf6                
+00057cf2: f4f76ffc bl       #0x4c5d4                      ; sub_4c5d4
+00057cf6: 15f0010f tst.w    r5, #1                      
+00057cfa: 07d0     beq      #0x57d0c                    
+00057cfc: 7b6c     ldr      r3, [r7, #0x44]             
+00057cfe: 0025     movs     r5, #0                      
+00057d00: bd60     str      r5, [r7, #8]                
+00057d02: 102b     cmp      r3, #0x10                   
+00057d04: 02d3     blo      #0x57d0c                    
+00057d06: 386b     ldr      r0, [r7, #0x30]             
+00057d08: a8f198fb bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00057d0c: 4020     movs     r0, #0x40                   
+00057d0e: a8f18ffb bl       #0x200430                     ; thunk[msvcr120_app.dll!??2@YAPAXI@Z]
+00057d12: 0446     mov      r4, r0                      
+00057d14: 3c60     str      r4, [r7]                    
+00057d16: 24b3     cbz      r4, #0x57d62                
+00057d18: 0023     movs     r3, #0                      
+00057d1a: 2360     str      r3, [r4]                    
+00057d1c: 6360     str      r3, [r4, #4]                
+00057d1e: a360     str      r3, [r4, #8]                
+00057d20: e360     str      r3, [r4, #0xc]              
+00057d22: 2361     str      r3, [r4, #0x10]             
+00057d24: 6361     str      r3, [r4, #0x14]             
+00057d26: a361     str      r3, [r4, #0x18]             
+00057d28: e361     str      r3, [r4, #0x1c]             
+00057d2a: 2362     str      r3, [r4, #0x20]             
+00057d2c: 6362     str      r3, [r4, #0x24]             
+00057d2e: a362     str      r3, [r4, #0x28]             
+00057d30: 41f61872 movw     r2, #0x1f18                   ; -> 0x00611f18 str "items.meta"
+00057d34: c0f26102 movt     r2, #0x61                   
+00057d38: e362     str      r3, [r4, #0x2c]             
+00057d3a: 2363     str      r3, [r4, #0x30]             
+00057d3c: 6363     str      r3, [r4, #0x34]             
+00057d3e: a363     str      r3, [r4, #0x38]             
+00057d40: 17f18001 adds.w   r1, r7, #0x80               
+00057d44: 17f13000 adds.w   r0, r7, #0x30               
+00057d48: e363     str      r3, [r4, #0x3c]             
+00057d4a: c2f7f5f8 bl       #0x19f38                      ; sub_19f38
+00057d4e: 0146     mov      r1, r0                      
+00057d50: 45f00205 orr      r5, r5, #2                  
+00057d54: 0122     movs     r2, #1                      
+00057d56: 2046     mov      r0, r4                      
+00057d58: bd60     str      r5, [r7, #8]                
+00057d5a: 82f02dfa bl       #0xda1b8                      ; sub_da1b8
+00057d5e: 0146     mov      r1, r0                      
+00057d60: 00e0     b        #0x57d64                      ; sub_57d64
+00057d62: 0021     movs     r1, #0                      
+00057d64: 0023     movs     r3, #0                      
+00057d66: 3846     mov      r0, r7                      
+00057d68: 3b60     str      r3, [r7]                    
+00057d6a: 7b60     str      r3, [r7, #4]                
+00057d6c: fcf7d4fa bl       #0x54318                      ; sub_54318
+00057d70: 4df60044 movw     r4, #0xdc00                   ; -> 0x011ddc00 .data+0xa9ec00
+00057d74: c0f21d14 movt     r4, #0x11d                  
+00057d78: 7b68     ldr      r3, [r7, #4]                
+00057d7a: 6068     ldr      r0, [r4, #4]                
+00057d7c: 6360     str      r3, [r4, #4]                
+00057d7e: 3b68     ldr      r3, [r7]                    
+00057d80: 2360     str      r3, [r4]                    
+00057d82: 08b1     cbz      r0, #0x57d88                
+00057d84: f4f726fc bl       #0x4c5d4                      ; sub_4c5d4
+00057d88: 15f0020f tst.w    r5, #2                      
+00057d8c: 05d0     beq      #0x57d9a                    
+00057d8e: 7b6c     ldr      r3, [r7, #0x44]             
+00057d90: 102b     cmp      r3, #0x10                   
+00057d92: 02d3     blo      #0x57d9a                    
+00057d94: 386b     ldr      r0, [r7, #0x30]             
+00057d96: a8f151fb bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00057d9a: d8f80000 ldr.w    r0, [r8]                    
+00057d9e: 3146     mov      r1, r6                      
+00057da0: 82f0e0fc bl       #0xda764                      ; sub_da764
+00057da4: 2068     ldr      r0, [r4]                    
+00057da6: 3146     mov      r1, r6                      
+00057da8: 82f0dcfc bl       #0xda764                      ; sub_da764
+00057dac: d8f80450 ldr.w    r5, [r8, #4]                
+00057db0: 0023     movs     r3, #0                      
+00057db2: d8f80090 ldr.w    sb, [r8]                    
+00057db6: 3b60     str      r3, [r7]                    
+00057db8: 7b60     str      r3, [r7, #4]                
+00057dba: 5db1     cbz      r5, #0x57dd4                
+00057dbc: 2a1d     adds     r2, r5, #4                  
+00057dbe: 52e8000f ldrex    r0, [r2]                    
+00057dc2: 411c     adds     r1, r0, #1                  
+00057dc4: 42e80013 strex    r3, r1, [r2]                
+00057dc8: 002b     cmp      r3, #0                      
+00057dca: f8d1     bne      #0x57dbe                    
+00057dcc: 7868     ldr      r0, [r7, #4]                
+00057dce: 08b1     cbz      r0, #0x57dd4                
+00057dd0: f4f700fc bl       #0x4c5d4                      ; sub_4c5d4
+00057dd4: 3846     mov      r0, r7                      
+00057dd6: 7d60     str      r5, [r7, #4]                
+00057dd8: c7f80090 str.w    sb, [r7]                    
+00057ddc: 7cf146fa bl       #0x1d426c                     ; sub_1d426c
+00057de0: 6568     ldr      r5, [r4, #4]                
+00057de2: 0023     movs     r3, #0                      
+00057de4: 2468     ldr      r4, [r4]                    
+00057de6: 3b60     str      r3, [r7]                    
+00057de8: 7b60     str      r3, [r7, #4]                
+00057dea: 5db1     cbz      r5, #0x57e04                
+00057dec: 2a1d     adds     r2, r5, #4                  
+00057dee: 52e8000f ldrex    r0, [r2]                    
+00057df2: 411c     adds     r1, r0, #1                  
+00057df4: 42e80013 strex    r3, r1, [r2]                
+00057df8: 002b     cmp      r3, #0                      
+00057dfa: f8d1     bne      #0x57dee                    
+00057dfc: 7868     ldr      r0, [r7, #4]                
+00057dfe: 08b1     cbz      r0, #0x57e04                
+00057e00: f4f7e8fb bl       #0x4c5d4                      ; sub_4c5d4
+00057e04: 3846     mov      r0, r7                      
+00057e06: 7d60     str      r5, [r7, #4]                
+00057e08: 3c60     str      r4, [r7]                    
+00057e0a: 06f141ff bl       #0x15ec90                     ; sub_15ec90
+00057e0e: 0f23     movs     r3, #0xf                    
+00057e10: 7b66     str      r3, [r7, #0x64]             
+00057e12: 0023     movs     r3, #0                      
+00057e14: 6fea0309 mvn.w    sb, r3                      
+00057e18: 3b66     str      r3, [r7, #0x60]             
+00057e1a: 87f85030 strb.w   r3, [r7, #0x50]             
+00057e1e: 4b46     mov      r3, sb                      
+00057e20: 17f15000 adds.w   r0, r7, #0x50               
+00057e24: 0022     movs     r2, #0                      
+00057e26: 06f1b401 add.w    r1, r6, #0xb4               
+00057e2a: b5f781fc bl       #0xd730                       ; sub_d730
+00057e2e: d6f83401 ldr.w    r0, [r6, #0x134]            
+00057e32: 17f15002 adds.w   r2, r7, #0x50               
+00057e36: 3146     mov      r1, r6                      
+00057e38: 48f09efe bl       #0xa0b78                      ; sub_a0b78
+00057e3c: d6f83401 ldr.w    r0, [r6, #0x134]            
+00057e40: 4af064fa bl       #0xa230c                      ; sub_a230c
+00057e44: d6f83431 ldr.w    r3, [r6, #0x134]            
+00057e48: 3046     mov      r0, r6                      
+00057e4a: 03f51771 add.w    r1, r3, #0x25c              
+00057e4e: 80f12ffb bl       #0x1d84b0                     ; sub_1d84b0
+00057e52: 73f00ffb bl       #0xcb474                      ; sub_cb474
+00057e56: 3368     ldr      r3, [r6]                    
+00057e58: 3046     mov      r0, r6                      
+00057e5a: 1b6a     ldr      r3, [r3, #0x20]             
+00057e5c: 9847     blx      r3                          
+00057e5e: 0346     mov      r3, r0                      
+00057e60: 1b68     ldr      r3, [r3]                    
+00057e62: 5b6d     ldr      r3, [r3, #0x54]             
+00057e64: 9847     blx      r3                          
+00057e66: 86f8b100 strb.w   r0, [r6, #0xb1]             
+00057e6a: 40f62040 movw     r0, #0xc20                    ; -> 0x011e0c20 .data+0xaa1c20
+00057e6e: c0f21e10 movt     r0, #0x11e                  
+00057e72: b4f775f8 bl       #0xbf60                       ; AddExternalServerScreen::vf11
+00057e76: 0f23     movs     r3, #0xf                    
+00057e78: 41f62471 movw     r1, #0x1f24                   ; -> 0x00611f24 str "en_US"
+00057e7c: c0f26101 movt     r1, #0x61                   
+00057e80: fb62     str      r3, [r7, #0x2c]             
+00057e82: 0023     movs     r3, #0                      
+00057e84: 17f11800 adds.w   r0, r7, #0x18               
+00057e88: 0522     movs     r2, #5                      
+00057e8a: bb62     str      r3, [r7, #0x28]             
+00057e8c: 3b76     strb     r3, [r7, #0x18]             
+00057e8e: b5f7adfc bl       #0xd7ec                       ; sub_d7ec
+00057e92: 3368     ldr      r3, [r6]                    
+00057e94: 3046     mov      r0, r6                      
+00057e96: 1b6a     ldr      r3, [r3, #0x20]             
+00057e98: 9847     blx      r3                          
+00057e9a: 17f11801 adds.w   r1, r7, #0x18               
+00057e9e: 9bf009ff bl       #0xf3cb4                      ; sub_f3cb4
+00057ea2: fb6a     ldr      r3, [r7, #0x2c]             
+00057ea4: 102b     cmp      r3, #0x10                   
+00057ea6: 02d3     blo      #0x57eae                    
+00057ea8: b869     ldr      r0, [r7, #0x18]             
+00057eaa: a8f1c7fa bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00057eae: d6f83431 ldr.w    r3, [r6, #0x134]            
+00057eb2: 706e     ldr      r0, [r6, #0x64]             
+00057eb4: 03f51771 add.w    r1, r3, #0x25c              
+00057eb8: 8842     cmp      r0, r1                      
+00057eba: 03d0     beq      #0x57ec4                    
+00057ebc: 4b46     mov      r3, sb                      
+00057ebe: 0022     movs     r2, #0                      
+00057ec0: b5f736fc bl       #0xd730                       ; sub_d730
+00057ec4: 3820     movs     r0, #0x38                   
+00057ec6: a8f1b3fa bl       #0x200430                     ; thunk[msvcr120_app.dll!??2@YAPAXI@Z]
+00057eca: 3860     str      r0, [r7]                    
+00057ecc: a0b1     cbz      r0, #0x57ef8                
+00057ece: 0023     movs     r3, #0                      
+00057ed0: 0360     str      r3, [r0]                    
+00057ed2: 4360     str      r3, [r0, #4]                
+00057ed4: 8360     str      r3, [r0, #8]                
+00057ed6: c360     str      r3, [r0, #0xc]              
+00057ed8: 0361     str      r3, [r0, #0x10]             
+00057eda: 4361     str      r3, [r0, #0x14]             
+00057edc: 8361     str      r3, [r0, #0x18]             
+00057ede: c361     str      r3, [r0, #0x1c]             
+00057ee0: 0362     str      r3, [r0, #0x20]             
+00057ee2: 4362     str      r3, [r0, #0x24]             
+00057ee4: 8362     str      r3, [r0, #0x28]             
+00057ee6: c362     str      r3, [r0, #0x2c]             
+00057ee8: 0363     str      r3, [r0, #0x30]             
+00057eea: 06f1b401 add.w    r1, r6, #0xb4               
+00057eee: 4363     str      r3, [r0, #0x34]             
+00057ef0: faf71efe bl       #0x52b30                      ; sub_52b30
+00057ef4: 0146     mov      r1, r0                      
+00057ef6: 00e0     b        #0x57efa                      ; sub_57efa
+00057ef8: 0021     movs     r1, #0                      
+00057efa: 06f58a70 add.w    r0, r6, #0x114              
+00057efe: 17f10803 adds.w   r3, r7, #8                  
+00057f02: 9842     cmp      r0, r3                      
+00057f04: 04d0     beq      #0x57f10                    
+00057f06: 0368     ldr      r3, [r0]                    
+00057f08: 0160     str      r1, [r0]                    
+00057f0a: 33b1     cbz      r3, #0x57f1a                
+00057f0c: 1946     mov      r1, r3                      
+00057f0e: 02e0     b        #0x57f16                      ; sub_57f16
+00057f10: 19b1     cbz      r1, #0x57f1a                
+00057f12: 17f10800 adds.w   r0, r7, #8                  
+00057f16: fdf791ff bl       #0x55e3c                      ; sub_55e3c
+00057f1a: d6f81401 ldr.w    r0, [r6, #0x114]            
+00057f1e: fbf7fbf9 bl       #0x53318                      ; sub_53318
+00057f22: 3820     movs     r0, #0x38                   
+00057f24: a8f184fa bl       #0x200430                     ; thunk[msvcr120_app.dll!??2@YAPAXI@Z]
+00057f28: 3860     str      r0, [r7]                    
+00057f2a: 30b1     cbz      r0, #0x57f3a                
+00057f2c: 06f19002 add.w    r2, r6, #0x90               
+00057f30: 06f17801 add.w    r1, r6, #0x78               
+00057f34: 50f1a8f9 bl       #0x1a8288                     ; sub_1a8288
+00057f38: 00e0     b        #0x57f3c                      ; sub_57f3c
+00057f3a: 0020     movs     r0, #0                      
+00057f3c: c6f8ac00 str.w    r0, [r6, #0xac]             
+00057f40: b820     movs     r0, #0xb8                   
+00057f42: 86f8b0a0 strb.w   sl, [r6, #0xb0]             
+00057f46: a8f173fa bl       #0x200430                     ; thunk[msvcr120_app.dll!??2@YAPAXI@Z]
+00057f4a: 0446     mov      r4, r0                      
+00057f4c: 3c60     str      r4, [r7]                    
+00057f4e: 7cb1     cbz      r4, #0x57f70                
+00057f50: b822     movs     r2, #0xb8                   
+00057f52: 0021     movs     r1, #0                      
+00057f54: a8f1cafa bl       #0x2004ec                     ; thunk[msvcr120_app.dll!memset]
+00057f58: 3368     ldr      r3, [r6]                    
+00057f5a: 3046     mov      r0, r6                      
+00057f5c: 1b6a     ldr      r3, [r3, #0x20]             
+00057f5e: 9847     blx      r3                          
+00057f60: d6f83411 ldr.w    r1, [r6, #0x134]            
+00057f64: 0246     mov      r2, r0                      
+00057f66: 2046     mov      r0, r4                      
+00057f68: 84f016f8 bl       #0xdbf98                      ; sub_dbf98
+00057f6c: 0446     mov      r4, r0                      
+00057f6e: 00e0     b        #0x57f72                      ; sub_57f72
+00057f70: 0024     movs     r4, #0                      
+00057f72: 06f58c72 add.w    r2, r6, #0x118              
+00057f76: 3b46     mov      r3, r7                      
+00057f78: 9a42     cmp      r2, r3                      
+00057f7a: 07d0     beq      #0x57f8c                    
+00057f7c: 1568     ldr      r5, [r2]                    
+00057f7e: 1460     str      r4, [r2]                    
+00057f80: 5db1     cbz      r5, #0x57f9a                
+00057f82: 2846     mov      r0, r5                      
+00057f84: 84f0e4f8 bl       #0xdc150                      ; sub_dc150
+00057f88: 2846     mov      r0, r5                      
+00057f8a: 04e0     b        #0x57f96                      ; sub_57f96
+00057f8c: 2cb1     cbz      r4, #0x57f9a                
+00057f8e: 2046     mov      r0, r4                      
+00057f90: 84f0def8 bl       #0xdc150                      ; sub_dc150
+00057f94: 2046     mov      r0, r4                      
+00057f96: a8f151fa bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00057f9a: d8f80010 ldr.w    r1, [r8]                    
+00057f9e: 0020     movs     r0, #0                      
+00057fa0: 6df088fe bl       #0xc5cb4                      ; sub_c5cb4
+00057fa4: 0146     mov      r1, r0                      
+00057fa6: d6f81801 ldr.w    r0, [r6, #0x118]            
+00057faa: 84f033fc bl       #0xdc814                      ; sub_dc814
+00057fae: d8f80010 ldr.w    r1, [r8]                    
+00057fb2: 0120     movs     r0, #1                      
+00057fb4: 6df07efe bl       #0xc5cb4                      ; sub_c5cb4
+00057fb8: 0146     mov      r1, r0                      
+00057fba: d6f81801 ldr.w    r0, [r6, #0x118]            
+00057fbe: 84f029fc bl       #0xdc814                      ; sub_dc814
+00057fc2: d8f80010 ldr.w    r1, [r8]                    
+00057fc6: 0220     movs     r0, #2                      
+00057fc8: 6df074fe bl       #0xc5cb4                      ; sub_c5cb4
+00057fcc: 0146     mov      r1, r0                      
+00057fce: d6f81801 ldr.w    r0, [r6, #0x118]            
+00057fd2: 84f01ffc bl       #0xdc814                      ; sub_dc814
+00057fd6: d8f80010 ldr.w    r1, [r8]                    
+00057fda: 0320     movs     r0, #3                      
+00057fdc: 6df06afe bl       #0xc5cb4                      ; sub_c5cb4
+00057fe0: 0146     mov      r1, r0                      
+00057fe2: d6f81801 ldr.w    r0, [r6, #0x118]            
+00057fe6: 84f015fc bl       #0xdc814                      ; sub_dc814
+00057fea: d8f80010 ldr.w    r1, [r8]                    
+00057fee: 0420     movs     r0, #4                      
+00057ff0: 6df060fe bl       #0xc5cb4                      ; sub_c5cb4
+00057ff4: 0146     mov      r1, r0                      
+00057ff6: d6f81801 ldr.w    r0, [r6, #0x118]            
+00057ffa: 84f00bfc bl       #0xdc814                      ; sub_dc814
+00057ffe: d6f81801 ldr.w    r0, [r6, #0x118]            
+00058002: 84f077fe bl       #0xdccf4                      ; sub_dccf4
+00058006: 0f23     movs     r3, #0xf                    
+00058008: 41f62c71 movw     r1, #0x1f2c                   ; -> 0x00611f2c str "startup.images"
+0005800c: c0f26101 movt     r1, #0x61                   
+00058010: fb62     str      r3, [r7, #0x2c]             
+00058012: 0023     movs     r3, #0                      
+00058014: 17f11800 adds.w   r0, r7, #0x18               
+00058018: 0e22     movs     r2, #0xe                    
+0005801a: bb62     str      r3, [r7, #0x28]             
+0005801c: 3b76     strb     r3, [r7, #0x18]             
+0005801e: b5f7e5fb bl       #0xd7ec                       ; sub_d7ec
+00058022: d6f81801 ldr.w    r0, [r6, #0x118]            
+00058026: 17f11801 adds.w   r1, r7, #0x18               
+0005802a: 0022     movs     r2, #0                      
+0005802c: 84f084fe bl       #0xdcd38                      ; sub_dcd38
+00058030: fb6a     ldr      r3, [r7, #0x2c]             
+00058032: 102b     cmp      r3, #0x10                   
+00058034: 02d3     blo      #0x5803c                    
+00058036: b869     ldr      r0, [r7, #0x18]             
+00058038: a8f100fa bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+0005803c: 0f23     movs     r3, #0xf                    
+0005803e: 41f63c71 movw     r1, #0x1f3c                   ; -> 0x00611f3c str "background.images"
+00058042: c0f26101 movt     r1, #0x61                   
+00058046: fb62     str      r3, [r7, #0x2c]             
+00058048: 0023     movs     r3, #0                      
+0005804a: 17f11800 adds.w   r0, r7, #0x18               
+0005804e: 1122     movs     r2, #0x11                   
+00058050: bb62     str      r3, [r7, #0x28]             
+00058052: 3b76     strb     r3, [r7, #0x18]             
+00058054: b5f7cafb bl       #0xd7ec                       ; sub_d7ec
+00058058: d6f81801 ldr.w    r0, [r6, #0x118]            
+0005805c: 17f11801 adds.w   r1, r7, #0x18               
+00058060: 0022     movs     r2, #0                      
+00058062: 84f069fe bl       #0xdcd38                      ; sub_dcd38
+00058066: fb6a     ldr      r3, [r7, #0x2c]             
+00058068: 102b     cmp      r3, #0x10                   
+0005806a: 02d3     blo      #0x58072                    
+0005806c: b869     ldr      r0, [r7, #0x18]             
+0005806e: a8f1e5f9 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00058072: 0f23     movs     r3, #0xf                    
+00058074: 41f65071 movw     r1, #0x1f50                   ; -> 0x00611f50 str "ingame.images"
+00058078: c0f26101 movt     r1, #0x61                   
+0005807c: fb62     str      r3, [r7, #0x2c]             
+0005807e: 0023     movs     r3, #0                      
+00058080: 17f11800 adds.w   r0, r7, #0x18               
+00058084: 0d22     movs     r2, #0xd                    
+00058086: bb62     str      r3, [r7, #0x28]             
+00058088: 3b76     strb     r3, [r7, #0x18]             
+0005808a: b5f7affb bl       #0xd7ec                       ; sub_d7ec
+0005808e: d6f81801 ldr.w    r0, [r6, #0x118]            
+00058092: 17f11801 adds.w   r1, r7, #0x18               
+00058096: 0122     movs     r2, #1                      
+00058098: 84f04efe bl       #0xdcd38                      ; sub_dcd38
+0005809c: fb6a     ldr      r3, [r7, #0x2c]             
+0005809e: 102b     cmp      r3, #0x10                   
+000580a0: 02d3     blo      #0x580a8                    
+000580a2: b869     ldr      r0, [r7, #0x18]             
+000580a4: a8f1caf9 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+000580a8: 0f23     movs     r3, #0xf                    
+000580aa: 41f66071 movw     r1, #0x1f60                   ; -> 0x00611f60 str "materials/common.json"
+000580ae: c0f26101 movt     r1, #0x61                   
+000580b2: fb62     str      r3, [r7, #0x2c]             
+000580b4: 0023     movs     r3, #0                      
+000580b6: 17f11800 adds.w   r0, r7, #0x18               
+000580ba: 1522     movs     r2, #0x15                   
+000580bc: bb62     str      r3, [r7, #0x28]             
+000580be: 3b76     strb     r3, [r7, #0x18]             
+000580c0: b5f794fb bl       #0xd7ec                       ; sub_d7ec
+000580c4: 40f6c020 movw     r0, #0xac0                    ; -> 0x011e0ac0 .data+0xaa1ac0
+000580c8: c0f21e10 movt     r0, #0x11e                  
+000580cc: 17f11801 adds.w   r1, r7, #0x18               
+000580d0: 75f07cff bl       #0xcdfcc                      ; sub_cdfcc
+000580d4: fb6a     ldr      r3, [r7, #0x2c]             
+000580d6: 102b     cmp      r3, #0x10                   
+000580d8: 02d3     blo      #0x580e0                    
+000580da: b869     ldr      r0, [r7, #0x18]             
+000580dc: a8f1aef9 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+000580e0: d6f83431 ldr.w    r3, [r6, #0x134]            
+000580e4: 3046     mov      r0, r6                      
+000580e6: 997e     ldrb     r1, [r3, #0x1a]             
+000580e8: fef75ef9 bl       #0x563a8                      ; sub_563a8
+000580ec: 17f10800 adds.w   r0, r7, #8                  
+000580f0: 3146     mov      r1, r6                      
+000580f2: fcf759fc bl       #0x549a8                      ; sub_549a8
+000580f6: 06f59871 add.w    r1, r6, #0x130              
+000580fa: 8142     cmp      r1, r0                      
+000580fc: 0ad0     beq      #0x58114                    
+000580fe: 0368     ldr      r3, [r0]                    
+00058100: c0f800a0 str.w    sl, [r0]                    
+00058104: 0a68     ldr      r2, [r1]                    
+00058106: 0b60     str      r3, [r1]                    
+00058108: 22b1     cbz      r2, #0x58114                
+0005810a: 1368     ldr      r3, [r2]                    
+0005810c: 0121     movs     r1, #1                      
+0005810e: 1046     mov      r0, r2                      
+00058110: 1b68     ldr      r3, [r3]                    
+00058112: 9847     blx      r3                          
+00058114: bb68     ldr      r3, [r7, #8]                
+00058116: 23b1     cbz      r3, #0x58122                
+00058118: 1846     mov      r0, r3                      
+0005811a: 1b68     ldr      r3, [r3]                    
+0005811c: 0121     movs     r1, #1                      
+0005811e: 1b68     ldr      r3, [r3]                    
+00058120: 9847     blx      r3                          
+00058122: 17f10801 adds.w   r1, r7, #8                  
+00058126: 17f10c00 adds.w   r0, r7, #0xc                
+0005812a: 86f860a1 strb.w   sl, [r6, #0x160]            
+0005812e: be60     str      r6, [r7, #8]                
+00058130: fcf722fd bl       #0x54b78                      ; sub_54b78
+00058134: 06f1e802 add.w    r2, r6, #0xe8               
+00058138: 8242     cmp      r2, r0                      
+0005813a: 07d0     beq      #0x5814c                    
+0005813c: 0368     ldr      r3, [r0]                    
+0005813e: c0f800a0 str.w    sl, [r0]                    
+00058142: 1068     ldr      r0, [r2]                    
+00058144: 1360     str      r3, [r2]                    
+00058146: 08b1     cbz      r0, #0x5814c                
+00058148: a8f178f9 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+0005814c: f868     ldr      r0, [r7, #0xc]              
+0005814e: 08b1     cbz      r0, #0x58154                
+00058150: a8f174f9 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00058154: 3046     mov      r0, r6                      
+00058156: 5af011fe bl       #0xb2d7c                      ; sub_b2d7c
+0005815a: 17f10c01 adds.w   r1, r7, #0xc                
+0005815e: 17f10800 adds.w   r0, r7, #8                  
+00058162: 4246     mov      r2, r8                      
+00058164: fe60     str      r6, [r7, #0xc]              
+00058166: fcf745fc bl       #0x549f4                      ; sub_549f4
+0005816a: 06f58471 add.w    r1, r6, #0x108              
+0005816e: 8142     cmp      r1, r0                      
+00058170: 0ad0     beq      #0x58188                    
+00058172: 0368     ldr      r3, [r0]                    
+00058174: c0f800a0 str.w    sl, [r0]                    
+00058178: 0a68     ldr      r2, [r1]                    
+0005817a: 0b60     str      r3, [r1]                    
+0005817c: 22b1     cbz      r2, #0x58188                
+0005817e: 1368     ldr      r3, [r2]                    
+00058180: 0121     movs     r1, #1                      
+00058182: 1046     mov      r0, r2                      
+00058184: 1b68     ldr      r3, [r3]                    
+00058186: 9847     blx      r3                          
+00058188: bb68     ldr      r3, [r7, #8]                
+0005818a: 23b1     cbz      r3, #0x58196                
+0005818c: 1846     mov      r0, r3                      
+0005818e: 1b68     ldr      r3, [r3]                    
+00058190: 0121     movs     r1, #1                      
+00058192: 1b68     ldr      r3, [r3]                    
+00058194: 9847     blx      r3                          
+00058196: 17f10c01 adds.w   r1, r7, #0xc                
+0005819a: 17f10800 adds.w   r0, r7, #8                  
+0005819e: fe60     str      r6, [r7, #0xc]              
+000581a0: fcf7dcfb bl       #0x5495c                      ; sub_5495c
+000581a4: 06f58672 add.w    r2, r6, #0x10c              
+000581a8: 8242     cmp      r2, r0                      
+000581aa: 0bd0     beq      #0x581c4                    
+000581ac: 0368     ldr      r3, [r0]                    
+000581ae: c0f800a0 str.w    sl, [r0]                    
+000581b2: 1468     ldr      r4, [r2]                    
+000581b4: 1360     str      r3, [r2]                    
+000581b6: 2cb1     cbz      r4, #0x581c4                
+000581b8: 2046     mov      r0, r4                      
+000581ba: 60f097fb bl       #0xb88ec                      ; sub_b88ec
+000581be: 2046     mov      r0, r4                      
+000581c0: a8f13cf9 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+000581c4: bc68     ldr      r4, [r7, #8]                
+000581c6: 2cb1     cbz      r4, #0x581d4                
+000581c8: 2046     mov      r0, r4                      
+000581ca: 60f08ffb bl       #0xb88ec                      ; sub_b88ec
+000581ce: 2046     mov      r0, r4                      
+000581d0: a8f134f9 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+000581d4: d6f81821 ldr.w    r2, [r6, #0x118]            
+000581d8: b16e     ldr      r1, [r6, #0x68]             
+000581da: 17f10c00 adds.w   r0, r7, #0xc                
+000581de: fcf78bfc bl       #0x54af8                      ; sub_54af8
+000581e2: 06f58872 add.w    r2, r6, #0x110              
+000581e6: 8242     cmp      r2, r0                      
+000581e8: 0bd0     beq      #0x58202                    
+000581ea: 0368     ldr      r3, [r0]                    
+000581ec: c0f800a0 str.w    sl, [r0]                    
+000581f0: 1468     ldr      r4, [r2]                    
+000581f2: 1360     str      r3, [r2]                    
+000581f4: 2cb1     cbz      r4, #0x58202                
+000581f6: 2046     mov      r0, r4                      
+000581f8: 4cf024f9 bl       #0xa4444                      ; sub_a4444
+000581fc: 2046     mov      r0, r4                      
+000581fe: a8f11df9 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00058202: fc68     ldr      r4, [r7, #0xc]              
+00058204: 2cb1     cbz      r4, #0x58212                
+00058206: 2046     mov      r0, r4                      
+00058208: 4cf01cf9 bl       #0xa4444                      ; sub_a4444
+0005820c: 2046     mov      r0, r4                      
+0005820e: a8f115f9 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+00058212: d6f81831 ldr.w    r3, [r6, #0x118]            
+00058216: 41f67872 movw     r2, #0x1f78                   ; -> 0x00611f78 str "font/default8.png"
+0005821a: c0f26102 movt     r2, #0x61                   
+0005821e: 17f10801 adds.w   r1, r7, #8                  
+00058222: fb60     str      r3, [r7, #0xc]              
+00058224: d6f83431 ldr.w    r3, [r6, #0x134]            
+00058228: 3846     mov      r0, r7                      
+0005822a: bb60     str      r3, [r7, #8]                
+0005822c: 17f10c03 adds.w   r3, r7, #0xc                
+00058230: fcf736fb bl       #0x548a0                      ; sub_548a0
+00058234: 06f58e71 add.w    r1, r6, #0x11c              
+00058238: 8142     cmp      r1, r0                      
+0005823a: 0ad0     beq      #0x58252                    
+0005823c: 0368     ldr      r3, [r0]                    
+0005823e: c0f800a0 str.w    sl, [r0]                    
+00058242: 0a68     ldr      r2, [r1]                    
+00058244: 0b60     str      r3, [r1]                    
+00058246: 22b1     cbz      r2, #0x58252                
+00058248: 1368     ldr      r3, [r2]                    
+0005824a: 0121     movs     r1, #1                      
+0005824c: 1046     mov      r0, r2                      
+0005824e: 1b68     ldr      r3, [r3]                    
+00058250: 9847     blx      r3                          
+00058252: 3b68     ldr      r3, [r7]                    
+00058254: 23b1     cbz      r3, #0x58260                
+00058256: 1846     mov      r0, r3                      
+00058258: 1b68     ldr      r3, [r3]                    
+0005825a: 0121     movs     r1, #1                      
+0005825c: 1b68     ldr      r3, [r3]                    
+0005825e: 9847     blx      r3                          
+00058260: d6f83401 ldr.w    r0, [r6, #0x134]            
+00058264: 4af0a4fb bl       #0xa29b0                      ; sub_a29b0
+00058268: 0023     movs     r3, #0                      
+0005826a: 3b67     str      r3, [r7, #0x70]             
+0005826c: 7b67     str      r3, [r7, #0x74]             
+0005826e: bb67     str      r3, [r7, #0x78]             
+00058270: 3b67     str      r3, [r7, #0x70]             
+00058272: 7b67     str      r3, [r7, #0x74]             
+00058274: bb67     str      r3, [r7, #0x78]             
+00058276: 3046     mov      r0, r6                      
+00058278: 80f1b2f8 bl       #0x1d83e0                     ; sub_1d83e0
+0005827c: 0346     mov      r3, r0                      
+0005827e: 1b68     ldr      r3, [r3]                    
+00058280: 17f17001 adds.w   r1, r7, #0x70               
+00058284: 9b68     ldr      r3, [r3, #8]                
+00058286: 9847     blx      r3                          
+00058288: 386f     ldr      r0, [r7, #0x70]             
+0005828a: 796f     ldr      r1, [r7, #0x74]             
+0005828c: 8842     cmp      r0, r1                      
+0005828e: 41d0     beq      #0x58314                    
+00058290: d6f83431 ldr.w    r3, [r6, #0x134]            
+00058294: 93f89032 ldrb.w   r3, [r3, #0x290]            
+00058298: e3b3     cbz      r3, #0x58314                
+0005829a: 7e4a     ldr      r2, [pc, #0x1f8]              ; pool[00058494]=0x38e38e39 
+0005829c: 0023     movs     r3, #0                      
+0005829e: 0d1a     subs     r5, r1, r0                  
+000582a0: 3b70     strb     r3, [r7]                    
+000582a2: 3b78     ldrb     r3, [r7]                    
+000582a4: 85fb0224 smull    r2, r4, r5, r2              
+000582a8: 2211     asrs     r2, r4, #4                  
+000582aa: 02ebd272 add.w    r2, r2, r2, lsr #31         
+000582ae: fcf76bf8 bl       #0x54388                      ; sub_54388
+000582b2: 0323     movs     r3, #3                      
+000582b4: 3468     ldr      r4, [r6]                    
+000582b6: bb63     str      r3, [r7, #0x38]             
+000582b8: 0423     movs     r3, #4                      
+000582ba: 396f     ldr      r1, [r7, #0x70]             
+000582bc: fb63     str      r3, [r7, #0x3c]             
+000582be: a46e     ldr      r4, [r4, #0x68]             
+000582c0: 0023     movs     r3, #0                      
+000582c2: 3b64     str      r3, [r7, #0x40]             
+000582c4: 7b64     str      r3, [r7, #0x44]             
+000582c6: bb64     str      r3, [r7, #0x48]             
+000582c8: 17f13003 adds.w   r3, r7, #0x30               
+000582cc: 01f11802 add.w    r2, r1, #0x18               
+000582d0: 3046     mov      r0, r6                      
+000582d2: c7f83090 str.w    sb, [r7, #0x30]             
+000582d6: c7f83490 str.w    sb, [r7, #0x34]             
+000582da: a047     blx      r4                          
+000582dc: f8b9     cbnz     r0, #0x5831e                
+000582de: 44f6bc21 movw     r1, #0x4abc                 
+000582e2: 3046     mov      r0, r6                      
+000582e4: 80f1a4f8 bl       #0x1d8430                     ; sub_1d8430
+000582e8: 4ff4ba70 mov.w    r0, #0x174                  
+000582ec: a8f1a0f8 bl       #0x200430                     ; thunk[msvcr120_app.dll!??2@YAPAXI@Z]
+000582f0: 0446     mov      r4, r0                      
+000582f2: 3c60     str      r4, [r7]                    
+000582f4: 44b1     cbz      r4, #0x58308                
+000582f6: 4ff4ba72 mov.w    r2, #0x174                  
+000582fa: 0021     movs     r1, #0                      
+000582fc: a8f1f6f8 bl       #0x2004ec                     ; thunk[msvcr120_app.dll!memset]
+00058300: 2046     mov      r0, r4                      
+00058302: 36f0efff bl       #0x8f2e4                      ; sub_8f2e4
+00058306: 00e0     b        #0x5830a                      ; sub_5830a
+00058308: 0020     movs     r0, #0                      
+0005830a: 0146     mov      r1, r0                      
+0005830c: 3046     mov      r0, r6                      
+0005830e: 01f093f9 bl       #0x59638                      ; sub_59638
+00058312: 04e0     b        #0x5831e                      ; sub_5831e
+00058314: d6f8e800 ldr.w    r0, [r6, #0xe8]             
+00058318: 0121     movs     r1, #1                      
+0005831a: 39f08ffb bl       #0x91a3c                      ; sub_91a3c
+0005831e: 40f62c20 movw     r0, #0xa2c                  
+00058322: a8f185f8 bl       #0x200430                     ; thunk[msvcr120_app.dll!??2@YAPAXI@Z]
+00058326: 0446     mov      r4, r0                      
+00058328: 3c60     str      r4, [r7]                    
+0005832a: 5cb1     cbz      r4, #0x58344                
+0005832c: 40f62c22 movw     r2, #0xa2c                  
+00058330: 0021     movs     r1, #0                      
+00058332: a8f1dbf8 bl       #0x2004ec                     ; thunk[msvcr120_app.dll!memset]
+00058336: b3ee040a vmov.f32 s0, #2.000000e+01           
+0005833a: 2046     mov      r0, r4                      
+0005833c: 97f060fb bl       #0xefa00                      ; sub_efa00
+00058340: 0446     mov      r4, r0                      
+00058342: 00e0     b        #0x58346                      ; sub_58346
+00058344: 0024     movs     r4, #0                      
+00058346: 06f59c72 add.w    r2, r6, #0x138              
+0005834a: 3b46     mov      r3, r7                      
+0005834c: 9a42     cmp      r2, r3                      
+0005834e: 07d0     beq      #0x58360                    
+00058350: 1568     ldr      r5, [r2]                    
+00058352: 1460     str      r4, [r2]                    
+00058354: 5db1     cbz      r5, #0x5836e                
+00058356: 2846     mov      r0, r5                      
+00058358: 97f0cefb bl       #0xefaf8                      ; sub_efaf8
+0005835c: 2846     mov      r0, r5                      
+0005835e: 04e0     b        #0x5836a                      ; sub_5836a
+00058360: 2cb1     cbz      r4, #0x5836e                
+00058362: 2046     mov      r0, r4                      
+00058364: 97f0c8fb bl       #0xefaf8                      ; sub_efaf8
+00058368: 2046     mov      r0, r4                      
+0005836a: a8f167f8 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+0005836e: d6f83421 ldr.w    r2, [r6, #0x134]            
+00058372: d6f83801 ldr.w    r0, [r6, #0x138]            
+00058376: 3146     mov      r1, r6                      
+00058378: 98f036f8 bl       #0xf03e8                      ; sub_f03e8
+0005837c: 3368     ldr      r3, [r6]                    
+0005837e: 3046     mov      r0, r6                      
+00058380: 1b6a     ldr      r3, [r3, #0x20]             
+00058382: 9847     blx      r3                          
+00058384: 0346     mov      r3, r0                      
+00058386: 1b68     ldr      r3, [r3]                    
+00058388: 9b6e     ldr      r3, [r3, #0x68]             
+0005838a: 9847     blx      r3                          
+0005838c: 0028     cmp      r0, #0                      
+0005838e: 08bf     it       eq                          
+00058390: 0123     moveq    r3, #1                      
+00058392: 18bf     it       ne                          
+00058394: 0023     movne    r3, #0                      
+00058396: 3046     mov      r0, r6                      
+00058398: 86f85031 strb.w   r3, [r6, #0x150]            
+0005839c: fef740f8 bl       #0x56420                      ; sub_56420
+000583a0: 3b6f     ldr      r3, [r7, #0x70]             
+000583a2: abb1     cbz      r3, #0x583d0                
+000583a4: 4bf29833 movw     r3, #0xb398                   ; -> 0x0060b398 IAT msvcp120_app.dll!?_Orphan_all@_Container_base0@std@@QAAXXZ
+000583a8: c0f26003 movt     r3, #0x60                   
+000583ac: 17f17000 adds.w   r0, r7, #0x70               
+000583b0: 1b68     ldr      r3, [r3]                    
+000583b2: 9847     blx      r3                          
+000583b4: 3b7c     ldrb     r3, [r7, #0x10]             
+000583b6: 796f     ldr      r1, [r7, #0x74]             
+000583b8: 386f     ldr      r0, [r7, #0x70]             
+000583ba: 17f11002 adds.w   r2, r7, #0x10               
+000583be: fbf73ffc bl       #0x53c40                      ; sub_53c40
+000583c2: 386f     ldr      r0, [r7, #0x70]             
+000583c4: a8f13af8 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+000583c8: 0023     movs     r3, #0                      
+000583ca: 3b67     str      r3, [r7, #0x70]             
+000583cc: 7b67     str      r3, [r7, #0x74]             
+000583ce: bb67     str      r3, [r7, #0x78]             
+000583d0: d7f89430 ldr.w    r3, [r7, #0x94]             
+000583d4: 102b     cmp      r3, #0x10                   
+000583d6: 03d3     blo      #0x583e0                    
+000583d8: d7f88000 ldr.w    r0, [r7, #0x80]             
+000583dc: a8f12ef8 bl       #0x20043c                     ; thunk[msvcr120_app.dll!??3@YAXPAX@Z]
+000583e0: 2ab0     add      sp, #0xa8                   
+000583e2: a9f745f8 bl       #0x1470                       ; sub_1470
+000583e6: bde8f08f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, pc}

@@ -1,0 +1,60 @@
+==== win32craft.log opened 2026-10-18 20:55:44 (pid 13352) ====
+[      0 ms T3438] Win32Craft 1.2.8 ARM32 Win32Bootstrap entered (host build Oct 18 2026 08:38:57)
+[    188 ms T3438] ARM32 input: touch handling active: api=pointer (requested auto) window=00060486 feedbackDisabled=6/6 initialSource=MOUSEKB (WM_POINTER touch contacts are consumed without DefWindowProc, mouse/pen pointers are not)
+[  68578 ms T3438] ARM32 touch stats (periodic): down=50 up=48 moveMsgs=1889 movesQueued=245 slotsFull=0 canceled=0 captureLost=0 queueFailed=0 wmTouch=0 legacyFromTouch=0 legacyMouse=1 pointerMouse=0 pointerPen=0 pointerOther=0 sourceSwitches=1 source=TOUCH touchApi=pointer
+[  70297 ms T3438] ARM32 InputPane.TryShow accepted (fake input pane; the Windows touch keyboard is driven by the host, see ARM32 osk lines)
+[  70297 ms T3438] ARM32 osk: show requested (InputPane.TryShow) eligible=1 policy=auto touchActive=1 state=-1
+[  70344 ms T3438] ARM32 osk: signals: IFrameworkInputPane create=0x00000000 advise=0x00000000 | InputPane interop=0x8000001d getForWindow=0x80004005 TryHide=no | dwm-cloak verdict=0 | primary=IFrameworkInputPane
+[  70344 ms T3438] ARM32 osk: keyboard hidden (signal IFrameworkInputPane, was -1)
+[  70344 ms T3438] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[  70360 ms T3438] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  70735 ms T3438] ARM32 osk: shell Showing/Hiding callback #1
+[  72844 ms T3438] ARM32 osk: show attempt 2: TabTip window exists -> ITipInvocation::Toggle
+[  72844 ms T3438] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  72906 ms T3438] ARM32 osk: shell Showing/Hiding callback #2
+[  75344 ms T3438] ARM32 osk: show attempt 3: TabTip window exists -> ITipInvocation::Toggle
+[  75344 ms T3438] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  75688 ms T3438] ARM32 osk: shell Showing/Hiding callback #3
+[  77844 ms T3438] ARM32 osk: show attempt 4: TabTip window exists -> ITipInvocation::Toggle
+[  77844 ms T3438] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  77906 ms T3438] ARM32 osk: shell Showing/Hiding callback #4
+[  80344 ms T3438] ARM32 osk: show attempt 5: TabTip window exists -> ITipInvocation::Toggle
+[  80344 ms T3438] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  80719 ms T3438] ARM32 osk: shell Showing/Hiding callback #5
+[  82844 ms T3438] ARM32 osk: show attempt 6: TabTip window exists -> ITipInvocation::Toggle
+[  82844 ms T3438] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  82891 ms T3438] ARM32 osk: shell Showing/Hiding callback #6
+[  85344 ms T3438] ARM32 osk: show attempt 7: TabTip window exists -> ITipInvocation::Toggle
+[  85375 ms T3438] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  85750 ms T3438] ARM32 osk: shell Showing/Hiding callback #7
+[  87844 ms T3438] ARM32 osk: show attempt 8: TabTip window exists -> ITipInvocation::Toggle
+[  87844 ms T3438] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  87922 ms T3438] ARM32 osk: shell Showing/Hiding callback #8
+[  90360 ms T3438] ARM32 osk: show attempt 9: TabTip window exists -> ITipInvocation::Toggle
+[  90360 ms T3438] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  90750 ms T3438] ARM32 touch stats (exit): down=62 up=62 moveMsgs=1944 movesQueued=245 slotsFull=0 canceled=0 captureLost=0 queueFailed=0 wmTouch=0 legacyFromTouch=0 legacyMouse=5 pointerMouse=0 pointerPen=0 pointerOther=0 sourceSwitches=8 source=MOUSEKB touchApi=pointer
+==== win32craft.log opened 2026-10-18 20:57:48 (pid 4696) ====
+[      0 ms T1c48] Win32Craft 1.2.8 ARM32 Win32Bootstrap entered (host build Oct 18 2026 08:38:57)
+[     63 ms T1c48] ARM32 input: touch handling active: api=pointer (requested auto) window=000200FE feedbackDisabled=6/6 initialSource=MOUSEKB (WM_POINTER touch contacts are consumed without DefWindowProc, mouse/pen pointers are not)
+[   8219 ms T1c48] ARM32 InputPane.TryShow accepted (fake input pane; the Windows touch keyboard is driven by the host, see ARM32 osk lines)
+[   8219 ms T1c48] ARM32 osk: show requested (InputPane.TryShow) eligible=1 policy=auto touchActive=1 state=-1
+[   8250 ms T1c48] ARM32 osk: signals: IFrameworkInputPane create=0x00000000 advise=0x00000000 | InputPane interop=0x8000001d getForWindow=0x80004005 TryHide=no | dwm-cloak verdict=0 | primary=IFrameworkInputPane
+[   8250 ms T1c48] ARM32 osk: keyboard hidden (signal IFrameworkInputPane, was -1)
+[   8250 ms T1c48] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[   8266 ms T1c48] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[   8610 ms T1c48] ARM32 osk: shell Showing/Hiding callback #1
+[  10750 ms T1c48] ARM32 osk: show attempt 2: TabTip window exists -> ITipInvocation::Toggle
+[  10766 ms T1c48] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  10797 ms T1c48] ARM32 osk: shell Showing/Hiding callback #2
+[  12282 ms T1c48] ARM32 osk: hide requested while the keyboard is still coming up - it will be hidden as soon as it is visible
+[  14188 ms T1c48] ARM32 InputPane.TryShow accepted (fake input pane; the Windows touch keyboard is driven by the host, see ARM32 osk lines)
+[  14188 ms T1c48] ARM32 osk: show requested (InputPane.TryShow) eligible=1 policy=auto touchActive=1 state=0
+[  14203 ms T1c48] ARM32 osk: show attempt 1: TabTip window exists -> ITipInvocation::Toggle
+[  14219 ms T1c48] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  14578 ms T1c48] ARM32 osk: shell Showing/Hiding callback #3
+[  16703 ms T1c48] ARM32 osk: show attempt 2: TabTip window exists -> ITipInvocation::Toggle
+[  16703 ms T1c48] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  16750 ms T1c48] ARM32 osk: shell Showing/Hiding callback #4
+[  19203 ms T1c48] ARM32 osk: show attempt 3: TabTip window exists -> ITipInvocation::Toggle
+[  19203 ms T1c48] ARM32 osk: show: ITipInvocation::Toggle hr=0x00000000
+[  19641 ms T1c48] ARM32 osk: shell Showing/Hiding callback #5

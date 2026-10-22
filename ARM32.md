@@ -148,7 +148,8 @@ retries once with WARP). Note that textures above 2048 px only work above 9_x.
 
 `win32craft.log` is appended to the **working directory, which the host first sets to the exe's folder**. If that folder is not
 writable, the log goes to `%TEMP%` (the line `log file: <path>\win32craft.log (...)` near the top says exactly where). Start
-a new log by deleting the file beforehand; it is never truncated. A hung start is reported by a watchdog thread (`ARM32 watchdog`
+a new log by deleting the file beforehand. The file never grows past **1 MB**: a file above 1 MB is emptied when the game starts (a leftover `win32craft.log.old` is deleted), and a run that reaches 1 MB
+restarts the file with a `==== win32craft.log restarted ... ====` note and the first 8 KB of that run (Windows version, options, devices), the lines in between are dropped. A hung start is reported by a watchdog thread (`ARM32 watchdog`
 lines) and a heartbeat every 30 s.
 
 ## Touch input (no keyboard / mouse attached)
@@ -176,7 +177,7 @@ mouse items only (Windows turns a finger into emulated mouse messages when a win
 * Touch feedback (contact dot, press-and-hold ring, pen flicks) is switched off for the window. `EnableMouseInPointer` is never called.
 
 **Fallbacks and switches** (command line, or `start_touch.bat` / `start_mouse.bat`): `--touch-api=wmtouch` (WM_TOUCH), `--touch-api=legacy` (single finger from emulated mouse; also
-selected automatically when touch-sourced mouse messages arrive but no `PT_TOUCH` pointer message ever did), `--input=mouse` (exactly the old behaviour), `--osk=on|off`.
+used automatically - as the conversion of emulated mouse messages, without leaving pointer mode - while no `PT_TOUCH` pointer message has arrived yet), `--input=mouse` (exactly the old behaviour), `--osk=on|off`.
 
 **Log lines** (grep `ARM32 input:`, `ARM32 touch:`, `ARM32 osk:`):
 
@@ -239,7 +240,8 @@ The last `ARM32 bootstrap FAILED at step '...'` line names the step.
 | `Minecraft 1.2.8 client-state hook validation failed: continuing without it` | game keeps running, but mouse capture and text focus will not work. |
 | `ARM32 input: game function bytes differ from the facts` | input injection may misbehave; send the log. |
 | `ARM32 input: WARNING TouchMapper is MISSING from the input mapper list` | the game built no touch controls (it believed the device is holographic); send the log. |
-| `ARM32 input: WARNING no PT_TOUCH WM_POINTER message was seen but touch-sourced mouse messages arrive` | pointer messages do not reach the window on this Windows; the host switched itself to `--touch-api=legacy` (single finger). Send the log. |
+| `ARM32 input: touch-sourced mouse message ... converted to touch (provisional ...)` | a finger arrived as an emulated mouse message before any `WM_POINTER` finger (Windows sends a lone emulated tap on machines whose pointer stack works too, e.g. the tap that activates the window). The host converts it to one contact and STAYS in pointer mode: the first real `WM_POINTERDOWN` takes over and multi-touch works. Older builds switched to single touch for good here (Windows 11 ARM64: no walking and looking at the same time). |
+| `ARM32 input: NOTE many touch contacts arrived only as emulated mouse messages` | no `WM_POINTER` finger was ever seen: this device (or this run) delivers single touch only. Send the log. |
 | touch menus work but `game input mode` never becomes `Touch` | send the log: look at `ARM32 touch: item queued` (are items queued?), `could not be queued`, the `mapper(s)` line and `ARM32 input target unavailable`. |
 | `ARM32 osk: ... did NOT appear after 5 attempts` | the Windows touch keyboard could not be shown (class name / TabTip path differ on this Windows); type with a hardware keyboard and send the log. |
 | `ARM32 getAsset overrides not installed` / `ZIP resource override installation failed` | resource overrides (language/screens) missing; cosmetic. |

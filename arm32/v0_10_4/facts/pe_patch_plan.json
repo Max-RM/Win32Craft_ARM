@@ -1,0 +1,2641 @@
+{
+ "area": "pe_patch_plan",
+ "facts": [
+  {
+   "id": "pe_patch_plan.exe_identity",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x0020095D",
+   "summary": "Stock MCPE.Host.WindowsPhone.exe: PE32 ARMNT (0x1C4) EXE, ImageBase 0x400000, SizeOfImage 0xE6E000, entry RVA 0x20095D (Thumb address of 0x20095C), 6 sections, 24 import descriptors, no delay/bound imports, no resources (.rsrc absent -> no embedded manifest), no Authenticode (security dir empty), CheckSum 0, DllCharacteristics 0x9140, Characteristics 0x0122, OS/Subsystem 6.2, Subsystem GUI(2), stack 1 MiB reserve/4 KiB commit. e_lfanew 0x120, FileHeader 0x124, OptionalHeader 0x138, section table 0x218 (6 headers, ends 0x308, SizeOfHeaders 0x400 -> room for 6 more).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The 1.2.8 exe has 0x1730000 SizeOfImage and 50 descriptors; here 24 descriptors, entry/CRT are the VS2013 (cl 18.00.31101) flavour. No manifest resource: the process gets default (no supportedOS GUID) compat behaviour on Win10 (GetVersion lies 6.2) and is DPI-unaware unless the host calls SetProcessDpiAwareness.",
+   "expected_bytes": "4d5a9000",
+   "evidence": [
+    "python tools/arm32/arm32re.py info -> machine 0x1c4 base 0x400000 image 0xe6e000 entry 0x20095d; sections .text .rdata .data .pdata .tls .reloc; dd[1]=0x33ac88/0x1f4",
+    "own PE dump (scratch pedump.py): chars 0x122, dllchars 0x9140, os 6.2, subsys 6.2/GUI, checksum 0, dd[2] resource=0, dd[4] security=0, dd[13] delayimp=0, dd[11] boundimp=0, linker 12.0",
+    "Get-FileHash stock exe = 6C0A8ADCE0141323B8A43937043FFD0806DEA71E9D11B74F614B39A2046B29F3, size 14759424 (0xE13600) = friend patcher EXPECTED_SHA256 and facts/friend_audit.json friend.exe_identity"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.section_table",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x00E6E000",
+   "summary": "Section table (RVA / VirtualSize / raw off / raw size / flags): .text 0x1000/0x209364/0x400/0x209400/0x60000020 ; .rdata 0x20B000/0x1339A0/0x209800/0x133A00/0x40000040 ; .data 0x33F000/0xAF52D8/0x33D200/0xA9E800/0xC0000040 ; .pdata 0xE35000/0x17C58/0xDDBA00/0x17E00/0x40000040 ; .tls 0xE4D000/0x9/0xDF3800/0x200/0xC0000040 ; .reloc 0xE4E000/0x1FB10/0xDF3A00/0x1FC00/0x42000040. File ends exactly at 0xE13600 (= .reloc raw end), SizeOfImage 0xE6E000 = end of .reloc (0xE6DB10) rounded up. A 7th section header fits at file 0x308 (header area 0x308..0x400 is zero). New section goes at RVA 0xE6E000 / raw 0xE13600.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Same layout idea as 1.2.8 (.d3imp appended after .reloc).",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py info (section list) + scratch pedump.py (flags, hdr@ offsets)",
+    "headers 0x308..0x400 all zero (room for 6 more headers, 5 after adding .d3imp)",
+    "friend_audit friend.patch_section_geometry independently confirms 0xE13600 / 0xE6E000"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.aslr_relocs",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "ASLR is ON and works: DllCharacteristics has DYNAMIC_BASE (0x40) + NX_COMPAT (0x100), Characteristics has no RELOCS_STRIPPED, .reloc has 664 blocks / 61923 entries (41574 HIGHLOW(3), 20349 THUMB_MOV32(7), 325 ABS pad). Absolute VAs live in literal pools (HIGHLOW), movw/movt pairs (type 7), vtables, and the TLS/load-config pointers; the hInstance literal at 0x200AC8 (0x00400000) is relocated. No relocation touches the IAT (0x20B000..0x20B6C8) or the proposed trampoline slot (0x20A364..0x20A374). The friend log shows the stock-layout patched exe running at base 0x540000, i.e. relocation applied cleanly.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Everything the patcher writes must be image-base independent (BL is PC-relative; trampoline literal is an RVA delta; new descriptors use RVAs). The host must compute addresses as GetModuleHandle(NULL)+RVA.",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch relocs.py: types {7:20349, 3:41574, 0:325}; rel[0x200AC8]=3; no reloc in [0x20A364,0x20B000); none in IAT range",
+    "friend win32craft.log: \"game image: base=00540000 ... SizeOfImage=00e6f000\"; IAT hook lines \"cell 0074B5D4\" = 0x540000+0x20B5D4"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.tls_directory",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x00300F40",
+   "summary": "TLS directory at RVA 0x300F40 (size 0x18): StartAddressOfRawData VA 0x124D000 (= .tls RVA 0xE4D000), EndAddress 0x124D008 (8-byte template, section VS 9), AddressOfIndex VA 0x122B240 (RVA 0xE2B240, .data, zero on disk), AddressOfCallBacks VA 0x60BDBC (RVA 0x20BDBC) whose first entry is NULL -> NO TLS callbacks, SizeOfZeroFill 0, characteristics 0x300000 (4-byte align). All four pointers have HIGHLOW relocs. Desktop loader handles this natively; nothing to patch.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Not present as a concern in the 1.2.8 patcher either. __declspec(thread) data in the exe is only the 8-byte template.",
+   "expected_bytes": "00d0240108d02401",
+   "evidence": [
+    "scratch pedump.py TLS dir fields; arm32re.py bytes 20bdb0 32 -> entries at 0x20BDB8..0x20BDC0 are zero",
+    "scratch relocs.py: reloc types at 0x300F40/44/48/4C = 3 (HIGHLOW)",
+    "arm32re.py bytes 300f40 24"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.load_config",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x00300EF8",
+   "summary": "IMAGE_LOAD_CONFIG_DIRECTORY at RVA 0x300EF8, size 0x48 (VS2013 ARM layout): only SecurityCookie is set (VA 0x011C9F60 = RVA 0xDC9F60, default value 0xBB40E64E, initialised by sub_200E6C from time/pid/tid/tick/QPC). No SafeSEH table, no GuardCFCheck*, no CFG -> nothing restricts indirect-call targets, trampolines and hooks need no CFG registration.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Different from 1.2.8 (VS2017 ARM loadcfg with CFG fields).",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch pedump.py LOADCFG struct dump (15th..16th dword = 0x011C9F60 at +0x3C)",
+    "arm32re.py func 200e6c: loads [0x11C9F60] and compares with 0xBB40E64E; arm32re.py bytes dc9f60 -> 4e e6 40 bb"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.import_table",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x0033AC88",
+   "summary": "24 import descriptors at RVA 0x33AC88 (size 0x1F4 = 25*20 incl. terminator), IAT directory dd[12]=0x20B000/0x6C8 (all IAT cells contiguous in .rdata, 4-byte zero gap between DLLs). Classes: OS DLLs dxgi(1) D3DCOMPILER_47(2: D3DCompile 0x20B000, D3DReflect 0x20B004) d3d11(1: D3D11CreateDevice 0x20B1A4) XAudio2_8(ordinal 1 = XAudio2Create, 0x20B05C) WS2_32(19, mostly by ordinal); 16 api-set contracts; and the three VC120 Phone framework DLLs vccorlib120_app.DLL (50 functions, IAT 0x20B5FC..0x20B6C0), msvcp120_app.dll (123, 0x20B1B4..0x20B39C), msvcr120_app.dll (149, 0x20B3A4..0x20B5F4). No delay imports, no bound imports. Complete per-function IAT table is in top-level key import_table.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Unlike 1.2.8 there is no XINPUTUAP.dll or fmod_ARM.dll import, and no api-set that must be redirected to win32craft.dll (HSTRING/RoInitialize are served by the OS combase: friend log \"HSTRING self-test PASSED (native=combase)\").",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch pedump.py full walk of the 24 descriptors (ILT/IAT per function); arm32re.py imports spot checks (D3DCompile 20b000, D3D11CreateDevice 20b1a4, CreateDXGIFactory1 20b1ac)",
+    "dd[13] delayimp=0, dd[11] boundimp=0",
+    "friend_audit friend.patch_import_dir + friend.iat_* independently agree"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.runtime_dll_exports_needed",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "The three framework DLLs satisfy every import of the exe and of each other: exe -> vccorlib120_app 50/50, msvcp120_app 123/123, msvcr120_app 149/149 exports found; msvcp120_app -> msvcr120_app 160/160; vccorlib120_app -> msvcr120_app 38/38 and msvcp120_app 7/7. Exact names are listed per DLL in import_table[]. Export counts of the shipped copies: msvcr120_app 1588, msvcp120_app 1569, vccorlib120_app 257. Notable required names: msvcr120_app!_exit_app, _CxxThrowException, __CxxFrameHandler3, __getmainargs, _initterm/_initterm_e, ??2@YAPAXI@Z, ??3@YAXPAX@Z, Concurrency::* (PPL); vccorlib120_app!?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z, InitializeData/UninitializeData@Details@Platform, GetCmdArguments, Platform::Exception/Delegate/Heap helpers, EventSource* helpers.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "There is NO desktop ARM VC120 redistributable to rename to (1.2.8 renamed to vccorlib140/msvcp140/vcruntime140 desktop DLLs): the _app DLLs must be shipped and loaded. Also msvcr120_app!_exit_app has no counterpart in the desktop msvcr120.dll (checked on the x86 SysWOW64 build: 13 plain-C imports missing there incl. _exit_app and setjmp), so renaming imports in place is not viable.",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch expcheck.py: every imported name resolved in the export tables of the TEST-folder copies (0 missing in all six importer->exporter pairs)",
+    "DLL export names/ordinals: msvcr120_app ordinal 113 = ??2@YAPAXI@Z, 325 = _CxxThrowException; vccorlib120_app ordinal 129 = GetActivationFactoryByPCWSTR"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.iat_getactivationfactory",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B5FC",
+   "summary": "vccorlib120_app!GetActivationFactoryByPCWSTR IAT cell RVA 0x20B5FC. All WinRT activation in the exe goes through the 14-byte wrapper sub_2001E4 (36 direct callers) which tail-jumps (b.w) to the 12-byte import thunk 0x200308 (movw ip,#0xb5fc; movt ip,#0x60; ldr.w pc,[ip]). ABI: HRESULT fn(PCWSTR classId /*r0*/, Platform::Guid& iid /*r1, pointer to 16-byte GUID*/, void** out /*r2*/) -> r0; plain AAPCS, no stack args.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Patch the data cell (PAGE_READWRITE, .rdata is read-only) rather than the wrapper; resolve by name never by slot arithmetic. The runtime value is the real vccorlib120_app export (Thumb bit set).",
+   "expected_bytes": "4bf2fc5cc0f2600cdcf800f0",
+   "evidence": [
+    "arm32re.py imports/impcallers GetActivationFactoryByPCWSTR -> IAT=0020b5fc thunk=00200308, single caller 0x2001ee (jmp in 0x2001e4)",
+    "arm32re.py callers 2001e4 -> 36 callers; example call 0x1eed0a..0x1eed1a: r0=L\"Windows.UI.Xaml.Application\", r1=&GUID(r7+0x10), r2=&out(r7+8)",
+    "scratch pedump.py IAT dump: 0x20b5fc first entry of vccorlib120_app group",
+    "friend log: \"hook GetActivationFactoryByPCWSTR: cell rva 0020b5fc currently 7550091D = vccorlib120_app.DLL+0x2091d\""
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.iat_operator_new_delete",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B5E0",
+   "summary": "msvcr120_app!??2@YAPAXI@Z (operator new) IAT cell 0x20B5E0 (thunk 0x200430, 1767 direct callers); operator delete ??3@YAXPAX@Z cell 0x20B5DC (thunk 0x20043C, 4945 callers); ??_V@YAXPAX@Z (delete[]) cell 0x20B3A8. void* operator new(unsigned size) in r0; no placement/nothrow variant imported.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The game allocates game objects with this operator new, so the host must allocate game-owned objects through the cell value (as the friend host does) to keep new/delete on one heap.",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py impcallers ??2@ -> IAT=0020b5e0 thunk=00200430",
+    "arm32re.py impcallers ??3@ -> IAT=0020b5dc thunk=0020043c",
+    "scratch pedump.py: 0x20b5dc ??3@YAXPAX@Z, 0x20b5e0 ??2@YAPAXI@Z"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.iat_cxxthrow",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B5D4",
+   "summary": "msvcr120_app!_CxxThrowException IAT cell 0x20B5D4 (thunk 0x200448, 563 direct call sites); __CxxFrameHandler3 cell 0x20B5D0. void _CxxThrowException(void* obj /*r0*/, const ThrowInfo* ti /*r1*/).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py impcallers _CxxThrowException -> IAT=0020b5d4 thunk=00200448",
+    "scratch pedump.py IAT dump",
+    "friend log: \"hook _CxxThrowException: cell rva 0020b5d4 currently 753E92DD = msvcr120_app.dll+0x392dd\""
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.iat_other_host_cells",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "iat",
+   "arm_rva": "0x0020B1A4",
+   "summary": "Other cells a host is likely to touch (all verified by name): D3DCompile 0x20B000, D3DReflect 0x20B004, D3D11CreateDevice 0x20B1A4, CreateDXGIFactory1 0x20B1AC, XAudio2_8 ordinal 1 (XAudio2Create) 0x20B05C, RoInitialize 0x20B178 (single caller sub_200878), WindowsCreateString 0x20B198, WindowsCreateStringReference 0x20B188, WindowsDeleteString 0x20B19C, WindowsDuplicateString 0x20B194, WindowsGetStringRawBuffer 0x20B18C, WindowsGetStringLen 0x20B190, CreateFile2 0x20B08C, CreateThread 0x20B0E8, WSAStartup ordinal 115 0x20B054, WSACleanup ordinal 116 0x20B00C. D3DCompile/D3DReflect each have 1 caller, D3D11CreateDevice 1 caller, CreateDXGIFactory1 1 caller.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "arm32re.py impcallers D3DCompile/D3D11CreateDevice/CreateDXGIFactory1/RoInitialize",
+    "ordinals resolved against the x64 System32 export tables: XAudio2_8 #1=XAudio2Create, WS2_32 #115=WSAStartup #116=WSACleanup"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.crt_startup_path",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x00200970",
+   "summary": "PE entry 0x20095D (Thumb of sub_20095C): push {fp,lr}; bl sub_200E6C (/GS cookie init); pop; b.w sub_200970. sub_200970 (len 0x146, WinMainCRTStartup-like __tmainCRTStartup): (1) TEB-based startup spin lock [0xE342C4] / state [0xE342C8]; (2) _initterm_e(0x20BDA0,0x20BDB4) = XIA table {NULL, sub_200878, sub_2004F8, sub_1FFECC, sub_29BA0(return 0)}; (3) _initterm(0x20B6C8,0x20BD9C) = XCA table (437 slots, 436 non-null; first = sub_200910 __getmainargs, then all game/C++ static initialisers); (4) skip program name in _acmdln (ANSI); (5) bl sub_203EFC at 0x200A72 with r0=hInstance (relocated literal 0x400000->real base), r1=0, r2=ANSI command line tail, r3=0; (6) result r0 stored to [r4+4]=[0xE2B248]; then _exit_app / _cexit. sub_203EFC is an empty frame that tail-jumps (b.w) to sub_20405C, the C++/CX [MTAThread] main wrapper (GetCmdArguments -> Array<String^> -> sub_1F42A4 user main -> sub_1EECBC Application::Start).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Same structure as the 1.2.8 __scrt_common_main_seh case: the bootstrap replaces the post-CRT-init call, so the CRT (including msvcr120_app static state, vccorlib init, 436 static constructors) has already run on the main thread when the host starts.",
+   "expected_bytes": "2de90048eb4600f083fa",
+   "evidence": [
+    "arm32re.py func 20095c / 200970 / 203efc / 20405c full disassembly",
+    "initterm tables: arm32re.py ptrs 20bd98 12 and 20b6c8 6; sub_200878 body (EncodePointer(-1), _fmode, _commode, setusermatherr, RoInitialize only if [0xE2B03C]!=0 which is 0 on disk)",
+    "scratch ctors.py: 437 slots / 436 non-null"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.crt_vccorlib_apartment_init",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x001FFECC",
+   "summary": "vccorlib120_app!InitializeData is called from XIA entry sub_1FFECC with the global apartment mode [0xDC9F5C] = 2. Disassembly of the shipped vccorlib120_app!InitializeData (export RVA 0x20225): arg 0 -> skip; arg 1 -> RoInitialize(RO_INIT_SINGLETHREADED); any other value (2) -> RoInitialize(RO_INIT_MULTITHREADED=1); then sets an init flag. So the main thread is ALREADY an initialised MTA before Win32Bootstrap runs, and the host's own RoInitialize(MULTITHREADED) returns S_FALSE (0x00000001). sub_1FFF84 (UninitializeData) is registered via sub_2005D8 (atexit).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Do not treat RoInitialize S_FALSE as an error. If the host ever runs the game on a different thread it needs its own RoInitialize.",
+   "expected_bytes": "2de930480df1080b094d2868",
+   "evidence": [
+    "arm32re.py func 1ffecc; arm32re.py bytes dc9f5c 16 -> 02 00 00 00",
+    "capstone disassembly of vccorlib120_app.dll InitializeData: cmp r0,#1 / moveq r0,#0 / movne r0,#1 / blx [RoInitialize]",
+    "friend win32craft.log: \"RoInitialize(RO_INIT_MULTITHREADED) [native combase]: HRESULT 0x00000001\""
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.crt_static_initialisers",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "function",
+   "arm_rva": "0x0020B6C8",
+   "summary": "No static initialiser reaches WinRT activation through direct calls: the backward call-graph closure of the activation wrapper sub_2001E4 has 130 functions and contains none of the 436 non-null XCA entries; the friend log shows the stock CRT/ctor phase completing and Win32Bootstrap being entered. Hence installing the IAT hooks inside Win32Bootstrap (after CRT init) is early enough for activation redirects. Virtual/indirect calls are not followed, so this is \"no direct path found\".",
+   "arm_signature": null,
+   "x86_to_arm_notes": "If a later run crashes before Win32Bootstrap, install the hooks from win32craft.dll!DllMain instead (the exe IAT is already snapped when DllMain runs).",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch ctors2.py (callers dict closure) -> \"static ctors reaching it: []\"",
+    "friend log reaches \"Win32Bootstrap entered\" after the CRT init"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "pe_patch_plan.patch_callsite",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x00200A72",
+   "summary": "Redirect site: Thumb-2 BL at RVA 0x200A72 (file 0x1FFE72) inside sub_200970, bytes 03 f0 43 fa = bl 0x203efc; preceded by 16 48 00 23 00 21 (ldr r0,[pc,#0x58]; movs r3,#0; movs r1,#0) and followed by 60 60 (str r0,[r4,#4]). The callee reads no argument and returns the process exit code in r0. New bytes (target = trampoline 0x20A364): 09 f0 77 fc. BL range is +-16 MiB so the trampoline must stay within .text-neighbourhood (the friend trampoline at 0xE6E23C is 12.4 MiB away - still legal, limit 16 MiB).",
+   "arm_signature": "int Win32Bootstrap(void) ; entered with r0=hInstance, r1=0, r2=ANSI cmdline tail, r3=0 (all preserved by the trampoline; only ip/r12 is clobbered); must return the exit code in r0.",
+   "x86_to_arm_notes": "Identical mechanism to 1.2.8 (CALL_SITE_RVA 0xB49ACA there). LR (= 0x200A76|1) reaches Win32Bootstrap untouched, so its return value becomes the CRT exit code.",
+   "expected_bytes": "03f043fa",
+   "evidence": [
+    "arm32re.py dis around 200a6c; arm32re.py bytes 200a68 16 -> 7a60 f8e7 1648 0023 0021 03f0 43fa 6060",
+    "capstone: bytes 03f043fa @0x200a72 = bl #0x203efc ; 09f077fc = bl #0x20a364 ; 6df0e3d3 (friend) = bl #0xe6e23c",
+    "p128.decode_thumb2_bl/encode_thumb2_bl from tools/1.2.8-arm32-patcher.py round-trip"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.patch_trampoline",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x0020A364",
+   "summary": "Trampoline: 16 bytes at RVA 0x20A364 (file 0x209764), the zero padding directly after the last literal pool of the last function (sub_20A328 ends 0x20A35E, literal 0x20A360, .text VirtualSize ends 0x20A364). Code: dff808c0 (ldr.w ip,[pc,#8]) fc44 (add ip,pc) dcf800c0 (ldr.w ip,[ip]) 6047 (bx ip) + literal 0xC63EC8 = cell(0xE6E234) - (0x20A364+8). Must be 4-byte aligned (0x20A364 is). Slack: 0x9C zero bytes inside the file (0x209764..0x209800) and zero-filled mapped pages up to 0x20B000; no pdata entry, no relocation, and no pointer anywhere in the image targets 0x60A364..0x60B000. Leaf tail-jump never appears on a stack so it needs no unwind info.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Differs from the friend design (trampoline inside an RWX .d3imp). Keeping it in .text lets .d3imp be a plain RW data section (0xC0000040) exactly like the device-proven 1.2.8 layout.",
+   "expected_bytes": "00000000000000000000000000000000",
+   "evidence": [
+    "scratch slack.py: file 0x209764..0x209800 all zero; last pdata function 0x20A328 packed length 0x36 -> end 0x20A35E; scan of all dwords for 0x60A364..0x60B000 -> 0 hits",
+    "scratch relocs.py: no relocation in [0x20A364,0x20B000)",
+    "capstone disassembly of the 12 code bytes: ldr.w ip,[pc,#8]; add ip,pc; ldr.w ip,[ip]; bx ip",
+    "tools/1.2.8-arm32-patcher.py uses the same 4 instructions in .text slack (device proven)"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.patch_new_section",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x00E6E000",
+   "summary": "Append section .d3imp: RVA 0xE6E000, VirtualSize 0x23C, SizeOfRawData 0x400, raw 0xE13600 (= old EOF, 0x200-aligned), flags 0xC0000040 (INITIALIZED_DATA|READ|WRITE). Content: 26 descriptors (24 byte-copied originals + {OFT 0xE6E22C, name 0xE6E208, FirstThunk 0xE6E234} + terminator) = 0x208 bytes, \"win32craft.dll\\0\" @0x208, hint/name \"\\0\\0Win32Bootstrap\\0\" @0x218, ILT @0x22C {0xE6E218,0}, IAT cell @0x234 {0xE6E218,0} (loader overwrites with the export address). Section blob sha256 4f273750ecb3cb85bcb4c22d596ee16a44f156eb589240334d951851a6167790. Headers: NumberOfSections 6->7, SizeOfInitializedData +0x400, SizeOfImage -> 0xE6F000, import dir -> (0xE6E000, 0x208).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The original descriptor array (0x33AC88) and all ILTs/hint-name tables stay in .rdata and are re-used by the copied descriptors. The 1.2.8 patcher additionally redirected XINPUTUAP/api-set descriptors to win32craft.dll - not needed here.",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch proto_patch.py built the patched exe and re-parsed it: 25 imports, last = win32craft.dll!Win32Bootstrap, cell content == hint RVA 0xE6E218",
+    "diff against the friend-patched exe: descriptors/ILT/IAT/name/hint bytes identical, only flags/VirtualSize/trampoline location/call-site bytes differ"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.patch_size_of_image",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x00E6F000",
+   "summary": "Patched SizeOfImage = align(0xE6E000+0x23C, 0x1000) = 0xE6F000 (stock 0xE6E000). This is the constant win32craft.dll keys the 0.10.4 build on (friend host IMAGE_SIZE_0104_ARM_PATCHED 0x00E6F000, gate = PE machine 0x1C4 and SizeOfImage). Final file size 14760448 (0xE13A00), NumberOfSections 7.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "The ONE-win32craft.dll-for-all-versions plan distinguishes: 1.2.8 patched 0x01731000, 0.10.4 patched 0x00E6F000, and the stock sizes (0x1730000 / 0xE6E000) must NOT be accepted.",
+   "expected_bytes": null,
+   "evidence": [
+    "friend log: \"SizeOfImage=00e6f000 sections=7\" and host gate lines; scratch proto_patch.py output sizeofimage 0xe6f000",
+    "friend_audit friend.patch_sizeofimage_marker"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.patch_text_virtual_size",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": "0x00001000",
+   "summary": ".text VirtualSize 0x209364 -> 0x209374 (file 0x220) so section tools and the loader consider the trampoline part of .text (page 0x20A000 is already mapped RX; this is cosmetic but mirrors the 1.2.8 patcher). SizeOfCode (0x209400, raw-size based) is left alone.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch proto_patch.py edit sec.text.virtualsize",
+    "tools/1.2.8-arm32-patcher.py TEXT_SECTION_NEW_VIRTUAL_SIZE"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.patch_dllchars",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "DllCharacteristics (file 0x17E) 0x9140 -> 0x8140: clears IMAGE_DLLCHARACTERISTICS_APPCONTAINER (0x1000) only; TERMINAL_SERVER_AWARE (0x8000), NX_COMPAT (0x100) and DYNAMIC_BASE (0x40) stay. OS/subsystem version stay 6.2. Without the AppContainer bit clear the exe cannot start as a desktop process.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch pedump.py: dllchars 0x9140 at file 0x17E (e_lfanew 0x120 + 0x18 + 0x46)",
+    "tools/1.2.8-arm32-patcher.py DLL_CHARACTERISTICS 0x9140->0x8140 (device proven on Windows RT 8.1)",
+    "friend-patched exe holds 0x8140 and ran"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.vclibs_dll_patch",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "The friend's TEST copies of msvcr120_app.dll / msvcp120_app.dll / vccorlib120_app.dll are the genuine Microsoft.VCLibs.120.00.Phone ARM binaries, FileVersion 12.00.30113.0 \"built by: PHONEREL\" = exactly the manifest MinVersion 12.0.30113.0, with ONE change: DllCharacteristics 0x1140 -> 0x0140 (APPCONTAINER cleared) at file 0x14E / 0x14E / 0x15E. Proof: the PE header CheckSum (0x9FAE6 / 0x899C4 / 0x544A6) equals the checksum recomputed with the 0x1000 bit set again, so no other checksum-visible byte differs from the original; the Authenticode blobs (still present, 0x23B8 bytes, mention Microsoft Corporation / Windows Phone) are now invalid, which is harmless for the loader but means the DLLs only load where unsigned code is allowed (same condition as the patched exe and the 1.2.8 fmod_ARM.dll). Other header facts: ARMNT, ImageBase 0x10000000, DYNAMIC_BASE, relocations present, no TLS, no delay imports, OS/subsys 6.2, linker 12.0. Patch profile: old 4011 -> new 4001 at the listed offsets.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Equivalent to what tools/1.2.8-arm32-patcher.py --fmod-dll does for fmod_ARM.dll (0x1140 -> 0x0140). Keep the stale header checksum (it equals the original one); recomputing is optional.",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch chk.py: PE checksum algorithm validated on System32\\kernel32.dll (header 0xD7A13 == recomputed); for the three DLLs recompute with dllchars|0x1000 == header checksum",
+    "scratch ver.py: FileVersion 12.00.30113.0 PHONEREL; AppxManifest PackageDependency Microsoft.VCLibs.120.00.Phone MinVersion 12.0.30113.0",
+    "the appx contains no runtime DLLs (only exe, xbf, pri, manifest), so these DLLs cannot be re-extracted from the game package; reconstructed-original sha256: msvcr120_app 778800c2..., msvcp120_app 29e62fd2..., vccorlib120_app 66170fed..."
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.api_sets_rt81",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "Api-set contracts imported (exe + 3 VC120 DLLs + friend host): 32 names. 24 are PROVEN present on Windows RT 8.1 (6.3.9600) by arm32/device_logs/loadcheck_rt81_6.3.9600_OK.txt. 8 are UNPROVEN: api-ms-win-core-errorhandling-l1-1-2 (exe: RaiseException, GetLastError), localization-l1-2-1 (FormatMessageW, GetLocaleInfoEx, LCMapStringEx, EnumSystemLocalesEx ...), debug-l1-1-1 (IsDebuggerPresent, OutputDebugStringW), fibers-l1-1-1 (Fls*), heap-l1-2-0 (HeapAlloc/Free/ReAlloc/Size, GetProcessHeap), libraryloader-l1-1-1 (DisableThreadLibraryCalls), processenvironment-l1-2-0 (GetCommandLineW), rtlsupport-l1-2-0 (RtlPcToFileHeader, RtlLookupFunctionEntry, RtlUnwindEx). Likely present (winblue schema is shared with Windows Phone 8.1 which these binaries target, and the 1.2.8 run showed every contract except heap-l2-1-0/libraryloader-l2-1-0 native) but NOT proven. Fix if missing: app-local forwarder shims from tools/make_arm32_apiset_shims.py (targets KERNELBASE.dll / ntdll.dll; avoid forwarding to a function that itself forwards back into the missing contract - the LocalFree lesson).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "On the friend's OS (Windows build 10.0.22631) everything resolved natively, which says nothing about RT 8.1. The host DLL (friend build) additionally needs ucrtbase.dll + api-ms-win-crt-string-l1-1-0 app-local, i.e. the existing dist-arm32/win81-runtime overlay.",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch apicheck.py: proven/UNPROVEN classification against the loadcheck log (59 contracts served on the device)",
+    "scratch unproven.py: function lists per unproven contract",
+    "HANDOFF_ARM32.md \"Windows RT 8.1 loader issues\" (heap-l2-1-0 and libraryloader-l2-1-0 were the only missing ones for 1.2.8)"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "pe_patch_plan.loadcheck_coverage",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "tools/loadcheck/loadcheck.c would cover this set after one edit: its hard-coded modules[] list names the 1.2.8 files (Win32Craft.1.2.8-arm32.exe, win32craft.dll, fmod_ARM.dll, ucrtbase.dll, vccorlib140.dll, msvcp140.dll, concrt140.dll, vcruntime140.dll). For 0.10.4 use {Win32Craft.0.10.4-arm32.exe, win32craft.dll, vccorlib120_app.dll, msvcp120_app.dll, msvcr120_app.dll, ucrtbase.dll}. What it already does right: parses each module import table, LoadLibraryEx every imported DLL with the folder as DLL directory (this also runs the three VC120 DllMains, and the loader itself rejects an APPCONTAINER-flagged or bad-machine DLL here), GetProcAddress every name AND ordinal (XAudio2_8 #1, WS2_32 ordinals), reports which file served each api-set name. Gaps: (1) a missing module file is only \"skipped\" (false OK if the exe was renamed) - make it a failure; (2) it does not map the patched exe itself, so a bad section table/APPCONTAINER on the EXE is not detected (optional: LoadLibraryExW(exe, DONT_RESOLVE_DLL_REFERENCES) - untested idea); (3) no delay-import walk needed here (exe has none); (4) it cannot see runtime GetProcAddress/LoadLibrary calls by the host or game.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Run loadcheck on the RT before any game run; its answer for the 8 unproven contracts decides whether shims are needed.",
+   "expected_bytes": null,
+   "evidence": [
+    "read tools/loadcheck/loadcheck.c (modules[] at line 242, check_dll_import / check_module)",
+    "arm32/device_logs/loadcheck_rt81_6.3.9600_OK.txt shows the output format"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.hook_alternative_sites",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "hook_site",
+   "arm_rva": "0x001EECBC",
+   "summary": "Other redirect points on the same chain (all verified): sub_203EFC (empty frame, tail b.w to sub_20405C); sub_20405C main wrapper calls bl sub_1F42A4 \"user main(Array<String^>^)\" at 0x2040C6; sub_1F42A4 builds the ApplicationInitializationCallback delegate (bl sub_1EA914 at 0x1F42C6) and calls bl sub_1EECBC at 0x1F42CE; sub_1EECBC = Application::Start: GetActivationFactory(L\"Windows.UI.Xaml.Application\", IID {06499997-F7B4-45FE-B763-7577D1D3CB4A} = IApplicationStatics) via sub_2001E4 at 0x1EED1A, then virtual call vtbl+0x1C (slot 7 = Start) with r1 = the callback at 0x1EED30. Therefore architecture (b) needs NO extra exe patch: keep the call-site redirect, let the host install the IAT hooks, activate a fake \"Windows.UI.Xaml.Application\" statics object whose slot 7 runs the callback, and (if the original flow is wanted) call image+0x203EFC|1 from Win32Bootstrap to continue into the unmodified main wrapper. Architecture (a) (friend) simply never calls it.",
+   "arm_signature": "int sub_203EFC(void) /* args ignored, returns exit code; tail-calls sub_20405C */",
+   "x86_to_arm_notes": "The host bootstrap is a normal C function; calling the original main wrapper from it needs ARM_CODE(image,0x203EFC) (Thumb bit) and ignores arguments.",
+   "expected_bytes": "2de90048eb46bde80048",
+   "evidence": [
+    "arm32re.py func 20405c / 1f42a4 / 1eecbc disassembly",
+    "IID bytes at 0x1EECD4..0x1EED04: 0x06499997, F7B4, 45FE, B7 63 75 77 D1 D3 CB 4A",
+    "friend_audit friend.user_main_application_start agrees"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.isa_no_hw_divide",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": null,
+   "summary": "The 692,763 Thumb-2 instructions disassembled from the 12171 pdata functions contain 0 SDIV/UDIV, so the code does not require the hardware integer divide that Tegra-3 (Surface RT, Cortex-A9) lacks; it uses 21152 movw/movt-style address loads and VFP/NEON (the exe was built for Windows Phone 8.1 ARMv7). No ISA-level blocker found.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "Data-in-code can derail linear disassembly, hence medium, but a zero count across 700k instructions is a good sign.",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch isa.py (capstone Thumb over c.idx.funcs ranges): counters {sdiv:0, udiv:0}"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "id": "pe_patch_plan.host_identification",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "abi",
+   "arm_rva": "0x00E6F000",
+   "summary": "Image identification contract for the shared win32craft.dll: PE machine 0x01C4 and SizeOfImage == 0x00E6F000 selects the 0.10.4 profile; export name/signature unchanged: win32craft.dll!Win32Bootstrap (exported Thumb function, RVA odd = Thumb bit; the friend build exports it at ordinal 27). The exe must be importing win32craft.dll by that exact name (descriptor 24).",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "friend win32craft.log: \"image identification: patched Minecraft 0.10.4 ARM32 exe (machine 0x01C4, SizeOfImage 0x00E6F000)\"",
+    "scratch dllinfo.py exports of the friend win32craft.dll: Win32Bootstrap present, RVA 0x23A9"
+   ],
+   "confidence": "high"
+  },
+  {
+   "id": "pe_patch_plan.friend_patcher_deltas",
+   "x86_symbol": "n/a (new target; analogue of 1.2.8 tools/1.2.8-arm32-patcher.py constant)",
+   "x86_value": null,
+   "kind": "pe",
+   "arm_rva": null,
+   "summary": "Friend patcher (Win32Craft_ARM/tools/0.10.4.40-arm32-patcher.py) vs the verified plan: SAME - sha/size gate, DllCharacteristics edit, .d3imp RVA/raw, 26-descriptor import table content, call site 0x200A72, BL encoding, SizeOfImage 0xE6F000, no DLL renames. DIFFERENT - (1) .d3imp flags 0xE0000060 (RWX) vs 0xC0000040; (2) trampoline in .d3imp at 0xE6E23C vs in .text slack 0x20A364; (3) VirtualSize 0x24C vs 0x23C; (4) .text VirtualSize untouched. No functional defect found in the friend byte output (their exe == original + the listed edits, verified by byte diff); the weakness is RWX on a device with code-integrity/WX policies.",
+   "arm_signature": null,
+   "x86_to_arm_notes": "",
+   "expected_bytes": null,
+   "evidence": [
+    "scratch diffexe.py stock vs Win32Craft.0.10.4-arm32.exe: edits only at 0x126,0x141,0x171,0x17F,0x1A0,0x308-0x32F,0x1FFE72 + 1024 appended bytes",
+    "scratch diffexe.py friend-patched vs own prototype: only 0x220, 0x310, 0x32C, 0x32F, 0x1FFE72, trampoline location differ"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "patch_profile": {
+  "profile_id": "mcpe-0.10.4.40-wp81-arm32",
+  "target": "MCPE.Host.WindowsPhone.exe (Minecraft Pocket Edition 0.10.4.40, WP8.1 XAML, ARM Thumb-2)",
+  "input": {
+   "sha256": "6c0a8adce0141323b8a43937043ffd0806dea71e9d11b74f614b39a2046b29f3",
+   "size": 14759424,
+   "machine": "0x1C4",
+   "size_of_image": "0xE6E000",
+   "number_of_sections": 6,
+   "e_lfanew": "0x120",
+   "optional_header": "0x138",
+   "section_table": "0x218",
+   "import_dir": [
+    "0x33AC88",
+    "0x1F4"
+   ],
+   "import_descriptors": 24,
+   "file_alignment": "0x200",
+   "section_alignment": "0x1000"
+  },
+  "output": {
+   "size": 14760448,
+   "sha256_for_this_exact_table": "453ce59a2100dd7def909ac4871fd58308ec0052572ec73af07c9ac50b15db31",
+   "size_of_image": "0xE6F000",
+   "number_of_sections": 7,
+   "import_descriptors": 25,
+   "suggested_name": "Win32Craft.0.10.4-arm32.exe (host keys on SizeOfImage, not on the file name; loadcheck module list must match the name)"
+  },
+  "order_of_operations": [
+   "refuse if input already patched (.d3imp present or SizeOfImage 0xE6F000)",
+   "check sha256/size/machine/alignments/Characteristics 0x0122/OS 6.2/Subsys 6.2",
+   "verify every edit old_hex in the table before writing (checked_write)",
+   "build .d3imp blob (descriptors copied byte-for-byte)",
+   "apply edits",
+   "append blob padded to 0x400 at file 0xE13600",
+   "run verification checklist on the result"
+  ],
+  "edits": [
+   {
+    "id": "hdr.dllchars",
+    "file_offset": "0x17E",
+    "old_hex": "4091",
+    "new_hex": "4081",
+    "reason": "clear IMAGE_DLLCHARACTERISTICS_APPCONTAINER (0x1000)",
+    "note": "file 0x17E = e_lfanew 0x120 + 0x18 + 0x46"
+   },
+   {
+    "id": "hdr.numsections",
+    "file_offset": "0x126",
+    "old_hex": "0600",
+    "new_hex": "0700",
+    "reason": "add .d3imp",
+    "note": "file 0x126 = e_lfanew + 6"
+   },
+   {
+    "id": "hdr.sizeofinitdata",
+    "file_offset": "0x140",
+    "old_hex": "000ac600",
+    "new_hex": "000ec600",
+    "reason": "SizeOfInitializedData += raw size of .d3imp",
+    "note": "file 0x140 = OptionalHeader 0x138 + 8"
+   },
+   {
+    "id": "hdr.sizeofimage",
+    "file_offset": "0x170",
+    "old_hex": "00e0e600",
+    "new_hex": "00f0e600",
+    "reason": "SizeOfImage -> host identification constant",
+    "note": "file 0x170 = OptionalHeader + 0x38; formula align(new_rva + vsize, 0x1000)"
+   },
+   {
+    "id": "hdr.importdir",
+    "file_offset": "0x1A0",
+    "old_hex": "88ac3300f4010000",
+    "new_hex": "00e0e60008020000",
+    "reason": "import directory -> relocated table with win32craft.dll appended",
+    "note": "file 0x1A0 = OptionalHeader + 0x68"
+   },
+   {
+    "id": "sec.header",
+    "file_offset": "0x308",
+    "old_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "new_hex": "2e6433696d7000003c02000000e0e600000400000036e100000000000000000000000000400000c0",
+    "reason": "new section header (RW data, not executable)",
+    "note": "file 0x308 = section table 0x218 + 6*40"
+   },
+   {
+    "id": "sec.text.virtualsize",
+    "file_offset": "0x220",
+    "old_hex": "64932000",
+    "new_hex": "74932000",
+    "reason": "cover the 16-byte trampoline appended after the last code byte",
+    "note": "file 0x220 = .text header 0x218 + 8"
+   },
+   {
+    "id": "code.trampoline",
+    "file_offset": "0x209764",
+    "old_hex": "00000000000000000000000000000000",
+    "new_hex": "dff808c0fc44dcf800c06047c83ec600",
+    "reason": "PIC tail-jump through the Win32Bootstrap IAT cell",
+    "note": "RVA 0x20A364 = .text.va + .text.vsize ; file = .text.raw + .text.vsize"
+   },
+   {
+    "id": "code.callsite",
+    "file_offset": "0x1FFE72",
+    "old_hex": "03f043fa",
+    "new_hex": "09f077fc",
+    "reason": "redirect bl sub_203efc -> trampoline",
+    "note": "RVA 0x200A72 -> file 0x1FFE72; BL target = trampoline RVA"
+   }
+  ],
+  "append_section": {
+   "name": ".d3imp",
+   "rva": "0xE6E000",
+   "virtual_size": "0x23C",
+   "raw_offset": "0xE13600",
+   "raw_size": "0x400",
+   "flags": "0xC0000040",
+   "content_hex_first_0x23C_bytes": "28b0330000000000000000005ab53300acb120007cae3300000000000000000080b5330000b0200020b033000000000000000000a8b53300a4b12000d8ae33000000000000000000b2b533005cb0200060af3300000000000000000086b73300e4b02000c4af33000000000000000000b0b7330048b12000e0ae33000000000000000000d4b7330064b0200088af33000000000000000000f4b733000cb1200090af3300000000000000000016b8330014b1200008af3300000000000000000038b833008cb020007caf3300000000000000000058b8330000b12000fcae330000000000000000007cb8330080b0200050af33000000000000000000a6b83300d4b0200078b433000000000000000000cac23300fcb5200030b0330000000000000000005cd93300b4b1200020b233000000000000000000bce33300a4b3200088ae33000000000000000000f0e433000cb0200044af3300000000000000000030e73300c8b0200058af3300000000000000000050e73300dcb02000d4af3300000000000000000078e7330058b12000fcaf33000000000000000000c8e8330080b12000e0af33000000000000000000f0e8330064b12000ecaf3300000000000000000018e9330070b12000f4af3300000000000000000040e9330078b120002ce2e600000000000000000008e2e60034e2e600000000000000000000000000000000000000000077696e333263726166742e646c6c0000000057696e3332426f6f7473747261700000000018e2e6000000000018e2e60000000000",
+   "content_sha256": "4f273750ecb3cb85bcb4c22d596ee16a44f156eb589240334d951851a6167790",
+   "layout": {
+    "descriptors": "0x000..0x208",
+    "dll_name": "0x208 \"win32craft.dll\"",
+    "hint_name": "0x218",
+    "ilt": "0x22C",
+    "iat_cell_Win32Bootstrap": "0x234 (RVA 0xE6E234)"
+   }
+  },
+  "derived_values": {
+   "trampoline_rva": "0x20A364",
+   "trampoline_file": "0x209764",
+   "trampoline_literal": "0xC63EC8",
+   "trampoline_bytes": "dff808c0fc44dcf800c06047c83ec600",
+   "callsite_new_bytes": "09f077fc",
+   "callsite_old_bytes": "03f043fa",
+   "bootstrap_iat_cell_rva": "0xE6E234"
+  },
+  "formulas": {
+   "trampoline_rva": ".text.virtual_address + .text.virtual_size (must be 4-aligned and inside zero slack)",
+   "literal": "cell_rva - (trampoline_rva + 8) mod 2^32",
+   "bl": "encode_thumb2_bl(callsite_rva, trampoline_rva) from tools/1.2.8-arm32-patcher.py, |disp| < 16 MiB",
+   "new_size_of_image": "align(.d3imp.rva + .d3imp.vsize, 0x1000) == 0xE6F000 (assert)"
+  },
+  "dll_profiles": [
+   {
+    "file": "msvcr120_app.dll",
+    "source": "Microsoft.VCLibs.120.00.Phone 12.0.30113.0 (not in the appx; obtain the framework package or reuse the verified TEST copies)",
+    "edit": {
+     "id": "dll.dllchars",
+     "file_offset": "0x14E",
+     "old_hex": "4011",
+     "new_hex": "4001",
+     "reason": "clear APPCONTAINER (0x1000) in DllCharacteristics (0x1140 -> 0x0140)"
+    },
+    "size": 611768,
+    "sha256_patched_expected": "c4cbf6e89da092aa33828a66a61b74ca06af5c739b053b1cacb4cf7f9728b2b5",
+    "sha256_original_reconstructed": "778800c2bd73d7aa8a3c1c90c3a7062130114b2b127e07c9a0d2549b419d765f",
+    "header_checksum_policy": "leave unchanged (equals checksum of the original file)",
+    "other_changes": "none; keep the (now invalid) Authenticode blob; no renames, no import edits"
+   },
+   {
+    "file": "msvcp120_app.dll",
+    "source": "Microsoft.VCLibs.120.00.Phone 12.0.30113.0 (not in the appx; obtain the framework package or reuse the verified TEST copies)",
+    "edit": {
+     "id": "dll.dllchars",
+     "file_offset": "0x14E",
+     "old_hex": "4011",
+     "new_hex": "4001",
+     "reason": "clear APPCONTAINER (0x1000) in DllCharacteristics (0x1140 -> 0x0140)"
+    },
+    "size": 545208,
+    "sha256_patched_expected": "b82dd0fd70dd53a83cb6f72376c7f95123a9aeacac4c72e351863f22cbcf942c",
+    "sha256_original_reconstructed": "29e62fd2baee67acecfdbefa226a88354215b46bb767c0962f7ef922d2f15074",
+    "header_checksum_policy": "leave unchanged (equals checksum of the original file)",
+    "other_changes": "none; keep the (now invalid) Authenticode blob; no renames, no import edits"
+   },
+   {
+    "file": "vccorlib120_app.dll",
+    "source": "Microsoft.VCLibs.120.00.Phone 12.0.30113.0 (not in the appx; obtain the framework package or reuse the verified TEST copies)",
+    "edit": {
+     "id": "dll.dllchars",
+     "file_offset": "0x15E",
+     "old_hex": "4011",
+     "new_hex": "4001",
+     "reason": "clear APPCONTAINER (0x1000) in DllCharacteristics (0x1140 -> 0x0140)"
+    },
+    "size": 307128,
+    "sha256_patched_expected": "002d1f3999cb87342aad42f3dca8c6527c862029bc845fe1ed83eeee208db668",
+    "sha256_original_reconstructed": "66170fed91616007332921762e848159af293847d5174dd1d60b26ad3dade3ac",
+    "header_checksum_policy": "leave unchanged (equals checksum of the original file)",
+    "other_changes": "none; keep the (now invalid) Authenticode blob; no renames, no import edits"
+   }
+  ],
+  "no_dll_renames": true,
+  "ship_list_device_folder": [
+   "Win32Craft.0.10.4-arm32.exe (patched)",
+   "win32craft.dll (shared host, exports Win32Bootstrap)",
+   "msvcr120_app.dll, msvcp120_app.dll, vccorlib120_app.dll (patched copies)",
+   "data\\ (game assets) next to the exe",
+   "RT 8.1 only: dist-arm32/win81-runtime overlay (ucrtbase.dll, api-ms-win-crt-*, real shims for api-ms-win-core-heap-l2-1-0 and libraryloader-l2-1-0) because win32craft.dll links UCRT",
+   "loadcheck.exe (module list adapted)",
+   "NOT needed: fmod_ARM.dll (audio is XAudio2_8 from the OS), vccorlib140/msvcp140/vcruntime140/concrt140 (1.2.8 only)"
+  ],
+  "verification_checklist": [
+   "V1 sha256(input) == 6c0a8adc...b29f3 and size 14759424; refuse otherwise.",
+   "V2 byte diff stock->patched touches ONLY: 0x126, 0x140, 0x170, 0x17E, 0x1A0, 0x220, 0x308..0x32F, 0x1FFE72, 0x209764..0x209773 and the appended 0x400 bytes; file size 14760448.",
+   "V3 re-parse: NumberOfSections 7, SizeOfImage 0xE6F000, DllCharacteristics 0x8140, dd[1] == (0xE6E000, 0x208), 25 descriptors, descriptors 0..23 byte-identical to stock, descriptor 24 name \"win32craft.dll\", ILT/IAT -> hint \"Win32Bootstrap\", IAT cell content == hint RVA 0xE6E218.",
+   "V4 section table: ascending VAs, no overlap, .d3imp raw 0xE13600 size 0x400, VirtualSize 0x23C, flags 0xC0000040 (NOT executable), header area <= SizeOfHeaders 0x400 (ends 0x330).",
+   "V5 call site: decode BL at 0x200A72 == 0x20A364; trampoline decodes (capstone Thumb) to ldr.w ip,[pc,#8]; add ip,pc; ldr.w ip,[ip]; bx ip and literal + (0x20A364+8) == 0xE6E234; trampoline 4-aligned; inside .text (0x20A374 <= .text end 0x20A374).",
+   "V6 no base relocation entry in [0x20A364,0x20A374) and none in .d3imp (it has no absolute pointers); no pdata entry covers 0x20A364.",
+   "V7 DLLs: dllchars == 0x0140, ARMNT, version resource 12.00.30113.0, header checksum == checksum recomputed with 0x1000 set, every imported name of exe/msvcp/vccorlib resolves in the shipped exports (0 missing).",
+   "V8 offline emulation (optional): load patched image with unicorn at 0x400000, run entry to 0x200A72 stubs, check the BL lands on the trampoline and bx ip reaches the cell value.",
+   "V9 device (Windows RT 8.1): loadcheck.exe with the 0.10.4 module list -> 0 problems; any missing api-set contract goes through tools/make_arm32_apiset_shims.py.",
+   "V10 first run: win32craft.log shows \"SizeOfImage=00e6f000\", sections=7, the three cell hook lines (_CxxThrowException 0x20B5D4, GetActivationFactoryByPCWSTR 0x20B5FC, D3D11CreateDevice 0x20B1A4) with msvcr120_app/vccorlib120_app/d3d11 export names, and RoInitialize HRESULT 0x00000001 (S_FALSE)."
+  ]
+ },
+ "import_table": {
+  "note": "complete import table of the stock exe; iat = RVA of the thunk cell (even code cells hold Thumb export addresses after load); ordinals shown as ord",
+  "descriptors": [
+   {
+    "index": 0,
+    "dll": "dxgi.dll",
+    "class": "os_dll",
+    "rt81_status": "system_dll",
+    "descriptor_rva": "0x0033AC88",
+    "ilt_rva": "0x0033B028",
+    "iat_first": "0x0020B1AC",
+    "iat_last": "0x0020B1AC",
+    "count": 1,
+    "functions": [
+     {
+      "name": "CreateDXGIFactory1",
+      "iat": "0x0020B1AC"
+     }
+    ]
+   },
+   {
+    "index": 1,
+    "dll": "D3DCOMPILER_47.dll",
+    "class": "os_dll",
+    "rt81_status": "system_dll",
+    "descriptor_rva": "0x0033AC9C",
+    "ilt_rva": "0x0033AE7C",
+    "iat_first": "0x0020B000",
+    "iat_last": "0x0020B004",
+    "count": 2,
+    "functions": [
+     {
+      "name": "D3DCompile",
+      "iat": "0x0020B000"
+     },
+     {
+      "name": "D3DReflect",
+      "iat": "0x0020B004"
+     }
+    ]
+   },
+   {
+    "index": 2,
+    "dll": "d3d11.dll",
+    "class": "os_dll",
+    "rt81_status": "system_dll",
+    "descriptor_rva": "0x0033ACB0",
+    "ilt_rva": "0x0033B020",
+    "iat_first": "0x0020B1A4",
+    "iat_last": "0x0020B1A4",
+    "count": 1,
+    "functions": [
+     {
+      "name": "D3D11CreateDevice",
+      "iat": "0x0020B1A4"
+     }
+    ]
+   },
+   {
+    "index": 3,
+    "dll": "XAudio2_8.dll",
+    "class": "os_dll",
+    "rt81_status": "system_dll",
+    "descriptor_rva": "0x0033ACC4",
+    "ilt_rva": "0x0033AED8",
+    "iat_first": "0x0020B05C",
+    "iat_last": "0x0020B05C",
+    "count": 1,
+    "functions": [
+     {
+      "ord": 1,
+      "iat": "0x0020B05C"
+     }
+    ]
+   },
+   {
+    "index": 4,
+    "dll": "api-ms-win-core-processthreads-l1-1-2.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033ACD8",
+    "ilt_rva": "0x0033AF60",
+    "iat_first": "0x0020B0E4",
+    "iat_last": "0x0020B0F8",
+    "count": 6,
+    "functions": [
+     {
+      "name": "GetCurrentProcessId",
+      "iat": "0x0020B0E4"
+     },
+     {
+      "name": "CreateThread",
+      "iat": "0x0020B0E8"
+     },
+     {
+      "name": "ResumeThread",
+      "iat": "0x0020B0EC"
+     },
+     {
+      "name": "GetCurrentProcess",
+      "iat": "0x0020B0F0"
+     },
+     {
+      "name": "GetCurrentThreadId",
+      "iat": "0x0020B0F4"
+     },
+     {
+      "name": "GetCurrentThread",
+      "iat": "0x0020B0F8"
+     }
+    ]
+   },
+   {
+    "index": 5,
+    "dll": "api-ms-win-core-sysinfo-l1-2-1.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033ACEC",
+    "ilt_rva": "0x0033AFC4",
+    "iat_first": "0x0020B148",
+    "iat_last": "0x0020B150",
+    "count": 3,
+    "functions": [
+     {
+      "name": "GetLocalTime",
+      "iat": "0x0020B148"
+     },
+     {
+      "name": "GetSystemTimeAsFileTime",
+      "iat": "0x0020B14C"
+     },
+     {
+      "name": "GetTickCount64",
+      "iat": "0x0020B150"
+     }
+    ]
+   },
+   {
+    "index": 6,
+    "dll": "api-ms-win-core-com-l1-1-1.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AD00",
+    "ilt_rva": "0x0033AEE0",
+    "iat_first": "0x0020B064",
+    "iat_last": "0x0020B078",
+    "count": 6,
+    "functions": [
+     {
+      "name": "CoTaskMemFree",
+      "iat": "0x0020B064"
+     },
+     {
+      "name": "CoGetApartmentType",
+      "iat": "0x0020B068"
+     },
+     {
+      "name": "CoGetObjectContext",
+      "iat": "0x0020B06C"
+     },
+     {
+      "name": "CoTaskMemAlloc",
+      "iat": "0x0020B070"
+     },
+     {
+      "name": "CoCreateFreeThreadedMarshaler",
+      "iat": "0x0020B074"
+     },
+     {
+      "name": "CoGetContextToken",
+      "iat": "0x0020B078"
+     }
+    ]
+   },
+   {
+    "index": 7,
+    "dll": "api-ms-win-core-string-l1-1-0.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AD14",
+    "ilt_rva": "0x0033AF88",
+    "iat_first": "0x0020B10C",
+    "iat_last": "0x0020B10C",
+    "count": 1,
+    "functions": [
+     {
+      "name": "WideCharToMultiByte",
+      "iat": "0x0020B10C"
+     }
+    ]
+   },
+   {
+    "index": 8,
+    "dll": "api-ms-win-core-synch-l1-2-0.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AD28",
+    "ilt_rva": "0x0033AF90",
+    "iat_first": "0x0020B114",
+    "iat_last": "0x0020B140",
+    "count": 12,
+    "functions": [
+     {
+      "name": "DeleteCriticalSection",
+      "iat": "0x0020B114"
+     },
+     {
+      "name": "Sleep",
+      "iat": "0x0020B118"
+     },
+     {
+      "name": "ReleaseSRWLockExclusive",
+      "iat": "0x0020B11C"
+     },
+     {
+      "name": "AcquireSRWLockExclusive",
+      "iat": "0x0020B120"
+     },
+     {
+      "name": "ReleaseSemaphore",
+      "iat": "0x0020B124"
+     },
+     {
+      "name": "WaitForSingleObjectEx",
+      "iat": "0x0020B128"
+     },
+     {
+      "name": "InitializeCriticalSectionEx",
+      "iat": "0x0020B12C"
+     },
+     {
+      "name": "LeaveCriticalSection",
+      "iat": "0x0020B130"
+     },
+     {
+      "name": "EnterCriticalSection",
+      "iat": "0x0020B134"
+     },
+     {
+      "name": "CreateSemaphoreExW",
+      "iat": "0x0020B138"
+     },
+     {
+      "name": "SetEvent",
+      "iat": "0x0020B13C"
+     },
+     {
+      "name": "CreateEventExW",
+      "iat": "0x0020B140"
+     }
+    ]
+   },
+   {
+    "index": 9,
+    "dll": "api-ms-win-core-file-l1-2-1.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AD3C",
+    "ilt_rva": "0x0033AF08",
+    "iat_first": "0x0020B08C",
+    "iat_last": "0x0020B0C0",
+    "count": 14,
+    "functions": [
+     {
+      "name": "CreateFile2",
+      "iat": "0x0020B08C"
+     },
+     {
+      "name": "LockFileEx",
+      "iat": "0x0020B090"
+     },
+     {
+      "name": "GetFileAttributesExW",
+      "iat": "0x0020B094"
+     },
+     {
+      "name": "FlushFileBuffers",
+      "iat": "0x0020B098"
+     },
+     {
+      "name": "WriteFile",
+      "iat": "0x0020B09C"
+     },
+     {
+      "name": "ReadFile",
+      "iat": "0x0020B0A0"
+     },
+     {
+      "name": "SetFilePointerEx",
+      "iat": "0x0020B0A4"
+     },
+     {
+      "name": "CreateDirectoryW",
+      "iat": "0x0020B0A8"
+     },
+     {
+      "name": "UnlockFileEx",
+      "iat": "0x0020B0AC"
+     },
+     {
+      "name": "FindClose",
+      "iat": "0x0020B0B0"
+     },
+     {
+      "name": "FindFirstFileExW",
+      "iat": "0x0020B0B4"
+     },
+     {
+      "name": "FindNextFileW",
+      "iat": "0x0020B0B8"
+     },
+     {
+      "name": "RemoveDirectoryW",
+      "iat": "0x0020B0BC"
+     },
+     {
+      "name": "DeleteFileW",
+      "iat": "0x0020B0C0"
+     }
+    ]
+   },
+   {
+    "index": 10,
+    "dll": "api-ms-win-core-profile-l1-1-0.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AD50",
+    "ilt_rva": "0x0033AF7C",
+    "iat_first": "0x0020B100",
+    "iat_last": "0x0020B104",
+    "count": 2,
+    "functions": [
+     {
+      "name": "QueryPerformanceFrequency",
+      "iat": "0x0020B100"
+     },
+     {
+      "name": "QueryPerformanceCounter",
+      "iat": "0x0020B104"
+     }
+    ]
+   },
+   {
+    "index": 11,
+    "dll": "api-ms-win-core-errorhandling-l1-1-2.dll",
+    "class": "api_set",
+    "rt81_status": "UNPROVEN",
+    "descriptor_rva": "0x0033AD64",
+    "ilt_rva": "0x0033AEFC",
+    "iat_first": "0x0020B080",
+    "iat_last": "0x0020B084",
+    "count": 2,
+    "functions": [
+     {
+      "name": "RaiseException",
+      "iat": "0x0020B080"
+     },
+     {
+      "name": "GetLastError",
+      "iat": "0x0020B084"
+     }
+    ]
+   },
+   {
+    "index": 12,
+    "dll": "api-ms-win-core-handle-l1-1-0.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AD78",
+    "ilt_rva": "0x0033AF50",
+    "iat_first": "0x0020B0D4",
+    "iat_last": "0x0020B0D4",
+    "count": 1,
+    "functions": [
+     {
+      "name": "CloseHandle",
+      "iat": "0x0020B0D4"
+     }
+    ]
+   },
+   {
+    "index": 13,
+    "dll": "vccorlib120_app.DLL",
+    "class": "vclibs120_phone",
+    "rt81_status": "ship_beside_exe",
+    "descriptor_rva": "0x0033AD8C",
+    "ilt_rva": "0x0033B478",
+    "iat_first": "0x0020B5FC",
+    "iat_last": "0x0020B6C0",
+    "count": 50,
+    "functions": [
+     {
+      "name": "?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z",
+      "iat": "0x0020B5FC"
+     },
+     {
+      "name": "?GetIidsFn@@YAJHPAKPBU__s_GUID@@PAPAVGuid@Platform@@@Z",
+      "iat": "0x0020B600"
+     },
+     {
+      "name": "?UninitializeData@Details@Platform@@YAXH@Z",
+      "iat": "0x0020B604"
+     },
+     {
+      "name": "?InitializeData@Details@Platform@@YAJH@Z",
+      "iat": "0x0020B608"
+     },
+     {
+      "name": "??0FailureException@Platform@@Q$AAA@XZ",
+      "iat": "0x0020B60C"
+     },
+     {
+      "name": "??0OutOfMemoryException@Platform@@Q$AAA@XZ",
+      "iat": "0x0020B610"
+     },
+     {
+      "name": "??0ChangedStateException@Platform@@Q$AAA@XZ",
+      "iat": "0x0020B614"
+     },
+     {
+      "name": "??0OutOfBoundsException@Platform@@Q$AAA@XZ",
+      "iat": "0x0020B618"
+     },
+     {
+      "name": "?EventSourceRemove@Details@Platform@@YAXPAPAXPAUEventLock@12@VEventRegistrationToken@Foundation@Windows@@@Z",
+      "iat": "0x0020B61C"
+     },
+     {
+      "name": "?EventSourceAdd@Details@Platform@@YA?AVEventRegistrationToken@Foundation@Windows@@PAPAXPAUEventLock@12@P$AAVDelegate@2@@Z",
+      "iat": "0x0020B620"
+     },
+     {
+      "name": "?EventSourceGetTargetArrayEvent@Details@Platform@@YAPAXPAXIPBXPA_J@Z",
+      "iat": "0x0020B624"
+     },
+     {
+      "name": "?EventSourceGetTargetArraySize@Details@Platform@@YAIPAX@Z",
+      "iat": "0x0020B628"
+     },
+     {
+      "name": "?EventSourceGetTargetArray@Details@Platform@@YAPAXPAXPAUEventLock@12@@Z",
+      "iat": "0x0020B62C"
+     },
+     {
+      "name": "?EventSourceUninitialize@Details@Platform@@YAXPAPAX@Z",
+      "iat": "0x0020B630"
+     },
+     {
+      "name": "?EventSourceInitialize@Details@Platform@@YAXPAPAX@Z",
+      "iat": "0x0020B634"
+     },
+     {
+      "name": "??0NotImplementedException@Platform@@Q$AAA@XZ",
+      "iat": "0x0020B638"
+     },
+     {
+      "name": "?ResolveWeakReference@Details@Platform@@YAP$AAVObject@2@ABU_GUID@@PAPAU__abi_IUnknown@@@Z",
+      "iat": "0x0020B63C"
+     },
+     {
+      "name": "?GetWeakReference@Details@Platform@@YAPAU__abi_IUnknown@@Q$ADVObject@2@@Z",
+      "iat": "0x0020B640"
+     },
+     {
+      "name": "?GetIBoxArrayVtable@Details@Platform@@YAPAXPAX@Z",
+      "iat": "0x0020B644"
+     },
+     {
+      "name": "??0DisconnectedException@Platform@@Q$AAA@XZ",
+      "iat": "0x0020B648"
+     },
+     {
+      "name": "?AllocateException@Heap@Details@Platform@@SAPAXII@Z",
+      "iat": "0x0020B64C"
+     },
+     {
+      "name": "?ReleaseInContextImpl@Details@Platform@@YAJPAUIUnknown@@0@Z",
+      "iat": "0x0020B650"
+     },
+     {
+      "name": "?GetProxyImpl@Details@Platform@@YAJPAUIUnknown@@ABU_GUID@@0PAPAU3@@Z",
+      "iat": "0x0020B654"
+     },
+     {
+      "name": "?GetObjectContext@Details@Platform@@YAPAUIUnknown@@XZ",
+      "iat": "0x0020B658"
+     },
+     {
+      "name": "??0Object@Platform@@Q$AAA@XZ",
+      "iat": "0x0020B65C"
+     },
+     {
+      "name": "?ReCreateException@Exception@Platform@@SAP$AAV12@H@Z",
+      "iat": "0x0020B660"
+     },
+     {
+      "name": "?CreateException@Exception@Platform@@SAP$AAV12@H@Z",
+      "iat": "0x0020B664"
+     },
+     {
+      "name": "??0Delegate@Platform@@Q$AAA@XZ",
+      "iat": "0x0020B668"
+     },
+     {
+      "name": "?AlignedFree@Heap@Details@Platform@@SAXPAX@Z",
+      "iat": "0x0020B66C"
+     },
+     {
+      "name": "?Free@Heap@Details@Platform@@SAXPAX@Z",
+      "iat": "0x0020B670"
+     },
+     {
+      "name": "?Allocate@Heap@Details@Platform@@SAPAXII@Z",
+      "iat": "0x0020B674"
+     },
+     {
+      "name": "?Allocate@Heap@Details@Platform@@SAPAXI@Z",
+      "iat": "0x0020B678"
+     },
+     {
+      "name": "?ReleaseTarget@ControlBlock@Details@Platform@@AAAXXZ",
+      "iat": "0x0020B67C"
+     },
+     {
+      "name": "?__abi_WinRTraiseCOMException@@YAXJ@Z",
+      "iat": "0x0020B680"
+     },
+     {
+      "name": "?__abi_WinRTraiseObjectDisposedException@@YAXXZ",
+      "iat": "0x0020B684"
+     },
+     {
+      "name": "?__abi_WinRTraiseDisconnectedException@@YAXXZ",
+      "iat": "0x0020B688"
+     },
+     {
+      "name": "?__abi_WinRTraiseWrongThreadException@@YAXXZ",
+      "iat": "0x0020B68C"
+     },
+     {
+      "name": "?__abi_WinRTraiseClassNotRegisteredException@@YAXXZ",
+      "iat": "0x0020B690"
+     },
+     {
+      "name": "?__abi_WinRTraiseChangedStateException@@YAXXZ",
+      "iat": "0x0020B694"
+     },
+     {
+      "name": "?__abi_WinRTraiseOutOfBoundsException@@YAXXZ",
+      "iat": "0x0020B698"
+     },
+     {
+      "name": "?__abi_WinRTraiseInvalidArgumentException@@YAXXZ",
+      "iat": "0x0020B69C"
+     },
+     {
+      "name": "?__abi_WinRTraiseOutOfMemoryException@@YAXXZ",
+      "iat": "0x0020B6A0"
+     },
+     {
+      "name": "?__abi_WinRTraiseAccessDeniedException@@YAXXZ",
+      "iat": "0x0020B6A4"
+     },
+     {
+      "name": "?__abi_WinRTraiseFailureException@@YAXXZ",
+      "iat": "0x0020B6A8"
+     },
+     {
+      "name": "?__abi_WinRTraiseOperationCanceledException@@YAXXZ",
+      "iat": "0x0020B6AC"
+     },
+     {
+      "name": "?__abi_WinRTraiseNullReferenceException@@YAXXZ",
+      "iat": "0x0020B6B0"
+     },
+     {
+      "name": "?__abi_WinRTraiseInvalidCastException@@YAXXZ",
+      "iat": "0x0020B6B4"
+     },
+     {
+      "name": "?__abi_WinRTraiseNotImplementedException@@YAXXZ",
+      "iat": "0x0020B6B8"
+     },
+     {
+      "name": "?__abi_translateCurrentException@@YAJ_N@Z",
+      "iat": "0x0020B6BC"
+     },
+     {
+      "name": "?GetCmdArguments@Details@Platform@@YAPAPA_WPAH@Z",
+      "iat": "0x0020B6C0"
+     }
+    ]
+   },
+   {
+    "index": 14,
+    "dll": "msvcp120_app.dll",
+    "class": "vclibs120_phone",
+    "rt81_status": "ship_beside_exe",
+    "descriptor_rva": "0x0033ADA0",
+    "ilt_rva": "0x0033B030",
+    "iat_first": "0x0020B1B4",
+    "iat_last": "0x0020B39C",
+    "count": 123,
+    "functions": [
+     {
+      "name": "??0?$basic_streambuf@DU?$char_traits@D@std@@@std@@IAA@XZ",
+      "iat": "0x0020B1B4"
+     },
+     {
+      "name": "??1?$basic_streambuf@DU?$char_traits@D@std@@@std@@UAA@XZ",
+      "iat": "0x0020B1B8"
+     },
+     {
+      "name": "?getloc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QBA?AVlocale@2@XZ",
+      "iat": "0x0020B1BC"
+     },
+     {
+      "name": "?sputc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QAAHD@Z",
+      "iat": "0x0020B1C0"
+     },
+     {
+      "name": "?sputn@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QAA_JPBD_J@Z",
+      "iat": "0x0020B1C4"
+     },
+     {
+      "name": "?gptr@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IBAPADXZ",
+      "iat": "0x0020B1C8"
+     },
+     {
+      "name": "?pptr@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IBAPADXZ",
+      "iat": "0x0020B1CC"
+     },
+     {
+      "name": "?setg@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IAAXPAD00@Z",
+      "iat": "0x0020B1D0"
+     },
+     {
+      "name": "?_Gninc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IAAPADXZ",
+      "iat": "0x0020B1D4"
+     },
+     {
+      "name": "?_Pninc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IAAPADXZ",
+      "iat": "0x0020B1D8"
+     },
+     {
+      "name": "?_Init@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IAAXXZ",
+      "iat": "0x0020B1DC"
+     },
+     {
+      "name": "??1?$basic_ios@DU?$char_traits@D@std@@@std@@UAA@XZ",
+      "iat": "0x0020B1E0"
+     },
+     {
+      "name": "?setstate@?$basic_ios@DU?$char_traits@D@std@@@std@@QAAXH_N@Z",
+      "iat": "0x0020B1E4"
+     },
+     {
+      "name": "?_Osfx@?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAXXZ",
+      "iat": "0x0020B1E8"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@H@Z",
+      "iat": "0x0020B1EC"
+     },
+     {
+      "name": "?flush@?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV12@XZ",
+      "iat": "0x0020B1F0"
+     },
+     {
+      "name": "??0?$basic_istream@DU?$char_traits@D@std@@@std@@QAA@PAV?$basic_streambuf@DU?$char_traits@D@std@@@1@_N@Z",
+      "iat": "0x0020B1F4"
+     },
+     {
+      "name": "??1?$basic_istream@DU?$char_traits@D@std@@@std@@UAA@XZ",
+      "iat": "0x0020B1F8"
+     },
+     {
+      "name": "?read@?$basic_istream@DU?$char_traits@D@std@@@std@@QAAAAV12@PAD_J@Z",
+      "iat": "0x0020B1FC"
+     },
+     {
+      "name": "??0?$basic_iostream@DU?$char_traits@D@std@@@std@@QAA@PAV?$basic_streambuf@DU?$char_traits@D@std@@@1@@Z",
+      "iat": "0x0020B200"
+     },
+     {
+      "name": "??1?$basic_iostream@DU?$char_traits@D@std@@@std@@UAA@XZ",
+      "iat": "0x0020B204"
+     },
+     {
+      "name": "?_Xbad_function_call@std@@YAXXZ",
+      "iat": "0x0020B208"
+     },
+     {
+      "name": "?_Fiopen@std@@YAPAU_iobuf@@PBDHH@Z",
+      "iat": "0x0020B20C"
+     },
+     {
+      "name": "?_Lock@?$basic_streambuf@DU?$char_traits@D@std@@@std@@UAAXXZ",
+      "iat": "0x0020B210"
+     },
+     {
+      "name": "?_Unlock@?$basic_streambuf@DU?$char_traits@D@std@@@std@@UAAXXZ",
+      "iat": "0x0020B214"
+     },
+     {
+      "name": "?imbue@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MAAXABVlocale@2@@Z",
+      "iat": "0x0020B218"
+     },
+     {
+      "name": "?setbuf@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MAAPAV12@PAD_J@Z",
+      "iat": "0x0020B21C"
+     },
+     {
+      "name": "?showmanyc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MAA_JXZ",
+      "iat": "0x0020B220"
+     },
+     {
+      "name": "?sync@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MAAHXZ",
+      "iat": "0x0020B224"
+     },
+     {
+      "name": "?uflow@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MAAHXZ",
+      "iat": "0x0020B228"
+     },
+     {
+      "name": "?xsgetn@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MAA_JPAD_J@Z",
+      "iat": "0x0020B22C"
+     },
+     {
+      "name": "?xsputn@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MAA_JPBD_J@Z",
+      "iat": "0x0020B230"
+     },
+     {
+      "name": "?_BADOFF@std@@3_JB",
+      "iat": "0x0020B234"
+     },
+     {
+      "name": "?id@?$codecvt@DDH@std@@2V0locale@2@A",
+      "iat": "0x0020B238"
+     },
+     {
+      "name": "?eof@ios_base@std@@QBA_NXZ",
+      "iat": "0x0020B23C"
+     },
+     {
+      "name": "?sbumpc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QAAHXZ",
+      "iat": "0x0020B240"
+     },
+     {
+      "name": "?sgetc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QAAHXZ",
+      "iat": "0x0020B244"
+     },
+     {
+      "name": "?snextc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QAAHXZ",
+      "iat": "0x0020B248"
+     },
+     {
+      "name": "?_Ipfx@?$basic_istream@DU?$char_traits@D@std@@@std@@QAA_N_N@Z",
+      "iat": "0x0020B24C"
+     },
+     {
+      "name": "xtime_get",
+      "iat": "0x0020B250"
+     },
+     {
+      "name": "_Xtime_diff_to_millis2",
+      "iat": "0x0020B254"
+     },
+     {
+      "name": "_Xtime_get_ticks",
+      "iat": "0x0020B258"
+     },
+     {
+      "name": "_Thrd_sleep",
+      "iat": "0x0020B25C"
+     },
+     {
+      "name": "_Mtx_init",
+      "iat": "0x0020B260"
+     },
+     {
+      "name": "_Mtx_destroy",
+      "iat": "0x0020B264"
+     },
+     {
+      "name": "_Mtx_lock",
+      "iat": "0x0020B268"
+     },
+     {
+      "name": "_Mtx_unlock",
+      "iat": "0x0020B26C"
+     },
+     {
+      "name": "?_Throw_C_error@std@@YAXH@Z",
+      "iat": "0x0020B270"
+     },
+     {
+      "name": "?setf@ios_base@std@@QAAHH@Z",
+      "iat": "0x0020B274"
+     },
+     {
+      "name": "?setf@ios_base@std@@QAAHHH@Z",
+      "iat": "0x0020B278"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@P6AAAVios_base@1@AAV21@@Z@Z",
+      "iat": "0x0020B27C"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@M@Z",
+      "iat": "0x0020B280"
+     },
+     {
+      "name": "?setprecision@std@@YA?AU?$_Smanip@_J@1@_J@Z",
+      "iat": "0x0020B284"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@K@Z",
+      "iat": "0x0020B288"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@_J@Z",
+      "iat": "0x0020B28C"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@_N@Z",
+      "iat": "0x0020B290"
+     },
+     {
+      "name": "??0?$basic_ostream@DU?$char_traits@D@std@@@std@@QAA@PAV?$basic_streambuf@DU?$char_traits@D@std@@@1@_N@Z",
+      "iat": "0x0020B294"
+     },
+     {
+      "name": "??1?$basic_ostream@DU?$char_traits@D@std@@@std@@UAA@XZ",
+      "iat": "0x0020B298"
+     },
+     {
+      "name": "?widen@?$basic_ios@DU?$char_traits@D@std@@@std@@QBADD@Z",
+      "iat": "0x0020B29C"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@P6AAAV01@AAV01@@Z@Z",
+      "iat": "0x0020B2A0"
+     },
+     {
+      "name": "?put@?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV12@D@Z",
+      "iat": "0x0020B2A4"
+     },
+     {
+      "name": "?_Xinvalid_argument@std@@YAXPBD@Z",
+      "iat": "0x0020B2A8"
+     },
+     {
+      "name": "_Strcoll",
+      "iat": "0x0020B2AC"
+     },
+     {
+      "name": "_Strxfrm",
+      "iat": "0x0020B2B0"
+     },
+     {
+      "name": "??0_Locinfo@std@@QAA@PBD@Z",
+      "iat": "0x0020B2B4"
+     },
+     {
+      "name": "??1_Locinfo@std@@QAA@XZ",
+      "iat": "0x0020B2B8"
+     },
+     {
+      "name": "?_Getcoll@_Locinfo@std@@QBA?AU_Collvec@@XZ",
+      "iat": "0x0020B2BC"
+     },
+     {
+      "name": "?c_str@?$_Yarn@D@std@@QBAPBDXZ",
+      "iat": "0x0020B2C0"
+     },
+     {
+      "name": "??0facet@locale@std@@IAA@I@Z",
+      "iat": "0x0020B2C4"
+     },
+     {
+      "name": "??1facet@locale@std@@MAA@XZ",
+      "iat": "0x0020B2C8"
+     },
+     {
+      "name": "?_Init@locale@std@@CAPAV_Locimp@12@_N@Z",
+      "iat": "0x0020B2CC"
+     },
+     {
+      "name": "?is@?$ctype@D@std@@QBA_NFD@Z",
+      "iat": "0x0020B2D0"
+     },
+     {
+      "name": "?tolower@?$ctype@D@std@@QBADD@Z",
+      "iat": "0x0020B2D4"
+     },
+     {
+      "name": "?tolower@?$ctype@D@std@@QBAPBDPADPBD@Z",
+      "iat": "0x0020B2D8"
+     },
+     {
+      "name": "?_Getcat@?$ctype@D@std@@SAIPAPBVfacet@locale@2@PBV42@@Z",
+      "iat": "0x0020B2DC"
+     },
+     {
+      "name": "?_Xregex_error@std@@YAXW4error_type@regex_constants@1@@Z",
+      "iat": "0x0020B2E0"
+     },
+     {
+      "name": "?_Decref@facet@locale@std@@UAAPAV_Facet_base@3@XZ",
+      "iat": "0x0020B2E4"
+     },
+     {
+      "name": "?_Incref@facet@locale@std@@UAAXXZ",
+      "iat": "0x0020B2E8"
+     },
+     {
+      "name": "?id@?$ctype@D@std@@2V0locale@2@A",
+      "iat": "0x0020B2EC"
+     },
+     {
+      "name": "?id@?$collate@D@std@@2V0locale@2@A",
+      "iat": "0x0020B2F0"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@F@Z",
+      "iat": "0x0020B2F4"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@I@Z",
+      "iat": "0x0020B2F8"
+     },
+     {
+      "name": "??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAAAAV01@N@Z",
+      "iat": "0x0020B2FC"
+     },
+     {
+      "name": "?in_avail@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QAA_JXZ",
+      "iat": "0x0020B300"
+     },
+     {
+      "name": "_Cnd_init",
+      "iat": "0x0020B304"
+     },
+     {
+      "name": "_Cnd_destroy",
+      "iat": "0x0020B308"
+     },
+     {
+      "name": "_Cnd_wait",
+      "iat": "0x0020B30C"
+     },
+     {
+      "name": "_Cnd_signal",
+      "iat": "0x0020B310"
+     },
+     {
+      "name": "?_Swap_all@_Container_base12@std@@QAAXAAU12@@Z",
+      "iat": "0x0020B314"
+     },
+     {
+      "name": "_Thrd_join",
+      "iat": "0x0020B318"
+     },
+     {
+      "name": "_Thrd_equal",
+      "iat": "0x0020B31C"
+     },
+     {
+      "name": "_Thrd_current",
+      "iat": "0x0020B320"
+     },
+     {
+      "name": "?_Throw_Cpp_error@std@@YAXH@Z",
+      "iat": "0x0020B324"
+     },
+     {
+      "name": "??0_Pad@std@@QAA@XZ",
+      "iat": "0x0020B328"
+     },
+     {
+      "name": "??1_Pad@std@@QAA@XZ",
+      "iat": "0x0020B32C"
+     },
+     {
+      "name": "?_Launch@_Pad@std@@QAAXPAU_Thrd_imp_t@@@Z",
+      "iat": "0x0020B330"
+     },
+     {
+      "name": "?_Release@_Pad@std@@QAAXXZ",
+      "iat": "0x0020B334"
+     },
+     {
+      "name": "_Cnd_broadcast",
+      "iat": "0x0020B338"
+     },
+     {
+      "name": "_Mtx_current_owns",
+      "iat": "0x0020B33C"
+     },
+     {
+      "name": "_Cnd_timedwait",
+      "iat": "0x0020B340"
+     },
+     {
+      "name": "?_Winerror_map@std@@YAPBDH@Z",
+      "iat": "0x0020B344"
+     },
+     {
+      "name": "_Thrd_create",
+      "iat": "0x0020B348"
+     },
+     {
+      "name": "??Bios_base@std@@QBA_NXZ",
+      "iat": "0x0020B34C"
+     },
+     {
+      "name": "?_Syserror_map@std@@YAPBDH@Z",
+      "iat": "0x0020B350"
+     },
+     {
+      "name": "?_Getcat@?$codecvt@DDH@std@@SAIPAPBVfacet@locale@2@PBV42@@Z",
+      "iat": "0x0020B354"
+     },
+     {
+      "name": "?unshift@?$codecvt@DDH@std@@QBAHAAHPAD1AAPAD@Z",
+      "iat": "0x0020B358"
+     },
+     {
+      "name": "?out@?$codecvt@DDH@std@@QBAHAAHPBD1AAPBDPAD3AAPAD@Z",
+      "iat": "0x0020B35C"
+     },
+     {
+      "name": "?in@?$codecvt@DDH@std@@QBAHAAHPBD1AAPBDPAD3AAPAD@Z",
+      "iat": "0x0020B360"
+     },
+     {
+      "name": "?always_noconv@codecvt_base@std@@QBA_NXZ",
+      "iat": "0x0020B364"
+     },
+     {
+      "name": "?_Getgloballocale@locale@std@@CAPAV_Locimp@12@XZ",
+      "iat": "0x0020B368"
+     },
+     {
+      "name": "??Bid@locale@std@@QAAIXZ",
+      "iat": "0x0020B36C"
+     },
+     {
+      "name": "?_Orphan_all@_Container_base12@std@@QAAXXZ",
+      "iat": "0x0020B370"
+     },
+     {
+      "name": "??1_Container_base12@std@@QAA@XZ",
+      "iat": "0x0020B374"
+     },
+     {
+      "name": "??0_Container_base12@std@@QAA@XZ",
+      "iat": "0x0020B378"
+     },
+     {
+      "name": "?uncaught_exception@std@@YA_NXZ",
+      "iat": "0x0020B37C"
+     },
+     {
+      "name": "??1_Lockit@std@@QAA@XZ",
+      "iat": "0x0020B380"
+     },
+     {
+      "name": "??0_Lockit@std@@QAA@H@Z",
+      "iat": "0x0020B384"
+     },
+     {
+      "name": "?_Xout_of_range@std@@YAXPBD@Z",
+      "iat": "0x0020B388"
+     },
+     {
+      "name": "?_Xlength_error@std@@YAXPBD@Z",
+      "iat": "0x0020B38C"
+     },
+     {
+      "name": "?_Xbad_alloc@std@@YAXXZ",
+      "iat": "0x0020B390"
+     },
+     {
+      "name": "?_Swap_all@_Container_base0@std@@QAAXAAU12@@Z",
+      "iat": "0x0020B394"
+     },
+     {
+      "name": "?_Orphan_all@_Container_base0@std@@QAAXXZ",
+      "iat": "0x0020B398"
+     },
+     {
+      "name": "??0?$basic_ios@DU?$char_traits@D@std@@@std@@IAA@XZ",
+      "iat": "0x0020B39C"
+     }
+    ]
+   },
+   {
+    "index": 15,
+    "dll": "msvcr120_app.dll",
+    "class": "vclibs120_phone",
+    "rt81_status": "ship_beside_exe",
+    "descriptor_rva": "0x0033ADB4",
+    "ilt_rva": "0x0033B220",
+    "iat_first": "0x0020B3A4",
+    "iat_last": "0x0020B5F4",
+    "count": 149,
+    "functions": [
+     {
+      "name": "realloc",
+      "iat": "0x0020B3A4"
+     },
+     {
+      "name": "??_V@YAXPAX@Z",
+      "iat": "0x0020B3A8"
+     },
+     {
+      "name": "fflush",
+      "iat": "0x0020B3AC"
+     },
+     {
+      "name": "fgetc",
+      "iat": "0x0020B3B0"
+     },
+     {
+      "name": "fgetpos",
+      "iat": "0x0020B3B4"
+     },
+     {
+      "name": "fputc",
+      "iat": "0x0020B3B8"
+     },
+     {
+      "name": "fsetpos",
+      "iat": "0x0020B3BC"
+     },
+     {
+      "name": "_fseeki64",
+      "iat": "0x0020B3C0"
+     },
+     {
+      "name": "fwrite",
+      "iat": "0x0020B3C4"
+     },
+     {
+      "name": "setvbuf",
+      "iat": "0x0020B3C8"
+     },
+     {
+      "name": "ungetc",
+      "iat": "0x0020B3CC"
+     },
+     {
+      "name": "_lock_file",
+      "iat": "0x0020B3D0"
+     },
+     {
+      "name": "_unlock_file",
+      "iat": "0x0020B3D4"
+     },
+     {
+      "name": "memcpy_s",
+      "iat": "0x0020B3D8"
+     },
+     {
+      "name": "??0exception@std@@QAA@XZ",
+      "iat": "0x0020B3DC"
+     },
+     {
+      "name": "??0exception@std@@QAA@ABQBD@Z",
+      "iat": "0x0020B3E0"
+     },
+     {
+      "name": "??0exception@std@@QAA@ABQBDH@Z",
+      "iat": "0x0020B3E4"
+     },
+     {
+      "name": "??0exception@std@@QAA@ABV01@@Z",
+      "iat": "0x0020B3E8"
+     },
+     {
+      "name": "??1exception@std@@UAA@XZ",
+      "iat": "0x0020B3EC"
+     },
+     {
+      "name": "?__ExceptionPtrCreate@@YAXPAX@Z",
+      "iat": "0x0020B3F0"
+     },
+     {
+      "name": "?__ExceptionPtrDestroy@@YAXPAX@Z",
+      "iat": "0x0020B3F4"
+     },
+     {
+      "name": "?__ExceptionPtrCopy@@YAXPAXPBX@Z",
+      "iat": "0x0020B3F8"
+     },
+     {
+      "name": "?__ExceptionPtrCurrentException@@YAXPAX@Z",
+      "iat": "0x0020B3FC"
+     },
+     {
+      "name": "?__ExceptionPtrRethrow@@YAXPBX@Z",
+      "iat": "0x0020B400"
+     },
+     {
+      "name": "??0bad_cast@std@@QAA@PBD@Z",
+      "iat": "0x0020B404"
+     },
+     {
+      "name": "?Alloc@Concurrency@@YAPAXI@Z",
+      "iat": "0x0020B408"
+     },
+     {
+      "name": "?Free@Concurrency@@YAXPAX@Z",
+      "iat": "0x0020B40C"
+     },
+     {
+      "name": "?_ScheduleTask@_CurrentScheduler@details@Concurrency@@SAXP6AXPAX@Z0@Z",
+      "iat": "0x0020B410"
+     },
+     {
+      "name": "??0invalid_operation@Concurrency@@QAA@PBD@Z",
+      "iat": "0x0020B414"
+     },
+     {
+      "name": "??0task_canceled@Concurrency@@QAA@XZ",
+      "iat": "0x0020B418"
+     },
+     {
+      "name": "??0critical_section@Concurrency@@QAA@XZ",
+      "iat": "0x0020B41C"
+     },
+     {
+      "name": "??1critical_section@Concurrency@@QAA@XZ",
+      "iat": "0x0020B420"
+     },
+     {
+      "name": "??0scoped_lock@critical_section@Concurrency@@QAA@AAV12@@Z",
+      "iat": "0x0020B424"
+     },
+     {
+      "name": "??1scoped_lock@critical_section@Concurrency@@QAA@XZ",
+      "iat": "0x0020B428"
+     },
+     {
+      "name": "??0event@Concurrency@@QAA@XZ",
+      "iat": "0x0020B42C"
+     },
+     {
+      "name": "??1event@Concurrency@@QAA@XZ",
+      "iat": "0x0020B430"
+     },
+     {
+      "name": "?wait@event@Concurrency@@QAAII@Z",
+      "iat": "0x0020B434"
+     },
+     {
+      "name": "?set@event@Concurrency@@QAAXXZ",
+      "iat": "0x0020B438"
+     },
+     {
+      "name": "?_Schedule@_TaskCollection@details@Concurrency@@QAAXPAV_UnrealizedChore@23@@Z",
+      "iat": "0x0020B43C"
+     },
+     {
+      "name": "?_Cancel@_TaskCollection@details@Concurrency@@QAAXXZ",
+      "iat": "0x0020B440"
+     },
+     {
+      "name": "?_RunAndWait@_TaskCollection@details@Concurrency@@QAA?AW4_TaskCollectionStatus@23@PAV_UnrealizedChore@23@@Z",
+      "iat": "0x0020B444"
+     },
+     {
+      "name": "?_GetCurrentInlineDepth@_StackGuard@details@Concurrency@@CAAAIXZ",
+      "iat": "0x0020B448"
+     },
+     {
+      "name": "?_NewCollection@_AsyncTaskCollection@details@Concurrency@@SAPAV123@PAV_CancellationTokenState@23@@Z",
+      "iat": "0x0020B44C"
+     },
+     {
+      "name": "?_ReportUnobservedException@details@Concurrency@@YAXXZ",
+      "iat": "0x0020B450"
+     },
+     {
+      "name": "_wassert",
+      "iat": "0x0020B454"
+     },
+     {
+      "name": "?GetCurrentThreadId@platform@details@Concurrency@@YAJXZ",
+      "iat": "0x0020B458"
+     },
+     {
+      "name": "??0bad_cast@std@@QAA@ABV01@@Z",
+      "iat": "0x0020B45C"
+     },
+     {
+      "name": "??1bad_cast@std@@UAA@XZ",
+      "iat": "0x0020B460"
+     },
+     {
+      "name": "?what@exception@std@@UBAPBDXZ",
+      "iat": "0x0020B464"
+     },
+     {
+      "name": "__RTDynamicCast",
+      "iat": "0x0020B468"
+     },
+     {
+      "name": "strtol",
+      "iat": "0x0020B46C"
+     },
+     {
+      "name": "fgets",
+      "iat": "0x0020B470"
+     },
+     {
+      "name": "fprintf",
+      "iat": "0x0020B474"
+     },
+     {
+      "name": "?wait@Concurrency@@YAXI@Z",
+      "iat": "0x0020B478"
+     },
+     {
+      "name": "?_Id@_CurrentScheduler@details@Concurrency@@SAIXZ",
+      "iat": "0x0020B47C"
+     },
+     {
+      "name": "sinf",
+      "iat": "0x0020B480"
+     },
+     {
+      "name": "ceilf",
+      "iat": "0x0020B484"
+     },
+     {
+      "name": "floorf",
+      "iat": "0x0020B488"
+     },
+     {
+      "name": "fmodf",
+      "iat": "0x0020B48C"
+     },
+     {
+      "name": "fmaxf",
+      "iat": "0x0020B490"
+     },
+     {
+      "name": "strtok",
+      "iat": "0x0020B494"
+     },
+     {
+      "name": "cosf",
+      "iat": "0x0020B498"
+     },
+     {
+      "name": "strncpy",
+      "iat": "0x0020B49C"
+     },
+     {
+      "name": "floor",
+      "iat": "0x0020B4A0"
+     },
+     {
+      "name": "sscanf",
+      "iat": "0x0020B4A4"
+     },
+     {
+      "name": "?_GetConcurrency@details@Concurrency@@YAIXZ",
+      "iat": "0x0020B4A8"
+     },
+     {
+      "name": "tanf",
+      "iat": "0x0020B4AC"
+     },
+     {
+      "name": "atanf",
+      "iat": "0x0020B4B0"
+     },
+     {
+      "name": "powf",
+      "iat": "0x0020B4B4"
+     },
+     {
+      "name": "sin",
+      "iat": "0x0020B4B8"
+     },
+     {
+      "name": "atan2f",
+      "iat": "0x0020B4BC"
+     },
+     {
+      "name": "sscanf_s",
+      "iat": "0x0020B4C0"
+     },
+     {
+      "name": "logf",
+      "iat": "0x0020B4C4"
+     },
+     {
+      "name": "_errno",
+      "iat": "0x0020B4C8"
+     },
+     {
+      "name": "sprintf_s",
+      "iat": "0x0020B4CC"
+     },
+     {
+      "name": "strchr",
+      "iat": "0x0020B4D0"
+     },
+     {
+      "name": "strstr",
+      "iat": "0x0020B4D4"
+     },
+     {
+      "name": "tolower",
+      "iat": "0x0020B4D8"
+     },
+     {
+      "name": "printf",
+      "iat": "0x0020B4DC"
+     },
+     {
+      "name": "isalnum",
+      "iat": "0x0020B4E0"
+     },
+     {
+      "name": "remove",
+      "iat": "0x0020B4E4"
+     },
+     {
+      "name": "_stat64i32",
+      "iat": "0x0020B4E8"
+     },
+     {
+      "name": "strcmp",
+      "iat": "0x0020B4EC"
+     },
+     {
+      "name": "?terminate@@YAXXZ",
+      "iat": "0x0020B4F0"
+     },
+     {
+      "name": "_time64",
+      "iat": "0x0020B4F4"
+     },
+     {
+      "name": "feof",
+      "iat": "0x0020B4F8"
+     },
+     {
+      "name": "fseek",
+      "iat": "0x0020B4FC"
+     },
+     {
+      "name": "ftell",
+      "iat": "0x0020B500"
+     },
+     {
+      "name": "ldexp",
+      "iat": "0x0020B504"
+     },
+     {
+      "name": "pow",
+      "iat": "0x0020B508"
+     },
+     {
+      "name": "strncmp",
+      "iat": "0x0020B50C"
+     },
+     {
+      "name": "nearbyintf",
+      "iat": "0x0020B510"
+     },
+     {
+      "name": "rename",
+      "iat": "0x0020B514"
+     },
+     {
+      "name": "_access",
+      "iat": "0x0020B518"
+     },
+     {
+      "name": "_mkdir",
+      "iat": "0x0020B51C"
+     },
+     {
+      "name": "fscanf",
+      "iat": "0x0020B520"
+     },
+     {
+      "name": "lroundf",
+      "iat": "0x0020B524"
+     },
+     {
+      "name": "wcsstr",
+      "iat": "0x0020B528"
+     },
+     {
+      "name": "wcsrchr",
+      "iat": "0x0020B52C"
+     },
+     {
+      "name": "abort",
+      "iat": "0x0020B530"
+     },
+     {
+      "name": "longjmp",
+      "iat": "0x0020B534"
+     },
+     {
+      "name": "setjmp",
+      "iat": "0x0020B538"
+     },
+     {
+      "name": "__iob_func",
+      "iat": "0x0020B53C"
+     },
+     {
+      "name": "_snprintf",
+      "iat": "0x0020B540"
+     },
+     {
+      "name": "strrchr",
+      "iat": "0x0020B544"
+     },
+     {
+      "name": "strerror",
+      "iat": "0x0020B548"
+     },
+     {
+      "name": "_snprintf_s",
+      "iat": "0x0020B54C"
+     },
+     {
+      "name": "_strnicmp",
+      "iat": "0x0020B550"
+     },
+     {
+      "name": "atoi",
+      "iat": "0x0020B554"
+     },
+     {
+      "name": "_vsnprintf",
+      "iat": "0x0020B558"
+     },
+     {
+      "name": "wcscmp",
+      "iat": "0x0020B55C"
+     },
+     {
+      "name": "wcslen",
+      "iat": "0x0020B560"
+     },
+     {
+      "name": "??1type_info@@UAA@XZ",
+      "iat": "0x0020B564"
+     },
+     {
+      "name": "_lock",
+      "iat": "0x0020B568"
+     },
+     {
+      "name": "_unlock",
+      "iat": "0x0020B56C"
+     },
+     {
+      "name": "_calloc_crt",
+      "iat": "0x0020B570"
+     },
+     {
+      "name": "__dllonexit",
+      "iat": "0x0020B574"
+     },
+     {
+      "name": "__C_specific_handler",
+      "iat": "0x0020B578"
+     },
+     {
+      "name": "_onexit",
+      "iat": "0x0020B57C"
+     },
+     {
+      "name": "_XcptFilter",
+      "iat": "0x0020B580"
+     },
+     {
+      "name": "_amsg_exit",
+      "iat": "0x0020B584"
+     },
+     {
+      "name": "_exit_app",
+      "iat": "0x0020B588"
+     },
+     {
+      "name": "__getmainargs",
+      "iat": "0x0020B58C"
+     },
+     {
+      "name": "_exit",
+      "iat": "0x0020B590"
+     },
+     {
+      "name": "_cexit",
+      "iat": "0x0020B594"
+     },
+     {
+      "name": "_configthreadlocale",
+      "iat": "0x0020B598"
+     },
+     {
+      "name": "__setusermatherr",
+      "iat": "0x0020B59C"
+     },
+     {
+      "name": "_initterm_e",
+      "iat": "0x0020B5A0"
+     },
+     {
+      "name": "_initterm",
+      "iat": "0x0020B5A4"
+     },
+     {
+      "name": "_acmdln",
+      "iat": "0x0020B5A8"
+     },
+     {
+      "name": "_fmode",
+      "iat": "0x0020B5AC"
+     },
+     {
+      "name": "_commode",
+      "iat": "0x0020B5B0"
+     },
+     {
+      "name": "malloc",
+      "iat": "0x0020B5B4"
+     },
+     {
+      "name": "memset",
+      "iat": "0x0020B5B8"
+     },
+     {
+      "name": "fread",
+      "iat": "0x0020B5BC"
+     },
+     {
+      "name": "fopen",
+      "iat": "0x0020B5C0"
+     },
+     {
+      "name": "fclose",
+      "iat": "0x0020B5C4"
+     },
+     {
+      "name": "_purecall",
+      "iat": "0x0020B5C8"
+     },
+     {
+      "name": "strlen",
+      "iat": "0x0020B5CC"
+     },
+     {
+      "name": "__CxxFrameHandler3",
+      "iat": "0x0020B5D0"
+     },
+     {
+      "name": "_CxxThrowException",
+      "iat": "0x0020B5D4"
+     },
+     {
+      "name": "memmove",
+      "iat": "0x0020B5D8"
+     },
+     {
+      "name": "??3@YAXPAX@Z",
+      "iat": "0x0020B5DC"
+     },
+     {
+      "name": "??2@YAPAXI@Z",
+      "iat": "0x0020B5E0"
+     },
+     {
+      "name": "memcpy",
+      "iat": "0x0020B5E4"
+     },
+     {
+      "name": "memcmp",
+      "iat": "0x0020B5E8"
+     },
+     {
+      "name": "sprintf",
+      "iat": "0x0020B5EC"
+     },
+     {
+      "name": "free",
+      "iat": "0x0020B5F0"
+     },
+     {
+      "name": "strcpy",
+      "iat": "0x0020B5F4"
+     }
+    ]
+   },
+   {
+    "index": 16,
+    "dll": "WS2_32.dll",
+    "class": "os_dll",
+    "rt81_status": "system_dll",
+    "descriptor_rva": "0x0033ADC8",
+    "ilt_rva": "0x0033AE88",
+    "iat_first": "0x0020B00C",
+    "iat_last": "0x0020B054",
+    "count": 19,
+    "functions": [
+     {
+      "ord": 116,
+      "iat": "0x0020B00C"
+     },
+     {
+      "ord": 8,
+      "iat": "0x0020B010"
+     },
+     {
+      "name": "WSAIoctl",
+      "iat": "0x0020B014"
+     },
+     {
+      "ord": 57,
+      "iat": "0x0020B018"
+     },
+     {
+      "ord": 17,
+      "iat": "0x0020B01C"
+     },
+     {
+      "ord": 111,
+      "iat": "0x0020B020"
+     },
+     {
+      "ord": 6,
+      "iat": "0x0020B024"
+     },
+     {
+      "ord": 21,
+      "iat": "0x0020B028"
+     },
+     {
+      "ord": 20,
+      "iat": "0x0020B02C"
+     },
+     {
+      "ord": 2,
+      "iat": "0x0020B030"
+     },
+     {
+      "ord": 23,
+      "iat": "0x0020B034"
+     },
+     {
+      "ord": 52,
+      "iat": "0x0020B038"
+     },
+     {
+      "ord": 7,
+      "iat": "0x0020B03C"
+     },
+     {
+      "ord": 3,
+      "iat": "0x0020B040"
+     },
+     {
+      "ord": 12,
+      "iat": "0x0020B044"
+     },
+     {
+      "ord": 11,
+      "iat": "0x0020B048"
+     },
+     {
+      "ord": 9,
+      "iat": "0x0020B04C"
+     },
+     {
+      "ord": 15,
+      "iat": "0x0020B050"
+     },
+     {
+      "ord": 115,
+      "iat": "0x0020B054"
+     }
+    ]
+   },
+   {
+    "index": 17,
+    "dll": "api-ms-win-core-file-l2-1-1.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033ADDC",
+    "ilt_rva": "0x0033AF44",
+    "iat_first": "0x0020B0C8",
+    "iat_last": "0x0020B0CC",
+    "count": 2,
+    "functions": [
+     {
+      "name": "GetFileInformationByHandleEx",
+      "iat": "0x0020B0C8"
+     },
+     {
+      "name": "MoveFileExW",
+      "iat": "0x0020B0CC"
+     }
+    ]
+   },
+   {
+    "index": 18,
+    "dll": "api-ms-win-core-localization-l1-2-1.dll",
+    "class": "api_set",
+    "rt81_status": "UNPROVEN",
+    "descriptor_rva": "0x0033ADF0",
+    "ilt_rva": "0x0033AF58",
+    "iat_first": "0x0020B0DC",
+    "iat_last": "0x0020B0DC",
+    "count": 1,
+    "functions": [
+     {
+      "name": "FormatMessageW",
+      "iat": "0x0020B0DC"
+     }
+    ]
+   },
+   {
+    "index": 19,
+    "dll": "api-ms-win-core-util-l1-1-0.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AE04",
+    "ilt_rva": "0x0033AFD4",
+    "iat_first": "0x0020B158",
+    "iat_last": "0x0020B15C",
+    "count": 2,
+    "functions": [
+     {
+      "name": "DecodePointer",
+      "iat": "0x0020B158"
+     },
+     {
+      "name": "EncodePointer",
+      "iat": "0x0020B15C"
+     }
+    ]
+   },
+   {
+    "index": 20,
+    "dll": "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AE18",
+    "ilt_rva": "0x0033AFFC",
+    "iat_first": "0x0020B180",
+    "iat_last": "0x0020B19C",
+    "count": 8,
+    "functions": [
+     {
+      "name": "WindowsCompareStringOrdinal",
+      "iat": "0x0020B180"
+     },
+     {
+      "name": "WindowsIsStringEmpty",
+      "iat": "0x0020B184"
+     },
+     {
+      "name": "WindowsCreateStringReference",
+      "iat": "0x0020B188"
+     },
+     {
+      "name": "WindowsGetStringRawBuffer",
+      "iat": "0x0020B18C"
+     },
+     {
+      "name": "WindowsGetStringLen",
+      "iat": "0x0020B190"
+     },
+     {
+      "name": "WindowsDuplicateString",
+      "iat": "0x0020B194"
+     },
+     {
+      "name": "WindowsCreateString",
+      "iat": "0x0020B198"
+     },
+     {
+      "name": "WindowsDeleteString",
+      "iat": "0x0020B19C"
+     }
+    ]
+   },
+   {
+    "index": 21,
+    "dll": "api-ms-win-core-winrt-error-l1-1-0.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AE2C",
+    "ilt_rva": "0x0033AFE0",
+    "iat_first": "0x0020B164",
+    "iat_last": "0x0020B168",
+    "count": 2,
+    "functions": [
+     {
+      "name": "SetRestrictedErrorInfo",
+      "iat": "0x0020B164"
+     },
+     {
+      "name": "RoFailFastWithErrorContext",
+      "iat": "0x0020B168"
+     }
+    ]
+   },
+   {
+    "index": 22,
+    "dll": "api-ms-win-core-winrt-error-l1-1-1.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AE40",
+    "ilt_rva": "0x0033AFEC",
+    "iat_first": "0x0020B170",
+    "iat_last": "0x0020B170",
+    "count": 1,
+    "functions": [
+     {
+      "name": "RoReportUnhandledError",
+      "iat": "0x0020B170"
+     }
+    ]
+   },
+   {
+    "index": 23,
+    "dll": "api-ms-win-core-winrt-l1-1-0.dll",
+    "class": "api_set",
+    "rt81_status": "proven_by_loadcheck",
+    "descriptor_rva": "0x0033AE54",
+    "ilt_rva": "0x0033AFF4",
+    "iat_first": "0x0020B178",
+    "iat_last": "0x0020B178",
+    "count": 1,
+    "functions": [
+     {
+      "name": "RoInitialize",
+      "iat": "0x0020B178"
+     }
+    ]
+   }
+  ]
+ },
+ "port_instructions": [
+  "PATCHER: implement tools/0.10.4.40-arm32-patcher.py as a table interpreter over patch_profile.edits + append_section; reuse Pe32, checked_write, encode/decode_thumb2_bl, build_trampoline from tools/1.2.8-arm32-patcher.py. Set NEW_SECTION_FLAGS=0xC0000040, put the trampoline at .text.va+.text.vsize (0x20A364), bump .text VirtualSize by 16, keep IMAGE_SIZE patched == 0xE6F000 and assert it.",
+  "Do NOT rename the three *_app.DLL imports and do NOT copy the 1.2.8 DLL_RENAMES / XINPUTUAP / api-set redirect code; add a second mode that clears APPCONTAINER in the three VC120 DLLs (file offsets in dll_profiles) and refuses if the old bytes differ.",
+  "HOST: identify the image by machine 0x1C4 + SizeOfImage 0xE6F000; compute addresses as GetModuleHandle(NULL)+RVA; patch IAT cells by RVA only after verifying the cell currently resolves into the expected module (msvcr120_app / vccorlib120_app / d3d11 / D3DCOMPILER_47) using VirtualProtect(PAGE_READWRITE) and FlushInstructionCache.",
+  "HOST: treat RoInitialize returning S_FALSE as success (the CRT already initialised the MTA through vccorlib120_app!InitializeData(2)). Win32Bootstrap must return the exit code (r0) and may call ARM_CODE(image,0x203EFC) to run the untouched main wrapper (architecture b).",
+  "DEVICE: run loadcheck (0.10.4 module list) first on Windows RT 8.1; ship the VC120 Phone DLLs next to the exe; ship the UCRT overlay for win32craft.dll."
+ ],
+ "open_questions": [
+  "The 8 unproven api-set contracts (errorhandling-l1-1-2, localization-l1-2-1, debug-l1-1-1, fibers-l1-1-1, heap-l1-2-0, libraryloader-l1-1-1, processenvironment-l1-2-0, rtlsupport-l1-2-0) on Windows RT 8.1 - answer = one loadcheck run.",
+  "The pristine VCLibs 12.0.30113.0 Phone DLLs are not in the repo or the appx; the friend copies are proven genuine+only-dllchars by checksum, but a clean source (Microsoft.VCLibs.120.00.Phone appx) would let the patcher start from untouched files.",
+  "Whether Windows RT 8.1 (jailbroken, code integrity relaxed) accepts the Authenticode-broken VC120 DLLs exactly as it accepted the 1.2.8 patched fmod_ARM.dll - assumed yes, unverified.",
+  "Whether the 436 static constructors and the real vccorlib120_app/msvcr120_app init behave on RT 8.1 as they did on the friend OS (10.0.22631); install hooks from DllMain if a pre-Win32Bootstrap crash appears.",
+  "Semantics of the flag at [0xE2B03C] (RoInitialize(1) in sub_200878 when nonzero; zero on disk) - irrelevant while it stays 0.",
+  "No embedded manifest: DPI awareness / GetVersion behaviour is the Win32 default; decide in the host (SetProcessDpiAwareness) rather than by patching resources."
+ ]
+}

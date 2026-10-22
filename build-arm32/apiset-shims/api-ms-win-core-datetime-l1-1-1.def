@@ -1,4 +1,0 @@
-LIBRARY api-ms-win-core-datetime-l1-1-1.dll
-EXPORTS
-GetDateFormatEx=KERNEL32.GetDateFormatEx
-GetTimeFormatEx=KERNEL32.GetTimeFormatEx

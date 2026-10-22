@@ -28,7 +28,7 @@ SYSTEM_DLLS = {  # present on Windows 8.1+/10 ARM32 desktop (not shipped)
 }
 PE_SUFFIXES = (".exe", ".dll")
 
-README = """Win32Craft - Minecraft 1.2.8 ARM32 (Win32 desktop host)           [NOT yet verified on a real device]
+README = """Win32Craft - Minecraft 1.2.8 ARM32 (Win32 desktop host)           [verified on Surface RT (Windows RT 8.1) and Surface 2 (Windows 10 ARM32)]
 ==========================================================================================================
 
 This folder is COMPLETE and READY TO RUN. Nothing needs to be patched or installed on the device (no Python).

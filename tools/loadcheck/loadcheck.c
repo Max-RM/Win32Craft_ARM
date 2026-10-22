@@ -3,7 +3,8 @@
  *
  *   loadcheck.exe [folder] [/nopause]     default folder = the folder of loadcheck.exe
  *
- * For each module (Win32Craft.1.2.8-arm32.exe, win32craft.dll, fmod_ARM.dll, the VC++ runtime, ucrtbase.dll) it parses the
+ * For each module (Win32Craft.1.2.8-arm32.exe or Win32Craft.0.10.4-arm32.exe, win32craft.dll, fmod_ARM.dll, the VC++ runtime
+ * (VC140 for 1.2.8; the patched VC120 *_app DLLs for 0.10.4), ucrtbase.dll) it parses the
  * PE import table, LoadLibrary()s every imported DLL (the folder is the DLL directory) and GetProcAddress()es every imported
  * function.  It prints which file actually served each DLL name (an api-set name served from the folder = our shim, served
  * from System32 = the OS knows the contract) and every function that cannot be resolved (this is what makes the Windows
@@ -239,9 +240,11 @@ static void parse_args(void)
 
 void mainCRTStartup(void)
 {
+    /* a module that is not in the folder is reported as "not found (skipped)": one list serves the 1.2.8 and the 0.10.4 package */
     static const char *const modules[] = {
-        "Win32Craft.1.2.8-arm32.exe", "win32craft.dll", "fmod_ARM.dll", "ucrtbase.dll",
-        "vccorlib140.dll", "msvcp140.dll", "concrt140.dll", "vcruntime140.dll"
+        "Win32Craft.1.2.8-arm32.exe", "Win32Craft.0.10.4-arm32.exe", "win32craft.dll", "fmod_ARM.dll", "ucrtbase.dll",
+        "vccorlib140.dll", "msvcp140.dll", "concrt140.dll", "vcruntime140.dll",
+        "vccorlib120_app.dll", "msvcp120_app.dll", "msvcr120_app.dll"
     };
     DWORD i;
     struct { DWORD size, major, minor, build, platform; unsigned short csd[128]; } ver;
