@@ -1,0 +1,78 @@
+function GfxDeviceD3D11::vf226  [010081a8..01008264) len=188
+010081a8: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+010081ac: 0df11c0b add.w    fp, sp, #0x1c               
+010081b0: 8fb0     sub      sp, #0x3c                   
+010081b2: 1546     mov      r5, r2                      
+010081b4: 2b78     ldrb     r3, [r5]                    
+010081b6: 8946     mov      sb, r1                      
+010081b8: 0bb1     cbz      r3, #0x10081be              
+010081ba: a968     ldr      r1, [r5, #8]                
+010081bc: 00e0     b        #0x10081c0                    ; sub_10081c0
+010081be: e968     ldr      r1, [r5, #0xc]              
+010081c0: 43f23423 movw     r3, #0x3234                 
+010081c4: 1844     add      r0, r3                      
+010081c6: eff799ff bl       #0xff80fc                     ; sub_ff80fc
+010081ca: 0368     ldr      r3, [r0]                    
+010081cc: 8246     mov      sl, r0                      
+010081ce: 04a9     add      r1, sp, #0x10               
+010081d0: 1846     mov      r0, r3                      
+010081d2: 1b68     ldr      r3, [r3]                    
+010081d4: 9b6a     ldr      r3, [r3, #0x28]             
+010081d6: 9847     blx      r3                          
+010081d8: 2b78     ldrb     r3, [r5]                    
+010081da: 049b     ldr      r3, [sp, #0x10]             
+010081dc: 0898     ldr      r0, [sp, #0x20]             
+010081de: 6b61     str      r3, [r5, #0x14]             
+010081e0: 059b     ldr      r3, [sp, #0x14]             
+010081e2: ab61     str      r3, [r5, #0x18]             
+010081e4: daf81c30 ldr.w    r3, [sl, #0x1c]             
+010081e8: 2b61     str      r3, [r5, #0x10]             
+010081ea: e5f771f8 bl       #0xfed2d0                     ; sub_fed2d0
+010081ee: 2a78     ldrb     r2, [r5]                    
+010081f0: c310     asrs     r3, r0, #3                  
+010081f2: eb61     str      r3, [r5, #0x1c]             
+010081f4: 0023     movs     r3, #0                      
+010081f6: 002a     cmp      r2, #0                      
+010081f8: 18bf     it       ne                          
+010081fa: 0920     movne    r0, #9                      
+010081fc: 08bf     it       eq                          
+010081fe: 0720     moveq    r0, #7                      
+01008200: 291d     adds     r1, r5, #4                  
+01008202: 6b60     str      r3, [r5, #4]                
+01008204: c847     blx      sb                          
+01008206: 6b68     ldr      r3, [r5, #4]                
+01008208: f3b1     cbz      r3, #0x1008248              
+0100820a: daf81c00 ldr.w    r0, [sl, #0x1c]             
+0100820e: 2b78     ldrb     r3, [r5]                    
+01008210: d5e90568 ldrd     r6, r8, [r5, #0x14]         
+01008214: ef69     ldr      r7, [r5, #0x1c]             
+01008216: 06f041ff bl       #0x100f09c                    ; sub_100f09c
+0100821a: 0020     movs     r0, #0                      
+0100821c: f4f754fc bl       #0xffcac8                     ; sub_ffcac8
+01008220: 0446     mov      r4, r0                      
+01008222: f4f75bfc bl       #0xffcadc                     ; sub_ffcadc
+01008226: 07fb06f2 mul      r2, r7, r6                  
+0100822a: 2046     mov      r0, r4                      
+0100822c: 08fb02f3 mul      r3, r8, r2                  
+01008230: 2468     ldr      r4, [r4]                    
+01008232: daf80010 ldr.w    r1, [sl]                    
+01008236: 0192     str      r2, [sp, #4]                
+01008238: 0293     str      r3, [sp, #8]                
+0100823a: 6b68     ldr      r3, [r5, #4]                
+0100823c: d4f8c040 ldr.w    r4, [r4, #0xc0]             
+01008240: 0093     str      r3, [sp]                    
+01008242: 0023     movs     r3, #0                      
+01008244: 0022     movs     r2, #0                      
+01008246: a047     blx      r4                          
+01008248: 2b78     ldrb     r3, [r5]                    
+0100824a: 2bb1     cbz      r3, #0x1008258              
+0100824c: 0a20     movs     r0, #0xa                    
+0100824e: 291d     adds     r1, r5, #4                  
+01008250: c847     blx      sb                          
+01008252: 0fb0     add      sp, #0x3c                   
+01008254: bde8f08f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, pc}
+01008258: 0820     movs     r0, #8                      
+0100825a: 291d     adds     r1, r5, #4                  
+0100825c: c847     blx      sb                          
+0100825e: 0fb0     add      sp, #0x3c                   
+01008260: bde8f08f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, pc}

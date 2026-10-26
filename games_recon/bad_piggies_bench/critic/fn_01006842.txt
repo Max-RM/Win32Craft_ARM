@@ -1,0 +1,112 @@
+function GfxDeviceD3D11::vf232  [010067dc..010068fc) len=288
+010067dc: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+010067e0: 0df11c0b add.w    fp, sp, #0x1c               
+010067e4: 9db0     sub      sp, #0x74                   
+010067e6: 6f46     mov      r7, sp                      
+010067e8: 86b0     sub      sp, #0x18                   
+010067ea: 1e46     mov      r6, r3                      
+010067ec: 6ff00103 mvn      r3, #1                      
+010067f0: c7e90233 strd     r3, r3, [r7, #8]            
+010067f4: 9046     mov      r8, r2                      
+010067f6: 0d46     mov      r5, r1                      
+010067f8: 002a     cmp      r2, #0                      
+010067fa: 7cd0     beq      #0x10068f6                  
+010067fc: 002e     cmp      r6, #0                      
+010067fe: 7ad0     beq      #0x10068f6                  
+01006800: 002d     cmp      r5, #0                      
+01006802: 78d0     beq      #0x10068f6                  
+01006804: a86a     ldr      r0, [r5, #0x28]             
+01006806: 0028     cmp      r0, #0                      
+01006808: 75d0     beq      #0x10068f6                  
+0100680a: 0020     movs     r0, #0                      
+0100680c: f6f75cf9 bl       #0xffcac8                     ; sub_ffcac8
+01006810: 0023     movs     r3, #0                      
+01006812: 3b60     str      r3, [r7]                    
+01006814: c7e90833 strd     r3, r3, [r7, #0x20]         
+01006818: c7e90a33 strd     r3, r3, [r7, #0x28]         
+0100681c: c7e90c33 strd     r3, r3, [r7, #0x30]         
+01006820: ab6a     ldr      r3, [r5, #0x28]             
+01006822: 8146     mov      sb, r0                      
+01006824: 17f12001 adds.w   r1, r7, #0x20               
+01006828: 1846     mov      r0, r3                      
+0100682a: 1b68     ldr      r3, [r3]                    
+0100682c: 9b6a     ldr      r3, [r3, #0x28]             
+0100682e: 9847     blx      r3                          
+01006830: 4ff40033 mov.w    r3, #0x20000                
+01006834: fb62     str      r3, [r7, #0x2c]             
+01006836: 0323     movs     r3, #3                      
+01006838: c7e90863 strd     r6, r3, [r7, #0x20]         
+0100683c: 0023     movs     r3, #0                      
+0100683e: bb62     str      r3, [r7, #0x28]             
+01006840: 3b63     str      r3, [r7, #0x30]             
+01006842: f6f74bf9 bl       #0xffcadc                     ; sub_ffcadc
+01006846: 0446     mov      r4, r0                      
+01006848: 2468     ldr      r4, [r4]                    
+0100684a: 3b46     mov      r3, r7                      
+0100684c: 0022     movs     r2, #0                      
+0100684e: e468     ldr      r4, [r4, #0xc]              
+01006850: 17f12001 adds.w   r1, r7, #0x20               
+01006854: a047     blx      r4                          
+01006856: 0028     cmp      r0, #0                      
+01006858: 4ddb     blt      #0x10068f6                  
+0100685a: 48f6c071 movw     r1, #0x8fc0                   ; -> 0x12668fc0 str "CSGetData-Staging-%d"
+0100685e: c1f26621 movt     r1, #0x1266                 
+01006862: 3a6a     ldr      r2, [r7, #0x20]             
+01006864: 17f15000 adds.w   r0, r7, #0x50               
+01006868: 0ef472f1 bl       #0x814b50                     ; sub_814b50
+0100686c: 0146     mov      r1, r0                      
+0100686e: 3868     ldr      r0, [r7]                    
+01006870: f8f7d8f9 bl       #0xffec24                     ; sub_ffec24
+01006874: 17f15000 adds.w   r0, r7, #0x50               
+01006878: 69f4c2d7 bl       #0x70800                      ; sub_70800
+0100687c: d7f89830 ldr.w    r3, [r7, #0x98]             
+01006880: 0022     movs     r2, #0                      
+01006882: c7e90e32 strd     r3, r2, [r7, #0x38]         
+01006886: 3344     add      r3, r6                      
+01006888: c7e91023 strd     r2, r3, [r7, #0x40]         
+0100688c: 0123     movs     r3, #1                      
+0100688e: c7e91233 strd     r3, r3, [r7, #0x48]         
+01006892: 17f13803 adds.w   r3, r7, #0x38               
+01006896: d9f80040 ldr.w    r4, [sb]                    
+0100689a: 0493     str      r3, [sp, #0x10]             
+0100689c: ab6a     ldr      r3, [r5, #0x28]             
+0100689e: 3968     ldr      r1, [r7]                    
+010068a0: d4f8b840 ldr.w    r4, [r4, #0xb8]             
+010068a4: 0293     str      r3, [sp, #8]                
+010068a6: 0023     movs     r3, #0                      
+010068a8: 4846     mov      r0, sb                      
+010068aa: 9246     mov      sl, r2                      
+010068ac: 0392     str      r2, [sp, #0xc]              
+010068ae: 0192     str      r2, [sp, #4]                
+010068b0: 0092     str      r2, [sp]                    
+010068b2: a047     blx      r4                          
+010068b4: d9f80040 ldr.w    r4, [sb]                    
+010068b8: 3968     ldr      r1, [r7]                    
+010068ba: 17f11003 adds.w   r3, r7, #0x10               
+010068be: a46b     ldr      r4, [r4, #0x38]             
+010068c0: 0193     str      r3, [sp, #4]                
+010068c2: 0123     movs     r3, #1                      
+010068c4: 0022     movs     r2, #0                      
+010068c6: 4846     mov      r0, sb                      
+010068c8: cdf800a0 str.w    sl, [sp]                    
+010068cc: a047     blx      r4                          
+010068ce: 0028     cmp      r0, #0                      
+010068d0: 0bdb     blt      #0x10068ea                  
+010068d2: 3969     ldr      r1, [r7, #0x10]             
+010068d4: 3246     mov      r2, r6                      
+010068d6: 4046     mov      r0, r8                      
+010068d8: acf334fd bl       #0x13b3344                    ; thunk[VCRUNTIME140_APP.dll!memcpy]
+010068dc: d9f80030 ldr.w    r3, [sb]                    
+010068e0: 3968     ldr      r1, [r7]                    
+010068e2: 0022     movs     r2, #0                      
+010068e4: db6b     ldr      r3, [r3, #0x3c]             
+010068e6: 4846     mov      r0, sb                      
+010068e8: 9847     blx      r3                          
+010068ea: 3b68     ldr      r3, [r7]                    
+010068ec: 1bb1     cbz      r3, #0x10068f6              
+010068ee: 1846     mov      r0, r3                      
+010068f0: 1b68     ldr      r3, [r3]                    
+010068f2: 9b68     ldr      r3, [r3, #8]                
+010068f4: 9847     blx      r3                          
+010068f6: 23b0     add      sp, #0x8c                   
+010068f8: bde8f08f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, pc}

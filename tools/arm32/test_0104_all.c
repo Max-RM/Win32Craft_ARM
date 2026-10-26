@@ -96,6 +96,7 @@ static BOOL arm32_iat_hook_import(BYTE *image, BOOL delay, const char *name, DWO
 { (void)image; (void)delay; (void)name; (void)rva; (void)hook; (void)original; (void)what; return FALSE; }
 static void arm32_iat_describe_address(const void *address, char *out, SIZE_T out_size)
 { (void)address; if (out && out_size) lstrcpynA(out, "(test stub)", (int)out_size); }
+static void **arm32_iat_find_cell(BYTE *image, BOOL delay, const char *name) { (void)image; (void)delay; (void)name; return NULL; }
 static UINT arm32_feature_level_cap = 0x9100u;
 static int g_osk_show, g_osk_hide, g_osk_poll, g_osk_pointer_up, g_note_touch, g_note_mouse;
 static void arm32_osk_show(const char *why) { (void)why; ++g_osk_show; }

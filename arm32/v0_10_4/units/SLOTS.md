@@ -1184,3 +1184,81 @@ that deliberately ignores all its arguments is registered with `X104_SLOT_NOARGS
 | 13 | `HRESULT Run(void *self, void *viewSource)` |  |
 | 14 | `HRESULT RunWithActivationFactories(void *self, void *activationFactoryCallback)` |  |
 
+## Windows.UI.Xaml.Controls.ISwapChainPanelFactory  `{F38F8D7F-1A48-49CB-86D2-10EAAAF6FD70}`
+
+`X104_IID_ISwapChainPanelFactory`, `X104_NSLOTS_ISwapChainPanelFactory` = 7, base IInspectable
+
+| slot | C signature | notes |
+|---|---|---|
+| 6 | `HRESULT CreateInstance(void *self, void *baseInterface, void **innerInterface, void **value)` |  |
+
+## Windows.UI.Xaml.Media.ICompositionTargetStatics  `{2B1AF03D-1ED2-4B59-BD00-7594EE92832B}`
+
+`X104_IID_ICompositionTargetStatics`, `X104_NSLOTS_ICompositionTargetStatics` = 10, base IInspectable
+
+| slot | C signature | notes |
+|---|---|---|
+| 6 | `HRESULT add_Rendering(void *self, void *handler, LONGLONG *token)` |  |
+| 7 | `HRESULT remove_Rendering(void *self, LONGLONG token)` |  |
+| 8 | `HRESULT add_SurfaceContentsLost(void *self, void *handler, LONGLONG *token)` |  |
+| 9 | `HRESULT remove_SurfaceContentsLost(void *self, LONGLONG token)` |  |
+
+## Windows.UI.ViewManagement.IApplicationViewStatics2  `{AF338AE5-CF64-423C-85E5-F3E72448FB23}`
+
+`X104_IID_IApplicationViewStatics2`, `X104_NSLOTS_IApplicationViewStatics2` = 9, base IInspectable
+
+| slot | C signature | notes |
+|---|---|---|
+| 6 | `HRESULT GetForCurrentView(void *self, void **current)` |  |
+| 7 | `HRESULT get_TerminateAppOnFinalViewClose(void *self, BYTE *value)` |  |
+| 8 | `HRESULT put_TerminateAppOnFinalViewClose(void *self, BYTE value)` |  |
+
+## Windows.UI.ViewManagement.IApplicationView2  `{E876B196-A545-40DC-B594-450CBA68CC00}`
+
+`X104_IID_IApplicationView2`, `X104_NSLOTS_IApplicationView2` = 13, base IInspectable
+
+| slot | C signature | notes |
+|---|---|---|
+| 6 | `HRESULT get_SuppressSystemOverlays(void *self, BYTE *value)` |  |
+| 7 | `HRESULT put_SuppressSystemOverlays(void *self, BYTE value)` |  |
+| 8 | `HRESULT get_VisibleBounds(void *self, X104Rect *value)` |  |
+| 9 | `HRESULT add_VisibleBoundsChanged(void *self, void *handler, LONGLONG *token)` |  |
+| 10 | `HRESULT remove_VisibleBoundsChanged(void *self, LONGLONG token)` |  |
+| 11 | `HRESULT SetDesiredBoundsMode(void *self, int boundsMode, BYTE *success)` | boundsMode: enum ApplicationViewBoundsMode |
+| 12 | `HRESULT get_DesiredBoundsMode(void *self, int *value)` | value: enum ApplicationViewBoundsMode |
+
+## Windows.UI.Core.ICoreWindowResizeManagerStatics  `{AE4A9045-6D70-49DB-8E68-46FFBD17D38D}`
+
+`X104_IID_ICoreWindowResizeManagerStatics`, `X104_NSLOTS_ICoreWindowResizeManagerStatics` = 7, base IInspectable
+
+| slot | C signature | notes |
+|---|---|---|
+| 6 | `HRESULT GetForCurrentView(void *self, void **CoreWindowResizeManager)` |  |
+
+## Windows.UI.Core.ICoreWindowResizeManager  `{B8F0B925-B350-48B3-A198-5C1A84700243}`
+
+`X104_IID_ICoreWindowResizeManager`, `X104_NSLOTS_ICoreWindowResizeManager` = 7, base IInspectable
+
+| slot | C signature | notes |
+|---|---|---|
+| 6 | `HRESULT NotifyLayoutCompleted(void *self)` |  |
+
+## Windows.UI.Core.ICharacterReceivedEventArgs  `{C584659F-99B2-4BCC-BD33-04E63F42902E}`
+
+`X104_IID_ICharacterReceivedEventArgs`, `X104_NSLOTS_ICharacterReceivedEventArgs` = 8, base IInspectable
+
+| slot | C signature | notes |
+|---|---|---|
+| 6 | `HRESULT get_KeyCode(void *self, UINT32 *value)` |  |
+| 7 | `HRESULT get_KeyStatus(void *self, void *value)` | value: pointer to struct CorePhysicalKeyStatus |
+
+## Windows.ApplicationModel.Store.IProductLicense  `{363308C7-2BCF-4C0E-8F2F-E808AAA8F99D}`
+
+`X104_IID_IProductLicense`, `X104_NSLOTS_IProductLicense` = 9, base IInspectable
+
+| slot | C signature | notes |
+|---|---|---|
+| 6 | `HRESULT get_ProductId(void *self, HSTRING *value)` |  |
+| 7 | `HRESULT get_IsActive(void *self, BYTE *value)` |  |
+| 8 | `HRESULT get_ExpirationDate(void *self, LONGLONG *value)` |  |
+

@@ -776,6 +776,7 @@ static DWORD x104_async_wait_ms(void)
     unsigned index;
     DWORD now = GetTickCount();
     if (x104_async_st.queue_length > 0) return 1;
+    if (x104_app_rendering_active()) return 1;     /* CompositionTarget.Rendering frames (REDCON 1): the game's limiter + Present(1,0) pace them */
     if (!x104.f_size_changed_done) return wait;
     x104_lock(&x104_async_st.timer_lock);
     for (index = 0; index < X104_ASYNC_MAX_TIMERS; ++index) {

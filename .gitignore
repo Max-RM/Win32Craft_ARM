@@ -19,6 +19,13 @@ WhatsApp*/
 !tools/whatsapp/
 /*.zip
 /*.appx
+/*.xap
+/*.pdf
+# game-derived Bad Piggies shader data (only the README/tools stay in the public source)
+games_recon/bad_piggies_shader_proto/orig/
+games_recon/bad_piggies_shader_proto/auto/
+games_recon/bad_piggies_shader_proto/hlsl/
+games_recon/bad_piggies_shader_proto/build/
 # local-only folders
 /TEST
 /TMP

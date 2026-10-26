@@ -173,7 +173,7 @@ static BOOL x104_panel_call_guarded(void (*function)(void *, void *), void *a, v
 static DWORD WINAPI x104_panel_msgbox_thread(void *argument)
 {
     BOOL exit_after = argument != NULL;
-    MessageBoxA(NULL, x104_panel_msg_text, "Minecraft PE 0.10.4 - Win32Craft", 0x10u | 0x10000u | 0x40000u);   /* MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST */
+    MessageBoxA(NULL, x104_panel_msg_text, x104_profile_box_caption(), 0x10u | 0x10000u | 0x40000u);   /* MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST */
     if (exit_after) x104_app_request_exit(3);
     InterlockedExchange(&x104_panel_msg_busy, 0);
     return 0;
@@ -1905,7 +1905,7 @@ static HRESULT X104_API x104_panel_create_buffer_wrapper(void *self, const x104_
     if (!entry && x104_panel_state.device_vt_count > 0) entry = &x104_panel_state.devices[0];
     original = entry ? (x104_panel_create_buffer_fn)entry->orig_create_buffer : NULL;
     if (!original) return E_FAIL;
-    if (desc && !IsBadReadPtr(desc, sizeof(*desc)) && (desc->BindFlags & 0x2u /* D3D11_BIND_INDEX_BUFFER */) && (desc->ByteWidth & 3u)) {
+    if (x104_feat(X104_FEAT_MCPE_PATCHES) && desc && !IsBadReadPtr(desc, sizeof(*desc)) && (desc->BindFlags & 0x2u /* D3D11_BIND_INDEX_BUFFER */) && (desc->ByteWidth & 3u)) {
         X104_LOG_LIMITED(&warned_count, 40, "X104 panel: WARNING CreateBuffer index buffer with ByteWidth=%u (not a multiple of 4: the game maps 32-bit indices to R32_UINT) bind=%08lx usage=%u",
                          desc->ByteWidth, (unsigned long)desc->BindFlags, desc->Usage);
     }
@@ -2230,7 +2230,7 @@ static HRESULT X104_API x104_panel_create_device(void *adapter, UINT driver_type
                   (unsigned long)first_hr, x104_hr_name(first_hr), (unsigned long)hr, x104_hr_name(hr), used_driver);
         wsprintfA(text, "Cannot create a Direct3D 11 device.\r\n\r\nHardware: 0x%08lX %s\r\nFinal: 0x%08lX %s (driver type %u, levels [%s])\r\n\r\nSee win32craft.log.", (unsigned long)first_hr,
                   x104_hr_name(first_hr), (unsigned long)hr, x104_hr_name(hr), used_driver, effective);
-        MessageBoxA(NULL, text, "Minecraft PE 0.10.4 - Win32Craft", 0x10u | 0x10000u | 0x40000u);
+        MessageBoxA(NULL, text, x104_profile_box_caption(), 0x10u | 0x10000u | 0x40000u);
         TerminateProcess(GetCurrentProcess(), 33);
         return hr;
     }
@@ -2239,7 +2239,9 @@ static HRESULT X104_API x104_panel_create_device(void *adapter, UINT driver_type
         UINT actual = selected_level ? *selected_level : 0;
         UINT reported = actual;
         x104_panel_created_t created;
-        if (actual == 0x9100u || actual == 0x9200u) {
+        if (!x104_feat(X104_FEAT_MCPE_PATCHES)) {
+            /* the game gets the true level (Redcon: precompiled level_9 shaders, no code compares the level) */
+        } else if (actual == 0x9100u || actual == 0x9200u) {
             reported = 0x9300u;                                         /* the lie: the game's getShaderModelSuffix accepts only 0x9300 and >= 0xA000 */
             if (selected_level) *selected_level = reported;
             x104_panel_set_profile_digit(actual == 0x9100u ? '1' : '2', "device level differs from / confirms the cap");
@@ -2484,6 +2486,38 @@ static const X104IfaceDesc x104_panel_args_ifaces[] = {
 };
 X104_CLASS_DEF(x104_panel_args_class, "SizeChangedEventArgs", L"Windows.UI.Xaml.SizeChangedEventArgs", x104_panel_args_ifaces, X104_CLASS_AGILE, NULL);
 
+/* ISwapChainPanelFactory.CreateInstance(baseInterface, &innerInterface, &instance): REDCON 1 builds its panel in code with baseInterface = NULL and
+ * innerInterface = NULL (no aggregation) - it gets the host's one SwapChainPanel (the window's client area).  A real aggregation request is refused. */
+static HRESULT X104_API x104_panel_factory_create_instance(void *self, void *outer, void **inner, void **instance)
+{
+    x104_panel_object_t *panel = x104_panel_state.panel;
+    HRESULT hr;
+    (void)self;
+    if (inner) *inner = NULL;
+    if (!instance) return E_POINTER;
+    *instance = NULL;
+    if (outer) {
+        x104_logf("X104 panel: ERROR ISwapChainPanelFactory.CreateInstance with an outer object %p (aggregation) is not supported -> E_NOTIMPL", outer);
+        return X104_E_NOT_IMPL;
+    }
+    if (!panel) {
+        x104_logf("X104 panel: ERROR ISwapChainPanelFactory.CreateInstance before the panel unit was initialised -> E_FAIL");
+        return E_FAIL;
+    }
+    hr = x104_object_qi(&panel->base.base, &X104_IID_ISwapChainPanel, instance);
+    x104_logf("X104 panel: ISwapChainPanelFactory.CreateInstance(NULL, NULL) -> the host SwapChainPanel obj=%p (ISwapChainPanel view %p) 0x%08lx", (void *)panel, *instance,
+              (unsigned long)hr);
+    return hr;
+}
+
+X104_VTBL(x104_panel_vt_factory, ISwapChainPanelFactory) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(ISwapChainPanelFactory, CreateInstance, x104_panel_factory_create_instance)
+};
+static const X104IfaceDesc x104_panel_factory_ifaces[] = { X104_IFACE(ISwapChainPanelFactory, x104_panel_vt_factory) };
+X104_CLASS_DEF(x104_panel_factory_class, "SwapChainPanelFactory", L"Windows.UI.Xaml.Controls.SwapChainPanel", x104_panel_factory_ifaces, X104_CLASS_AGILE | X104_CLASS_FACTORY, NULL);
+X104_SINGLETON(x104_panel_get_factory, x104_panel_factory_class, X104Object)
+
 /* ======================================================================================================================
  * 9. size pipeline (R2 / R3)
  * ====================================================================================================================== */
@@ -2567,12 +2601,43 @@ static void x104_panel_try_first(DWORD now)
     x104_flag_set(&x104.f_size_changed_done, "f_size_changed_done (first SizeChanged returned)");
 }
 
+/* games without the XAML page (REDCON 1): they read CoreWindow.Bounds inside OnLaunched and resize through CoreWindow.SizeChanged */
+static void x104_panel_core_resize_tick(DWORD now)
+{
+    BOOL due;
+    if (!x104_panel_state.first_done) {
+        if (!x104.f_launched) return;
+        x104_panel_state.first_done = TRUE;
+        x104_panel_state.size_done_tick = now;
+        x104_flag_set(&x104.f_size_changed_done, "f_size_changed_done (OnLaunched returned: the game sized its swap chain from CoreWindow.Bounds)");
+    }
+    if (!x104_panel_state.pending_resize || x104_panel_state.minimized) return;
+    due = x104_panel_state.in_size_move ? (now - x104_panel_state.last_raise_tick >= 100u) : (now - x104_panel_state.last_change_tick >= 30u);
+    if (!due) return;
+    InterlockedExchange(&x104_panel_state.pending_resize, 0);
+    x104_panel_refresh_client();
+    if ((int)x104_panel_state.client_w == x104_panel_state.raised_w && (int)x104_panel_state.client_h == x104_panel_state.raised_h) return;
+    {
+        static volatile LONG logged;
+        unsigned invoked;
+        x104_element_set_sizes(&x104_panel_state.panel->base, (double)x104_panel_state.client_w, (double)x104_panel_state.client_h);
+        invoked = x104_input_raise_core_size_changed();
+        X104_LOG_LIMITED(&logged, 40, "X104 panel: CoreWindow.SizeChanged %ldx%ld (was %dx%d) -> %u handler(s)", (long)x104_panel_state.client_w, (long)x104_panel_state.client_h,
+                         x104_panel_state.raised_w, x104_panel_state.raised_h, invoked);
+        x104_panel_state.raised_w = (int)x104_panel_state.client_w;
+        x104_panel_state.raised_h = (int)x104_panel_state.client_h;
+        x104_panel_state.last_raise_tick = GetTickCount();
+    }
+}
+
 static void x104_panel_ui_tick(void)
 {
     DWORD now;
     if (!x104_panel_state.panel || x104_panel_state.shutdown) return;
     now = GetTickCount();
-    if (!x104_panel_state.first_done) {
+    if (!x104_feat(X104_FEAT_XAML_PAGE)) {
+        x104_panel_core_resize_tick(now);
+    } else if (!x104_panel_state.first_done) {
         x104_panel_try_first(now);
     } else if (x104_panel_state.pending_resize && !x104_panel_state.minimized) {
         BOOL due = x104_panel_state.in_size_move ? (now - x104_panel_state.last_raise_tick >= 100u) : (now - x104_panel_state.last_change_tick >= 30u);
@@ -2667,18 +2732,33 @@ static BOOL x104_panel_install(BYTE *image)
               x104.opt_half_res ? "--half-res" : "full resolution", x104_panel_tr.enabled ? ", --trace-game-state (D3D draw tracer on)" : "");
 
     /* (a) the D3D11CreateDevice IAT hook - the only fatal step */
-    if (!arm32_iat_hook_import(image, FALSE, "D3D11CreateDevice", X104_RVA_IAT_D3D11CREATEDEVICE, (void *)x104_panel_create_device, &x104_panel_orig_create_device, "D3D11CreateDevice")) {
-        x104_logf("X104 panel: ERROR the D3D11CreateDevice hook could NOT be installed (IAT rva %08lx): the game would fail on a 9_1 GPU and crash at the next QI",
-                  (unsigned long)X104_RVA_IAT_D3D11CREATEDEVICE);
+    if (!x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE) && !arm32_iat_find_cell(image, FALSE, "D3D11CreateDevice")) {
+        x104_logf("X104 panel: ERROR the game does not import D3D11CreateDevice by name - nothing to hook");
         return FALSE;
     }
-    wsprintfA(shown, "cell %p -> %p", (void *)(image + X104_RVA_IAT_D3D11CREATEDEVICE), (void *)x104_panel_create_device);
+    if (!arm32_iat_hook_import(image, FALSE, "D3D11CreateDevice", x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE) ? x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE) :
+                               (DWORD)((ULONG_PTR)arm32_iat_find_cell(image, FALSE, "D3D11CreateDevice") - (ULONG_PTR)image),
+                               (void *)x104_panel_create_device, &x104_panel_orig_create_device, "D3D11CreateDevice")) {
+        x104_logf("X104 panel: ERROR the D3D11CreateDevice hook could NOT be installed (IAT rva %08lx): the game would fail on a 9_1 GPU and crash at the next QI",
+                  (unsigned long)x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE));
+        return FALSE;
+    }
+    {
+        void **cell = arm32_iat_find_cell(image, FALSE, "D3D11CreateDevice");
+        if (!cell) cell = (void **)(image + x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE));
+        wsprintfA(shown, "cell %p -> %p", (void *)cell, (void *)x104_panel_create_device);
+    }
     x104_logf("X104 panel: install: D3D11CreateDevice hook installed (%s, original %p)", shown, x104_panel_orig_create_device);
 
-    /* (b) shader profile string, (c) resolution float, (d) cwd + include */
-    if (!x104_panel_install_profile(cap)) return FALSE;
-    x104_panel_install_resolution();
-    x104_panel_install_cwd();
+    /* (b) shader profile string, (c) resolution float, (d) cwd + include: Minecraft compiles HLSL at run time with a feature-level suffix; other games ship
+     *     precompiled shaders and need none of this */
+    if (x104_feat(X104_FEAT_MCPE_PATCHES)) {
+        if (!x104_panel_install_profile(cap)) return FALSE;
+        x104_panel_install_resolution();
+        x104_panel_install_cwd();
+    } else {
+        x104_logf("X104 panel: install: no shader-profile / resolution / include patches for %s (precompiled shaders, the game's own feature-level list)", x104_profile->title);
+    }
 
     /* (e) presentation path */
     if (x104_panel_state.path == X104_PRESENT_DCOMP) {
@@ -2754,6 +2834,10 @@ static BOOL x104_panel_init(HWND window)
         x104_panel_state.args = args;
     }
     x104_element_set_sizes(&x104_panel_state.panel->base, (double)width, (double)height);
+    if (!x104_feat(X104_FEAT_XAML_PAGE)) {
+        x104_panel_state.raised_w = width;                /* REDCON 1 reads CoreWindow.Bounds inside OnLaunched: only later changes are SizeChanged */
+        x104_panel_state.raised_h = height;
+    }
     x104_panel_state.loss_poll_tick = GetTickCount();
     x104_logf("X104 panel: init: SwapChainPanel obj=%p (serial %ld) client %dx%d (window %p), CompositionScale 1.0, SizeChangedEventArgs obj=%p", (void *)x104_panel_state.panel,
               (long)x104_panel_state.panel->base.base.serial, width, height, (void *)window, (void *)x104_panel_state.args);
@@ -2768,12 +2852,14 @@ static void x104_panel_shutdown(void)
               x104_panel_state.stub_attempt ? x104_panel_state.stub_attempt : '-', (long)x104_panel_state.device_creations);
 }
 
-/* The panel owns no activated WinRT class (the game gets the panel from Page.FindName). */
+/* Minecraft gets the panel from Page.FindName; REDCON 1 creates it through ISwapChainPanelFactory (the one class this unit activates) */
 static HRESULT x104_panel_activate(const wchar_t *class_name, const GUID *iid, void **out)
 {
-    (void)class_name;
-    (void)iid;
-    (void)out;
+    if (class_name && lstrcmpW(class_name, L"Windows.UI.Xaml.Controls.SwapChainPanel") == 0) {
+        X104Object *factory = x104_panel_get_factory();
+        if (!factory) return E_FAIL;
+        return x104_object_qi(factory, iid, out);
+    }
     return REGDB_E_CLASSNOTREG;
 }
 
@@ -2785,6 +2871,11 @@ static X104Object *x104_panel_object(void)
 static void x104_panel_raise_size_changed(void)
 {
     if (!x104_panel_state.panel || x104_panel_state.shutdown) return;
+    if (!x104_feat(X104_FEAT_XAML_PAGE)) {                  /* CoreWindow.SizeChanged on the next tick */
+        x104_panel_state.last_change_tick = GetTickCount() - 30u;
+        InterlockedExchange(&x104_panel_state.pending_resize, 1);
+        return;
+    }
     if (!x104_on_ui_thread()) {
         static volatile LONG logged;
         X104_LOG_LIMITED(&logged, 5, "X104 panel: x104_panel_raise_size_changed called off the UI thread (thread %lu) - queued as a pending resize (R1)", (unsigned long)GetCurrentThreadId());

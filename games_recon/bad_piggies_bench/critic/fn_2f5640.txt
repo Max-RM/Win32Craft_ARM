@@ -1,0 +1,5 @@
+function sub_2f5640  [002f5640..002f564e) len=14
+002f5640: 2de90048 push.w   {fp, lr}                    
+002f5644: eb46     mov      fp, sp                      
+002f5646: bde80048 pop.w    {fp, lr}                    
+002f564a: 07f14792 b.w      #0xffcadc                     ; sub_ffcadc

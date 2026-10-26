@@ -245,3 +245,91 @@ Logs: `arm32/device_logs/win11_arm64_0104_friend.log`, `win11_arm64_128_friend_l
   (platform unit, data root = `--data-dir=` or `%APPDATA%\MinecraftPE\0.10.4` or `<game>\LocalState`): `%APPDATA%\MinecraftPE` is the 1.2.8 host's folder, and the two versions must not
   share worlds/options - 1.2.8 upgrades old worlds one way, 0.10.4 cannot read 1.x worlds, and the options.txt formats differ.  Anyone who wants the other folder can start
   0.10.4 with `--data-dir=%APPDATA%\MinecraftPE` (at their own risk).  Not changed.
+
+## New games recon (2026-10-22)
+
+Redcon 1.3.0.0, Geometry Dash 2.0.1.0 and Bad Piggies Rebooted 1.0.0.0 were investigated (read-only).
+Results: games_recon/*.md (15 files, all STATUS: DONE); decisions and order: games_recon/GAMES_PLAN.md.
+Redcon = GO first (0.10.4 host + profile); Geometry Dash = possible; Bad Piggies = possible, gated on a device probe (M0).
+Surface 2 logs name the D3D adapter "Software Adapter" (vendor 0): the Win10 15035 build may have no Tegra GPU driver.
+
+## REDCON 1 1.3.0.0 on the x104 host (2026-10-22)
+
+The x104 host (0.10.4) serves a second Windows Phone 8.1 game through a run-time game profile; ONE win32craft.dll.
+* Profile: `win32_host_arm32_0104_core.inl` section 1c (`X104Profile`, `x104_profile_mcpe0104`, `x104_profile_redcon`, `x104_feat()`), selected in
+  `x104_image_matches` by the patched SizeOfImage (0.10.4 0x00E6F000, REDCON 0x001E1000).  Feature bits: MCPE_PATCHES (shader profile string, resolution
+  float, AppPlatform cells, the "report 9_3" lie), IAT_FACTS (0.10.4 IAT rvas as fallbacks; other games hook by name only and skip absent imports),
+  XAML_PAGE (MainPage / AppMain / ready flag / first-SizeChanged rule / timer gate).  REDCON has none of them.
+* REDCON specifics (games_recon/redcon_*.md): no MainPage - OnLaunched builds a SwapChainPanel through ISwapChainPanelFactory(NULL, NULL) (panel unit),
+  frames come from CompositionTarget.Rendering on the UI thread (app unit 7b, `x104_app_rendering_tick`; the loop waits 1 ms while it is active),
+  resizes through CoreWindow.SizeChanged (panel `x104_panel_core_resize_tick` -> input `x104_input_raise_core_size_changed`), Suspending/Resuming on
+  CoreApplication (raised by the exit proc together with Application.Suspending), 5 more CoreWindow events + CharacterReceived from WM_CHAR, every key
+  delivered (Minecraft's whitelist only for XAML_PAGE), Back button shown while the game runs, feature-level cap 0 (the game's own list 11_1..9_1; its
+  shaders are level_9), RoamingSettings.Values = OS PropertySet (in memory), ProductLicenses answers every product NOT owned (the Store is closed).
+  ApplicationLanguages / PropertyValue / Launcher go to the OS runtime (desktop-capable, logged as "X104 WinRT FALLBACK").
+* Proof that 0.10.4 did not change: `python tools/arm32/try_0104.py --selftest --integration` (151 checks 0.10.4 + 107 checks REDCON mock incl. the 43-check selftest under the REDCON profile
+  `tools/arm32/test_redcon_all.c`), `python tools/arm32/diff_0104_log.py --against arm32/work/baseline_pre_redcon/integration_set.txt` (IDENTICAL),
+  patcher output hash of 0.10.4 unchanged, the regenerated 0.10.4 package differs only in win32craft.dll + patch_report.json.
+* Patcher: `tools/arm32-patcher.py` profile `redcon` (call site 0x13A55A, trampoline 0x1414B0, all predicted outputs confirmed by the engine).
+* Package: `python tools/make_0104_package.py --game redcon --game-dir build-redcon/Redcon_1.3.0.0_ARM_original` -> dist-redcon/.  The game folder
+  Redcon_1.3.0.0_ARM in the repo holds a MODIFIED Redcon.exe (a third-party "Premium Patch", config.json); the patcher accepts only the stock exe, so the
+  package is built from a clean copy unpacked from Redcon_1.3.0.0_ARM.appx.
+* Open, device-only: music (Media Foundation Media Engine), the game's XAML dialog widgets (Popup/TextBlock/Border/StackPanel/TextBox/Button: NOT faked
+  yet - the log will name them), CurrentApp.LoadListingInformationAsync / GetAppReceiptAsync (E_NOTIMPL), roaming settings not persisted, Windows RT 8.1.
+
+### REDCON device result + fixes (2026-10-22)
+* Surface 2 (Win10 15035): REDCON runs fine (~30 fps, touch, Back, exit) - arm32/device_logs/surface2_win10_redcon_first_run.log.  With the game's full
+  level list the HARDWARE device still selects 9_1: the Surface 2's true maximum is 9_1 (the "Software Adapter" name is not WARP).
+* Host fixes after it: the host Back button is off for non-XAML games unless --back-button-always; `_exit_app` no longer hangs 30 s at exit (it waited
+  for CoreApplication.Exit, which never returns in a desktop process - 0.10.4 had the same hang): the host ends the process at once, like the guard did.
+* m0probe crashed on the Surface 2 (arm32/device_logs/m0probe_surface2_varargs_crash.log): MSVC's <stdarg.h> va_start is wrong for clang on ARM
+  (assumes MSVC argument homing).  Fixed with the __builtin_va_* macros; the host already used them.  Rule: never use <stdarg.h> va_start in
+  clang-built ARM32 code - use __builtin_va_start/__builtin_va_arg.
+
+### Bad Piggies Rebooted - the l9shim D3D11 shim, milestone 1 (2026-10-22)
+Probe result on the Surface 2 (arm32/device_logs/m0probe_surface2.log): the Tegra 4 is a REAL GPU (adapter "NVIDIA Tegra 4", nvd3dum.dll loads, 28x WARP);
+true max feature level 9_1; every game's shaders load at 9_1 (Bad Piggies 113/113 + sprite pixel correct).  The "Software Adapter" name is just
+Microsoft's D3D10Level9 layer.  So Bad Piggies can render on the GPU at 9_1 with a shim between Unity and Direct3D.
+* tools/badpiggies/l9shim.c (+ l9wrap.inc, l9shim.def): a d3d11.dll replacement that UnityPlayer's d3d11 import is redirected to (same import-redirect as
+  Sup).  It forwards every d3d11 export to the real system d3d11.dll except D3D11CreateDevice: a FL10+ device is returned untouched (newer GPUs run Unity
+  unchanged), a sub-FL10 device is recreated at 9_x and WRAPPED - a full-length private vtable copy (174 slots on PC, measured at run time; never size it
+  from the SDK header, critic F2), VS/PS bytecode swapped by DXBC checksum from Data/bp/l9_replacements.bin (NOT CreateInputLayout, critic F1), and the
+  texture/view/sampler/rasterizer/blend/depth-stencil descriptors sanitised to the 10Level9 rules.
+* Builds: tools/badpiggies/build_l9shim_x64.bat (shim + harness l9shim_test.c), build_l9shim_arm32.bat -> dist-badpiggies/l9shim.dll (ARMNT, imports only
+  KERNEL32, d3d11 loaded dynamically).  PC proof (L9SHIM_FORCE_9X=1): the raw 9_1 device refuses Unity's SM4 shaders and the illegal states/formats; the
+  shim makes all of them succeed - all checks pass.
+* REMAINING: M2 l9caps.inc - patch Unity's in-memory caps object so it never asks for 32-bit index buffers / MRT / instancing (ESSENTIAL: a single 32-bit
+  index bind can remove the device at 9_1; the shim's creation-time sanitisers do not cover context-side binds).  Anchor RVAs in UnityPlayer sub_1007434
+  (GetFeatureLevel blx 0x0100759c, caps table .rdata 0x026767b8 row 0, the hard-coded stores in games_recon/bad_piggies_hw-unitygfx.md F4/F5); guard on the
+  expected bytes so it is a no-op on another build; device-gated.  M3 (optional) a DXGI Present hook for fps / device-lost.  M4 make_badpiggies_package.py:
+  repackage the appx with the d3d11 import redirected + l9shim.dll + Data/bp/l9_replacements.bin, re-signed and registered.  Bad Piggies is a UWP appx with
+  MinVersion 10.0.15035 (= the Surface 2), so it installs natively - no Win32Craft host, no HWND swap-chain translation.
+
+### Bad Piggies l9shim - milestone 2: the 9_1 caps correction (2026-10-22)
+tools/badpiggies/l9caps.inc (included by l9shim, armed from wrap_device, ONLY in the 9_x path - FL10+ devices untouched).  Unity's GfxDeviceD3D11 caps init
+(UnityPlayer sub_1007434) treats a 9_1 device as FL 12_1 because its caps table has no 9_x row; it would then issue 32-bit index binds (device-removal at
+9_1), MRT, instancing.  l9caps overwrites Unity's caps object (pointer at UnityPlayer base + 0x0298ed40) with 9_1 values: no 32-bit indices (c+0x104=0),
+one render target (c+0xec=1), shaderCaps 0xE3 (keeps the shader programs), no UAV/3D/MSAA/mirror-once/readback/logic-op, maxtex 2048, cube 512, row index 0.
+Every offset was confirmed by disassembling sub_1007434 (not just the recon text).  It is guarded by two anchor instructions so it is a silent no-op on any
+other UnityPlayer build, and it fires once from the CheckFeatureSupport hook on Unity's last caps-init query (D3D11_FEATURE 0xf, OS build >= 1000).  Proof:
+the l9shim_selftest_caps export checks every field against a synthetic caps object (0 wrong) and the full PC harness still passes; the ARM32 shim rebuilt
+and still imports only KERNEL32.  Next: M4 = tools/badpiggies/make_badpiggies_package.py (repackage the appx with UnityPlayer's d3d11 import redirected to
+l9shim + ship l9shim.dll + Data/bp/l9_replacements.bin, re-signed/registered) -> the first build testable on the Surface 2.
+
+### Bad Piggies l9shim - milestone 4: the device package (2026-10-22)
+tools/badpiggies/make_badpiggies_package.py -> dist-badpiggies/BadPiggiesRebooted_1.0.0.0_ARM_Win32Craft(.zip).  Bad Piggies is a Windows 10 UWP appx
+(MinVersion 15035 = the Surface 2), so it installs natively in Developer Mode (install.bat -> Add-AppxPackage -Register) - no host.  The packager unpacks
+the clean game from the .appx (verifies UnityPlayer.dll sha256 e3530fd5...), redirects UnityPlayer's d3d11.dll import to l9d3d11.dll (the shim), app-locals
+the VC++ runtime (renames the *_app imports to plain names and ships the VS2022 ARM VC143 redist, because the appx needs VCLibs.140 >= 14.0.33519 which we
+cannot supply - armdeps has only 14.0.32530), drops the VCLibs.140 PackageDependency, ships Data/bp/l9_replacements.bin, and strips the packaged-install
+metadata for -Register.  Verified statically: every patched binary imports only package-local or in-box (15035) DLLs; the shim and runtime are ARMNT.  NOT
+run on a device yet - the first Surface 2 run writes l9shim.log; watch the splash shaders, the one missing IMGUI shader, and the CoreWindow swap chain
+through the wrapped device (no dxgi/Present hook yet = M3, optional).  Windows RT 8.1 is end-of-project.
+
+### Bad Piggies first device run: the l9shim varargs crash (2026-10-22)
+First launch crashed (white->empty window).  Device l9shim.log (...\Packages\BadPiggiesRebooted_x0xr9mv5edyrp\AC\Temp\l9shim.log) + UnityPlayer.log
+(stopped at "GfxDevice: creating device client") showed the shim's own logger was the culprit: fmt()/lgf() used MSVC's <stdarg.h> va_start, which is wrong
+under clang-ARM (the same bug that crashed m0probe) - every logged value was garbage and a misread %s dereference faulted during D3D11CreateDevice.  Fixed
+with __builtin_va_* (L9_VA_LIST).  The caps correction is re-enabled but content-gated (l9caps_on_check_feature only writes if the caps object's current
+values look like Unity's GfxCaps), so a mis-identified pointer cannot corrupt memory.  Rebuilt dist-badpiggies.  RULE: never use <stdarg.h> va_start in any
+clang-built ARM32 code in this repo - use __builtin_va_start/arg/end (the host already did; the probe and now the shim were fixed).

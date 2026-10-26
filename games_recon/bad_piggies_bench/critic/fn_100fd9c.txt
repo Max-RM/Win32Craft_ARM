@@ -1,0 +1,23 @@
+function sub_100fd9c  [0100fd9c..0100fdd8) len=60
+0100fd9c: 2de9fe49 push.w   {r1, r2, r3, r4, r5, r6, r7, r8, fp, lr}
+0100fda0: 0df1200b add.w    fp, sp, #0x20               
+0100fda4: 00f11c06 add.w    r6, r0, #0x1c               
+0100fda8: 7468     ldr      r4, [r6, #4]                
+0100fdaa: 0227     movs     r7, #2                      
+0100fdac: 4ff00008 mov.w    r8, #0                      
+0100fdb0: b442     cmp      r4, r6                      
+0100fdb2: 0fd0     beq      #0x100fdd4                  
+0100fdb4: 04f10805 add.w    r5, r4, #8                  
+0100fdb8: 04b9     cbnz     r4, #0x100fdbc              
+0100fdba: 0c25     movs     r5, #0xc                    
+0100fdbc: cde90078 strd     r7, r8, [sp]                
+0100fdc0: ecf78cfe bl       #0xffcadc                     ; sub_ffcadc
+0100fdc4: 0346     mov      r3, r0                      
+0100fdc6: 1b68     ldr      r3, [r3]                    
+0100fdc8: 2a46     mov      r2, r5                      
+0100fdca: 6946     mov      r1, sp                      
+0100fdcc: 1b6e     ldr      r3, [r3, #0x60]             
+0100fdce: 9847     blx      r3                          
+0100fdd0: 6468     ldr      r4, [r4, #4]                
+0100fdd2: ede7     b        #0x100fdb0                    ; sub_100fdb0
+0100fdd4: bde8fe89 pop.w    {r1, r2, r3, r4, r5, r6, r7, r8, fp, pc}

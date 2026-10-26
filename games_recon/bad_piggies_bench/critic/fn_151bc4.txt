@@ -1,0 +1,71 @@
+function sub_151bc4  [00151bc4..00151c7a) len=182
+00151bc4: 2de93f48 push.w   {r0, r1, r2, r3, r4, r5, fp, lr}
+00151bc8: 0df1180b add.w    fp, sp, #0x18               
+00151bcc: 90f8cd31 ldrb.w   r3, [r0, #0x1cd]            
+00151bd0: 0446     mov      r4, r0                      
+00151bd2: 1bb9     cbnz     r3, #0x151bdc               
+00151bd4: 0020     movs     r0, #0                      
+00151bd6: 04b0     add      sp, #0x10                   
+00151bd8: bde83088 pop.w    {r4, r5, fp, pc}            
+00151bdc: e1f124f4 bl       #0x733428                     ; sub_733428
+00151be0: d0f8bc30 ldr.w    r3, [r0, #0xbc]             
+00151be4: 13f4006f tst.w    r3, #0x800                  
+00151be8: f4d0     beq      #0x151bd4                   
+00151bea: 236b     ldr      r3, [r4, #0x30]             
+00151bec: 0022     movs     r2, #0                      
+00151bee: 01a9     add      r1, sp, #4                  
+00151bf0: 5b69     ldr      r3, [r3, #0x14]             
+00151bf2: 04f13000 add.w    r0, r4, #0x30               
+00151bf6: 9847     blx      r3                          
+00151bf8: 0468     ldr      r4, [r0]                    
+00151bfa: d4b3     cbz      r4, #0x151c72               
+00151bfc: 4ef6e813 movw     r3, #0xe9e8                   ; -> 0x12aee9e8 .data+0x19e9e8
+00151c00: c1f2ae23 movt     r3, #0x12ae                 
+00151c04: 0094     str      r4, [sp]                    
+00151c06: 1d68     ldr      r5, [r3]                    
+00151c08: 8db1     cbz      r5, #0x151c2e               
+00151c0a: 6a46     mov      r2, sp                      
+00151c0c: 02a9     add      r1, sp, #8                  
+00151c0e: 2846     mov      r0, r5                      
+00151c10: 2ef756fc bl       #0x804c0                      ; sub_804c0
+00151c14: 6b68     ldr      r3, [r5, #4]                
+00151c16: 0168     ldr      r1, [r0]                    
+00151c18: 1b1d     adds     r3, r3, #4                  
+00151c1a: 03eb4302 add.w    r2, r3, r3, lsl #1          
+00151c1e: 2b68     ldr      r3, [r5]                    
+00151c20: 1344     add      r3, r2                      
+00151c22: 8b42     cmp      r3, r1                      
+00151c24: 01d0     beq      #0x151c2a                   
+00151c26: 8868     ldr      r0, [r1, #8]                
+00151c28: 00e0     b        #0x151c2c                     ; sub_151c2c
+00151c2a: 0020     movs     r0, #0                      
+00151c2c: 18b9     cbnz     r0, #0x151c36               
+00151c2e: 2046     mov      r0, r4                      
+00151c30: eef12efa bl       #0x340090                     ; sub_340090
+00151c34: e8b1     cbz      r0, #0x151c72               
+00151c36: f3f12bf6 bl       #0x745890                     ; sub_745890
+00151c3a: d0b1     cbz      r0, #0x151c72               
+00151c3c: 61f7c0fa bl       #0xb31c0                      ; SimpleMediaAttributes::vf14
+00151c40: 026b     ldr      r2, [r0, #0x30]             
+00151c42: 0368     ldr      r3, [r0]                    
+00151c44: 53f82230 ldr.w    r3, [r3, r2, lsl #2]        
+00151c48: 0022     movs     r2, #0                      
+00151c4a: 186e     ldr      r0, [r3, #0x60]             
+00151c4c: 0028     cmp      r0, #0                      
+00151c4e: c1dd     ble      #0x151bd4                   
+00151c50: 196b     ldr      r1, [r3, #0x30]             
+00151c52: 51f8043b ldr      r3, [r1], #4                
+00151c56: 93f80134 ldrb.w   r3, [r3, #0x401]            
+00151c5a: 33b9     cbnz     r3, #0x151c6a               
+00151c5c: 521c     adds     r2, r2, #1                  
+00151c5e: 8242     cmp      r2, r0                      
+00151c60: f7db     blt      #0x151c52                   
+00151c62: 0020     movs     r0, #0                      
+00151c64: 04b0     add      sp, #0x10                   
+00151c66: bde83088 pop.w    {r4, r5, fp, pc}            
+00151c6a: 0120     movs     r0, #1                      
+00151c6c: 04b0     add      sp, #0x10                   
+00151c6e: bde83088 pop.w    {r4, r5, fp, pc}            
+00151c72: 0020     movs     r0, #0                      
+00151c74: 04b0     add      sp, #0x10                   
+00151c76: bde83088 pop.w    {r4, r5, fp, pc}            

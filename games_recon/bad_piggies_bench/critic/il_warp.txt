@@ -1,0 +1,15 @@
+﻿device: WARP hr=0x00000000 FL=0x9100 debug=1
+lookup VS hit PS hit
+D3DGetInputSignatureBlob(orig Unity VS) hr=0x00000000 size=148
+  sig blob: magic DXBC chunks=1 first chunk ISGN; checksum in table: no (a checksum-keyed CreateInputLayout hook MISSES)
+  CreateInputLayout(signature-only blob, like Unity sub_100fa88)                   hr=0x00000000
+  CreateInputLayout(original Unity vs_4_0 bytecode)                                hr=0x00000000
+  CreateInputLayout(level-9 replacement VS)                                        hr=0x00000000
+  CreateInputLayout(signature-only blob with ZERO checksum)                        hr=0x80070057
+      [debug CreateInputLayout(signature-only blob with ZERO checksum)] ID3D11Device::CreateInputLayout: Input Signature in bytecode could not be parsed.  Data may be corrupt or in an unrecognizable format.
+draw uses layout from signature-only blob
+  CreateVertexShader(replacement)                                                  hr=0x00000000
+  CreatePixelShader(replacement)                                                   hr=0x00000000
+  DrawIndexed(6) with that layout + level-9 Sprites/Default                        hr=0x00000000
+  read-back centre pixel RGBA = 200 100 50 255 (expected 200 100 50 255)
+  GetDeviceRemovedReason                                                           hr=0x00000000

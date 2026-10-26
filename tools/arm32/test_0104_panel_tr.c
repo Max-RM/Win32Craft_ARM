@@ -100,6 +100,7 @@ static BOOL arm32_patch_cell(void **cell, const void *expected, void *replacemen
 static BOOL arm32_patch_byte(BYTE *address, BYTE expected, BYTE replacement, const char *what) { (void)what; if (*address != expected) return FALSE; *address = replacement; return TRUE; }
 static void *test_calloc(size_t count, size_t size) { return HeapAlloc(GetProcessHeap(), 8 /* HEAP_ZERO_MEMORY */, count * size); }
 static BOOL arm32_iat_hook_import(BYTE *image, BOOL by_name, const char *name, DWORD rva, void *hook, void **original, const char *what) { (void)image; (void)by_name; (void)name; (void)rva; (void)hook; (void)original; (void)what; return TRUE; }
+static void **arm32_iat_find_cell(BYTE *image, BOOL delay, const char *name) { (void)image; (void)delay; (void)name; return NULL; }
 static UINT arm32_feature_level_cap = 0x9100u;
 static void arm32_osk_show(const char *why) { (void)why; }
 static void arm32_osk_hide(const char *why) { (void)why; }

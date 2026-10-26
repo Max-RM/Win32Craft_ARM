@@ -344,6 +344,7 @@ static void arm32_input_pane_raise(BOOL showing);                /* raise the ha
 /* 0.10.4 host (win32_host_arm32_0104_*.inl, included in front of Win32Bootstrap): entry points used by the shared code above it */
 static void x104_inputpane_raise(BOOL showing);                  /* input unit: InputPane Showing/Hiding to the handlers MainPage registered */
 static HRESULT WINAPI x104_activation_hook(LPCWSTR class_name, const GUID *iid, void **result);   /* core: WinRT activation router */
+static const char *x104_profile_title(void);                        /* core: name of the WP8.1 game the x104 host runs (log banner) */
 
 /* lower-case hex dump "de ad be ef " (at most (out_size-1)/3 bytes) */
 static void arm32_hex_dump(char *out, SIZE_T out_size, const BYTE *bytes, SIZE_T count)
@@ -22820,7 +22821,7 @@ static void arm32_boot_setup_paths_and_log(void)
     }
 
     /* first log_line() call of the process happens below */
-    wsprintfA(line, "Win32Craft %s ARM32 Win32Bootstrap entered (host build %s %s)", host_is_0104 ? "Minecraft PE 0.10.4.40" : "1.2.8",
+    wsprintfA(line, "Win32Craft %s ARM32 Win32Bootstrap entered (host build %s %s)", host_is_0104 ? x104_profile_title() : "1.2.8",
               __DATE__, __TIME__);
     log_line(line);
     arm32_boot_narrow(narrow, sizeof(narrow), Win32CraftLogPathW);

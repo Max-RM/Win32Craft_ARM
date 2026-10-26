@@ -1,0 +1,5 @@
+LIBRARY PhoneAppModelHost
+EXPORTS
+    CaptureUiThreadContext
+    LoadPackagedLibrary=shim_LoadPackagedLibrary
+    LaunchEmergencyDialer

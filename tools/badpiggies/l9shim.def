@@ -1,0 +1,5 @@
+LIBRARY l9shim
+EXPORTS
+    D3D11CreateDevice
+    CreateDirect3D11SurfaceFromDXGISurface
+    CreateDirect3D11DeviceFromDXGIDevice

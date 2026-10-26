@@ -967,6 +967,60 @@ typedef HRESULT (X104_API *X104_FN_ICoreApplication_GetCurrentView)(void *, void
 typedef HRESULT (X104_API *X104_FN_ICoreApplication_Run)(void *, void *);
 typedef HRESULT (X104_API *X104_FN_ICoreApplication_RunWithActivationFactories)(void *, void *);
 
+/* Windows.UI.Xaml.Controls.ISwapChainPanelFactory (windows.ui.xaml.controls.h) */
+static const GUID X104_IID_ISwapChainPanelFactory = {0xf38f8d7f,0x1a48,0x49cb,{0x86,0xd2,0x10,0xea,0xaa,0xf6,0xfd,0x70}};
+enum { X104_SLOT_ISwapChainPanelFactory_CreateInstance = 6, X104_NSLOTS_ISwapChainPanelFactory = 7 };
+typedef HRESULT (X104_API *X104_FN_ISwapChainPanelFactory_CreateInstance)(void *, void *, void **, void **);
+
+/* Windows.UI.Xaml.Media.ICompositionTargetStatics (windows.ui.xaml.media.h) */
+static const GUID X104_IID_ICompositionTargetStatics = {0x2b1af03d,0x1ed2,0x4b59,{0xbd,0x00,0x75,0x94,0xee,0x92,0x83,0x2b}};
+enum { X104_SLOT_ICompositionTargetStatics_add_Rendering = 6, X104_SLOT_ICompositionTargetStatics_remove_Rendering = 7, X104_SLOT_ICompositionTargetStatics_add_SurfaceContentsLost = 8, X104_SLOT_ICompositionTargetStatics_remove_SurfaceContentsLost = 9, X104_NSLOTS_ICompositionTargetStatics = 10 };
+typedef HRESULT (X104_API *X104_FN_ICompositionTargetStatics_add_Rendering)(void *, void *, LONGLONG *);
+typedef HRESULT (X104_API *X104_FN_ICompositionTargetStatics_remove_Rendering)(void *, LONGLONG);
+typedef HRESULT (X104_API *X104_FN_ICompositionTargetStatics_add_SurfaceContentsLost)(void *, void *, LONGLONG *);
+typedef HRESULT (X104_API *X104_FN_ICompositionTargetStatics_remove_SurfaceContentsLost)(void *, LONGLONG);
+
+/* Windows.UI.ViewManagement.IApplicationViewStatics2 (windows.ui.viewmanagement.h) */
+static const GUID X104_IID_IApplicationViewStatics2 = {0xaf338ae5,0xcf64,0x423c,{0x85,0xe5,0xf3,0xe7,0x24,0x48,0xfb,0x23}};
+enum { X104_SLOT_IApplicationViewStatics2_GetForCurrentView = 6, X104_SLOT_IApplicationViewStatics2_get_TerminateAppOnFinalViewClose = 7, X104_SLOT_IApplicationViewStatics2_put_TerminateAppOnFinalViewClose = 8, X104_NSLOTS_IApplicationViewStatics2 = 9 };
+typedef HRESULT (X104_API *X104_FN_IApplicationViewStatics2_GetForCurrentView)(void *, void **);
+typedef HRESULT (X104_API *X104_FN_IApplicationViewStatics2_get_TerminateAppOnFinalViewClose)(void *, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IApplicationViewStatics2_put_TerminateAppOnFinalViewClose)(void *, BYTE);
+
+/* Windows.UI.ViewManagement.IApplicationView2 (windows.ui.viewmanagement.h) */
+static const GUID X104_IID_IApplicationView2 = {0xe876b196,0xa545,0x40dc,{0xb5,0x94,0x45,0x0c,0xba,0x68,0xcc,0x00}};
+enum { X104_SLOT_IApplicationView2_get_SuppressSystemOverlays = 6, X104_SLOT_IApplicationView2_put_SuppressSystemOverlays = 7, X104_SLOT_IApplicationView2_get_VisibleBounds = 8, X104_SLOT_IApplicationView2_add_VisibleBoundsChanged = 9, X104_SLOT_IApplicationView2_remove_VisibleBoundsChanged = 10, X104_SLOT_IApplicationView2_SetDesiredBoundsMode = 11, X104_SLOT_IApplicationView2_get_DesiredBoundsMode = 12, X104_NSLOTS_IApplicationView2 = 13 };
+typedef HRESULT (X104_API *X104_FN_IApplicationView2_get_SuppressSystemOverlays)(void *, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IApplicationView2_put_SuppressSystemOverlays)(void *, BYTE);
+typedef HRESULT (X104_API *X104_FN_IApplicationView2_get_VisibleBounds)(void *, X104Rect *);
+typedef HRESULT (X104_API *X104_FN_IApplicationView2_add_VisibleBoundsChanged)(void *, void *, LONGLONG *);
+typedef HRESULT (X104_API *X104_FN_IApplicationView2_remove_VisibleBoundsChanged)(void *, LONGLONG);
+typedef HRESULT (X104_API *X104_FN_IApplicationView2_SetDesiredBoundsMode)(void *, int, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IApplicationView2_get_DesiredBoundsMode)(void *, int *);
+
+/* Windows.UI.Core.ICoreWindowResizeManagerStatics (windows.ui.core.h) */
+static const GUID X104_IID_ICoreWindowResizeManagerStatics = {0xae4a9045,0x6d70,0x49db,{0x8e,0x68,0x46,0xff,0xbd,0x17,0xd3,0x8d}};
+enum { X104_SLOT_ICoreWindowResizeManagerStatics_GetForCurrentView = 6, X104_NSLOTS_ICoreWindowResizeManagerStatics = 7 };
+typedef HRESULT (X104_API *X104_FN_ICoreWindowResizeManagerStatics_GetForCurrentView)(void *, void **);
+
+/* Windows.UI.Core.ICoreWindowResizeManager (windows.ui.core.h) */
+static const GUID X104_IID_ICoreWindowResizeManager = {0xb8f0b925,0xb350,0x48b3,{0xa1,0x98,0x5c,0x1a,0x84,0x70,0x02,0x43}};
+enum { X104_SLOT_ICoreWindowResizeManager_NotifyLayoutCompleted = 6, X104_NSLOTS_ICoreWindowResizeManager = 7 };
+typedef HRESULT (X104_API *X104_FN_ICoreWindowResizeManager_NotifyLayoutCompleted)(void *);
+
+/* Windows.UI.Core.ICharacterReceivedEventArgs (windows.ui.core.h) */
+static const GUID X104_IID_ICharacterReceivedEventArgs = {0xc584659f,0x99b2,0x4bcc,{0xbd,0x33,0x04,0xe6,0x3f,0x42,0x90,0x2e}};
+enum { X104_SLOT_ICharacterReceivedEventArgs_get_KeyCode = 6, X104_SLOT_ICharacterReceivedEventArgs_get_KeyStatus = 7, X104_NSLOTS_ICharacterReceivedEventArgs = 8 };
+typedef HRESULT (X104_API *X104_FN_ICharacterReceivedEventArgs_get_KeyCode)(void *, UINT32 *);
+typedef HRESULT (X104_API *X104_FN_ICharacterReceivedEventArgs_get_KeyStatus)(void *, void *);
+
+/* Windows.ApplicationModel.Store.IProductLicense (Windows.ApplicationModel.store.h) */
+static const GUID X104_IID_IProductLicense = {0x363308c7,0x2bcf,0x4c0e,{0x8f,0x2f,0xe8,0x08,0xaa,0xa8,0xf9,0x9d}};
+enum { X104_SLOT_IProductLicense_get_ProductId = 6, X104_SLOT_IProductLicense_get_IsActive = 7, X104_SLOT_IProductLicense_get_ExpirationDate = 8, X104_NSLOTS_IProductLicense = 9 };
+typedef HRESULT (X104_API *X104_FN_IProductLicense_get_ProductId)(void *, HSTRING *);
+typedef HRESULT (X104_API *X104_FN_IProductLicense_get_IsActive)(void *, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IProductLicense_get_ExpirationDate)(void *, LONGLONG *);
+
 /* ---- MANUAL: Windows Phone 8.1 interfaces that are not in the desktop SDK (values from arm32/v0_10_4/facts) ---- */
 /* Windows.Phone.UI.Input.IHardwareButtonsStatics {594B8780-DA66-4FD8-A776-7506BD0CBFA7}: slot 6 add_BackPressed, 7 remove_BackPressed
  * (medium confidence on the slot, facts startup_flow.slots_hardwarebuttons / input_text.back_button), 8 add_CameraHalfPressed ... */
@@ -1013,6 +1067,20 @@ typedef HRESULT (X104_API *X104_FN_IAsyncInfo_Close)(void *);
 typedef HRESULT (X104_API *X104_FN_ISwapChainPanelNative_SetSwapChain)(void *, void *);
 /* IWorkItemHandler / DispatchedHandler / event delegates are game objects: Invoke is ALWAYS vtable slot 3 (IUnknown-based delegates) */
 enum { X104_SLOT_DELEGATE_Invoke = 3 };
+/* Windows.Foundation.Collections IVectorView<T> / IMapView<K,V> (parameterised interfaces: the IID depends on T, so they are only handed out
+ * through typed out parameters that the game calls directly - REDCON 1: NetworkInformation.GetConnectionProfiles, ProductLicenses).  Element = pointer. */
+enum { X104_SLOT_IVectorView_GetAt = 6, X104_SLOT_IVectorView_get_Size = 7, X104_SLOT_IVectorView_IndexOf = 8, X104_SLOT_IVectorView_GetMany = 9,
+       X104_NSLOTS_IVectorView = 10,
+       X104_SLOT_IMapView_Lookup = 6, X104_SLOT_IMapView_get_Size = 7, X104_SLOT_IMapView_HasKey = 8, X104_SLOT_IMapView_Split = 9,
+       X104_NSLOTS_IMapView = 10 };
+typedef HRESULT (X104_API *X104_FN_IVectorView_GetAt)(void *, UINT32, void **);
+typedef HRESULT (X104_API *X104_FN_IVectorView_get_Size)(void *, UINT32 *);
+typedef HRESULT (X104_API *X104_FN_IVectorView_IndexOf)(void *, void *, UINT32 *, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IVectorView_GetMany)(void *, UINT32, UINT32, void **, UINT32 *);
+typedef HRESULT (X104_API *X104_FN_IMapView_Lookup)(void *, HSTRING, void **);
+typedef HRESULT (X104_API *X104_FN_IMapView_get_Size)(void *, UINT32 *);
+typedef HRESULT (X104_API *X104_FN_IMapView_HasKey)(void *, HSTRING, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IMapView_Split)(void *, void **, void **);
 
 
 /* readable names for the logs: x104_iid_name() walks this table */
@@ -1091,6 +1159,14 @@ static const X104KnownIid X104_KNOWN_IIDS[] = {
     { &X104_IID_INetworkInformationStatics, "INetworkInformationStatics" },
     { &X104_IID_IConnectionProfile, "IConnectionProfile" },
     { &X104_IID_ICoreApplication, "ICoreApplication" },
+    { &X104_IID_ISwapChainPanelFactory, "ISwapChainPanelFactory" },
+    { &X104_IID_ICompositionTargetStatics, "ICompositionTargetStatics" },
+    { &X104_IID_IApplicationViewStatics2, "IApplicationViewStatics2" },
+    { &X104_IID_IApplicationView2, "IApplicationView2" },
+    { &X104_IID_ICoreWindowResizeManagerStatics, "ICoreWindowResizeManagerStatics" },
+    { &X104_IID_ICoreWindowResizeManager, "ICoreWindowResizeManager" },
+    { &X104_IID_ICharacterReceivedEventArgs, "ICharacterReceivedEventArgs" },
+    { &X104_IID_IProductLicense, "IProductLicense" },
     { &X104_IID_IHardwareButtonsStatics, "IHardwareButtonsStatics" },
     { &X104_IID_IVibrationDeviceStatics, "IVibrationDeviceStatics" },
     { &X104_IID_IUnknown, "IUnknown" },

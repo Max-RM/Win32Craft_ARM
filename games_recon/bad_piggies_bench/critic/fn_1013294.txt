@@ -1,0 +1,247 @@
+function sub_1013294  [01013294..01013522) len=654
+01013294: 0fb4     push     {r0, r1, r2, r3}            
+01013296: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+0101329a: 0df11c0b add.w    fp, sp, #0x1c               
+0101329e: a7b0     sub      sp, #0x9c                   
+010132a0: 6f46     mov      r7, sp                      
+010132a2: 86b0     sub      sp, #0x18                   
+010132a4: c7e90323 strd     r2, r3, [r7, #0xc]          
+010132a8: 6ff00103 mvn      r3, #1                      
+010132ac: c7e92433 strd     r3, r3, [r7, #0x90]         
+010132b0: 9046     mov      r8, r2                      
+010132b2: 0d46     mov      r5, r1                      
+010132b4: f861     str      r0, [r7, #0x1c]             
+010132b6: e9f711fc bl       #0xffcadc                     ; sub_ffcadc
+010132ba: 8146     mov      sb, r0                      
+010132bc: 0028     cmp      r0, #0                      
+010132be: 00f02b81 beq.w    #0x1013518                  
+010132c2: 20f7b1d8 bl       #0x733428                     ; sub_733428
+010132c6: d7f8d8a0 ldr.w    sl, [r7, #0xd8]             
+010132ca: 0022     movs     r2, #0                      
+010132cc: 5146     mov      r1, sl                      
+010132ce: 1ff795de bl       #0x732ffc                     ; sub_732ffc
+010132d2: 45f68864 movw     r4, #0x5e88                   ; -> 0x12675e88 .rdata+0xf5ee88
+010132d6: c1f26724 movt     r4, #0x1267                 
+010132da: b861     str      r0, [r7, #0x18]             
+010132dc: 04eb0014 add.w    r4, r4, r0, lsl #4          
+010132e0: 7c61     str      r4, [r7, #0x14]             
+010132e2: 6cf539dd bl       #0x57fd58                     ; sub_57fd58
+010132e6: 08b1     cbz      r0, #0x10132ec              
+010132e8: 2468     ldr      r4, [r4]                    
+010132ea: 00e0     b        #0x10132ee                    ; sub_10132ee
+010132ec: 6468     ldr      r4, [r4, #4]                
+010132ee: d7f8d430 ldr.w    r3, [r7, #0xd4]             
+010132f2: 47f6c001 movw     r1, #0x78c0                   ; -> 0x126578c0 str "GetResource"
+010132f6: c1f26521 movt     r1, #0x1265                 
+010132fa: 2846     mov      r0, r5                      
+010132fc: 03eb4303 add.w    r3, r3, r3, lsl #1          
+01013300: 5b00     lsls     r3, r3, #1                  
+01013302: 7b60     str      r3, [r7, #4]                
+01013304: b7f50cda bl       #0x5ca720                     ; sub_5ca720
+01013308: d7f8d0e0 ldr.w    lr, [r7, #0xd0]             
+0101330c: 40f60002 movw     r2, #0x800                    ; -> 0x12b20800 .data+0x1d0800
+01013310: c1f2b222 movt     r2, #0x12b2                 
+01013314: d7f8dc60 ldr.w    r6, [r7, #0xdc]             
+01013318: 10b9     cbnz     r0, #0x1013320              
+0101331a: 0023     movs     r3, #0                      
+0101331c: 3b60     str      r3, [r7]                    
+0101331e: 10e0     b        #0x1013342                    ; sub_1013342
+01013320: ab0a     lsrs     r3, r5, #0xa                
+01013322: 52f82320 ldr.w    r2, [r2, r3, lsl #2]        
+01013326: 12b9     cbnz     r2, #0x101332e              
+01013328: 0023     movs     r3, #0                      
+0101332a: 3b60     str      r3, [r7]                    
+0101332c: 09e0     b        #0x1013342                    ; sub_1013342
+0101332e: 2b46     mov      r3, r5                      
+01013330: 6ff39f23 bfc      r3, #0xa, #0x16             
+01013334: 52f82330 ldr.w    r3, [r2, r3, lsl #2]        
+01013338: 0022     movs     r2, #0                      
+0101333a: 3a60     str      r2, [r7]                    
+0101333c: 002b     cmp      r3, #0                      
+0101333e: 40f0af80 bne.w    #0x10134a0                  
+01013342: 7b68     ldr      r3, [r7, #4]                
+01013344: c7e90b34 strd     r3, r4, [r7, #0x2c]         
+01013348: 0123     movs     r3, #1                      
+0101334a: 7b63     str      r3, [r7, #0x34]             
+0101334c: 0023     movs     r3, #0                      
+0101334e: c7e90e33 strd     r3, r3, [r7, #0x38]         
+01013352: 0823     movs     r3, #8                      
+01013354: d9f80040 ldr.w    r4, [sb]                    
+01013358: 3b64     str      r3, [r7, #0x40]             
+0101335a: 0023     movs     r3, #0                      
+0101335c: 7b64     str      r3, [r7, #0x44]             
+0101335e: 6469     ldr      r4, [r4, #0x14]             
+01013360: 0423     movs     r3, #4                      
+01013362: bb64     str      r3, [r7, #0x48]             
+01013364: 3b46     mov      r3, r7                      
+01013366: 0022     movs     r2, #0                      
+01013368: 17f12001 adds.w   r1, r7, #0x20               
+0101336c: 4846     mov      r0, sb                      
+0101336e: c7e908ee strd     lr, lr, [r7, #0x20]         
+01013372: be62     str      r6, [r7, #0x28]             
+01013374: a047     blx      r4                          
+01013376: 3b68     ldr      r3, [r7]                    
+01013378: 42f60058 movw     r8, #0x2d00                   ; -> 0x12672d00 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/TexturesD3"
+0101337c: c1f26728 movt     r8, #0x1267                 
+01013380: 0446     mov      r4, r0                      
+01013382: a3b1     cbz      r3, #0x10133ae              
+01013384: 0123     movs     r3, #1                      
+01013386: 0293     str      r3, [sp, #8]                
+01013388: 7b68     ldr      r3, [r7, #4]                
+0101338a: d7f8d010 ldr.w    r1, [r7, #0xd0]             
+0101338e: 0122     movs     r2, #1                      
+01013390: 0193     str      r3, [sp, #4]                
+01013392: 5346     mov      r3, sl                      
+01013394: 0846     mov      r0, r1                      
+01013396: 0096     str      r6, [sp]                    
+01013398: 69f5f0da bl       #0x57c97c                     ; sub_57c97c
+0101339c: 0146     mov      r1, r0                      
+0101339e: 3868     ldr      r0, [r7]                    
+010133a0: 40f21b33 movw     r3, #0x31b                  
+010133a4: 0093     str      r3, [sp]                    
+010133a6: 4346     mov      r3, r8                      
+010133a8: 2a46     mov      r2, r5                      
+010133aa: 1ff72dd7 bl       #0x333208                     ; sub_333208
+010133ae: 002c     cmp      r4, #0                      
+010133b0: 0fda     bge      #0x10133d2                  
+010133b2: 3b6b     ldr      r3, [r7, #0x30]             
+010133b4: 0394     str      r4, [sp, #0xc]              
+010133b6: d7f8d440 ldr.w    r4, [r7, #0xd4]             
+010133ba: 0293     str      r3, [sp, #8]                
+010133bc: d7f8d030 ldr.w    r3, [r7, #0xd0]             
+010133c0: 2946     mov      r1, r5                      
+010133c2: 08f14800 add.w    r0, r8, #0x48               
+010133c6: 1a46     mov      r2, r3                      
+010133c8: 0196     str      r6, [sp, #4]                
+010133ca: 0094     str      r4, [sp]                    
+010133cc: 7ff43ad6 bl       #0x93044                      ; sub_93044
+010133d0: 01e0     b        #0x10133d6                    ; sub_10133d6
+010133d2: d7f8d440 ldr.w    r4, [r7, #0xd4]             
+010133d6: 7b68     ldr      r3, [r7, #4]                
+010133d8: 17f16800 adds.w   r0, r7, #0x68               
+010133dc: 2a46     mov      r2, r5                      
+010133de: 0193     str      r3, [sp, #4]                
+010133e0: d7f8d030 ldr.w    r3, [r7, #0xd0]             
+010133e4: 08f1a001 add.w    r1, r8, #0xa0               
+010133e8: 0093     str      r3, [sp]                    
+010133ea: 01f4b1f3 bl       #0x814b50                     ; sub_814b50
+010133ee: 0146     mov      r1, r0                      
+010133f0: 3868     ldr      r0, [r7]                    
+010133f2: ebf717fc bl       #0xffec24                     ; sub_ffec24
+010133f6: b86e     ldr      r0, [r7, #0x68]             
+010133f8: 28b1     cbz      r0, #0x1013406              
+010133fa: fb6e     ldr      r3, [r7, #0x6c]             
+010133fc: 1bb1     cbz      r3, #0x1013406              
+010133fe: 17f18001 adds.w   r1, r7, #0x80               
+01013402: 1ff75bd6 bl       #0x3330bc                     ; sub_3330bc
+01013406: 3b6b     ldr      r3, [r7, #0x30]             
+01013408: 7c66     str      r4, [r7, #0x64]             
+0101340a: d9f80040 ldr.w    r4, [sb]                    
+0101340e: 3b65     str      r3, [r7, #0x50]             
+01013410: 0a23     movs     r3, #0xa                    
+01013412: 7b65     str      r3, [r7, #0x54]             
+01013414: 3968     ldr      r1, [r7]                    
+01013416: e469     ldr      r4, [r4, #0x1c]             
+01013418: 0023     movs     r3, #0                      
+0101341a: c7e91636 strd     r3, r6, [r7, #0x58]         
+0101341e: 3b66     str      r3, [r7, #0x60]             
+01013420: bb60     str      r3, [r7, #8]                
+01013422: 17f10803 adds.w   r3, r7, #8                  
+01013426: 17f15002 adds.w   r2, r7, #0x50               
+0101342a: 4846     mov      r0, sb                      
+0101342c: a047     blx      r4                          
+0101342e: 0028     cmp      r0, #0                      
+01013430: 05da     bge      #0x101343e                  
+01013432: 0246     mov      r2, r0                      
+01013434: 08f1c000 add.w    r0, r8, #0xc0               
+01013438: 2946     mov      r1, r5                      
+0101343a: 7ff403d6 bl       #0x93044                      ; sub_93044
+0101343e: 7b68     ldr      r3, [r7, #4]                
+01013440: 42f60061 movw     r1, #0x2e00                   ; -> 0x12672e00 str "TextureCubemapArray-SRV-%d-%dx%dx%d"
+01013444: c1f26721 movt     r1, #0x1267                 
+01013448: 17f16800 adds.w   r0, r7, #0x68               
+0101344c: 0193     str      r3, [sp, #4]                
+0101344e: d7f8d030 ldr.w    r3, [r7, #0xd0]             
+01013452: 2a46     mov      r2, r5                      
+01013454: 0093     str      r3, [sp]                    
+01013456: 01f47bf3 bl       #0x814b50                     ; sub_814b50
+0101345a: 0146     mov      r1, r0                      
+0101345c: b868     ldr      r0, [r7, #8]                
+0101345e: ebf7e1fb bl       #0xffec24                     ; sub_ffec24
+01013462: b86e     ldr      r0, [r7, #0x68]             
+01013464: 28b1     cbz      r0, #0x1013472              
+01013466: fb6e     ldr      r3, [r7, #0x6c]             
+01013468: 1bb1     cbz      r3, #0x1013472              
+0101346a: 17f18001 adds.w   r1, r7, #0x80               
+0101346e: 1ff725d6 bl       #0x3330bc                     ; sub_3330bc
+01013472: b968     ldr      r1, [r7, #8]                
+01013474: 3868     ldr      r0, [r7]                    
+01013476: 0023     movs     r3, #0                      
+01013478: 0022     movs     r2, #0                      
+0101347a: 0193     str      r3, [sp, #4]                
+0101347c: cdf800a0 str.w    sl, [sp]                    
+01013480: f9f7a6fe bl       #0x100d1d0                    ; sub_100d1d0
+01013484: 0246     mov      r2, r0                      
+01013486: 40f60000 movw     r0, #0x800                    ; -> 0x12b20800 .data+0x1d0800
+0101348a: c1f2b220 movt     r0, #0x12b2                 
+0101348e: 2946     mov      r1, r5                      
+01013490: c0f514d8 bl       #0x5d34bc                     ; sub_5d34bc
+01013494: d7f8d0e0 ldr.w    lr, [r7, #0xd0]             
+01013498: 3968     ldr      r1, [r7]                    
+0101349a: d7f80c80 ldr.w    r8, [r7, #0xc]              
+0101349e: 01e0     b        #0x10134a4                    ; sub_10134a4
+010134a0: 1968     ldr      r1, [r3]                    
+010134a2: 3960     str      r1, [r7]                    
+010134a4: c1b3     cbz      r1, #0x1013518              
+010134a6: 7b68     ldr      r3, [r7, #4]                
+010134a8: 002b     cmp      r3, #0                      
+010134aa: 35dd     ble      #0x1013518                  
+010134ac: 3a69     ldr      r2, [r7, #0x10]             
+010134ae: 4ff00009 mov.w    sb, #0                      
+010134b2: 0025     movs     r5, #0                      
+010134b4: 002e     cmp      r6, #0                      
+010134b6: 7446     mov      r4, lr                      
+010134b8: 25dd     ble      #0x1013506                  
+010134ba: 09eb0503 add.w    r3, sb, r5                  
+010134be: 0593     str      r3, [sp, #0x14]             
+010134c0: 0023     movs     r3, #0                      
+010134c2: 0493     str      r3, [sp, #0x10]             
+010134c4: 7b69     ldr      r3, [r7, #0x14]             
+010134c6: f869     ldr      r0, [r7, #0x1c]             
+010134c8: 0291     str      r1, [sp, #8]                
+010134ca: 5a68     ldr      r2, [r3, #4]                
+010134cc: bb69     ldr      r3, [r7, #0x18]             
+010134ce: 4146     mov      r1, r8                      
+010134d0: 0392     str      r2, [sp, #0xc]              
+010134d2: 5246     mov      r2, sl                      
+010134d4: 0194     str      r4, [sp, #4]                
+010134d6: 0094     str      r4, [sp]                    
+010134d8: fef7a0fc bl       #0x1011e1c                    ; sub_1011e1c
+010134dc: 5246     mov      r2, sl                      
+010134de: 2146     mov      r1, r4                      
+010134e0: 2046     mov      r0, r4                      
+010134e2: 69f5c5d9 bl       #0x57c870                     ; sub_57c870
+010134e6: 022c     cmp      r4, #2                      
+010134e8: b8bf     it       lt                          
+010134ea: 0124     movlt    r4, #1                      
+010134ec: 8044     add      r8, r0                      
+010134ee: 02db     blt      #0x10134f6                  
+010134f0: 04ebd473 add.w    r3, r4, r4, lsr #31         
+010134f4: 5c10     asrs     r4, r3, #1                  
+010134f6: 6d1c     adds     r5, r5, #1                  
+010134f8: 3968     ldr      r1, [r7]                    
+010134fa: b542     cmp      r5, r6                      
+010134fc: dddb     blt      #0x10134ba                  
+010134fe: 7b68     ldr      r3, [r7, #4]                
+01013500: d7f8d0e0 ldr.w    lr, [r7, #0xd0]             
+01013504: 3a69     ldr      r2, [r7, #0x10]             
+01013506: d7f80c80 ldr.w    r8, [r7, #0xc]              
+0101350a: 5b1e     subs     r3, r3, #1                  
+0101350c: b144     add      sb, r6                      
+0101350e: 9044     add      r8, r2                      
+01013510: c7f80c80 str.w    r8, [r7, #0xc]              
+01013514: 7b60     str      r3, [r7, #4]                
+01013516: ccd1     bne      #0x10134b2                  
+01013518: 2db0     add      sp, #0xb4                   
+0101351a: bde8f00f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp}
+0101351e: 5df814fb ldr      pc, [sp], #0x14             

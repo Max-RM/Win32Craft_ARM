@@ -1,0 +1,10 @@
+﻿device HW hr=0x00000000 FL=0x9100 (no debug layer, SINGLETHREADED like Unity)
+  QI ID3D11Device  hr=0x00000000 ptr=000001EDF3239470 same-object=1 same-vtbl=1
+  QI ID3D11Device1 hr=0x00000000 ptr=000001EDF3239470 same-object=1 same-vtbl=1
+  QI ID3D11Device2 hr=0x00000000 ptr=000001EDF3239470 same-object=1 same-vtbl=1
+  QI ID3D11Device3 hr=0x00000000 ptr=000001EDF3239470 same-object=1 same-vtbl=1
+  QI ID3D11Device4 hr=0x00000000 ptr=000001EDF3239470 same-object=1 same-vtbl=1
+  QI ID3D11Device5 hr=0x00000000 ptr=000001EDF3239470 same-object=1 same-vtbl=1
+  device vtable: 174 consecutive entries point into d3d11.dll (ID3D11Device=43, Device1=50, Device2=54, Device3=65, Device4=67, Device5=69)
+  vtable swapped (54 slots copied)
+  QI IDXGIDevice through swapped vtable hr=0x00000000

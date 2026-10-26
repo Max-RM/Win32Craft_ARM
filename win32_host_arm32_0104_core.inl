@@ -72,6 +72,7 @@ extern int WINAPI MessageBoxA(HWND, LPCSTR, LPCSTR, UINT);
 #define X104_E_ILLEGAL_METHOD_CALL         ((HRESULT)0x8000000EL)
 #define X104_E_CHANGED_STATE               ((HRESULT)0x8000000CL)
 #define X104_E_NOT_IMPL                    ((HRESULT)0x80004001L)
+#define X104_E_BOUNDS                      ((HRESULT)0x8000000BL)
 /* private window messages (posted to x104.window from any thread, consumed by x104_ui_run_loop on the UI thread BEFORE DispatchMessage) */
 #define X104_WM_QUIT   (0x0400u + 0x104u)    /* wParam = exit code: leave x104_ui_run_loop.  Handled in x104_window_proc too (a nested modal loop dispatches it there) */
 #define X104_WM_WAKE   (0x0400u + 0x105u)    /* wake the loop: new queue item or timer change */
@@ -184,6 +185,73 @@ typedef struct X104State {
 } X104State;
 
 static X104State x104;
+
+/* ======================================================================================================================
+ * 1c. game profile: the x104 host serves more than one Windows Phone 8.1 C++/CX game.  Everything that names ONE game (identification, take-over call
+ *     site, window texts, which game-code patches exist, which XAML shape the game uses) lives in an X104Profile; the units ask x104_feat() instead of
+ *     assuming Minecraft.  Selected by x104_image_matches() (quiet, before the log exists) and kept outside `x104` (the bootstrap clears that struct).
+ * ====================================================================================================================== */
+#define X104_FEAT_MCPE_PATCHES   0x00000001u   /* Minecraft code/data patches by verified RVA: shader profile string, resolution float, AppPlatform/SoundSystemRT cells */
+#define X104_FEAT_IAT_FACTS      0x00000002u   /* the X104_RVA_IAT_* fallbacks are this exe's cells (other games: hook by name only, skip absent imports) */
+#define X104_FEAT_XAML_PAGE      0x00000004u   /* "DirectX App (XAML)" template: MainPage via IPageFactory, AppMain + ready flag, thread-pool render loop, the first SizeChanged
+                                                  raised by the host (R2), DispatcherTimer gate.  Without it (REDCON 1): SwapChainPanel built in code, frames from
+                                                  CompositionTarget.Rendering on the UI thread, resizes through CoreWindow.SizeChanged, "ready" = OnLaunched returned */
+
+typedef struct X104Profile {
+    const char *key;                     /* short id in log lines */
+    const char *title;                   /* "Minecraft PE 0.10.4.40" - log banner, failure message box */
+    const char *box_caption;             /* caption of the host's error message boxes */
+    const wchar_t *window_class;
+    const wchar_t *window_title;
+    DWORD size_of_image_patched;         /* the value the exe patcher writes (identification key) */
+    DWORD size_of_image_stock;           /* only for the "this exe was not patched" log line */
+    DWORD entry_rva;                     /* expected AddressOfEntryPoint (log check) */
+    WORD sections_patched;               /* expected section count of the patched exe (log check) */
+    DWORD callsite_rva;                  /* the CRT call the patcher rerouted to win32craft.dll!Win32Bootstrap */
+    BYTE callsite_bytes[4];              /* its patched encoding */
+    DWORD trampoline_rva;                /* where the patched call now goes (PIC thunk in .text padding; log text) */
+    DWORD winmain_wrapper_rva;           /* the game's WinMain thunk (12 bytes = ARM0104_STARTUP_FLOW_WINMAIN_THUNK_EXPECTED in every supported game) */
+    DWORD features;                      /* X104_FEAT_* */
+    const wchar_t *data_subdir;          /* default data root = %APPDATA%\<data_subdir> (ApplicationData.LocalFolder) */
+    const char *data_subdir_text;        /* the same for log lines */
+} X104Profile;
+
+static const X104Profile x104_profile_mcpe0104 = {
+    "mcpe0104", "Minecraft PE 0.10.4.40", "Minecraft PE 0.10.4 - Win32Craft", L"MCPE0104Win32", L"Win32Craft - Minecraft PE 0.10.4",
+    0x00E6F000u, 0x00E6E000u, 0x0020095Du, 7, 0x00200A72u, { 0x09, 0xf0, 0x77, 0xfc }, 0x0020A364u, 0x00203EFCu,
+    X104_FEAT_MCPE_PATCHES | X104_FEAT_IAT_FACTS | X104_FEAT_XAML_PAGE,
+    L"MinecraftPE\\0.10.4", "%APPDATA%\\MinecraftPE\\0.10.4"
+};
+
+/* REDCON 1 1.3.0.0 (Hexage): games_recon/redcon_*.md; values confirmed by tools/arm32-patcher.py --profile redcon */
+static const X104Profile x104_profile_redcon = {
+    "redcon", "REDCON 1 1.3.0.0", "REDCON 1 - Win32Craft", L"Win32CraftRedcon", L"Win32Craft - REDCON 1",
+    0x001E1000u, 0x001E0000u, 0x0013A445u, 6, 0x0013A55Au, { 0x06, 0xf0, 0xa9, 0xff }, 0x001414B0u, 0x0013A91Cu,
+    0,
+    L"Win32Craft\\Redcon", "%APPDATA%\\Win32Craft\\Redcon"
+};
+
+static const X104Profile *const x104_profiles[] = { &x104_profile_mcpe0104, &x104_profile_redcon };
+static const X104Profile *x104_profile = &x104_profile_mcpe0104;   /* the active game (set by x104_image_matches; the MCPE default keeps the PC harnesses unchanged) */
+
+#define x104_feat(flag)  ((x104_profile->features & (flag)) != 0)
+
+static const char *x104_profile_title(void)
+{
+    return x104_profile->title;
+}
+
+/* caption of the host's error message boxes */
+static const char *x104_profile_box_caption(void)
+{
+    return x104_profile->box_caption;
+}
+
+/* fallback rva for a by-name IAT hook: the MCPE fact when the profile owns those facts, else 0 = "hook by name only" */
+static DWORD x104_iat_fact(DWORD mcpe_rva)
+{
+    return x104_feat(X104_FEAT_IAT_FACTS) ? mcpe_rva : 0;
+}
 
 /* ======================================================================================================================
  * 2. logging  (the ONLY feedback channel of a device run: log generously, every failure path must name what failed)
@@ -1030,7 +1098,15 @@ static const struct { const wchar_t *class_name; int unit; } x104_class_owners[]
     { L"Windows.Web.Http.HttpRequestMessage",                       X104_UNIT_PLATFORM },
     { L"Windows.Web.Http.HttpMethod",                               X104_UNIT_PLATFORM },
     { L"Windows.Web.Http.HttpStringContent",                        X104_UNIT_PLATFORM },
-    { L"Windows.Web.Http.HttpClient",                               X104_UNIT_PLATFORM }
+    { L"Windows.Web.Http.HttpClient",                               X104_UNIT_PLATFORM },
+    /* REDCON 1 (never activated by Minecraft PE 0.10.4) */
+    { L"Windows.UI.Xaml.Controls.SwapChainPanel",                   X104_UNIT_PANEL },
+    { L"Windows.UI.Xaml.Media.CompositionTarget",                   X104_UNIT_APP },
+    { L"Windows.ApplicationModel.Core.CoreApplication",             X104_UNIT_APP },
+    { L"Windows.UI.ViewManagement.ApplicationView",                 X104_UNIT_APP },
+    { L"Windows.UI.Core.CoreWindowResizeManager",                   X104_UNIT_APP }
+    /* Windows.Globalization.ApplicationLanguages, Windows.Foundation.PropertyValue and Windows.System.Launcher are left to the real runtime on purpose:
+     * they work in a desktop process (logged as "X104 WinRT FALLBACK") */
 };
 
 /* Each unit file defines its hook; it returns S_OK (an AddRef'd interface for `iid` in *out), E_NOINTERFACE (class known, IID not),
@@ -1166,11 +1242,14 @@ static BOOL x104_game_client_has_holder(void)
     return client && x104_read_u32(client + X104_CLIENT_HOLDER, &value) && value != 0;
 }
 
-/* AppMain+0x3C (isReady): set by the init job after MinecraftClient::init returned */
+/* AppMain+0x3C (isReady): set by the init job after MinecraftClient::init returned.  A game without the XAML-page template has no init job: it is ready once
+ * OnLaunched returned (REDCON 1 creates its engine, device and swap chain synchronously inside OnLaunched). */
 static BOOL x104_game_is_ready(void)
 {
     BYTE value;
-    BYTE *app = x104_game_appmain();
+    BYTE *app;
+    if (!x104_feat(X104_FEAT_XAML_PAGE)) return x104.f_launched != 0;
+    app = x104_game_appmain();
     return app && x104_read_u8(app + X104_APPMAIN_READY, &value) && value != 0;
 }
 
@@ -1294,8 +1373,19 @@ X104_VTBL(x104_vt_uielement, IUIElement) = {
     X104_SLOT(IUIElement, put_Visibility, x104_ui_put_visibility),
     X104_SLOT(IUIElement, get_RenderSize, x104_ui_get_render_size)
 };
+/* put_HorizontalAlignment / put_VerticalAlignment: REDCON 1 stretches its code-built SwapChainPanel (3 = Stretch); the host element always fills the window */
+static HRESULT X104_API x104_fe_put_alignment(void *self, int value)
+{
+    static volatile LONG logged;
+    X104_LOG_LIMITED(&logged, 4, "X104 element %s: put_Horizontal/VerticalAlignment(%d) accepted (no-op: the element always fills the client area)",
+                     X104_THIS(X104Element, self)->label ? X104_THIS(X104Element, self)->label : "?", value);
+    return S_OK;
+}
+
 X104_VTBL(x104_vt_frameworkelement, IFrameworkElement) = {
     X104_INSPECTABLE_SLOTS,
+    X104_SLOT(IFrameworkElement, put_HorizontalAlignment, x104_fe_put_alignment),
+    X104_SLOT(IFrameworkElement, put_VerticalAlignment, x104_fe_put_alignment),
     X104_SLOT(IFrameworkElement, get_ActualWidth, x104_fe_get_actual_width),
     X104_SLOT(IFrameworkElement, get_ActualHeight, x104_fe_get_actual_height),
     X104_SLOT(IFrameworkElement, add_SizeChanged, x104_fe_add_size_changed),
@@ -1535,6 +1625,8 @@ static void x104_app_ui_tick(void);                          /* UI: every loop p
 static BOOL x104_app_window_message(HWND window, UINT message, WPARAM wparam, LPARAM lparam, LRESULT *result);
 static void x104_app_request_exit(int exit_code);            /* any: graceful shutdown (idempotent on f_exit_requested): Suspending only if the game is ready, x104_async_shutdown, x104_ui_quit */
 static BOOL x104_app_raise_back_pressed(void);               /* UI: BackPressed to the game's handler; TRUE = the game set Handled */
+static BOOL x104_app_rendering_active(void);                  /* any: a CompositionTarget.Rendering handler is registered and the window shows (REDCON 1) */
+static unsigned x104_input_raise_core_size_changed(void);    /* UI: CoreWindow.SizeChanged to the game's handlers (REDCON 1 resizes through it); returns the count */
 static void x104_display_raise_dpi_changed(void);            /* UI */
 static void x104_display_raise_orientation_changed(void);    /* UI */
 static void x104_display_raise_contents_invalidated(void);   /* UI */

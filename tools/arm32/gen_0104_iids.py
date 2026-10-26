@@ -56,6 +56,10 @@ Windows.ApplicationModel.Store.ICurrentAppSimulatorWithConsumables Windows.Appli
 Windows.Networking.Connectivity.IConnectionProfile2
 Windows.Networking.Connectivity.INetworkInformationStatics Windows.Networking.Connectivity.IConnectionProfile
 Windows.ApplicationModel.Core.ICoreApplication
+Windows.UI.Xaml.Controls.ISwapChainPanelFactory Windows.UI.Xaml.Media.ICompositionTargetStatics
+Windows.UI.ViewManagement.IApplicationViewStatics2 Windows.UI.ViewManagement.IApplicationView2
+Windows.UI.Core.ICoreWindowResizeManagerStatics Windows.UI.Core.ICoreWindowResizeManager Windows.UI.Core.ICharacterReceivedEventArgs
+Windows.ApplicationModel.Store.IProductLicense
 """.split()
 
 # (interface short name, method, expected slot)  -- slots taken from the verified facts (startup_flow 2a / input_text 3 / platform_services)
@@ -103,6 +107,17 @@ CHECKS = [
     ("IMemoryManagerStatics", "get_AppMemoryUsage", 6), ("IMemoryManagerStatics", "get_AppMemoryUsageLimit", 7),
     ("INetworkInformationStatics", "GetInternetConnectionProfile", 7),
     ("ICoreCursorFactory", "CreateCursor", 6), ("ICoreWindowStatic", "GetForCurrentThread", 6),
+    # REDCON 1 (games_recon/redcon_redcon-startup.md F3-F9, redcon-platform F9/F11: slots read from the game's call sites)
+    ("ISwapChainPanelFactory", "CreateInstance", 6), ("ICompositionTargetStatics", "add_Rendering", 6), ("ICompositionTargetStatics", "remove_Rendering", 7),
+    ("IApplicationViewStatics2", "GetForCurrentView", 6), ("IApplicationView2", "put_SuppressSystemOverlays", 7),
+    ("ICoreWindowResizeManagerStatics", "GetForCurrentView", 6), ("ICoreWindowResizeManager", "NotifyLayoutCompleted", 6),
+    ("ICharacterReceivedEventArgs", "get_KeyCode", 6), ("ICoreWindow", "add_Activated", 24), ("ICoreWindow", "add_CharacterReceived", 28),
+    ("ICoreWindow", "add_Closed", 30), ("ICoreWindow", "add_PointerCaptureLost", 38), ("ICoreWindow", "add_SizeChanged", 54),
+    ("IFrameworkElement", "put_HorizontalAlignment", 28), ("IFrameworkElement", "put_VerticalAlignment", 30),
+    ("ICoreApplication", "add_Suspending", 7), ("ICoreApplication", "add_Resuming", 9), ("IDisplayInformation2", "get_RawPixelsPerViewPixel", 6),
+    ("IApplicationData", "get_RoamingSettings", 11), ("ILicenseInformation", "get_ProductLicenses", 6), ("IProductLicense", "get_IsActive", 7),
+    ("INetworkInformationStatics", "GetConnectionProfiles", 6), ("INetworkInformationStatics", "add_NetworkStatusChanged", 12),
+    ("ICurrentApp", "LoadListingInformationAsync", 11), ("ICurrentApp", "GetAppReceiptAsync", 12),
 ]
 
 PROLOGUE = r'''
@@ -164,6 +179,20 @@ typedef HRESULT (X104_API *X104_FN_IAsyncInfo_Close)(void *);
 typedef HRESULT (X104_API *X104_FN_ISwapChainPanelNative_SetSwapChain)(void *, void *);
 /* IWorkItemHandler / DispatchedHandler / event delegates are game objects: Invoke is ALWAYS vtable slot 3 (IUnknown-based delegates) */
 enum { X104_SLOT_DELEGATE_Invoke = 3 };
+/* Windows.Foundation.Collections IVectorView<T> / IMapView<K,V> (parameterised interfaces: the IID depends on T, so they are only handed out
+ * through typed out parameters that the game calls directly - REDCON 1: NetworkInformation.GetConnectionProfiles, ProductLicenses).  Element = pointer. */
+enum { X104_SLOT_IVectorView_GetAt = 6, X104_SLOT_IVectorView_get_Size = 7, X104_SLOT_IVectorView_IndexOf = 8, X104_SLOT_IVectorView_GetMany = 9,
+       X104_NSLOTS_IVectorView = 10,
+       X104_SLOT_IMapView_Lookup = 6, X104_SLOT_IMapView_get_Size = 7, X104_SLOT_IMapView_HasKey = 8, X104_SLOT_IMapView_Split = 9,
+       X104_NSLOTS_IMapView = 10 };
+typedef HRESULT (X104_API *X104_FN_IVectorView_GetAt)(void *, UINT32, void **);
+typedef HRESULT (X104_API *X104_FN_IVectorView_get_Size)(void *, UINT32 *);
+typedef HRESULT (X104_API *X104_FN_IVectorView_IndexOf)(void *, void *, UINT32 *, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IVectorView_GetMany)(void *, UINT32, UINT32, void **, UINT32 *);
+typedef HRESULT (X104_API *X104_FN_IMapView_Lookup)(void *, HSTRING, void **);
+typedef HRESULT (X104_API *X104_FN_IMapView_get_Size)(void *, UINT32 *);
+typedef HRESULT (X104_API *X104_FN_IMapView_HasKey)(void *, HSTRING, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IMapView_Split)(void *, void **, void **);
 '''
 
 

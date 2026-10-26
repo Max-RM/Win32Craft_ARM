@@ -764,6 +764,68 @@ for _name, _orig, _patched, _size, _off in (
         "provenance": "Microsoft.VCLibs.120.00.Phone 12.0.30113.0 (framework package, not inside the game appx)",
     })
 
+PROFILE_REDCON = {
+    "schema": 1,
+    "name": "redcon",
+    "status": COMPLETE,
+    "title": "REDCON 1 1.3.0.0 by Hexage (Windows Phone 8.1 C++/CX app, code-built SwapChainPanel, ARM32 Thumb-2)",
+    "source": "games_recon/redcon_redcon-reuse.md F3 (stock values measured, output layout predicted read-only) + "
+              "redcon_redcon-startup.md (call site 0x13A55A); same take-over as v0_10_4 (WinMain thunk bytes identical)",
+    "identify": {
+        "exe_names": ["Redcon.exe"],
+        "patched_exe_names": ["Win32Craft.Redcon-arm32.exe"],
+        "manifest": {"name": "Hexage.REDCON1", "version": "1.3.0.0", "arch": "arm",
+                     "executable": "Redcon.exe", "dependency": "Microsoft.VCLibs.120.00.Phone"},
+        "class_markers": ["Windows.UI.Xaml.Application"],
+    },
+    "exe": {
+        "file": "Redcon.exe",
+        "output_name": "Win32Craft.Redcon-arm32.exe",
+        "input": {
+            "sha256": "3aca126692e56183e2e70eb35a0b66018ee14ccef0c42c853e056bb4d17b5f74",
+            "size": 1941504, "machine": 0x1C4, "number_of_sections": 5,
+            "file_alignment": 0x200, "section_alignment": 0x1000, "image_base": 0x400000,
+            "size_of_image": 0x1E0000, "entry": 0x13A445, "characteristics": 0x0122,
+            "os_version": [6, 2], "subsystem_version": [6, 2], "dll_characteristics": 0x9140,
+            "checksum": 0, "import_directory": [0x1B816C, 0x1A4], "import_descriptors": 20,
+            "sections": [
+                [".text", 0x1000, 0x1404B0, 0x400, 0x140600, 0x60000020],
+                [".rdata", 0x142000, 0x781F8, 0x140A00, 0x78200, 0x40000040],
+                [".data", 0x1BB000, 0xDE1C, 0x1B8C00, 0xBA00, 0xC0000040],
+                [".pdata", 0x1C9000, 0xC3E8, 0x1C4600, 0xC400, 0x40000040],
+                [".reloc", 0x1D6000, 0x94B0, 0x1D0A00, 0x9600, 0x42000040],
+            ],
+        },
+        "dll_characteristics": {"expect": 0x9140, "clear": 0x1000},
+        "renames": [],
+        "redirects": {"required": [], "optional": []},
+        "byte_patches": [],   # no shader-profile string: the game's own level list ends in 9_1, shaders are level_9
+        "new_section": {
+            "name": ".d3imp", "characteristics": 0xC0000040,   # initialized data, R+W, NOT executable
+            "expect_rva": 0x1E0000, "expect_raw_offset": 0x1DA000, "expect_raw_size": 0x200,
+            "expect_vsize": 0x1EC, "expect_size_of_image": 0x1E1000,
+        },
+        "import_add": {"dll": "win32craft.dll", "exports": ["Win32Bootstrap"]},
+        "bootstrap": {
+            "export": "Win32Bootstrap",
+            "call_site": {"rva": 0x13A55A, "kind": "bl", "old": "00f0dff9", "old_target": 0x13A91C,
+                          "new": "06f0a9ff"},
+            "trampoline": {"kind": "pic_ldr_ip", "section": ".text", "rva": 0x1414B0, "slack": 0x150,
+                           "expect_literal": 0x9ED2C},
+        },
+        "checksum": "keep",
+        "base_relocs": "keep",
+        "expected_outputs": [],   # record after the first device run proves the patched exe
+    },
+    "companions": [dict(c) for c in PROFILE_0104["companions"]],   # the same three VC120 Phone DLLs
+    "companion_sources": PROFILE_0104["companion_sources"],
+    "ship_notes": [
+        "win32craft.dll (shared host, exports Win32Bootstrap) next to the exe",
+        "res\\ (game data) next to the exe; ASCII-only, short install path (the game copies it into a 256-byte buffer)",
+        "Windows RT 8.1: UCRT overlay + api-set shims as for v0_10_4; run loadcheck first",
+    ],
+}
+
 PROFILE_128 = {
     "schema": 1,
     "name": "v1_2_8",
@@ -895,6 +957,7 @@ PROFILE_1_16_40 = {
 
 PROFILES: dict[str, dict] = {
     "v0_10_4": PROFILE_0104,
+    "redcon": PROFILE_REDCON,
     "v1_2_8": PROFILE_128,
     "v1_16_40": PROFILE_1_16_40,
 }

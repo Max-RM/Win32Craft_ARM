@@ -1,0 +1,335 @@
+function sub_8c2588  [008c2588..008c295a) len=978
+008c2588: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+008c258c: 0df11c0b add.w    fp, sp, #0x1c               
+008c2590: 9bb0     sub      sp, #0x6c                   
+008c2592: 6f46     mov      r7, sp                      
+008c2594: 82b0     sub      sp, #8                      
+008c2596: 6ff00103 mvn      r3, #1                      
+008c259a: c7e90233 strd     r3, r3, [r7, #8]            
+008c259e: 40f21c43 movw     r3, #0x41c                    ; -> 0x12b2041c .data+0x1d041c
+008c25a2: c1f2b223 movt     r3, #0x12b2                 
+008c25a6: 0021     movs     r1, #0                      
+008c25a8: 1846     mov      r0, r3                      
+008c25aa: 7b60     str      r3, [r7, #4]                
+008c25ac: 51f614f9 bl       #0x7137d8                     ; sub_7137d8
+008c25b0: fdf73afa bl       #0x8bfa28                     ; sub_8bfa28
+008c25b4: 4ff2e86a movw     sl, #0xf6e8                   ; -> 0x12b1f6e8 .data+0x1cf6e8
+008c25b8: c1f2b12a movt     sl, #0x12b1                 
+008c25bc: 40f21878 movw     r8, #0x718                    ; -> 0x12b20718 .data+0x1d0718
+008c25c0: c1f2b228 movt     r8, #0x12b2                 
+008c25c4: caf80800 str.w    r0, [sl, #8]                
+008c25c8: d8f80000 ldr.w    r0, [r8]                    
+008c25cc: 38b9     cbnz     r0, #0x8c25de               
+008c25ce: 44f20c30 movw     r0, #0x430c                   ; -> 0x11f7430c str "beforeInitializeEngineGraphics.Invoke"
+008c25d2: c1f2f710 movt     r0, #0x11f7                 
+008c25d6: 4cf74ff4 bl       #0x40ee78                     ; sub_40ee78
+008c25da: c8f80000 str.w    r0, [r8]                    
+008c25de: 4cf73ff4 bl       #0x40ee60                     ; sub_40ee60
+008c25e2: 4df7c1f0 bl       #0x40f768                     ; sub_40f768
+008c25e6: 46f6d843 movw     r3, #0x6cd8                 
+008c25ea: c418     adds     r4, r0, r3                  
+008c25ec: d4f80036 ldr.w    r3, [r4, #0x600]            
+008c25f0: 0026     movs     r6, #0                      
+008c25f2: c4f80446 str.w    r4, [r4, #0x604]            
+008c25f6: 83b1     cbz      r3, #0x8c261a               
+008c25f8: 2546     mov      r5, r4                      
+008c25fa: 55f80c2b ldr      r2, [r5], #0xc              
+008c25fe: 3ab1     cbz      r2, #0x8c2610               
+008c2600: 15f8043c ldrb     r3, [r5, #-0x4]             
+008c2604: 0bb9     cbnz     r3, #0x8c260a               
+008c2606: 9047     blx      r2                          
+008c2608: 02e0     b        #0x8c2610                     ; sub_8c2610
+008c260a: 55f8080c ldr      r0, [r5, #-0x8]             
+008c260e: 9047     blx      r2                          
+008c2610: d4f80036 ldr.w    r3, [r4, #0x600]            
+008c2614: 761c     adds     r6, r6, #1                  
+008c2616: 9e42     cmp      r6, r3                      
+008c2618: efd3     blo      #0x8c25fa                   
+008c261a: 94f80836 ldrb.w   r3, [r4, #0x608]            
+008c261e: 0026     movs     r6, #0                      
+008c2620: 3bb3     cbz      r3, #0x8c2672               
+008c2622: d4f80026 ldr.w    r2, [r4, #0x600]            
+008c2626: 0020     movs     r0, #0                      
+008c2628: 0ab3     cbz      r2, #0x8c266e               
+008c262a: 2546     mov      r5, r4                      
+008c262c: 2b68     ldr      r3, [r5]                    
+008c262e: c3b9     cbnz     r3, #0x8c2662               
+008c2630: 0146     mov      r1, r0                      
+008c2632: 9042     cmp      r0, r2                      
+008c2634: 0ed2     bhs      #0x8c2654                   
+008c2636: 2a46     mov      r2, r5                      
+008c2638: d368     ldr      r3, [r2, #0xc]              
+008c263a: 491c     adds     r1, r1, #1                  
+008c263c: 42f80c3b str      r3, [r2], #0xc              
+008c2640: 5368     ldr      r3, [r2, #4]                
+008c2642: 42f8083c str      r3, [r2, #-0x8]             
+008c2646: 137a     ldrb     r3, [r2, #8]                
+008c2648: 02f8043c strb     r3, [r2, #-0x4]             
+008c264c: d4f80036 ldr.w    r3, [r4, #0x600]            
+008c2650: 9942     cmp      r1, r3                      
+008c2652: f1d3     blo      #0x8c2638                   
+008c2654: d4f80036 ldr.w    r3, [r4, #0x600]            
+008c2658: 401e     subs     r0, r0, #1                  
+008c265a: 0c3d     subs     r5, #0xc                    
+008c265c: 5b1e     subs     r3, r3, #1                  
+008c265e: c4f80036 str.w    r3, [r4, #0x600]            
+008c2662: d4f80026 ldr.w    r2, [r4, #0x600]            
+008c2666: 401c     adds     r0, r0, #1                  
+008c2668: 0c35     adds     r5, #0xc                    
+008c266a: 9042     cmp      r0, r2                      
+008c266c: ded3     blo      #0x8c262c                   
+008c266e: 84f80866 strb.w   r6, [r4, #0x608]            
+008c2672: c4f80466 str.w    r6, [r4, #0x604]            
+008c2676: d8f80000 ldr.w    r0, [r8]                    
+008c267a: 20b9     cbnz     r0, #0x8c2686               
+008c267c: 0020     movs     r0, #0                      
+008c267e: 4cf7fbf3 bl       #0x40ee78                     ; sub_40ee78
+008c2682: c8f80000 str.w    r0, [r8]                    
+008c2686: 4df74bf0 bl       #0x40f720                     ; sub_40f720
+008c268a: bff7d9dd bl       #0x82240                      ; CacherReadTests::DirectMemoryCache::vf1
+008c268e: 44f60005 movw     r5, #0x4800                   ; -> 0x12994800 .data+0x44800
+008c2692: c1f29925 movt     r5, #0x1299                 
+008c2696: 4ff2f069 movw     sb, #0xf6f0                   ; -> 0x12b1f6f0 .data+0x1cf6f0
+008c269a: c1f2b129 movt     sb, #0x12b1                 
+008c269e: 2b6e     ldr      r3, [r5, #0x60]             
+008c26a0: 172b     cmp      r3, #0x17                   
+008c26a2: 00f29280 bhi.w    #0x8c27ca                   
+008c26a6: 55f82310 ldr.w    r1, [r5, r3, lsl #2]        
+008c26aa: 44f23430 movw     r0, #0x4334                   ; -> 0x11f74334 str "Forcing GfxDevice: %s\n"
+008c26ae: c1f2f710 movt     r0, #0x11f7                 
+008c26b2: d0f7c7dc bl       #0x93044                      ; sub_93044
+008c26b6: 0ef6e3fa bl       #0x6d0c80                     ; sub_6d0c80
+008c26ba: 2c6e     ldr      r4, [r5, #0x60]             
+008c26bc: 042c     cmp      r4, #4                      
+008c26be: 7ed0     beq      #0x8c27be                   
+008c26c0: d0f8f080 ldr.w    r8, [r0, #0xf0]             
+008c26c4: d0f80031 ldr.w    r3, [r0, #0x100]            
+008c26c8: 3a46     mov      r2, r7                      
+008c26ca: 4046     mov      r0, r8                      
+008c26cc: 08eb8306 add.w    r6, r8, r3, lsl #2          
+008c26d0: 3146     mov      r1, r6                      
+008c26d2: 3c60     str      r4, [r7]                    
+008c26d4: 7bf62cf5 bl       #0x33e130                     ; sub_33e130
+008c26d8: b042     cmp      r0, r6                      
+008c26da: 70d1     bne      #0x8c27be                   
+008c26dc: 122c     cmp      r4, #0x12                   
+008c26de: 08d1     bne      #0x8c26f2                   
+008c26e0: 0223     movs     r3, #2                      
+008c26e2: 3a46     mov      r2, r7                      
+008c26e4: 3146     mov      r1, r6                      
+008c26e6: 4046     mov      r0, r8                      
+008c26e8: 3b60     str      r3, [r7]                    
+008c26ea: 7bf621f5 bl       #0x33e130                     ; sub_33e130
+008c26ee: b042     cmp      r0, r6                      
+008c26f0: 65d1     bne      #0x8c27be                   
+008c26f2: 172c     cmp      r4, #0x17                   
+008c26f4: 02d8     bhi      #0x8c26fc                   
+008c26f6: 55f82420 ldr.w    r2, [r5, r4, lsl #2]        
+008c26fa: 03e0     b        #0x8c2704                     ; sub_8c2704
+008c26fc: 44f69c62 movw     r2, #0x4e9c                   ; -> 0x11f74e9c str "Unknown device type"
+008c2700: c1f2f712 movt     r2, #0x11f7                 
+008c2704: 44f2c831 movw     r1, #0x43c8                   ; -> 0x11f743c8 str "Forced GfxDevice '%s' was not built from editor, shaders wil"
+008c2708: c1f2f711 movt     r1, #0x11f7                 
+008c270c: 17f11000 adds.w   r0, r7, #0x10               
+008c2710: 52f71efa bl       #0x814b50                     ; sub_814b50
+008c2714: 43f60803 movw     r3, #0x3808                   ; -> 0x11733808 .rdata+0x1c808
+008c2718: c1f27313 movt     r3, #0x1173                 
+008c271c: c7e90f33 strd     r3, r3, [r7, #0x3c]         
+008c2720: 7b64     str      r3, [r7, #0x44]             
+008c2722: 0123     movs     r3, #1                      
+008c2724: 87f86430 strb.w   r3, [r7, #0x64]             
+008c2728: 0368     ldr      r3, [r0]                    
+008c272a: 03b9     cbnz     r3, #0x8c272e               
+008c272c: 031d     adds     r3, r0, #4                  
+008c272e: bb63     str      r3, [r7, #0x38]             
+008c2730: 0023     movs     r3, #0                      
+008c2732: bb64     str      r3, [r7, #0x48]             
+008c2734: 44f24c33 movw     r3, #0x434c                   ; -> 0x11f7434c str "C:\buildslave\unity\build\Runtime/GfxDevice/GfxDeviceSetup.c"
+008c2738: c1f2f713 movt     r3, #0x11f7                 
+008c273c: 17f13800 adds.w   r0, r7, #0x38               
+008c2740: fb64     str      r3, [r7, #0x4c]             
+008c2742: 40f25a23 movw     r3, #0x25a                  
+008c2746: 3b65     str      r3, [r7, #0x50]             
+008c2748: 0123     movs     r3, #1                      
+008c274a: 7b65     str      r3, [r7, #0x54]             
+008c274c: 0023     movs     r3, #0                      
+008c274e: c7e91633 strd     r3, r3, [r7, #0x58]         
+008c2752: 3b66     str      r3, [r7, #0x60]             
+008c2754: cff75cda bl       #0x91c10                      ; sub_91c10
+008c2758: 3869     ldr      r0, [r7, #0x10]             
+008c275a: 28b1     cbz      r0, #0x8c2768               
+008c275c: 7b69     ldr      r3, [r7, #0x14]             
+008c275e: 1bb1     cbz      r3, #0x8c2768               
+008c2760: 17f12801 adds.w   r1, r7, #0x28               
+008c2764: 70f6aaf4 bl       #0x3330bc                     ; sub_3330bc
+008c2768: 4cf6d074 movw     r4, #0xcfd0                   ; -> 0x1298cfd0 .data+0x3cfd0
+008c276c: c1f29824 movt     r4, #0x1298                 
+008c2770: 0023     movs     r3, #0                      
+008c2772: 3b61     str      r3, [r7, #0x10]             
+008c2774: 7b62     str      r3, [r7, #0x24]             
+008c2776: 0ecc     ldm      r4!, {r1, r2, r3}           
+008c2778: 17f12800 adds.w   r0, r7, #0x28               
+008c277c: 0ec0     stm      r0!, {r1, r2, r3}           
+008c277e: 0023     movs     r3, #0                      
+008c2780: 3b75     strb     r3, [r7, #0x14]             
+008c2782: 44f27421 movw     r1, #0x4274                   ; -> 0x11f74274 str "force-gfx-without-build"
+008c2786: c1f2f711 movt     r1, #0x11f7                 
+008c278a: 17f11000 adds.w   r0, r7, #0x10               
+008c278e: 1722     movs     r2, #0x17                   
+008c2790: bdf7f8dd bl       #0x80384                      ; sub_80384
+008c2794: 17f11000 adds.w   r0, r7, #0x10               
+008c2798: 0af7f4fd bl       #0x7cd384                     ; sub_7cd384
+008c279c: 0028     cmp      r0, #0                      
+008c279e: 08bf     it       eq                          
+008c27a0: 0124     moveq    r4, #1                      
+008c27a2: 18bf     it       ne                          
+008c27a4: 0024     movne    r4, #0                      
+008c27a6: 3869     ldr      r0, [r7, #0x10]             
+008c27a8: 28b1     cbz      r0, #0x8c27b6               
+008c27aa: 7b69     ldr      r3, [r7, #0x14]             
+008c27ac: 1bb1     cbz      r3, #0x8c27b6               
+008c27ae: 17f12801 adds.w   r1, r7, #0x28               
+008c27b2: 70f683f4 bl       #0x3330bc                     ; sub_3330bc
+008c27b6: 0cb1     cbz      r4, #0x8c27bc               
+008c27b8: 0024     movs     r4, #0                      
+008c27ba: c4e0     b        #0x8c2946                     ; sub_8c2946
+008c27bc: 2c6e     ldr      r4, [r5, #0x60]             
+008c27be: 0021     movs     r1, #0                      
+008c27c0: 2046     mov      r0, r4                      
+008c27c2: fdf799fe bl       #0x8c04f8                     ; sub_8c04f8
+008c27c6: 0446     mov      r4, r0                      
+008c27c8: 5cbb     cbnz     r4, #0x8c2822               
+008c27ca: 0ef659fa bl       #0x6d0c80                     ; sub_6d0c80
+008c27ce: 0646     mov      r6, r0                      
+008c27d0: 8eb1     cbz      r6, #0x8c27f6               
+008c27d2: d0f80031 ldr.w    r3, [r0, #0x100]            
+008c27d6: 0025     movs     r5, #0                      
+008c27d8: 6bb1     cbz      r3, #0x8c27f6               
+008c27da: d6f8f030 ldr.w    r3, [r6, #0xf0]             
+008c27de: 0021     movs     r1, #0                      
+008c27e0: 53f82500 ldr.w    r0, [r3, r5, lsl #2]        
+008c27e4: fdf788fe bl       #0x8c04f8                     ; sub_8c04f8
+008c27e8: 0446     mov      r4, r0                      
+008c27ea: d4b9     cbnz     r4, #0x8c2822               
+008c27ec: d6f80031 ldr.w    r3, [r6, #0x100]            
+008c27f0: 6d1c     adds     r5, r5, #1                  
+008c27f2: 9d42     cmp      r5, r3                      
+008c27f4: f1d3     blo      #0x8c27da                   
+008c27f6: d9f80050 ldr.w    r5, [sb]                    
+008c27fa: 042d     cmp      r5, #4                      
+008c27fc: 2b46     mov      r3, r5                      
+008c27fe: 08bf     it       eq                          
+008c2800: 0323     moveq    r3, #3                      
+008c2802: 0021     movs     r1, #0                      
+008c2804: 0220     movs     r0, #2                      
+008c2806: caf80830 str.w    r3, [sl, #8]                
+008c280a: 54f3cdf4 bl       #0x10171a8                    ; sub_10171a8
+008c280e: 0446     mov      r4, r0                      
+008c2810: 3cb9     cbnz     r4, #0x8c2822               
+008c2812: 44f21840 movw     r0, #0x4418                   ; -> 0x11f74418 str "Failed to initialize Direct3D. At least DirectX 11 feature l"
+008c2816: c1f2f710 movt     r0, #0x11f7                 
+008c281a: caf80850 str.w    r5, [sl, #8]                
+008c281e: 78f013fe bl       #0x93b448                     ; sub_93b448
+008c2822: 2368     ldr      r3, [r4]                    
+008c2824: 2046     mov      r0, r4                      
+008c2826: d3f84c34 ldr.w    r3, [r3, #0x44c]            
+008c282a: 9847     blx      r3                          
+008c282c: 40f20c45 movw     r5, #0x40c                    ; -> 0x12b2040c .data+0x1d040c
+008c2830: c1f2b225 movt     r5, #0x12b2                 
+008c2834: 42f6cc16 movw     r6, #0x29cc                 
+008c2838: a051     str      r0, [r4, r6]                
+008c283a: d5e90001 ldrd     r0, r1, [r5]                
+008c283e: 9ef68df2 bl       #0x360d5c                     ; sub_360d5c
+008c2842: 08b9     cbnz     r0, #0x8c2848               
+008c2844: ad68     ldr      r5, [r5, #8]                
+008c2846: 0be0     b        #0x8c2860                     ; sub_8c2860
+008c2848: d5e90001 ldrd     r0, r1, [r5]                
+008c284c: 0022     movs     r2, #0                      
+008c284e: 9ef605f2 bl       #0x360c5c                     ; sub_360c5c
+008c2852: aa68     ldr      r2, [r5, #8]                
+008c2854: 0146     mov      r1, r0                      
+008c2856: 05f10c00 add.w    r0, r5, #0xc                
+008c285a: 9ef6a1f4 bl       #0x3611a0                     ; ArchiveFileSystem::vf18
+008c285e: 0546     mov      r5, r0                      
+008c2860: 3db3     cbz      r5, #0x8c28b2               
+008c2862: 44f2c401 movw     r1, #0x40c4                   ; -> 0x11f740c4 str "end-of-frame"
+008c2866: c1f2f711 movt     r1, #0x11f7                 
+008c286a: 2846     mov      r0, r5                      
+008c286c: 5ef7cefc bl       #0x82120c                     ; sub_82120c
+008c2870: 10b9     cbnz     r0, #0x8c2878               
+008c2872: 0025     movs     r5, #0                      
+008c2874: a551     str      r5, [r4, r6]                
+008c2876: 1de0     b        #0x8c28b4                     ; sub_8c28b4
+008c2878: 43f63478 movw     r8, #0x3f34                   ; -> 0x11f73f34 str "after-script-update"
+008c287c: c1f2f718 movt     r8, #0x11f7                 
+008c2880: 2846     mov      r0, r5                      
+008c2882: 4146     mov      r1, r8                      
+008c2884: 5ef7c2fc bl       #0x82120c                     ; sub_82120c
+008c2888: 08b9     cbnz     r0, #0x8c288e               
+008c288a: 0123     movs     r3, #1                      
+008c288c: 10e0     b        #0x8c28b0                     ; sub_8c28b0
+008c288e: 08f18801 add.w    r1, r8, #0x88               
+008c2892: 2846     mov      r0, r5                      
+008c2894: 5ef7bafc bl       #0x82120c                     ; sub_82120c
+008c2898: 08b9     cbnz     r0, #0x8c289e               
+008c289a: 0223     movs     r3, #2                      
+008c289c: 08e0     b        #0x8c28b0                     ; sub_8c28b0
+008c289e: 44f2d401 movw     r1, #0x40d4                   ; -> 0x11f740d4 str "wait-for-present"
+008c28a2: c1f2f711 movt     r1, #0x11f7                 
+008c28a6: 2846     mov      r0, r5                      
+008c28a8: 5ef7b0fc bl       #0x82120c                     ; sub_82120c
+008c28ac: 08b9     cbnz     r0, #0x8c28b2               
+008c28ae: 0323     movs     r3, #3                      
+008c28b0: a351     str      r3, [r4, r6]                
+008c28b2: 0025     movs     r5, #0                      
+008c28b4: 4ff24073 movw     r3, #0xf740                   ; -> 0x12b1f740 .data+0x1cf740
+008c28b8: c1f2b123 movt     r3, #0x12b1                 
+008c28bc: 2146     mov      r1, r4                      
+008c28be: caf80040 str.w    r4, [sl]                    
+008c28c2: 1868     ldr      r0, [r3]                    
+008c28c4: 47f2bc43 movw     r3, #0x74bc                   ; -> 0x117174bc IAT api-ms-win-core-processthreads-l1-1-0.dll!TlsSetValue
+008c28c8: c1f27113 movt     r3, #0x1171                 
+008c28cc: 1b68     ldr      r3, [r3]                    
+008c28ce: 9847     blx      r3                          
+008c28d0: d9f80030 ldr.w    r3, [sb]                    
+008c28d4: 8bb9     cbnz     r3, #0x8c28fa               
+008c28d6: caf80440 str.w    r4, [sl, #4]                
+008c28da: c7f621fb bl       #0x789f20                     ; sub_789f20
+008c28de: 4ff66c53 movw     r3, #0xfd6c                   ; -> 0x12b1fd6c .data+0x1cfd6c
+008c28e2: c1f2b123 movt     r3, #0x12b1                 
+008c28e6: 1860     str      r0, [r3]                    
+008c28e8: daf80430 ldr.w    r3, [sl, #4]                
+008c28ec: 2bb1     cbz      r3, #0x8c28fa               
+008c28ee: 0146     mov      r1, r0                      
+008c28f0: 1846     mov      r0, r3                      
+008c28f2: 1b68     ldr      r3, [r3]                    
+008c28f4: d3f84434 ldr.w    r3, [r3, #0x444]            
+008c28f8: 9847     blx      r3                          
+008c28fa: b2f56dfa bl       #0x674dd8                     ; sub_674dd8
+008c28fe: 70f693fd bl       #0x733428                     ; sub_733428
+008c2902: 75f68dfa bl       #0x737e20                     ; sub_737e20
+008c2906: fcf437ff bl       #0x5bf778                     ; sub_5bf778
+008c290a: 70f68dfd bl       #0x733428                     ; sub_733428
+008c290e: 90f8d333 ldrb.w   r3, [r0, #0x3d3]            
+008c2912: 0bb1     cbz      r3, #0x8c2918               
+008c2914: c7f4dafd bl       #0x58a4cc                     ; sub_58a4cc
+008c2918: 0023     movs     r3, #0                      
+008c291a: da43     mvns     r2, r3                      
+008c291c: 0021     movs     r1, #0                      
+008c291e: 0020     movs     r0, #0                      
+008c2920: 0095     str      r5, [sp]                    
+008c2922: 01f5e1f8 bl       #0x5c3ae8                     ; sub_5c3ae8
+008c2926: 4cf67052 movw     r2, #0xcd70                   ; -> 0x12b0cd70 .data+0x1bcd70
+008c292a: c1f2b022 movt     r2, #0x12b0                 
+008c292e: 41f69133 movw     r3, #0x1b91                   ; -> 0x108c1b91 fn sub_8c1b90
+008c2932: c1f28c03 movt     r3, #0x108c                 
+008c2936: c2f8d032 str.w    r3, [r2, #0x2d0]            
+008c293a: 41f61133 movw     r3, #0x1b11                   ; -> 0x108c1b11 fn sub_8c1b10
+008c293e: c1f28c03 movt     r3, #0x108c                 
+008c2942: c2f80833 str.w    r3, [r2, #0x308]            
+008c2946: 40f21c40 movw     r0, #0x41c                    ; -> 0x12b2041c .data+0x1d041c
+008c294a: c1f2b220 movt     r0, #0x12b2                 
+008c294e: 51f65ff8 bl       #0x713a10                     ; sub_713a10
+008c2952: 2046     mov      r0, r4                      
+008c2954: 1db0     add      sp, #0x74                   
+008c2956: bde8f08f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, pc}

@@ -1,0 +1,80 @@
+function sub_100f468  [0100f468..0100f540) len=216
+0100f468: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+0100f46c: 0df11c0b add.w    fp, sp, #0x1c               
+0100f470: 91b0     sub      sp, #0x44                   
+0100f472: 6f46     mov      r7, sp                      
+0100f474: 82b0     sub      sp, #8                      
+0100f476: 6ff00103 mvn      r3, #1                      
+0100f47a: c7e90633 strd     r3, r3, [r7, #0x18]         
+0100f47e: 9246     mov      sl, r2                      
+0100f480: b960     str      r1, [r7, #8]                
+0100f482: 0ab9     cbnz     r2, #0x100f488              
+0100f484: 0020     movs     r0, #0                      
+0100f486: 58e0     b        #0x100f53a                    ; sub_100f53a
+0100f488: d1f82890 ldr.w    sb, [r1, #0x28]             
+0100f48c: d9f80420 ldr.w    r2, [sb, #4]                
+0100f490: 92f90d30 ldrsb.w  r3, [r2, #0xd]              
+0100f494: 53b9     cbnz     r3, #0x100f4ac              
+0100f496: 1369     ldr      r3, [r2, #0x10]             
+0100f498: 5345     cmp      r3, sl                      
+0100f49a: 01d2     bhs      #0x100f4a0                  
+0100f49c: 9268     ldr      r2, [r2, #8]                
+0100f49e: 01e0     b        #0x100f4a4                    ; sub_100f4a4
+0100f4a0: 9146     mov      sb, r2                      
+0100f4a2: 1268     ldr      r2, [r2]                    
+0100f4a4: 92f90d30 ldrsb.w  r3, [r2, #0xd]              
+0100f4a8: 002b     cmp      r3, #0                      
+0100f4aa: f4d0     beq      #0x100f496                  
+0100f4ac: 8b6a     ldr      r3, [r1, #0x28]             
+0100f4ae: 9945     cmp      sb, r3                      
+0100f4b0: 06d0     beq      #0x100f4c0                  
+0100f4b2: d9f81030 ldr.w    r3, [sb, #0x10]             
+0100f4b6: 9a45     cmp      sl, r3                      
+0100f4b8: 02d3     blo      #0x100f4c0                  
+0100f4ba: d9f81400 ldr.w    r0, [sb, #0x14]             
+0100f4be: 3ce0     b        #0x100f53a                    ; sub_100f53a
+0100f4c0: 0023     movs     r3, #0                      
+0100f4c2: 8e69     ldr      r6, [r1, #0x18]             
+0100f4c4: d1f80880 ldr.w    r8, [r1, #8]                
+0100f4c8: 7b60     str      r3, [r7, #4]                
+0100f4ca: daf81040 ldr.w    r4, [sl, #0x10]             
+0100f4ce: daf80050 ldr.w    r5, [sl]                    
+0100f4d2: edf703fb bl       #0xffcadc                     ; sub_ffcadc
+0100f4d6: 8646     mov      lr, r0                      
+0100f4d8: 0094     str      r4, [sp]                    
+0100f4da: def80040 ldr.w    r4, [lr]                    
+0100f4de: 381d     adds     r0, r7, #4                  
+0100f4e0: 0190     str      r0, [sp, #4]                
+0100f4e2: e46a     ldr      r4, [r4, #0x2c]             
+0100f4e4: 2b46     mov      r3, r5                      
+0100f4e6: 3246     mov      r2, r6                      
+0100f4e8: 4146     mov      r1, r8                      
+0100f4ea: 7046     mov      r0, lr                      
+0100f4ec: a047     blx      r4                          
+0100f4ee: bc68     ldr      r4, [r7, #8]                
+0100f4f0: 43f23451 movw     r1, #0x3534                   ; -> 0x12673534 str "InputLayout-%d"
+0100f4f4: c1f26721 movt     r1, #0x1267                 
+0100f4f8: 17f12000 adds.w   r0, r7, #0x20               
+0100f4fc: a269     ldr      r2, [r4, #0x18]             
+0100f4fe: 05f427f3 bl       #0x814b50                     ; sub_814b50
+0100f502: 0146     mov      r1, r0                      
+0100f504: 7868     ldr      r0, [r7, #4]                
+0100f506: eff78dfb bl       #0xffec24                     ; sub_ffec24
+0100f50a: 386a     ldr      r0, [r7, #0x20]             
+0100f50c: 28b1     cbz      r0, #0x100f51a              
+0100f50e: 7b6a     ldr      r3, [r7, #0x24]             
+0100f510: 1bb1     cbz      r3, #0x100f51a              
+0100f512: 17f13801 adds.w   r1, r7, #0x38               
+0100f516: 23f7d1d5 bl       #0x3330bc                     ; sub_3330bc
+0100f51a: 7b68     ldr      r3, [r7, #4]                
+0100f51c: 4a46     mov      r2, sb                      
+0100f51e: 04f12000 add.w    r0, r4, #0x20               
+0100f522: c7e904a3 strd     sl, r3, [r7, #0x10]         
+0100f526: 3b78     ldrb     r3, [r7]                    
+0100f528: 8df80030 strb.w   r3, [sp]                    
+0100f52c: 17f11003 adds.w   r3, r7, #0x10               
+0100f530: 17f10801 adds.w   r1, r7, #8                  
+0100f534: fcf756ff bl       #0x100c3e4                    ; sub_100c3e4
+0100f538: 7868     ldr      r0, [r7, #4]                
+0100f53a: 13b0     add      sp, #0x4c                   
+0100f53c: bde8f08f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, pc}

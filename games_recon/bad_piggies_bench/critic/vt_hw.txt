@@ -1,0 +1,18 @@
+﻿device HW hr=0x00000000 FL=0x9100 (no debug layer, SINGLETHREADED like Unity)
+  QI ID3D11Device  hr=0x00000000 ptr=000001E4C9FE0C00 same-object=1 same-vtbl=1
+  QI ID3D11Device1 hr=0x00000000 ptr=000001E4C9FE0C00 same-object=1 same-vtbl=1
+  QI ID3D11Device2 hr=0x00000000 ptr=000001E4C9FE0C00 same-object=1 same-vtbl=1
+  QI ID3D11Device3 hr=0x00000000 ptr=000001E4C9FE0C00 same-object=1 same-vtbl=1
+  QI ID3D11Device4 hr=0x00000000 ptr=000001E4C9FE0C00 same-object=1 same-vtbl=1
+  QI ID3D11Device5 hr=0x00000000 ptr=000001E4C9FE0C00 same-object=1 same-vtbl=1
+  device vtable: 174 consecutive entries point into d3d11.dll (ID3D11Device=43, Device1=50, Device2=54, Device3=65, Device4=67, Device5=69)
+  vtable swapped (174 slots copied)
+  QI IDXGIDevice through swapped vtable hr=0x00000000
+  CreateSwapChainForHwnd(Unity desc) through swapped device hr=0x00000000
+  calls made by DXGI into the hooked slots during swap-chain creation: QI 16, CreateTexture2D 0, CreateRTV 0, CheckFeatureSupport 0, GetFeatureLevel 0
+  CreateRenderTargetView(back buffer) hr=0x00000000 (hook count 1)
+  30 x Present hr=0x00000000
+  ResizeBuffers while RTV alive hr=0x887a0001 (expected failure DXGI_ERROR_INVALID_CALL)
+  ResizeBuffers 800x450 hr=0x00000000
+  ID3D11Device3::CreateTexture2D1 through the copy hr=0x00000000; CreateTexture2D hook fired 0 times (a Device3 caller BYPASSES the slot-5 hook)
+  GetDeviceRemovedReason hr=0x00000000

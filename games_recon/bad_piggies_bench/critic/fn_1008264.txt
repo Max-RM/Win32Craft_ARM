@@ -1,0 +1,163 @@
+function sub_1008264  [01008264..01008418) len=436
+01008264: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+01008268: 0df11c0b add.w    fp, sp, #0x1c               
+0100826c: 95b0     sub      sp, #0x54                   
+0100826e: 0546     mov      r5, r0                      
+01008270: ae7e     ldrb     r6, [r5, #0x1a]             
+01008272: 4df61454 movw     r4, #0xdd14                   ; -> 0x12b2dd14 .data+0x1ddd14
+01008276: c1f2b224 movt     r4, #0x12b2                 
+0100827a: 0f46     mov      r7, r1                      
+0100827c: 0eb1     cbz      r6, #0x1008282              
+0100827e: 606b     ldr      r0, [r4, #0x34]             
+01008280: 00e0     b        #0x1008284                    ; sub_1008284
+01008282: a06b     ldr      r0, [r4, #0x38]             
+01008284: 98b1     cbz      r0, #0x10082ae              
+01008286: 8542     cmp      r5, r0                      
+01008288: 0ed0     beq      #0x10082a8                  
+0100828a: 2a68     ldr      r2, [r5]                    
+0100828c: 0368     ldr      r3, [r0]                    
+0100828e: 9a42     cmp      r2, r3                      
+01008290: 0dd1     bne      #0x10082ae                  
+01008292: 837e     ldrb     r3, [r0, #0x1a]             
+01008294: 9e42     cmp      r6, r3                      
+01008296: 0ad1     bne      #0x10082ae                  
+01008298: ea7e     ldrb     r2, [r5, #0x1b]             
+0100829a: c37e     ldrb     r3, [r0, #0x1b]             
+0100829c: 9a42     cmp      r2, r3                      
+0100829e: 06d1     bne      #0x10082ae                  
+010082a0: 6a6a     ldr      r2, [r5, #0x24]             
+010082a2: 436a     ldr      r3, [r0, #0x24]             
+010082a4: 9a42     cmp      r2, r3                      
+010082a6: 02d1     bne      #0x10082ae                  
+010082a8: 0023     movs     r3, #0                      
+010082aa: c4e90d33 strd     r3, r3, [r4, #0x34]         
+010082ae: d4e90fa9 ldrd     sl, sb, [r4, #0x3c]         
+010082b2: 226a     ldr      r2, [r4, #0x20]             
+010082b4: 43f60808 movw     r8, #0x3808                   ; -> 0x11733808 .rdata+0x1c808
+010082b8: c1f27318 movt     r8, #0x1173                 
+010082bc: 0026     movs     r6, #0                      
+010082be: cdf81890 str.w    sb, [sp, #0x18]             
+010082c2: 002a     cmp      r2, #0                      
+010082c4: 40dd     ble      #0x1008348                  
+010082c6: 48f66831 movw     r1, #0x8b68                   ; -> 0x12668b68 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/RenderText"
+010082ca: c1f26621 movt     r1, #0x1266                 
+010082ce: a146     mov      sb, r4                      
+010082d0: 40f2ee40 movw     r0, #0x4ee                  
+010082d4: 01f1880e add.w    lr, r1, #0x88               
+010082d8: cdf81ce0 str.w    lr, [sp, #0x1c]             
+010082dc: 59f8043b ldr      r3, [sb], #4                
+010082e0: ab42     cmp      r3, r5                      
+010082e2: 2cd1     bne      #0x100833e                  
+010082e4: 0123     movs     r3, #1                      
+010082e6: 8df84c30 strb.w   r3, [sp, #0x4c]             
+010082ea: 0023     movs     r3, #0                      
+010082ec: cde90b83 strd     r8, r3, [sp, #0x2c]         
+010082f0: 0123     movs     r3, #1                      
+010082f2: cde90e03 strd     r0, r3, [sp, #0x38]         
+010082f6: 0023     movs     r3, #0                      
+010082f8: 08a8     add      r0, sp, #0x20               
+010082fa: cde91033 strd     r3, r3, [sp, #0x40]         
+010082fe: 1293     str      r3, [sp, #0x48]             
+01008300: cde90988 strd     r8, r8, [sp, #0x24]         
+01008304: cdf820e0 str.w    lr, [sp, #0x20]             
+01008308: 0d91     str      r1, [sp, #0x34]             
+0100830a: 89f481d4 bl       #0x91c10                      ; sub_91c10
+0100830e: 0023     movs     r3, #0                      
+01008310: 0493     str      r3, [sp, #0x10]             
+01008312: 0393     str      r3, [sp, #0xc]              
+01008314: 0193     str      r3, [sp, #4]                
+01008316: db43     mvns     r3, r3                      
+01008318: 069a     ldr      r2, [sp, #0x18]             
+0100831a: 0093     str      r3, [sp]                    
+0100831c: 0023     movs     r3, #0                      
+0100831e: 08a9     add      r1, sp, #0x20               
+01008320: 0120     movs     r0, #1                      
+01008322: cdf820a0 str.w    sl, [sp, #0x20]             
+01008326: 0297     str      r7, [sp, #8]                
+01008328: 01f0b4fc bl       #0x1009c94                    ; sub_1009c94
+0100832c: ddf81ce0 ldr.w    lr, [sp, #0x1c]             
+01008330: 226a     ldr      r2, [r4, #0x20]             
+01008332: 48f66831 movw     r1, #0x8b68                   ; -> 0x12668b68 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/RenderText"
+01008336: c1f26621 movt     r1, #0x1266                 
+0100833a: 40f2ee40 movw     r0, #0x4ee                  
+0100833e: 761c     adds     r6, r6, #1                  
+01008340: 9642     cmp      r6, r2                      
+01008342: cbdb     blt      #0x10082dc                  
+01008344: ddf81890 ldr.w    sb, [sp, #0x18]             
+01008348: a36a     ldr      r3, [r4, #0x28]             
+0100834a: ab42     cmp      r3, r5                      
+0100834c: 2ed1     bne      #0x10083ac                  
+0100834e: 0123     movs     r3, #1                      
+01008350: 8df84c30 strb.w   r3, [sp, #0x4c]             
+01008354: 48f69053 movw     r3, #0x8d90                   ; -> 0x12668d90 str "RenderTexture warning: Destroying active render texture. Swi"
+01008358: c1f26623 movt     r3, #0x1266                 
+0100835c: 08a8     add      r0, sp, #0x20               
+0100835e: cde90838 strd     r3, r8, [sp, #0x20]         
+01008362: 0023     movs     r3, #0                      
+01008364: cde90b83 strd     r8, r3, [sp, #0x2c]         
+01008368: 48f69043 movw     r3, #0x8c90                   ; -> 0x12668c90 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/RenderText"
+0100836c: c1f26623 movt     r3, #0x1266                 
+01008370: cdf82880 str.w    r8, [sp, #0x28]             
+01008374: 0d93     str      r3, [sp, #0x34]             
+01008376: 40f2f443 movw     r3, #0x4f4                  
+0100837a: 0e93     str      r3, [sp, #0x38]             
+0100837c: 0123     movs     r3, #1                      
+0100837e: 0f93     str      r3, [sp, #0x3c]             
+01008380: 0023     movs     r3, #0                      
+01008382: cde91033 strd     r3, r3, [sp, #0x40]         
+01008386: 1293     str      r3, [sp, #0x48]             
+01008388: 89f442d4 bl       #0x91c10                      ; sub_91c10
+0100838c: 0026     movs     r6, #0                      
+0100838e: f343     mvns     r3, r6                      
+01008390: 0093     str      r3, [sp]                    
+01008392: 0023     movs     r3, #0                      
+01008394: 08a9     add      r1, sp, #0x20               
+01008396: 0120     movs     r0, #1                      
+01008398: 4a46     mov      r2, sb                      
+0100839a: cdf820a0 str.w    sl, [sp, #0x20]             
+0100839e: 0496     str      r6, [sp, #0x10]             
+010083a0: 0396     str      r6, [sp, #0xc]              
+010083a2: 0297     str      r7, [sp, #8]                
+010083a4: 0196     str      r6, [sp, #4]                
+010083a6: 01f075fc bl       #0x1009c94                    ; sub_1009c94
+010083aa: 00e0     b        #0x10083ae                    ; sub_10083ae
+010083ac: 0026     movs     r6, #0                      
+010083ae: 6b6a     ldr      r3, [r5, #0x24]             
+010083b0: 0bb9     cbnz     r3, #0x10083b6              
+010083b2: 2b68     ldr      r3, [r5]                    
+010083b4: 4bb1     cbz      r3, #0x10083ca              
+010083b6: b9f49bf7 bl       #0x8c22f0                     ; sub_8c22f0
+010083ba: 2968     ldr      r1, [r5]                    
+010083bc: 02f0c6fd bl       #0x100af4c                    ; sub_100af4c
+010083c0: 1fb1     cbz      r7, #0x10083ca              
+010083c2: 2968     ldr      r1, [r5]                    
+010083c4: 3846     mov      r0, r7                      
+010083c6: 07f003fe bl       #0x100ffd0                    ; sub_100ffd0
+010083ca: 48f6e851 movw     r1, #0x8de8                   ; -> 0x12668de8 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/RenderText"
+010083ce: c1f26621 movt     r1, #0x1266                 
+010083d2: 686a     ldr      r0, [r5, #0x24]             
+010083d4: 40f2ff42 movw     r2, #0x4ff                  
+010083d8: 2bf736d0 bl       #0x333448                     ; sub_333448
+010083dc: 2b69     ldr      r3, [r5, #0x10]             
+010083de: 13f4806f tst.w    r3, #0x400                  
+010083e2: 0cd0     beq      #0x10083fe                  
+010083e4: f4f77afb bl       #0xffcadc                     ; sub_ffcadc
+010083e8: 0446     mov      r4, r0                      
+010083ea: 48f693dd bl       #0x650f14                     ; sub_650f14
+010083ee: 0346     mov      r3, r0                      
+010083f0: 1b68     ldr      r3, [r3]                    
+010083f2: 2a46     mov      r2, r5                      
+010083f4: 2146     mov      r1, r4                      
+010083f6: 1b6b     ldr      r3, [r3, #0x30]             
+010083f8: 9847     blx      r3                          
+010083fa: 00b1     cbz      r0, #0x10083fe              
+010083fc: 6e62     str      r6, [r5, #0x24]             
+010083fe: ab7e     ldrb     r3, [r5, #0x1a]             
+01008400: 2846     mov      r0, r5                      
+01008402: 23b1     cbz      r3, #0x100840e              
+01008404: 15b0     add      sp, #0x54                   
+01008406: bde8f04f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+0100840a: 00f0abbc b.w      #0x1008d64                    ; sub_1008d64
+0100840e: 15b0     add      sp, #0x54                   
+01008410: bde8f04f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+01008414: 00f014bd b.w      #0x1008e40                    ; sub_1008e40

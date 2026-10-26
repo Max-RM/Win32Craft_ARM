@@ -1,0 +1,64 @@
+function sub_c2ccec  [00c2ccec..00c2cda4) len=184
+00c2ccec: 2de91048 push.w   {r4, fp, lr}                
+00c2ccf0: 0df1040b add.w    fp, sp, #4                  
+00c2ccf4: 8db0     sub      sp, #0x34                   
+00c2ccf6: 0446     mov      r4, r0                      
+00c2ccf8: f8f7c0fb bl       #0xc2547c                     ; sub_c2547c
+00c2ccfc: 8369     ldr      r3, [r0, #0x18]             
+00c2ccfe: 022b     cmp      r3, #2                      
+00c2cd00: 01d1     bne      #0xc2cd06                   
+00c2cd02: f8f7f9fd bl       #0xc258f8                     ; sub_c258f8
+00c2cd06: cff3e9fe bl       #0xffcadc                     ; sub_ffcadc
+00c2cd0a: 08bb     cbnz     r0, #0xc2cd50               
+00c2cd0c: 43f60803 movw     r3, #0x3808                   ; -> 0x11733808 .rdata+0x1c808
+00c2cd10: c1f27313 movt     r3, #0x1173                 
+00c2cd14: 0022     movs     r2, #0                      
+00c2cd16: cde90332 strd     r3, r2, [sp, #0xc]          
+00c2cd1a: cde90133 strd     r3, r3, [sp, #4]            
+00c2cd1e: 0123     movs     r3, #1                      
+00c2cd20: 8df82c30 strb.w   r3, [sp, #0x2c]             
+00c2cd24: 44f6ac13 movw     r3, #0x49ac                   ; -> 0x122049ac str "Windows Holographic requires D3D11 Graphics API"
+00c2cd28: c1f22023 movt     r3, #0x1220                 
+00c2cd2c: 0093     str      r3, [sp]                    
+00c2cd2e: 3433     adds     r3, #0x34                   
+00c2cd30: 0593     str      r3, [sp, #0x14]             
+00c2cd32: ee23     movs     r3, #0xee                   
+00c2cd34: 0693     str      r3, [sp, #0x18]             
+00c2cd36: 0123     movs     r3, #1                      
+00c2cd38: 0793     str      r3, [sp, #0x1c]             
+00c2cd3a: 0023     movs     r3, #0                      
+00c2cd3c: 6846     mov      r0, sp                      
+00c2cd3e: cde90833 strd     r3, r3, [sp, #0x20]         
+00c2cd42: 0a93     str      r3, [sp, #0x28]             
+00c2cd44: 64f464df bl       #0x91c10                      ; sub_91c10
+00c2cd48: 0020     movs     r0, #0                      
+00c2cd4a: 0db0     add      sp, #0x34                   
+00c2cd4c: bde81088 pop.w    {r4, fp, pc}                
+00c2cd50: a0f53cda bl       #0x1cd1cc                     ; sub_1cd1cc
+00c2cd54: 0028     cmp      r0, #0                      
+00c2cd56: f7d0     beq      #0xc2cd48                   
+00c2cd58: bcf682f5 bl       #0x6e9860                     ; sub_6e9860
+00c2cd5c: 90f85833 ldrb.w   r3, [r0, #0x358]            
+00c2cd60: 84f8a832 strb.w   r3, [r4, #0x2a8]            
+00c2cd64: bcf67cf5 bl       #0x6e9860                     ; sub_6e9860
+00c2cd68: 90f83433 ldrb.w   r3, [r0, #0x334]            
+00c2cd6c: 1bb1     cbz      r3, #0xc2cd76               
+00c2cd6e: f8f785fb bl       #0xc2547c                     ; sub_c2547c
+00c2cd72: 0123     movs     r3, #1                      
+00c2cd74: 8361     str      r3, [r0, #0x18]             
+00c2cd76: a0f563d9 bl       #0x1cd040                     ; sub_1cd040
+00c2cd7a: 60b1     cbz      r0, #0xc2cd96               
+00c2cd7c: 43f61a33 movw     r3, #0x3b1a                   ; -> 0x12ae3b1a .data+0x193b1a
+00c2cd80: c1f2ae23 movt     r3, #0x12ae                 
+00c2cd84: 1b78     ldrb     r3, [r3]                    
+00c2cd86: 33b9     cbnz     r3, #0xc2cd96               
+00c2cd88: 0123     movs     r3, #1                      
+00c2cd8a: 84f8b032 strb.w   r3, [r4, #0x2b0]            
+00c2cd8e: 0120     movs     r0, #1                      
+00c2cd90: 0db0     add      sp, #0x34                   
+00c2cd92: bde81088 pop.w    {r4, fp, pc}                
+00c2cd96: 0023     movs     r3, #0                      
+00c2cd98: 84f8b032 strb.w   r3, [r4, #0x2b0]            
+00c2cd9c: 0120     movs     r0, #1                      
+00c2cd9e: 0db0     add      sp, #0x34                   
+00c2cda0: bde81088 pop.w    {r4, fp, pc}                

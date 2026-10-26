@@ -1,0 +1,50 @@
+function GfxDeviceD3D11::vf244  [01003f8c..0100400a) len=126
+01003f8c: 2de9f049 push.w   {r4, r5, r6, r7, r8, fp, lr}
+01003f90: 0df1140b add.w    fp, sp, #0x14               
+01003f94: 8db0     sub      sp, #0x34                   
+01003f96: 6f46     mov      r7, sp                      
+01003f98: 82b0     sub      sp, #8                      
+01003f9a: 1e46     mov      r6, r3                      
+01003f9c: 6ff00103 mvn      r3, #1                      
+01003fa0: c7e90233 strd     r3, r3, [r7, #8]            
+01003fa4: 9046     mov      r8, r2                      
+01003fa6: 0d46     mov      r5, r1                      
+01003fa8: 2ff73eda bl       #0x733428                     ; sub_733428
+01003fac: d0f8f403 ldr.w    r0, [r0, #0x3f4]            
+01003fb0: 0228     cmp      r0, #2                      
+01003fb2: 03da     bge      #0x1003fbc                  
+01003fb4: 0023     movs     r3, #0                      
+01003fb6: 2b60     str      r3, [r5]                    
+01003fb8: 2846     mov      r0, r5                      
+01003fba: 23e0     b        #0x1004004                    ; sub_1004004
+01003fbc: f8f78efd bl       #0xffcadc                     ; sub_ffcadc
+01003fc0: 0023     movs     r3, #0                      
+01003fc2: 0446     mov      r4, r0                      
+01003fc4: 3b60     str      r3, [r7]                    
+01003fc6: 2468     ldr      r4, [r4]                    
+01003fc8: 3b46     mov      r3, r7                      
+01003fca: 0093     str      r3, [sp]                    
+01003fcc: a46c     ldr      r4, [r4, #0x48]             
+01003fce: 0023     movs     r3, #0                      
+01003fd0: 3246     mov      r2, r6                      
+01003fd2: 4146     mov      r1, r8                      
+01003fd4: a047     blx      r4                          
+01003fd6: 0028     cmp      r0, #0                      
+01003fd8: ecdb     blt      #0x1003fb4                  
+01003fda: 396d     ldr      r1, [r7, #0x50]             
+01003fdc: 17f11000 adds.w   r0, r7, #0x10               
+01003fe0: 8df41ed5 bl       #0x91a20                      ; sub_91a20
+01003fe4: 3868     ldr      r0, [r7]                    
+01003fe6: 17f11001 adds.w   r1, r7, #0x10               
+01003fea: faf71bfe bl       #0xffec24                     ; sub_ffec24
+01003fee: 3b68     ldr      r3, [r7]                    
+01003ff0: 2b60     str      r3, [r5]                    
+01003ff2: 3869     ldr      r0, [r7, #0x10]             
+01003ff4: 28b1     cbz      r0, #0x1004002              
+01003ff6: 7b69     ldr      r3, [r7, #0x14]             
+01003ff8: 1bb1     cbz      r3, #0x1004002              
+01003ffa: 17f12801 adds.w   r1, r7, #0x28               
+01003ffe: 2ff75dd0 bl       #0x3330bc                     ; sub_3330bc
+01004002: 2846     mov      r0, r5                      
+01004004: 0fb0     add      sp, #0x3c                   
+01004006: bde8f089 pop.w    {r4, r5, r6, r7, r8, fp, pc}

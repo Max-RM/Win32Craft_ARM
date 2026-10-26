@@ -1,0 +1,595 @@
+==================================================================================
+m0probe - Direct3D device probe for the Surface RT / Surface 2 game ports
+Log file: C:\dist-m0probe\m0probe\m0probe.log (every line is also shown on the console; please send this file back)
+==================================================================================
+
+---- T1 system ----
+  m0probe 1.0 (ARM32 build, Oct 22 2026 12:36:40)
+  exe: C:\dist-m0probe\m0probe\m0probe.exe
+  started: 2026-10-22 23:16:10
+  OS (RtlGetVersion): 10.0 build 15035, platform 2, product type 1, suite 0x100, service pack ""
+  processor architecture: ARM (32-bit) (5), processors: 4, level 3087, revision 0x0202, page size 4096
+  RAM: 1990 MiB total, 951 MiB free; address space 2047 MiB
+  CPU: "NVIDIA(R) TEGRA(R) 4 Quad Core CPU" identifier "ARM Family 7 Model C0F Revision 202" 1224 MHz
+  machine: Microsoft Corporation / Surface 2
+  system directory: C:\Windows\system32
+  console/log files: m0probe.log and m0probe.res next to the exe
+
+---- T2 adapters (DXGI EnumAdapters1) + driver files ----
+  CreateDXGIFactory1 hr=0x00000000
+  adapter 0: "NVIDIA Tegra 4"
+      VendorId=0x4144564e DeviceId=0x35303230 SubSysId=0x00000000 Revision=0 Flags=0x0 LUID=00000000-0000cd00
+      DedicatedVideoMemory=0 MiB DedicatedSystemMemory=0 MiB SharedSystemMemory=973 MiB  => class: hardware
+      CheckInterfaceSupport(IDXGIDevice) hr=0x00000000 user-mode driver version 9.17.13.2822
+      outputs (monitors): 1
+  adapter 1: "Microsoft Basic Render Driver"
+      VendorId=0x1414 DeviceId=0x008c SubSysId=0x00000000 Revision=0 Flags=0x2 (DXGI_ADAPTER_FLAG_SOFTWARE) LUID=00000000-0000d265
+      DedicatedVideoMemory=0 MiB DedicatedSystemMemory=0 MiB SharedSystemMemory=995 MiB  => class: SOFTWARE
+      CheckInterfaceSupport(IDXGIDevice) hr=0x00000000 user-mode driver version 10.0.15035.0
+      outputs (monitors): 0
+  adapters found: 2 (1 hardware, 1 software)
+  -- software rasteriser and driver files --
+    d3d10warp.dll            present, file version 6.2.15035.0
+    d3d11.dll                present, file version 6.2.15035.0
+    dxgi.dll                 present, file version 6.2.15035.0
+    d3d9.dll                 present, file version 6.2.15035.0
+    d3dcompiler_47.dll       present, file version 6.2.15035.0
+    d3dcompiler_43.dll       MISSING
+    version.dll              present, file version 6.2.15035.0
+    ntdll.dll                present, file version 6.2.15035.0
+    NVIDIA-looking files in the system folder:
+      \nvads1apo.dll
+      \nvaudcaparm.dll
+      \nvavoiceapo.dll
+      \nvCameraISP.dll
+      \nvCameraMFT.dll
+      \nvd3dum.dll
+      \nvDecMFTMjpeg.dll
+      \nvDecMFTMpeg4.dll
+      \nvEncMFTH264.dll
+      \nvEncMFTVC1.dll
+      \nvEncodeAPI.dll
+      \NvHalExtDma.dll
+      \nvmcumd.dll
+      \drivers\nvads1.sys
+      \drivers\nvaenum.sys
+      \drivers\nvatopo.sys
+      \drivers\nvavoice.sys
+      \drivers\nvavstrm.sys
+      \drivers\nvawave.sys
+      \drivers\nvehcifilter.sys
+      \drivers\nvlddmkm.sys
+      \drivers\nvmem.sys
+      \drivers\nvsc.sys
+      \drivers\nvse.sys
+      \drivers\nvthml.sys
+      \drivers\nvvadarm.sys
+      \drivers\nvxhcifilter.sys
+    DriverStore\FileRepository folders that look like a GPU driver (nv / tegra / display / gfx / graphics / video):
+      basicdisplay.inf_arm_863d48108a7c3f9f\
+      buttonconverter.inf_arm_cdac3ce504daf328\
+      c_display.inf_arm_6c66293bbce28ac0\
+      c_linedisplay.inf_arm_69aa2217bc4ffa16\
+      display.inf_arm_c361d25f52441b37\
+      displayoverride.inf_arm_21214af59b0f19eb\
+      fusionv2.inf_arm_2ceb7f591f8adbe0\
+      halexttegra2.inf_arm_48b98ecee13f18cd\
+      nv_disp.inf_arm_d495ce2d9143432a\
+      nvaenum.inf_arm_7446d402e084b157\
+      nvatopo.inf_arm_001175bb3bb1fafe\
+      nvavstrm.inf_arm_b840313ecf7f38f0\
+      nvawave.ds1nvoice.inf_arm_5775de2e437f2f84\
+      nvehcifilter.inf_arm_fe60991ef085edd3\
+      nvhalextdma.inf_arm_6dd5d69e0dfaa7d2\
+      nvmem.inf_arm_9a6988cee3895bbb\
+      nvpep.inf_arm_2ab44d4e50fd4809\
+      nvsc.inf_arm_34501079c1f515cb\
+      nvse.inf_arm_dee19a0550fcc532\
+      nvt40pmu.inf_arm_a25b02f253f893a4\
+      nvthml.inf_arm_624811e4e8fd3f28\
+      nvvadarm.inf_arm_b2c05a01e20ddc1b\
+      nvxhcifilter.inf_arm_49f1c0c8934b2ac2\
+    registry display class (Control\Class\{4d36e968-...}):
+    display class key 0000:
+      DriverDesc               NVIDIA Tegra 4
+      ProviderName             NVIDIA
+      DriverVersion            9.17.13.2822
+      DriverDate               9-9-2014
+      InstalledDisplayDrivers  nvd3dum
+      UserModeDriverName       nvd3dum.dll
+      MatchingDeviceId         acpi\nvda0205
+  => PASS (1 as expected, 0 unexpected, 0 info)
+[run] adapters: finished, exit code 0, 0.8 s
+
+---- T3 feature levels [hw] ----
+  (a) HARDWARE, adapter NULL, [11_1 .. 9_1]            hr=0x00000000
+      chosen feature level: 9_1 (0x9100); ID3D11Device::GetFeatureLevel = 0x9100; creation flags 0x20; device removed reason 0x00000000
+      runs on adapter "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+    THREADING            hr=0x00000000 DriverConcurrentCreates=0 DriverCommandLists=0
+    DOUBLES              hr=0x00000000 DoublePrecisionFloatShaderOps=0
+    D3D9_OPTIONS         hr=0x00000000 FullNonPow2TextureSupport=1
+    D3D9_SHADOW_SUPPORT  hr=0x00000000 SupportsDepthAsTextureWithLessEqualComparisonFilter=1
+    D3D9_SIMPLE_INSTANCING hr=0x00000000 SimpleInstancingSupported=1
+    D3D11_OPTIONS        hr=0x00000000 OutputMergerLogicOp=0 ConstantBufferOffsetting=1 ConstantBufferPartialUpdate=1
+                         MapNoOverwriteOnDynamicConstantBuffer=1 MapNoOverwriteOnDynamicBufferSRV=0 ClearView=1 CopyWithOverlap=1 DiscardAPIsSeenByDriver=1
+    D3D10_X_HARDWARE_OPTIONS hr=0x00000000 ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x=0
+    ARCHITECTURE_INFO    hr=0x00000000 TileBasedDeferredRenderer=0
+    all modules loaded now: m0probe.exe ntdll.dll KERNEL32.DLL KERNELBASE.dll USER32.dll win32u.dll GDI32.dll gdi32full.dll msvcp_win.dll 
+         ucrtbase.dll IMM32.DLL d3d11.dll msvcrt.dll dxgi.dll RPCRT4.dll nvd3dum.dll ADVAPI32.dll sechost.dll 
+         VERSION.dll D3D10Level9.dll 
+    >>> new module after device creation: C:\Windows\SYSTEM32\nvd3dum.dll   <-- NVIDIA user-mode driver?
+    other modules loaded by device creation: RPCRT4.dll ADVAPI32.dll sechost.dll VERSION.dll D3D10Level9.dll 
+  => PASS (1 as expected, 0 unexpected, 0 info)
+[run] fl hw: finished, exit code 0, 0.3 s
+
+---- T3 feature levels [a0] ----
+  (b) adapter 0 "NVIDIA Tegra 4", UNKNOWN, [11_1 .. 9_1] hr=0x00000000
+      chosen feature level: 9_1 (0x9100); ID3D11Device::GetFeatureLevel = 0x9100; creation flags 0x20; device removed reason 0x00000000
+      runs on adapter "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+    THREADING            hr=0x00000000 DriverConcurrentCreates=0 DriverCommandLists=0
+    DOUBLES              hr=0x00000000 DoublePrecisionFloatShaderOps=0
+    D3D9_OPTIONS         hr=0x00000000 FullNonPow2TextureSupport=1
+    D3D9_SHADOW_SUPPORT  hr=0x00000000 SupportsDepthAsTextureWithLessEqualComparisonFilter=1
+    D3D9_SIMPLE_INSTANCING hr=0x00000000 SimpleInstancingSupported=1
+    D3D11_OPTIONS        hr=0x00000000 OutputMergerLogicOp=0 ConstantBufferOffsetting=1 ConstantBufferPartialUpdate=1
+                         MapNoOverwriteOnDynamicConstantBuffer=1 MapNoOverwriteOnDynamicBufferSRV=0 ClearView=1 CopyWithOverlap=1 DiscardAPIsSeenByDriver=1
+    D3D10_X_HARDWARE_OPTIONS hr=0x00000000 ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x=0
+    ARCHITECTURE_INFO    hr=0x00000000 TileBasedDeferredRenderer=0
+    >>> new module after device creation: C:\Windows\SYSTEM32\nvd3dum.dll   <-- NVIDIA user-mode driver?
+    other modules loaded by device creation: RPCRT4.dll ADVAPI32.dll sechost.dll VERSION.dll D3D10Level9.dll 
+  => PASS (1 as expected, 0 unexpected, 0 info)
+[run] fl a0: finished, exit code 0, 0.2 s
+
+---- T3 feature levels [a1] ----
+  (b) adapter 1 "Microsoft Basic Render Driver", UNKNOWN, [11_1 .. 9_1] hr=0x00000000
+      chosen feature level: 11_1 (0xb100); ID3D11Device::GetFeatureLevel = 0xb100; creation flags 0x20; device removed reason 0x00000000
+      runs on adapter "Microsoft Basic Render Driver" vendor=1414 device=008c flags=0x2 -> SOFTWARE
+    THREADING            hr=0x00000000 DriverConcurrentCreates=0 DriverCommandLists=0
+    DOUBLES              hr=0x00000000 DoublePrecisionFloatShaderOps=1
+    D3D9_OPTIONS         hr=0x00000000 FullNonPow2TextureSupport=1
+    D3D9_SHADOW_SUPPORT  hr=0x00000000 SupportsDepthAsTextureWithLessEqualComparisonFilter=1
+    D3D9_SIMPLE_INSTANCING hr=0x00000000 SimpleInstancingSupported=1
+    D3D11_OPTIONS        hr=0x00000000 OutputMergerLogicOp=1 ConstantBufferOffsetting=1 ConstantBufferPartialUpdate=1
+                         MapNoOverwriteOnDynamicConstantBuffer=1 MapNoOverwriteOnDynamicBufferSRV=1 ClearView=1 CopyWithOverlap=1 DiscardAPIsSeenByDriver=1
+    D3D10_X_HARDWARE_OPTIONS hr=0x00000000 ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x=1
+    ARCHITECTURE_INFO    hr=0x00000000 TileBasedDeferredRenderer=0
+    >>> new module after device creation: C:\Windows\SYSTEM32\d3d10warp.dll   <-- WARP software rasterizer
+    other modules loaded by device creation: RPCRT4.dll uxtheme.dll combase.dll bcryptPrimitives.dll 
+  => PASS (1 as expected, 0 unexpected, 0 info)
+[run] fl a1: finished, exit code 0, 0.1 s
+
+---- T3 feature levels [warp] ----
+  (c) WARP, adapter NULL, [11_1 .. 9_1]                hr=0x00000000
+      chosen feature level: 11_1 (0xb100); ID3D11Device::GetFeatureLevel = 0xb100; creation flags 0x20; device removed reason 0x00000000
+      runs on adapter "Microsoft Basic Render Driver" vendor=1414 device=008c flags=0x2 -> SOFTWARE
+    THREADING            hr=0x00000000 DriverConcurrentCreates=0 DriverCommandLists=0
+    DOUBLES              hr=0x00000000 DoublePrecisionFloatShaderOps=1
+    D3D9_OPTIONS         hr=0x00000000 FullNonPow2TextureSupport=1
+    D3D9_SHADOW_SUPPORT  hr=0x00000000 SupportsDepthAsTextureWithLessEqualComparisonFilter=1
+    D3D9_SIMPLE_INSTANCING hr=0x00000000 SimpleInstancingSupported=1
+    D3D11_OPTIONS        hr=0x00000000 OutputMergerLogicOp=1 ConstantBufferOffsetting=1 ConstantBufferPartialUpdate=1
+                         MapNoOverwriteOnDynamicConstantBuffer=1 MapNoOverwriteOnDynamicBufferSRV=1 ClearView=1 CopyWithOverlap=1 DiscardAPIsSeenByDriver=1
+    D3D10_X_HARDWARE_OPTIONS hr=0x00000000 ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x=1
+    ARCHITECTURE_INFO    hr=0x00000000 TileBasedDeferredRenderer=0
+    all modules loaded now: m0probe.exe ntdll.dll KERNEL32.DLL KERNELBASE.dll USER32.dll win32u.dll GDI32.dll gdi32full.dll msvcp_win.dll 
+         ucrtbase.dll IMM32.DLL d3d11.dll msvcrt.dll dxgi.dll D3D10Warp.dll RPCRT4.dll uxtheme.dll combase.dll 
+         bcryptPrimitives.dll 
+    >>> new module after device creation: C:\Windows\SYSTEM32\D3D10Warp.dll   <-- WARP software rasterizer
+    other modules loaded by device creation: RPCRT4.dll uxtheme.dll combase.dll bcryptPrimitives.dll 
+  => PASS (1 as expected, 0 unexpected, 0 info)
+[run] fl warp: finished, exit code 0, 0.1 s
+
+---- T3 feature levels [unity] ----
+  Unity's first call: EnumAdapters(0), UNKNOWN, [11_1..10_0], 0x21 hr=0x887a0004
+  => INFO (0 as expected, 0 unexpected, 1 info)
+[run] fl unity: finished, exit code 0, 0.1 s
+
+---- T3 feature levels [hwsingle] ----
+  HARDWARE with ONLY feature level 11_1 requested: hr=0x887a0004 chosen=-
+  HARDWARE with ONLY feature level 11_0 requested: hr=0x887a0004 chosen=-
+  HARDWARE with ONLY feature level 10_1 requested: hr=0x887a0004 chosen=-
+  HARDWARE with ONLY feature level 10_0 requested: hr=0x887a0004 chosen=-
+  HARDWARE with ONLY feature level 9_3 requested: hr=0x887a0004 chosen=-
+  HARDWARE with ONLY feature level 9_2 requested: hr=0x887a0004 chosen=-
+  HARDWARE with ONLY feature level 9_1 requested: hr=0x00000000 chosen=9_1
+  => INFO (0 as expected, 0 unexpected, 0 info)
+[run] fl hwsingle: finished, exit code 0, 0.1 s
+
+---- T3 feature levels [warpsingle] ----
+  WARP     with ONLY feature level 11_1 requested: hr=0x00000000 chosen=11_1
+  WARP     with ONLY feature level 11_0 requested: hr=0x00000000 chosen=11_0
+  WARP     with ONLY feature level 10_1 requested: hr=0x00000000 chosen=10_1
+  WARP     with ONLY feature level 10_0 requested: hr=0x00000000 chosen=10_0
+  WARP     with ONLY feature level 9_3 requested: hr=0x00000000 chosen=9_3
+  WARP     with ONLY feature level 9_2 requested: hr=0x00000000 chosen=9_2
+  WARP     with ONLY feature level 9_1 requested: hr=0x00000000 chosen=9_1
+  => INFO (0 as expected, 0 unexpected, 0 info)
+[run] fl warpsingle: finished, exit code 0, 0.1 s
+
+---- T4 shaders at FL 9_1 on HARDWARE {9_1 only} ----
+  device HARDWARE {9_1 only}: hr=0x00000000 FL=9_1 (0x9100)
+  adapter behind it: "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+    >>> new module after device creation: C:\Windows\SYSTEM32\nvd3dum.dll   <-- NVIDIA user-mode driver?
+    other modules loaded by device creation: RPCRT4.dll ADVAPI32.dll sechost.dll VERSION.dll D3D10Level9.dll 
+  -- Redcon: data\redcon (10 blobs with level-9 payloads; expected ALL ok) --
+  [ ok ] sh00.dxbc                          PS level_9_1   940 B  hr=0x00000000
+  [ ok ] sh01.dxbc                          VS level_9_1  1016 B  hr=0x00000000
+  [ ok ] sh02.dxbc                          PS level_9_1   940 B  hr=0x00000000
+  [ ok ] sh03.dxbc                          VS level_9_1  1080 B  hr=0x00000000
+  [ ok ] sh04.dxbc                          PS level_9_1  1228 B  hr=0x00000000
+  [ ok ] sh05.dxbc                          VS level_9_1  1212 B  hr=0x00000000
+  [ ok ] sh06.dxbc                          PS level_9_1  1228 B  hr=0x00000000
+  [ ok ] sh07.dxbc                          VS level_9_1  1148 B  hr=0x00000000
+  [ ok ] sh08.dxbc                          PS level_9_1   980 B  hr=0x00000000
+  [ ok ] sh09.dxbc                          VS level_9_1  3808 B  hr=0x00000000
+  Redcon shaders created at 9_1: 10/10
+  -- Geometry Dash: data\gd (libcocos2d.dll: 30 level_9_3 containers = 15 programs, the game uses 9 programs = 18 containers; libGLESv2_phone.dll: 10 ANGLE internals) --
+  [ ok ] libcocos2d_00_ps.dxbc              PS level_9_3  6780 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_01_vs.dxbc              VS level_9_3  1128 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_02_ps.dxbc              PS level_9_3  2196 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_03_vs.dxbc              VS level_9_3  1244 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_04_ps.dxbc              PS level_9_3  1252 B  hr=0x00000000  USED by the game: ShaderControlSwitch (ps)
+  [ ok ] libcocos2d_05_vs.dxbc              VS level_9_3  1284 B  hr=0x00000000  USED by the game: ShaderControlSwitch (vs)
+  [ ok ] libcocos2d_06_ps.dxbc              PS level_9_3   928 B  hr=0x00000000  USED by the game: ShaderPositionTexture (ps)
+  [ ok ] libcocos2d_07_vs.dxbc              VS level_9_3  1168 B  hr=0x00000000  USED by the game: ShaderPositionTexture (vs)
+  [ ok ] libcocos2d_08_ps.dxbc              PS level_9_3  1316 B  hr=0x00000000  USED by the game: ShaderPositionTextureColorAlphaTest (ps)
+  [ ok ] libcocos2d_09_vs.dxbc              VS level_9_3  1284 B  hr=0x00000000  USED by the game: ShaderPositionTextureColorAlphaTest (vs)
+  [ ok ] libcocos2d_10_ps.dxbc              PS level_9_3  1040 B  hr=0x00000000  USED by the game: ShaderPositionLengthTextureColor (ps)
+  [ ok ] libcocos2d_11_vs.dxbc              VS level_9_3  1328 B  hr=0x00000000  USED by the game: ShaderPositionLengthTextureColor (vs)
+  [ ok ] libcocos2d_12_ps.dxbc              PS level_9_3   716 B  hr=0x00000000  USED by the game: ShaderPosition_uColor (ps)
+  [ ok ] libcocos2d_13_vs.dxbc              VS level_9_3  1232 B  hr=0x00000000  USED by the game: ShaderPosition_uColor (vs)
+  [ ok ] libcocos2d_14_ps.dxbc              PS level_9_3  1120 B  hr=0x00000000  USED by the game: ShaderPositionTexture_uColor (ps)
+  [ ok ] libcocos2d_15_vs.dxbc              VS level_9_3  1168 B  hr=0x00000000  USED by the game: ShaderPositionTexture_uColor (vs)
+  [ ok ] libcocos2d_16_ps.dxbc              PS level_9_3  3716 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_17_vs.dxbc              VS level_9_3  1128 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_18_ps.dxbc              PS level_9_3  4600 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_19_vs.dxbc              VS level_9_3  1128 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_20_ps.dxbc              PS level_9_3  2792 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_21_vs.dxbc              VS level_9_3  1284 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_22_ps.dxbc              PS level_9_3   716 B  hr=0x00000000  USED by the game: ShaderPositionColor (ps)
+  [ ok ] libcocos2d_23_vs.dxbc              VS level_9_3  1168 B  hr=0x00000000  USED by the game: ShaderPositionColor (vs)
+  [ ok ] libcocos2d_24_ps.dxbc              PS level_9_3  5080 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_25_vs.dxbc              VS level_9_3  1128 B  hr=0x00000000  (not used)
+  [ ok ] libcocos2d_26_ps.dxbc              PS level_9_3  1020 B  hr=0x00000000  USED by the game: ShaderPositionTextureColor (ps)
+  [ ok ] libcocos2d_27_vs.dxbc              VS level_9_3  1284 B  hr=0x00000000  USED by the game: ShaderPositionTextureColor (vs)
+  [ ok ] libcocos2d_28_ps.dxbc              PS level_9_3  1052 B  hr=0x00000000  USED by the game: ShaderPositionTextureA8Color (ps)
+  [ ok ] libcocos2d_29_vs.dxbc              VS level_9_3  1284 B  hr=0x00000000  USED by the game: ShaderPositionTextureA8Color (vs)
+  [ ok ] libGLESv2_phone_00_vs.dxbc         VS level_9_1   496 B  hr=0x00000000  (not used)
+  [ ok ] libGLESv2_phone_01_ps.dxbc         PS level_9_1   488 B  hr=0x00000000  (not used)
+  [ ok ] libGLESv2_phone_02_vs.dxbc         VS level_9_1   508 B  hr=0x00000000  (not used)
+  [ ok ] libGLESv2_phone_03_ps.dxbc         PS level_9_1   528 B  hr=0x00000000  (not used)
+  [ ok ] libGLESv2_phone_04_ps.dxbc         PS level_9_1   500 B  hr=0x00000000  (not used)
+  [ ok ] libGLESv2_phone_05_ps.dxbc         PS level_9_1   404 B  hr=0x00000000  (not used)
+  [ ok ] libGLESv2_phone_06_ps.dxbc         PS level_9_1   444 B  hr=0x00000000  (not used)
+  [ ok ] libGLESv2_phone_07_ps.dxbc         PS level_9_1   324 B  hr=0x00000000  (not used)
+  [ ok ] libGLESv2_phone_08_vs.dxbc         VS level_9_1   508 B  hr=0x00000000  (not used)
+  [ ok ] libGLESv2_phone_09_ps.dxbc         PS level_9_1   404 B  hr=0x00000000  (not used)
+  Geometry Dash level_9_3 containers (libcocos2d.dll) created at 9_1: 30/30
+  ... of which the 18 containers of the 9 programs the game USES:      18/18
+  ANGLE internal shaders (libGLESv2_phone.dll) created at 9_1:         10/10
+  -- Bad Piggies: data\bp\l9_replacements.bin (113 level_9_1 replacements; expected ALL ok) --
+  Bad Piggies replacements created at 9_1: 113/113
+  [ ok ] Unity original 00_Sprites_Default_b000_vs_756ae2904e92.dxbc   VS SM4 only  hr=0x80070057 (expected: refused)
+  [ ok ] Unity original 00_Sprites_Default_b004_ps_3aa3dabc65f1.dxbc   PS SM4 only  hr=0x80070057 (expected: refused)
+  Bad Piggies Unity originals refused at 9_1: 2/2
+  GetDeviceRemovedReason after all shader creations                        hr=0x00000000 as-expected
+  => PASS (4 as expected, 0 unexpected, 1 info)
+[run] shaders hw: finished, exit code 0, 0.4 s
+
+---- T4 shaders at FL 9_1 on WARP {9_1 only} ----
+  device WARP {9_1 only}: hr=0x00000000 FL=9_1 (0x9100)
+  adapter behind it: "Microsoft Basic Render Driver" vendor=1414 device=008c flags=0x2 -> SOFTWARE
+    >>> new module after device creation: C:\Windows\SYSTEM32\D3D10Warp.dll   <-- WARP software rasterizer
+    other modules loaded by device creation: RPCRT4.dll uxtheme.dll combase.dll bcryptPrimitives.dll 
+  -- Redcon: data\redcon (10 blobs with level-9 payloads; expected ALL ok) [WARP run: only failures are listed] --
+  Redcon shaders created at 9_1: 10/10
+  -- Geometry Dash: data\gd (libcocos2d.dll: 30 level_9_3 containers = 15 programs, the game uses 9 programs = 18 containers; libGLESv2_phone.dll: 10 ANGLE internals) --
+  Geometry Dash level_9_3 containers (libcocos2d.dll) created at 9_1: 30/30
+  ... of which the 18 containers of the 9 programs the game USES:      18/18
+  ANGLE internal shaders (libGLESv2_phone.dll) created at 9_1:         10/10
+  -- Bad Piggies: data\bp\l9_replacements.bin (113 level_9_1 replacements; expected ALL ok) --
+  Bad Piggies replacements created at 9_1: 113/113
+  [ ok ] Unity original 00_Sprites_Default_b000_vs_756ae2904e92.dxbc   VS SM4 only  hr=0x80070057 (expected: refused)
+  [ ok ] Unity original 00_Sprites_Default_b004_ps_3aa3dabc65f1.dxbc   PS SM4 only  hr=0x80070057 (expected: refused)
+  Bad Piggies Unity originals refused at 9_1: 2/2
+  GetDeviceRemovedReason after all shader creations                        hr=0x00000000 as-expected
+  => PASS (4 as expected, 0 unexpected, 1 info)
+[run] shaders warp: finished, exit code 0, 0.2 s
+
+---- T5 render at FL 9_1 on HARDWARE {9_1 only} [draw] ----
+  device HARDWARE {9_1 only}: hr=0x00000000 FL=9_1 (0x9100)
+  adapter behind it: "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+  lookup Sprites/Default VS hit, PS hit (by the checksum in the DXBC header)
+  CreateVertexShader(replacement)                                          hr=0x00000000 as-expected
+  CreatePixelShader(replacement)                                           hr=0x00000000 as-expected
+  CreateInputLayout(float3/Color32/float2, replacement VS bytecode)        hr=0x00000000 as-expected
+  Map staging read-back                                                    hr=0x00000000 as-expected
+  read-back centre pixel RGBA = 200 100 50 255 (expected 200 100 50 255)
+  GetDeviceRemovedReason after the draw                                    hr=0x00000000 as-expected
+  => PASS (6 as expected, 0 unexpected, 0 info)
+[run] render draw: finished, exit code 0, 0.1 s
+
+---- T5 render at FL 9_1 on HARDWARE {9_1 only} [il] ----
+  device HARDWARE {9_1 only}: hr=0x00000000 FL=9_1 (0x9100)
+  adapter behind it: "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+  lookup Sprites/Default VS hit, PS hit (by the checksum in the DXBC header)
+  CreateVertexShader(replacement)                                          hr=0x00000000 as-expected
+  CreatePixelShader(replacement)                                           hr=0x00000000 as-expected
+  DXBC checksum self-check on Unity's VS: matches the file's checksum
+  signature-only DXBC built from the VS: 148 bytes (the real Unity blob is 148 for this shader)
+  CreateInputLayout(signature-only blob, like Unity sub_100fa88)           hr=0x00000000 as-expected
+  CreateInputLayout(original Unity vs_4_0 bytecode)                        hr=0x00000000 as-expected
+  CreateInputLayout(level-9 replacement VS)                                hr=0x00000000 as-expected
+  CreateInputLayout(signature-only blob with ZERO checksum)                hr=0x80070057 as-expected
+  Map staging read-back                                                    hr=0x00000000 as-expected
+  read-back centre pixel RGBA = 200 100 50 255 (expected 200 100 50 255)
+  GetDeviceRemovedReason after the draw                                    hr=0x00000000 as-expected
+  => PASS (9 as expected, 0 unexpected, 0 info)
+[run] render il: finished, exit code 0, 0.1 s
+
+---- T5 render at FL 9_1 on HARDWARE {9_1 only} [cboff] ----
+  device HARDWARE {9_1 only}: hr=0x00000000 FL=9_1 (0x9100)
+  adapter behind it: "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+  lookup Sprites/Default VS hit, PS hit (by the checksum in the DXBC header)
+  CreateVertexShader(replacement)                                          hr=0x00000000 as-expected
+  CreatePixelShader(replacement)                                           hr=0x00000000 as-expected
+  DXBC checksum self-check on Unity's VS: matches the file's checksum
+  signature-only DXBC built from the VS: 148 bytes (the real Unity blob is 148 for this shader)
+  CreateInputLayout(signature-only blob, like Unity sub_100fa88)           hr=0x00000000 as-expected
+  D3D11_OPTIONS.ConstantBufferOffsetting=1 (Unity's caps+0x3f9)
+  QI ID3D11DeviceContext1 hr=0x00000000
+  CreateBuffer 64 KB dynamic constant ring                                 hr=0x00000000 as-expected
+  Map(WRITE_DISCARD) the ring                                              hr=0x00000000 as-expected
+  VSSetConstantBuffers1: 4 windows into one 64 KB buffer (first constants 256/512/768/1024, 32 constants each)
+  Map staging read-back                                                    hr=0x00000000 as-expected
+  read-back centre pixel RGBA = 200 100 50 255 (expected 200 100 50 255)
+  GetDeviceRemovedReason after the draw                                    hr=0x00000000 as-expected
+  => PASS (8 as expected, 0 unexpected, 0 info)
+[run] render cboff: finished, exit code 0, 0.2 s
+
+---- T5 render at FL 9_1 on HARDWARE {9_1 only} [blend] ----
+  device HARDWARE {9_1 only}: hr=0x00000000 FL=9_1 (0x9100)
+  adapter behind it: "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+  -- the fixed state set sub_765B8 creates once (redcon-render F5) --
+  depth-stencil: DepthEnable=0 write ALL func LESS, stencil off            hr=0x00000000 as-expected
+  rasterizer: SOLID, CullNone, DepthClip TRUE, ScissorEnable=1             hr=0x00000000 as-expected
+  rasterizer: SOLID, CullNone, DepthClip TRUE, ScissorEnable=0             hr=0x00000000 as-expected
+  sampler: MIN_MAG_MIP_LINEAR (0x15), CLAMP, MaxAnisotropy=2, LOD 0..FLT_MAX hr=0x00000000 as-expected
+  blend (ONE,ZERO) opaque, alpha factors ONE/ZERO/ADD (separate alpha)     hr=0x00000000 as-expected
+  blend (ONE,ONE) additive, alpha factors ONE/ZERO/ADD (separate alpha)    hr=0x00000000 as-expected
+  blend (SRC_ALPHA,INV_SRC_ALPHA) alpha, alpha factors ONE/ZERO/ADD (separate alpha) hr=0x00000000 as-expected
+  blend (ONE,INV_SRC_ALPHA) premultiplied, alpha factors ONE/ZERO/ADD (separate alpha) hr=0x00000000 as-expected
+  blend (ZERO,SRC_COLOR) multiply, alpha factors ONE/ZERO/ADD (separate alpha) hr=0x00000000 as-expected
+  -- functional check: draw src=(0.50,0.25,1.00,0.50) over dst=(0.20,0.40,0.60,0.80) with every state, compare the read-back pixel --
+  [ ok ] (ONE,ZERO) opaque                    got 127  64 255 127   expected 128  64 255 128
+  [ ok ] (ONE,ONE) additive                   got 178 165 255 127   expected 179 166 255 128
+  [ ok ] (SRC_ALPHA,INV_SRC_ALPHA) alpha      got  90  83 204 127   expected  89  83 204 128
+  [ ok ] (ONE,INV_SRC_ALPHA) premultiplied    got 153 115 255 127   expected 153 115 255 128
+  [ ok ] (ZERO,SRC_COLOR) multiply            got  26  26 153 127   expected  26  26 153 128
+  => PASS (14 as expected, 0 unexpected, 0 info)
+[run] render blend: finished, exit code 0, 0.1 s
+
+---- T5 render at FL 9_1 on HARDWARE {9_1 only} [table] ----
+  device HARDWARE {9_1 only}: hr=0x00000000 FL=9_1 (0x9100)
+  adapter behind it: "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+  -- CheckFormatSupport at the 9_1 device (compare with games_recon/bad_piggies_bench/design/bench_hw.txt) --
+  R8G8B8A8_TYPELESS      hr=0x80004005 FAILED                                         [same as PC]
+  R8G8B8A8_UNORM         hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=1     [same as PC]
+  B8G8R8A8_UNORM         hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  B8G8R8A8_TYPELESS      hr=0x80004005 FAILED                                         [same as PC]
+  R32G8X24_TYPELESS      hr=0x80004005 FAILED                                         [same as PC]
+  D32_FLOAT_S8X24_UINT   hr=0x80004005 FAILED                                         [same as PC]
+  D24_UNORM_S8_UINT      hr=0x00000000 tex2d=1 rt=0 ds=1 sample=0 mip=0 ib=0 vb=0     [same as PC]
+  R24G8_TYPELESS         hr=0x80004005 FAILED                                         [same as PC]
+  D16_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=1 sample=0 mip=0 ib=0 vb=0     [same as PC]
+  R16_TYPELESS           hr=0x80004005 FAILED                                         [same as PC]
+  A8_UNORM               hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=0 ib=0 vb=0     [same as PC]
+  B4G4R4A4_UNORM         hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  BC1_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  BC3_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  R16G16B16A16_FLOAT     hr=0x80004005 FAILED                                         [same as PC]
+  R32_UINT               hr=0x80004005 FAILED                                         [same as PC]
+  R16_UINT               hr=0x00000000 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=1 vb=0     [same as PC]
+  B5G6R5_UNORM           hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  B5G5R5A1_UNORM         hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  R8_UNORM               hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  R8G8_UNORM             hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=0 ib=0 vb=0     [same as PC]
+  BC2_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  R8G8B8A8_UNORM_SRGB    hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  D32_FLOAT              hr=0x80004005 FAILED                                         [same as PC]
+  B8G8R8X8_UNORM         hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=0     [same as PC]
+  R16_UNORM              hr=0x80004005 FAILED                                         [same as PC]
+  R16_FLOAT              hr=0x80004005 FAILED                                         [same as PC]
+  -- textures --
+  depth R32G8X24_TYPELESS DS|SR 1366x768 (Unity 24-bit depth)        FAIL hr=0x80070057 [same as PC]
+  depth R32G8X24_TYPELESS DS only                                    FAIL hr=0x80070057 [same as PC]
+  depth D24_UNORM_S8_UINT DS (the fix)                               OK   hr=0x00000000 [same as PC]
+  depth R24G8_TYPELESS DS|SR                                         OK   hr=0x00000000 [same as PC]
+  depth D24_UNORM_S8_UINT DS|SR                                      FAIL hr=0x80070057 [same as PC]
+  depth R16_TYPELESS DS|SR (16-bit branch)                           OK   hr=0x00000000 [same as PC]
+  depth D16_UNORM DS                                                 OK   hr=0x00000000 [same as PC]
+  colour RT R8G8B8A8_TYPELESS RT|SR 1024x1024                        FAIL hr=0x80070057 [same as PC]
+  colour RT B8G8R8A8_TYPELESS RT|SR                                  FAIL hr=0x80070057 [same as PC]
+  colour RT R8G8B8A8_UNORM RT|SR (the fix)                           OK   hr=0x00000000 [same as PC]
+  tex 2049x16 RGBA8 1 mip (wider than 2048)                          OK   hr=0x00000000 [same as PC]
+  tex 2160x1080 RGBA8 1 mip                                          OK   hr=0x00000000 [same as PC]
+  tex 2048x2048 RGBA8 1 mip                                          OK   hr=0x00000000 [same as PC]
+  tex 2048x2048 BC3 1 mip (atlases)                                  OK   hr=0x00000000 [same as PC]
+  tex 4096x2048 RGBA8 12 mips (NPOT round-up of 2160x1080)           OK   hr=0x00000000 [same as PC]
+  tex 124x124 RGBA8 7 mips (NPOT with mips)                          OK   hr=0x00000000 [same as PC]
+  tex 124x124 RGBA8 1 mip                                            OK   hr=0x00000000 [same as PC]
+  tex 128x128 RGBA8 8 mips (POT round-up)                            OK   hr=0x00000000 [same as PC]
+  tex 1024x652 RGBA8 11 mips                                         OK   hr=0x00000000 [same as PC]
+  tex 36x16 BC3 1 mip (35x16 rounded to block size)                  OK   hr=0x00000000 [same as PC]
+  tex 200x200 BC3 1 mip (NPOT)                                       OK   hr=0x00000000 [same as PC]
+  tex 200x200 BC1 1 mip (NPOT)                                       OK   hr=0x00000000 [same as PC]
+  tex 100x60 BC1 1 mip (NPOT)                                        OK   hr=0x00000000 [same as PC]
+  tex 200x200 BC3 8 mips (NPOT with mips)                            OK   hr=0x00000000 [same as PC]
+  tex 128x128 A8_UNORM 8 mips                                        FAIL hr=0x80070057 [same as PC]
+  tex 128x128 A8_UNORM 1 mip                                         OK   hr=0x00000000 [same as PC]
+  tex 1024x1024 A8_UNORM 1 mip (SDF atlases)                         OK   hr=0x00000000 [same as PC]
+  tex 64x64 B4G4R4A4_UNORM 1 mip                                     OK   hr=0x00000000 [same as PC]
+  tex 64x64 B4G4R4A4_UNORM 7 mips                                    OK   hr=0x00000000 [same as PC]
+  -- sampler states --
+  sampler ANISOTROPIC MaxAnisotropy=16                               FAIL hr=0x80070057 [same as PC]
+  sampler ANISOTROPIC MaxAnisotropy=2                                OK   hr=0x00000000 [same as PC]
+  sampler LINEAR with MaxAnisotropy=16 (field ignored?)              OK   hr=0x00000000 [same as PC]
+  sampler LINEAR MinLOD=-FLT_MAX MaxLOD=FLT_MAX (Unity default)      OK   hr=0x00000000 [same as PC]
+  sampler LINEAR MipLODBias=-0.5                                     OK   hr=0x00000000 [same as PC]
+  sampler LINEAR MaxAnisotropy=0                                     OK   hr=0x00000000 [same as PC]
+  sampler MIRROR_ONCE                                                FAIL hr=0x80070057 [same as PC]
+  sampler comparison (shadow)                                        OK   hr=0x00000000 [same as PC]
+  -- rasterizer / blend / depth-stencil --
+  rasterizer DepthClipEnable=FALSE ('ZClip False')                   FAIL hr=0x8007000e [same as PC]
+  rasterizer DepthClip=TRUE scissor, depth bias                      OK   hr=0x00000000 [same as PC]
+  blend SrcAlpha/InvSrcAlpha, alpha = colour factors                 OK   hr=0x00000000 [same as PC]
+  blend separate alpha factors (One,One)                             OK   hr=0x00000000 [same as PC]
+  blend separate alpha op (BlendOpAlpha=MAX)                         OK   hr=0x00000000 [same as PC]
+  blend AlphaToCoverageEnable=TRUE                                   FAIL hr=0x80070057 [same as PC]
+  blend colour mask 14 (RGB)                                         OK   hr=0x00000000 [same as PC]
+  blend colour mask 0                                                OK   hr=0x00000000 [same as PC]
+  depth-stencil front == back                                        OK   hr=0x00000000 [same as PC]
+  depth-stencil front != back (two-sided)                            OK   hr=0x00000000 [same as PC]
+  -- queries and buffers --
+  query TIMESTAMP_DISJOINT                                           OK   hr=0x00000000 [same as PC]
+  query TIMESTAMP                                                    OK   hr=0x00000000 [same as PC]
+  query EVENT                                                        OK   hr=0x00000000 [same as PC]
+  query OCCLUSION                                                    FAIL hr=0x80070057 [same as PC]
+  query OCCLUSION_PREDICATE                                          FAIL hr=0x80070057 [same as PC]
+  dynamic index buffer 4096 B                                        OK   hr=0x00000000 [same as PC]
+  buffer VB|IB combined                                              FAIL hr=0x80070057 [same as PC]
+  constant buffer 368 bytes (UnityPerFrame)                          OK   hr=0x00000000 [same as PC]
+  => INFO (0 as expected, 0 unexpected, 82 info)
+[run] render table: finished, exit code 0, 0.4 s
+
+---- T6 full device vtable copy + Unity-style swap chain + Present + ResizeBuffers ----
+  device HARDWARE {9_1} BGRA|SINGLETHREADED (like Unity, no debug layer): hr=0x00000000 FL=9_1
+  QI ID3D11Device  hr=0x00000000 ptr=00d37254 same-object=1 same-vtbl=1
+  QI ID3D11Device1 hr=0x00000000 ptr=00d37254 same-object=1 same-vtbl=1
+  QI ID3D11Device2 hr=0x00000000 ptr=00d37254 same-object=1 same-vtbl=1
+  QI ID3D11Device3 hr=0x00000000 ptr=00d37254 same-object=1 same-vtbl=1
+  QI ID3D11Device4 hr=0x00000000 ptr=00d37254 same-object=1 same-vtbl=1
+  QI ID3D11Device5 hr=0x00000000 ptr=00d37254 same-object=1 same-vtbl=1
+  device vtable at 723d6038 (page protect 0x20): 121 consecutive entries point into d3d11.dll (ID3D11Device=43, Device1=50, Device2=54, Device3=65, Device4=67, Device5=69)
+  vtable swapped (121 slots copied; slots 0 QI, 5 CreateTexture2D, 9 CreateRenderTargetView, 33 CheckFeatureSupport, 37 GetFeatureLevel are hooked)
+  window created: 000f061e
+  QI IDXGIDevice through the swapped vtable                                hr=0x00000000 as-expected
+  CreateSwapChainForHwnd [Unity's desc: usage 0x30 FLIP_SEQUENTIAL 2 buffers flags 0x40]: hr=0x00000000
+  calls made by DXGI into the hooked slots during swap-chain creation: QI 8, CreateTexture2D 0, CreateRTV 0, CheckFeatureSupport 0, GetFeatureLevel 0
+  back buffer: 640x360 format 87 bind flags 0x28
+  CreateShaderResourceView(back buffer)                              OK   hr=0x00000000 
+  CreateRenderTargetView(back buffer) through the copy                     hr=0x00000000 as-expected
+  (RTV hook count now 1)
+  30 x Present(0,0) hr=0x00000000 in 73.0 ms
+  30 x Present                                                             hr=0x00000000 as-expected
+  ResizeBuffers while the RTV is alive: hr=0x887a0001 (the PC returned DXGI_ERROR_INVALID_CALL 0x887a0001 - expected)
+  ResizeBuffers 800x450 after releasing the RTV                            hr=0x00000000 as-expected
+  5 x Present after the resize                                             hr=0x00000000 as-expected
+  QI ID3D11Device3 through the copy: hr=0x00000000
+  ID3D11Device3::CreateTexture2D1 through the copy hr=0x00000000; the CreateTexture2D hook fired 0 times (a Device3 caller bypasses the slot-5 hook)
+  GetDeviceRemovedReason                                                   hr=0x00000000 as-expected
+    >>> new module after device creation: C:\Windows\SYSTEM32\nvd3dum.dll   <-- NVIDIA user-mode driver?
+    >>> new module after device creation: C:\Windows\System32\uiautomationcore.dll   <-- GPU vendor driver?
+    other modules loaded by device creation: RPCRT4.dll ADVAPI32.dll sechost.dll VERSION.dll D3D10Level9.dll uxtheme.dll combase.dll bcryptPrimitives.dll 
+         MSCTF.dll OLEAUT32.dll tiptsf.dll dwmapi.dll kernel.appcore.dll textinputframework.dll CoreUIComponents.dll 
+         CoreMessaging.dll SHCORE.dll ntmarta.dll wintypes.dll usermgrcli.dll dcomp.dll clbcatq.dll sxs.dll OLEACC.dll 
+         twinapi.dll twinapi.appcore.dll bcrypt.dll ole32.dll 
+  => PASS (7 as expected, 0 unexpected, 2 info)
+[run] vt: finished, exit code 0, 0.4 s
+
+---- T7 speed [hw91]: HARDWARE, FL {9_1 only} ----
+  device HARDWARE {9_1 only}: hr=0x00000000 FL=9_1 (0x9100)
+  adapter behind it: "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+  fill: warm-up frame (10 quads) 21.4 ms, second frame 11.9 ms -> 200 quads per measured frame (target 400 ms, at most 200)
+  fill: first frame at that size took 175.1 ms
+  FILL RATE: 200 alpha-blended full-screen quads (1280x720) x 20 frames: 174.60 ms/frame avg (best 173.04) = 1055.7 Mpixel/s
+  CPU draws [Map(WRITE_DISCARD) + VSSetConstantBuffers per draw]:
+      500 draws x 20 frames: submit 2.24 ms/frame, total 6.61 ms/frame => 4.5 us/draw submit, 13.2 us/draw total
+  CPU draws [UpdateSubresource + VSSetConstantBuffers per draw]:
+      500 draws x 20 frames: submit 2.23 ms/frame, total 6.57 ms/frame => 4.5 us/draw submit, 13.1 us/draw total
+  CPU draws [VSSetConstantBuffers1 windows into a dynamic ring (Unity's path)]:
+      500 draws x 20 frames: submit 1.92 ms/frame, total 6.34 ms/frame => 3.8 us/draw submit, 12.7 us/draw total
+  GetDeviceRemovedReason after the speed test                              hr=0x00000000 as-expected
+    >>> new module after device creation: C:\Windows\SYSTEM32\nvd3dum.dll   <-- NVIDIA user-mode driver?
+    other modules loaded by device creation: RPCRT4.dll ADVAPI32.dll sechost.dll VERSION.dll D3D10Level9.dll 
+  => PASS (1 as expected, 0 unexpected, 4 info)
+[run] speed hw91: finished, exit code 0, 4.2 s
+
+---- T7 speed [hwbest]: HARDWARE, best feature level ----
+  device HARDWARE {11_1..9_1}: hr=0x00000000 FL=9_1 (0x9100)
+  adapter behind it: "Software Adapter" vendor=0000 device=0000 flags=0x0 -> SOFTWARE
+  the best HARDWARE level IS 9_1: identical to the hw91 run, nothing more to measure
+  => INFO (0 as expected, 0 unexpected, 1 info)
+[run] speed hwbest: finished, exit code 0, 0.1 s
+
+---- T7 speed [warpbest]: WARP, best feature level ----
+  device WARP {11_1..9_1}: hr=0x00000000 FL=11_1 (0xb100)
+  adapter behind it: "Microsoft Basic Render Driver" vendor=1414 device=008c flags=0x2 -> SOFTWARE
+  fill: warm-up frame (10 quads) 222.4 ms, second frame 199.9 ms -> 20 quads per measured frame (target 400 ms, at most 200)
+  fill: first frame at that size took 395.5 ms
+  FILL RATE: 20 alpha-blended full-screen quads (1280x720) x 15 frames: 489.01 ms/frame avg (best 425.14) = 37.7 Mpixel/s
+  CPU draws [Map(WRITE_DISCARD) + VSSetConstantBuffers per draw]:
+      500 draws x 20 frames: submit 23.35 ms/frame, total 45.81 ms/frame => 46.7 us/draw submit, 91.6 us/draw total
+  CPU draws [UpdateSubresource + VSSetConstantBuffers per draw]:
+      500 draws x 20 frames: submit 21.03 ms/frame, total 40.27 ms/frame => 42.1 us/draw submit, 80.5 us/draw total
+  CPU draws [VSSetConstantBuffers1 windows into a dynamic ring (Unity's path)]:
+      500 draws x 20 frames: submit 20.76 ms/frame, total 42.61 ms/frame => 41.5 us/draw submit, 85.2 us/draw total
+  GetDeviceRemovedReason after the speed test                              hr=0x00000000 as-expected
+    >>> new module after device creation: C:\Windows\SYSTEM32\D3D10Warp.dll   <-- WARP software rasterizer
+    other modules loaded by device creation: RPCRT4.dll uxtheme.dll combase.dll bcryptPrimitives.dll 
+  => PASS (1 as expected, 0 unexpected, 4 info)
+[run] speed warpbest: finished, exit code 0, 11.0 s
+
+==================================================================================
+SUMMARY (m0probe 1.0 ARM32 build)
+==================================================================================
+Machine: Windows 10.0.15035, ARM (32-bit), 4 CPU core(s)
+GPU: NVIDIA Tegra 4 (hardware adapter, vendor 0x4144564e) - listed by DXGI
+Default HARDWARE device (what our host and Unity get) runs on: "Software Adapter" -> SOFTWARE
+  >>> the 'hardware' device is a SOFTWARE renderer: no GPU acceleration on this OS image <<<
+d3d10warp.dll loaded by the HARDWARE device creation: no; GPU vendor driver module loaded: YES
+%SystemRoot%\System32\d3d10warp.dll present: yes
+True max feature level: HW 9_1, WARP 11_1
+Unity's exact first call (EnumAdapters(0), [11_1..10_0], 0x21): hr=0x887a0004, level -  (stock game would FAIL here)
+  adapter 0 with its own device: hr=0x00000000 level 9_1
+  adapter 1 with its own device: hr=0x00000000 level 11_1
+HARDWARE accepts single requests: 9_3=no 9_2=no 9_1=yes 10_0=no
+[HARDWARE {9_1}] Redcon shaders at 9_1: 10/10
+[HARDWARE {9_1}] GD 9_3 shaders at 9_1: 30/30 (the 18 containers of the 9 programs the game uses: 18/18); ANGLE internal level_9_1 shaders: 10/10
+[HARDWARE {9_1}] Bad Piggies replacements at 9_1: 113/113; Unity originals refused (expected all): 2/2
+[WARP {9_1}] Redcon shaders at 9_1: 10/10
+[WARP {9_1}] GD 9_3 shaders at 9_1: 30/30 (the 18 containers of the 9 programs the game uses: 18/18); ANGLE internal level_9_1 shaders: 10/10
+[WARP {9_1}] Bad Piggies replacements at 9_1: 113/113; Unity originals refused (expected all): 2/2
+Bad Piggies sprite draw + read-back (replacement layout): pixel 200 100 50 255 -> OK
+  signature-only input layout draw: pixel 200 100 50 255 -> OK
+  VSSetConstantBuffers1 (cbuffer offset) draw: pixel 200 100 50 255 -> OK
+Redcon blend states drawn and read back correctly: 5/5
+D3D9_OPTIONS FullNonPow2TextureSupport (HW device): 1 (PC: 1)
+Device vtable copy: OK, measured vtable length 121 slots (PC: 174)
+  swap chain accepted by the driver: rung 0 (Unity's desc: usage 0x30 FLIP_SEQUENTIAL 2 buffers flags 0x40)
+Fill rate (1280x720 alpha-blended quads): HARDWARE {9_1} 1055.7 Mpixel/s | HARDWARE best-level (same device as {9_1}) | WARP best-level 37.7
+  HARDWARE {9_1} / WARP = 28.51x (hardware path is clearly faster)
+CPU cost per draw with a constant-buffer update (HARDWARE {9_1}): Map 13.2 us | UpdateSubresource 13.1 us | VSSetConstantBuffers1 windows 12.7 us
+
+PER-TEST RESULT (PASS = every checked expectation held, FAIL = some did not, INFO = measurements only, CRASH/TIMEOUT = the test process died / hung)
+  adapters                 PASS
+  fl hw                    PASS
+  fl a0                    PASS
+  fl a1                    PASS
+  fl warp                  PASS
+  fl unity                 INFO
+  fl hwsingle              INFO
+  fl warpsingle            INFO
+  shaders hw               PASS
+  shaders warp             PASS
+  render draw              PASS
+  render il                PASS
+  render cboff             PASS
+  render blend             PASS
+  render table             INFO
+  vt                       PASS
+  speed hw91               PASS
+  speed hwbest             INFO
+  speed warpbest           PASS
+
+Done. Please send back m0probe.log (and nothing else is needed).

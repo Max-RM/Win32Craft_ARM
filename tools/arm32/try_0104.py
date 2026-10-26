@@ -231,12 +231,14 @@ def main():
             print("   ", line[:200])
         failed += 1 if rc else 0
     if a.integration and not a.unit:
-        rc, out = run([sys.executable, str(HERE / "test_0104_core.py"), "--src", "tools/arm32/test_0104_all.c"])
-        tail = [l for l in out.splitlines() if l.startswith("==") or "CHECK FAILED" in l or "TIMEOUT" in l or "error" in l or l.startswith("selftest against")]
-        print("INTEGRATION", "ok" if rc == 0 else "FAILED rc=%d" % rc)
-        for line in tail[:20]:
-            print("   ", line[:200])
-        failed += 1 if rc else 0
+        # Minecraft PE 0.10.4 (XAML-page profile) and REDCON 1 (code-built panel, CompositionTarget frames): both mock games against the same real units
+        for label, harness in (("INTEGRATION", "tools/arm32/test_0104_all.c"), ("INTEGRATION REDCON", "tools/arm32/test_redcon_all.c")):
+            rc, out = run([sys.executable, str(HERE / "test_0104_core.py"), "--src", harness])
+            tail = [l for l in out.splitlines() if l.startswith("==") or "CHECK FAILED" in l or "TIMEOUT" in l or "error" in l or l.startswith("selftest against")]
+            print(label, "ok" if rc == 0 else "FAILED rc=%d" % rc)
+            for line in tail[:20]:
+                print("   ", line[:200])
+            failed += 1 if rc else 0
     print("RESULT:", "OK" if not failed else "FAILED (%d problem(s))" % failed)
     sys.exit(1 if failed else 0)
 

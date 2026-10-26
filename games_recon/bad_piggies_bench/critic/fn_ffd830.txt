@@ -1,0 +1,401 @@
+function sub_ffd830  [00ffd830..00ffdc72) len=1090
+00ffd830: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+00ffd834: 0df11c0b add.w    fp, sp, #0x1c               
+00ffd838: a9b0     sub      sp, #0xa4                   
+00ffd83a: 6f46     mov      r7, sp                      
+00ffd83c: 82b0     sub      sp, #8                      
+00ffd83e: 6ff00103 mvn      r3, #1                      
+00ffd842: c7e92633 strd     r3, r3, [r7, #0x98]         
+00ffd846: 8946     mov      sb, r1                      
+00ffd848: 0546     mov      r5, r0                      
+00ffd84a: 35f7eddd bl       #0x733428                     ; sub_733428
+00ffd84e: d0f8f433 ldr.w    r3, [r0, #0x3f4]            
+00ffd852: 022b     cmp      r3, #2                      
+00ffd854: a8bf     it       ge                          
+00ffd856: 0126     movge    r6, #1                      
+00ffd858: b8bf     it       lt                          
+00ffd85a: 0026     movlt    r6, #0                      
+00ffd85c: 35f7e4dd bl       #0x733428                     ; sub_733428
+00ffd860: d0f8bc30 ldr.w    r3, [r0, #0xbc]             
+00ffd864: 4ff4f878 mov.w    r8, #0x1f0                  
+00ffd868: 13f4804f tst.w    r3, #0x4000                 
+00ffd86c: 39d1     bne      #0xffd8e2                   
+00ffd86e: 2a69     ldr      r2, [r5, #0x10]             
+00ffd870: 12ea080f tst.w    r2, r8                      
+00ffd874: 35d0     beq      #0xffd8e2                   
+00ffd876: eb68     ldr      r3, [r5, #0xc]              
+00ffd878: 45f60034 movw     r4, #0x5b00                   ; -> 0x12665b00 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/BufferD3D1"
+00ffd87c: c1f26624 movt     r4, #0x1266                 
+00ffd880: 17f13000 adds.w   r0, r7, #0x30               
+00ffd884: 0093     str      r3, [sp]                    
+00ffd886: 6b69     ldr      r3, [r5, #0x14]             
+00ffd888: 04f14801 add.w    r1, r4, #0x48               
+00ffd88c: 17f460f1 bl       #0x814b50                     ; sub_814b50
+00ffd890: 43f60803 movw     r3, #0x3808                   ; -> 0x11733808 .rdata+0x1c808
+00ffd894: c1f27313 movt     r3, #0x1173                 
+00ffd898: c7e90133 strd     r3, r3, [r7, #4]            
+00ffd89c: fb60     str      r3, [r7, #0xc]              
+00ffd89e: 0123     movs     r3, #1                      
+00ffd8a0: 87f82c30 strb.w   r3, [r7, #0x2c]             
+00ffd8a4: 0368     ldr      r3, [r0]                    
+00ffd8a6: 03b9     cbnz     r3, #0xffd8aa               
+00ffd8a8: 031d     adds     r3, r0, #4                  
+00ffd8aa: 3b60     str      r3, [r7]                    
+00ffd8ac: 0023     movs     r3, #0                      
+00ffd8ae: c7e90434 strd     r3, r4, [r7, #0x10]         
+00ffd8b2: 2123     movs     r3, #0x21                   
+00ffd8b4: bb61     str      r3, [r7, #0x18]             
+00ffd8b6: 4ff40073 mov.w    r3, #0x200                  
+00ffd8ba: fb61     str      r3, [r7, #0x1c]             
+00ffd8bc: 0023     movs     r3, #0                      
+00ffd8be: 3846     mov      r0, r7                      
+00ffd8c0: c7e90833 strd     r3, r3, [r7, #0x20]         
+00ffd8c4: bb62     str      r3, [r7, #0x28]             
+00ffd8c6: 94f4a3d1 bl       #0x91c10                      ; sub_91c10
+00ffd8ca: 386b     ldr      r0, [r7, #0x30]             
+00ffd8cc: 28b1     cbz      r0, #0xffd8da               
+00ffd8ce: 7b6b     ldr      r3, [r7, #0x34]             
+00ffd8d0: 1bb1     cbz      r3, #0xffd8da               
+00ffd8d2: 17f14801 adds.w   r1, r7, #0x48               
+00ffd8d6: 35f7f1d3 bl       #0x3330bc                     ; sub_3330bc
+00ffd8da: 2846     mov      r0, r5                      
+00ffd8dc: fef78cfd bl       #0xffc3f8                     ; sub_ffc3f8
+00ffd8e0: c4e1     b        #0xffdc6c                     ; sub_ffdc6c
+00ffd8e2: e868     ldr      r0, [r5, #0xc]              
+00ffd8e4: 6969     ldr      r1, [r5, #0x14]             
+00ffd8e6: 0023     movs     r3, #0                      
+00ffd8e8: c7e91c33 strd     r3, r3, [r7, #0x70]         
+00ffd8ec: 3867     str      r0, [r7, #0x70]             
+00ffd8ee: 0429     cmp      r1, #4                      
+00ffd8f0: c7e91e33 strd     r3, r3, [r7, #0x78]         
+00ffd8f4: c7e92033 strd     r3, r3, [r7, #0x80]         
+00ffd8f8: 06d8     bhi      #0xffd908                   
+00ffd8fa: dfe801f0 tbb      [pc, r1]                    
+00ffd8fe: 0503     lsls     r5, r0, #0xc                
+00ffd900: 0305     lsls     r3, r0, #0x14               
+00ffd902: 0303     lsls     r3, r0, #0xc                
+00ffd904: 0223     movs     r3, #2                      
+00ffd906: 00e0     b        #0xffd90a                     ; sub_ffd90a
+00ffd908: 0023     movs     r3, #0                      
+00ffd90a: 2a69     ldr      r2, [r5, #0x10]             
+00ffd90c: 7b67     str      r3, [r7, #0x74]             
+00ffd90e: 0023     movs     r3, #0                      
+00ffd910: 12f0010f tst.w    r2, #1                      
+00ffd914: 18bf     it       ne                          
+00ffd916: 0123     movne    r3, #1                      
+00ffd918: 0224     movs     r4, #2                      
+00ffd91a: 2242     tst      r2, r4                      
+00ffd91c: 4ff4007e mov.w    lr, #0x200                  
+00ffd920: 18bf     it       ne                          
+00ffd922: 2343     orrne    r3, r4                      
+00ffd924: 12ea0e0f tst.w    r2, lr                      
+00ffd928: 01d0     beq      #0xffd92e                   
+00ffd92a: 43f00403 orr      r3, r3, #4                  
+00ffd92e: 12ea0804 ands.w   r4, r2, r8                  
+00ffd932: 04d0     beq      #0xffd93e                   
+00ffd934: 43f00803 orr      r3, r3, #8                  
+00ffd938: 0eb1     cbz      r6, #0xffd93e               
+00ffd93a: 43f08003 orr      r3, r3, #0x80               
+00ffd93e: bb67     str      r3, [r7, #0x78]             
+00ffd940: 0329     cmp      r1, #3                      
+00ffd942: 02d1     bne      #0xffd94a                   
+00ffd944: 43f01003 orr      r3, r3, #0x10               
+00ffd948: bb67     str      r3, [r7, #0x78]             
+00ffd94a: 0429     cmp      r1, #4                      
+00ffd94c: 07d8     bhi      #0xffd95e                   
+00ffd94e: dfe801f0 tbb      [pc, r1]                    
+00ffd952: 0603     lsls     r6, r0, #0xc                
+00ffd954: 0306     lsls     r3, r0, #0x18               
+00ffd956: 0303     lsls     r3, r0, #0xc                
+00ffd958: 4ff48033 mov.w    r3, #0x10000                
+00ffd95c: 00e0     b        #0xffd960                     ; sub_ffd960
+00ffd95e: 0023     movs     r3, #0                      
+00ffd960: fb67     str      r3, [r7, #0x7c]             
+00ffd962: 4ff4807a mov.w    sl, #0x100                  
+00ffd966: 0023     movs     r3, #0                      
+00ffd968: 2021     movs     r1, #0x20                   
+00ffd96a: 12ea0a0f tst.w    r2, sl                      
+00ffd96e: 04d0     beq      #0xffd97a                   
+00ffd970: 0eb1     cbz      r6, #0xffd976               
+00ffd972: 1023     movs     r3, #0x10                   
+00ffd974: 0ae0     b        #0xffd98c                     ; sub_ffd98c
+00ffd976: 0023     movs     r3, #0                      
+00ffd978: 08e0     b        #0xffd98c                     ; sub_ffd98c
+00ffd97a: 0a42     tst      r2, r1                      
+00ffd97c: 18bf     it       ne                          
+00ffd97e: 2023     movne    r3, #0x20                   
+00ffd980: 04d1     bne      #0xffd98c                   
+00ffd982: 1cb1     cbz      r4, #0xffd98c               
+00ffd984: 12f0030f tst.w    r2, #3                      
+00ffd988: 08bf     it       eq                          
+00ffd98a: 4023     moveq    r3, #0x40                   
+00ffd98c: 43f60804 movw     r4, #0x3808                   ; -> 0x11733808 .rdata+0x1c808
+00ffd990: c1f27314 movt     r4, #0x1173                 
+00ffd994: c7f88030 str.w    r3, [r7, #0x80]             
+00ffd998: 13f0100f tst.w    r3, #0x10                   
+00ffd99c: 24d0     beq      #0xffd9e8                   
+00ffd99e: 2b69     ldr      r3, [r5, #0x10]             
+00ffd9a0: 0c28     cmp      r0, #0xc                    
+00ffd9a2: 38bf     it       lo                          
+00ffd9a4: 0c20     movlo    r0, #0xc                    
+00ffd9a6: 3867     str      r0, [r7, #0x70]             
+00ffd9a8: 0b42     tst      r3, r1                      
+00ffd9aa: 1dd0     beq      #0xffd9e8                   
+00ffd9ac: 0123     movs     r3, #1                      
+00ffd9ae: 87f82c30 strb.w   r3, [r7, #0x2c]             
+00ffd9b2: 46f27813 movw     r3, #0x6178                   ; -> 0x12666178 str "Compute Buffer: Invalid combination of ComputeBufferType fla"
+00ffd9b6: c1f26623 movt     r3, #0x1266                 
+00ffd9ba: c7e90034 strd     r3, r4, [r7]                
+00ffd9be: 0023     movs     r3, #0                      
+00ffd9c0: c7e90343 strd     r4, r3, [r7, #0xc]          
+00ffd9c4: 46f23013 movw     r3, #0x6130                   ; -> 0x12666130 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/D3D11Utils"
+00ffd9c8: c1f26623 movt     r3, #0x1266                 
+00ffd9cc: bc60     str      r4, [r7, #8]                
+00ffd9ce: c7f81ce0 str.w    lr, [r7, #0x1c]             
+00ffd9d2: 7b61     str      r3, [r7, #0x14]             
+00ffd9d4: 40f27913 movw     r3, #0x179                  
+00ffd9d8: bb61     str      r3, [r7, #0x18]             
+00ffd9da: 0023     movs     r3, #0                      
+00ffd9dc: 3846     mov      r0, r7                      
+00ffd9de: c7e90833 strd     r3, r3, [r7, #0x20]         
+00ffd9e2: bb62     str      r3, [r7, #0x28]             
+00ffd9e4: 94f414d1 bl       #0x91c10                      ; sub_91c10
+00ffd9e8: 2b69     ldr      r3, [r5, #0x10]             
+00ffd9ea: 13ea080f tst.w    r3, r8                      
+00ffd9ee: 3bd0     beq      #0xffda68                   
+00ffd9f0: ea69     ldr      r2, [r5, #0x1c]             
+00ffd9f2: 42b1     cbz      r2, #0xffda06               
+00ffd9f4: b2f5006f cmp.w    r2, #0x800                  
+00ffd9f8: 05d8     bhi      #0xffda06                   
+00ffd9fa: 12f0030f tst.w    r2, #3                      
+00ffd9fe: 02d1     bne      #0xffda06                   
+00ffda00: c7f88420 str.w    r2, [r7, #0x84]             
+00ffda04: 30e0     b        #0xffda68                     ; sub_ffda68
+00ffda06: 46f22821 movw     r1, #0x6228                   ; -> 0x12666228 str "Invalid stride %i for Compute Buffer - must be greater than "
+00ffda0a: c1f26621 movt     r1, #0x1266                 
+00ffda0e: 17f13000 adds.w   r0, r7, #0x30               
+00ffda12: 17f49df0 bl       #0x814b50                     ; sub_814b50
+00ffda16: 0123     movs     r3, #1                      
+00ffda18: 87f82c30 strb.w   r3, [r7, #0x2c]             
+00ffda1c: 0368     ldr      r3, [r0]                    
+00ffda1e: c7e90144 strd     r4, r4, [r7, #4]            
+00ffda22: fc60     str      r4, [r7, #0xc]              
+00ffda24: 03b9     cbnz     r3, #0xffda28               
+00ffda26: 031d     adds     r3, r0, #4                  
+00ffda28: 3b60     str      r3, [r7]                    
+00ffda2a: 0023     movs     r3, #0                      
+00ffda2c: 3b61     str      r3, [r7, #0x10]             
+00ffda2e: 46f2e013 movw     r3, #0x61e0                   ; -> 0x126661e0 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/D3D11Utils"
+00ffda32: c1f26623 movt     r3, #0x1266                 
+00ffda36: 3846     mov      r0, r7                      
+00ffda38: 7b61     str      r3, [r7, #0x14]             
+00ffda3a: 40f28113 movw     r3, #0x181                  
+00ffda3e: bb61     str      r3, [r7, #0x18]             
+00ffda40: 0123     movs     r3, #1                      
+00ffda42: fb61     str      r3, [r7, #0x1c]             
+00ffda44: 0023     movs     r3, #0                      
+00ffda46: c7e90833 strd     r3, r3, [r7, #0x20]         
+00ffda4a: bb62     str      r3, [r7, #0x28]             
+00ffda4c: 94f4e0d0 bl       #0x91c10                      ; sub_91c10
+00ffda50: 386b     ldr      r0, [r7, #0x30]             
+00ffda52: 28b1     cbz      r0, #0xffda60               
+00ffda54: 7b6b     ldr      r3, [r7, #0x34]             
+00ffda56: 1bb1     cbz      r3, #0xffda60               
+00ffda58: 17f14801 adds.w   r1, r7, #0x48               
+00ffda5c: 35f72ed3 bl       #0x3330bc                     ; sub_3330bc
+00ffda60: 2846     mov      r0, r5                      
+00ffda62: fef7c9fc bl       #0xffc3f8                     ; sub_ffc3f8
+00ffda66: 01e1     b        #0xffdc6c                     ; sub_ffdc6c
+00ffda68: 0023     movs     r3, #0                      
+00ffda6a: b9f1000f cmp.w    sb, #0                      
+00ffda6e: c7e92233 strd     r3, r3, [r7, #0x88]         
+00ffda72: c7f88890 str.w    sb, [r7, #0x88]             
+00ffda76: 08bf     it       eq                          
+00ffda78: 0022     moveq    r2, #0                      
+00ffda7a: c7f89030 str.w    r3, [r7, #0x90]             
+00ffda7e: 01d0     beq      #0xffda84                   
+00ffda80: 17f18802 adds.w   r2, r7, #0x88               
+00ffda84: 4df6e049 movw     sb, #0xdce0                   ; -> 0x12b2dce0 .data+0x1ddce0
+00ffda88: c1f2b229 movt     sb, #0x12b2                 
+00ffda8c: 05f12803 add.w    r3, r5, #0x28               
+00ffda90: 17f17001 adds.w   r1, r7, #0x70               
+00ffda94: d9f80040 ldr.w    r4, [sb]                    
+00ffda98: 2046     mov      r0, r4                      
+00ffda9a: 2468     ldr      r4, [r4]                    
+00ffda9c: e468     ldr      r4, [r4, #0xc]              
+00ffda9e: a047     blx      r4                          
+00ffdaa0: 0028     cmp      r0, #0                      
+00ffdaa2: 0eda     bge      #0xffdac2                   
+00ffdaa4: 0090     str      r0, [sp]                    
+00ffdaa6: 45f60030 movw     r0, #0x5b00                   ; -> 0x12665b00 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/BufferD3D1"
+00ffdaaa: c1f26620 movt     r0, #0x1266                 
+00ffdaae: d5e90331 ldrd     r3, r1, [r5, #0xc]          
+00ffdab2: 6a69     ldr      r2, [r5, #0x14]             
+00ffdab4: c030     adds     r0, #0xc0                   
+00ffdab6: 95f4c5d2 bl       #0x93044                      ; sub_93044
+00ffdaba: 2846     mov      r0, r5                      
+00ffdabc: fef79cfc bl       #0xffc3f8                     ; sub_ffc3f8
+00ffdac0: d4e0     b        #0xffdc6c                     ; sub_ffdc6c
+00ffdac2: 4823     movs     r3, #0x48                   
+00ffdac4: e968     ldr      r1, [r5, #0xc]              
+00ffdac6: a86a     ldr      r0, [r5, #0x28]             
+00ffdac8: 0093     str      r3, [sp]                    
+00ffdaca: 45f60843 movw     r3, #0x5c08                   ; -> 0x12665c08 str "C:\buildslave\unity\build\Runtime/GfxDevice/d3d11/BufferD3D1"
+00ffdace: c1f26623 movt     r3, #0x1266                 
+00ffdad2: 2a46     mov      r2, r5                      
+00ffdad4: 35f798d3 bl       #0x333208                     ; sub_333208
+00ffdad8: d5e90332 ldrd     r3, r2, [r5, #0xc]          
+00ffdadc: 45f64c41 movw     r1, #0x5c4c                   ; -> 0x12665c4c str "Buffer-%d-%d"
+00ffdae0: c1f26621 movt     r1, #0x1266                 
+00ffdae4: 17f13000 adds.w   r0, r7, #0x30               
+00ffdae8: 17f432f0 bl       #0x814b50                     ; sub_814b50
+00ffdaec: 0146     mov      r1, r0                      
+00ffdaee: a86a     ldr      r0, [r5, #0x28]             
+00ffdaf0: 01f098f8 bl       #0xffec24                     ; sub_ffec24
+00ffdaf4: 386b     ldr      r0, [r7, #0x30]             
+00ffdaf6: 28b1     cbz      r0, #0xffdb04               
+00ffdaf8: 7b6b     ldr      r3, [r7, #0x34]             
+00ffdafa: 1bb1     cbz      r3, #0xffdb04               
+00ffdafc: 17f14801 adds.w   r1, r7, #0x48               
+00ffdb00: 35f7dcd2 bl       #0x3330bc                     ; sub_3330bc
+00ffdb04: 002e     cmp      r6, #0                      
+00ffdb06: 00f0b180 beq.w    #0xffdc6c                   
+00ffdb0a: 2c69     ldr      r4, [r5, #0x10]             
+00ffdb0c: 14ea080f tst.w    r4, r8                      
+00ffdb10: 00f0ac80 beq.w    #0xffdc6c                   
+00ffdb14: e869     ldr      r0, [r5, #0x1c]             
+00ffdb16: 30b1     cbz      r0, #0xffdb26               
+00ffdb18: e968     ldr      r1, [r5, #0xc]              
+00ffdb1a: 00b9     cbnz     r0, #0xffdb1e               
+00ffdb1c: f9de     .word/data
+00ffdb1e: 03f415d4 bl       #0x134c                       ; sub_134c
+00ffdb22: 0646     mov      r6, r0                      
+00ffdb24: 00e0     b        #0xffdb28                     ; sub_ffdb28
+00ffdb26: 0026     movs     r6, #0                      
+00ffdb28: 14f0010f tst.w    r4, #1                      
+00ffdb2c: 02d0     beq      #0xffdb34                   
+00ffdb2e: 4ff00108 mov.w    r8, #1                      
+00ffdb32: 01e0     b        #0xffdb38                     ; sub_ffdb38
+00ffdb34: 4ff00008 mov.w    r8, #0                      
+00ffdb38: 0023     movs     r3, #0                      
+00ffdb3a: 14f02002 ands     r2, r4, #0x20               
+00ffdb3e: c7e91633 strd     r3, r3, [r7, #0x58]         
+00ffdb42: c7e91833 strd     r3, r3, [r7, #0x60]         
+00ffdb46: bb66     str      r3, [r7, #0x68]             
+00ffdb48: 18bf     it       ne                          
+00ffdb4a: 2723     movne    r3, #0x27                   
+00ffdb4c: 08bf     it       eq                          
+00ffdb4e: 0023     moveq    r3, #0                      
+00ffdb50: bb65     str      r3, [r7, #0x58]             
+00ffdb52: b8f1000f cmp.w    r8, #0                      
+00ffdb56: 03d0     beq      #0xffdb60                   
+00ffdb58: 2923     movs     r3, #0x29                   
+00ffdb5a: bb65     str      r3, [r7, #0x58]             
+00ffdb5c: eb68     ldr      r3, [r5, #0xc]              
+00ffdb5e: 9e08     lsrs     r6, r3, #2                  
+00ffdb60: 14ea0a03 ands.w   r3, r4, sl                  
+00ffdb64: 01d0     beq      #0xffdb6a                   
+00ffdb66: 2a21     movs     r1, #0x2a                   
+00ffdb68: b965     str      r1, [r7, #0x58]             
+00ffdb6a: 0121     movs     r1, #1                      
+00ffdb6c: f965     str      r1, [r7, #0x5c]             
+00ffdb6e: 0021     movs     r1, #0                      
+00ffdb70: 3966     str      r1, [r7, #0x60]             
+00ffdb72: 1bb1     cbz      r3, #0xffdb7c               
+00ffdb74: eb68     ldr      r3, [r5, #0xc]              
+00ffdb76: 9b08     lsrs     r3, r3, #2                  
+00ffdb78: 7b66     str      r3, [r7, #0x64]             
+00ffdb7a: 00e0     b        #0xffdb7e                     ; sub_ffdb7e
+00ffdb7c: 7e66     str      r6, [r7, #0x64]             
+00ffdb7e: 0023     movs     r3, #0                      
+00ffdb80: 02b1     cbz      r2, #0xffdb84               
+00ffdb82: 0123     movs     r3, #1                      
+00ffdb84: 14f0400f tst.w    r4, #0x40                   
+00ffdb88: 01d0     beq      #0xffdb8e                   
+00ffdb8a: 43f00203 orr      r3, r3, #2                  
+00ffdb8e: 14f0800f tst.w    r4, #0x80                   
+00ffdb92: 01d0     beq      #0xffdb98                   
+00ffdb94: 43f00403 orr      r3, r3, #4                  
+00ffdb98: d9f80040 ldr.w    r4, [sb]                    
+00ffdb9c: bb66     str      r3, [r7, #0x68]             
+00ffdb9e: a96a     ldr      r1, [r5, #0x28]             
+00ffdba0: 2046     mov      r0, r4                      
+00ffdba2: 2468     ldr      r4, [r4]                    
+00ffdba4: 05f13003 add.w    r3, r5, #0x30               
+00ffdba8: 17f15802 adds.w   r2, r7, #0x58               
+00ffdbac: 246a     ldr      r4, [r4, #0x20]             
+00ffdbae: a047     blx      r4                          
+00ffdbb0: eb69     ldr      r3, [r5, #0x1c]             
+00ffdbb2: 45f65c41 movw     r1, #0x5c5c                   ; -> 0x12665c5c str "ComputeBuffer-UAV-%dx%d"
+00ffdbb6: c1f26621 movt     r1, #0x1266                 
+00ffdbba: 3846     mov      r0, r7                      
+00ffdbbc: 3246     mov      r2, r6                      
+00ffdbbe: 16f4c7f7 bl       #0x814b50                     ; sub_814b50
+00ffdbc2: 0146     mov      r1, r0                      
+00ffdbc4: 286b     ldr      r0, [r5, #0x30]             
+00ffdbc6: 01f02df8 bl       #0xffec24                     ; sub_ffec24
+00ffdbca: 3846     mov      r0, r7                      
+00ffdbcc: 72f418d6 bl       #0x70800                      ; sub_70800
+00ffdbd0: 0023     movs     r3, #0                      
+00ffdbd2: c7e90c33 strd     r3, r3, [r7, #0x30]         
+00ffdbd6: c7e90e33 strd     r3, r3, [r7, #0x38]         
+00ffdbda: c7e91033 strd     r3, r3, [r7, #0x40]         
+00ffdbde: 2b69     ldr      r3, [r5, #0x10]             
+00ffdbe0: 13f0200f tst.w    r3, #0x20                   
+00ffdbe4: 08d0     beq      #0xffdbf8                   
+00ffdbe6: 2723     movs     r3, #0x27                   
+00ffdbe8: 3b63     str      r3, [r7, #0x30]             
+00ffdbea: 0b23     movs     r3, #0xb                    
+00ffdbec: 7b63     str      r3, [r7, #0x34]             
+00ffdbee: 0023     movs     r3, #0                      
+00ffdbf0: bb63     str      r3, [r7, #0x38]             
+00ffdbf2: 0123     movs     r3, #1                      
+00ffdbf4: 3b64     str      r3, [r7, #0x40]             
+00ffdbf6: 14e0     b        #0xffdc22                     ; sub_ffdc22
+00ffdbf8: 13ea0a03 ands.w   r3, r3, sl                  
+00ffdbfc: 18bf     it       ne                          
+00ffdbfe: 2a22     movne    r2, #0x2a                   
+00ffdc00: 08bf     it       eq                          
+00ffdc02: 0022     moveq    r2, #0                      
+00ffdc04: 3a63     str      r2, [r7, #0x30]             
+00ffdc06: b8f1000f cmp.w    r8, #0                      
+00ffdc0a: 01d0     beq      #0xffdc10                   
+00ffdc0c: 2922     movs     r2, #0x29                   
+00ffdc0e: 3a63     str      r2, [r7, #0x30]             
+00ffdc10: 0122     movs     r2, #1                      
+00ffdc12: 7a63     str      r2, [r7, #0x34]             
+00ffdc14: 0022     movs     r2, #0                      
+00ffdc16: ba63     str      r2, [r7, #0x38]             
+00ffdc18: 1bb1     cbz      r3, #0xffdc22               
+00ffdc1a: eb68     ldr      r3, [r5, #0xc]              
+00ffdc1c: 9b08     lsrs     r3, r3, #2                  
+00ffdc1e: fb63     str      r3, [r7, #0x3c]             
+00ffdc20: 00e0     b        #0xffdc24                     ; sub_ffdc24
+00ffdc22: fe63     str      r6, [r7, #0x3c]             
+00ffdc24: d9f80040 ldr.w    r4, [sb]                    
+00ffdc28: a96a     ldr      r1, [r5, #0x28]             
+00ffdc2a: 05f12c03 add.w    r3, r5, #0x2c               
+00ffdc2e: 2046     mov      r0, r4                      
+00ffdc30: 2468     ldr      r4, [r4]                    
+00ffdc32: 17f13002 adds.w   r2, r7, #0x30               
+00ffdc36: e469     ldr      r4, [r4, #0x1c]             
+00ffdc38: a047     blx      r4                          
+00ffdc3a: eb69     ldr      r3, [r5, #0x1c]             
+00ffdc3c: 45f67441 movw     r1, #0x5c74                   ; -> 0x12665c74 str "ComputeBuffer-SRV-%dx%d"
+00ffdc40: c1f26621 movt     r1, #0x1266                 
+00ffdc44: 3846     mov      r0, r7                      
+00ffdc46: 3246     mov      r2, r6                      
+00ffdc48: 16f482f7 bl       #0x814b50                     ; sub_814b50
+00ffdc4c: 0146     mov      r1, r0                      
+00ffdc4e: e86a     ldr      r0, [r5, #0x2c]             
+00ffdc50: 00f0e8ff bl       #0xffec24                     ; sub_ffec24
+00ffdc54: 3846     mov      r0, r7                      
+00ffdc56: 72f4d3d5 bl       #0x70800                      ; sub_70800
+00ffdc5a: 08f061fe bl       #0x1006920                    ; sub_1006920
+00ffdc5e: 296a     ldr      r1, [r5, #0x20]             
+00ffdc60: 43f23423 movw     r3, #0x3234                 
+00ffdc64: 1844     add      r0, r3                      
+00ffdc66: 2a46     mov      r2, r5                      
+00ffdc68: 0ff078fa bl       #0x100d15c                    ; sub_100d15c
+00ffdc6c: 2bb0     add      sp, #0xac                   
+00ffdc6e: bde8f08f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, pc}

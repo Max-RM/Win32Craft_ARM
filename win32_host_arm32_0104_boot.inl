@@ -28,23 +28,28 @@
 #define X104_BOOT_GAME_EXCEPTION   39
 #define X104_BOOT_SELFTEST_FAILED  40
 
-#define X104_IMAGE_SIZE_PATCHED    0x00E6F000u    /* facts pe_patch_plan.host_identification */
-#define X104_IMAGE_SIZE_STOCK      0x00E6E000u
 /* X104_TIMER_PUMP, X104_WM_QUIT, X104_WM_WAKE live in the CORE (the async unit needs them and this file is included last) */
 
 /* ---- image identification ---- */
-static const BYTE x104_callsite_patched_bytes[4] = { 0x09, 0xf0, 0x77, 0xfc };     /* bl 0x20A364 (pe_patch_plan.patch_callsite) */
-
-/* quiet check (no log): PE32 ARMNT with SizeOfImage == the patched 0.10.4 constant.  Used by Win32Bootstrap before anything is logged. */
+/* quiet check (no log): PE32 ARMNT whose SizeOfImage is the patched constant of a known game profile (the patcher writes it; facts
+ * pe_patch_plan.host_identification for 0.10.4).  Selects x104_profile.  Used by Win32Bootstrap before anything is logged. */
 static BOOL x104_image_matches(BYTE *image)
 {
     DWORD pe_offset;
     const BYTE *pe;
+    unsigned index;
     if (!image || IsBadReadPtr(image, 0x40) || image[0] != 'M' || image[1] != 'Z') return FALSE;
     pe_offset = *(const DWORD *)(image + 0x3c);
     if (pe_offset < 0x40 || pe_offset > 0x1000 || IsBadReadPtr(image + pe_offset, 0x100) || *(const DWORD *)(image + pe_offset) != 0x00004550u) return FALSE;
     pe = image + pe_offset;
-    return *(const WORD *)(pe + 4) == 0x01c4u && *(const WORD *)(pe + 0x18) == 0x010bu && *(const DWORD *)(pe + 0x50) == X104_IMAGE_SIZE_PATCHED;
+    if (*(const WORD *)(pe + 4) != 0x01c4u || *(const WORD *)(pe + 0x18) != 0x010bu) return FALSE;
+    for (index = 0; index < ARRAYSIZE(x104_profiles); ++index) {
+        if (*(const DWORD *)(pe + 0x50) == x104_profiles[index]->size_of_image_patched) {
+            x104_profile = x104_profiles[index];
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 static int x104_identify_image(BYTE *image)
@@ -59,9 +64,9 @@ static int x104_identify_image(BYTE *image)
         if (image && !IsBadReadPtr(image, 0x40) && image[0] == 'M') {
             pe_offset = *(const DWORD *)(image + 0x3c);
             pe = image + pe_offset;
-            x104_logf("X104 image identification FAILED: machine %04x SizeOfImage %08lx (expected ARMNT 01c4 and %08lx = patched 0.10.4 exe; %08lx is the stock exe)",
-                      (unsigned)*(const WORD *)(pe + 4), (unsigned long)*(const DWORD *)(pe + 0x50), (unsigned long)X104_IMAGE_SIZE_PATCHED,
-                      (unsigned long)X104_IMAGE_SIZE_STOCK);
+            x104_logf("X104 image identification FAILED: machine %04x SizeOfImage %08lx (expected ARMNT 01c4 and %08lx = patched %s exe; %08lx is the stock exe)",
+                      (unsigned)*(const WORD *)(pe + 4), (unsigned long)*(const DWORD *)(pe + 0x50), (unsigned long)x104_profile->size_of_image_patched,
+                      x104_profile->title, (unsigned long)x104_profile->size_of_image_stock);
         } else {
             x104_logf("X104 image identification FAILED: no PE image at %p", (void *)image);
         }
@@ -73,12 +78,20 @@ static int x104_identify_image(BYTE *image)
     size_of_image = *(const DWORD *)(pe + 0x50);
     entry = *(const DWORD *)(pe + 0x28);
     dll_characteristics = *(const WORD *)(pe + 0x5e);
-    x104_logf("X104 game image: base=%p SizeOfImage=%08lx sections=%u entry=%08lx DllCharacteristics=%04x (expected 7 sections, entry 0020095d, 8140)",
-              (void *)image, (unsigned long)size_of_image, (unsigned)sections, (unsigned long)entry, (unsigned)dll_characteristics);
-    if (sections != 7) x104_logf("X104 warning: %u sections, the patched 0.10.4 exe has 7 (6 + .d3imp)", (unsigned)sections);
+    x104_logf("X104 game image (%s): base=%p SizeOfImage=%08lx sections=%u entry=%08lx DllCharacteristics=%04x (expected %u sections, entry %08lx, 8140)",
+              x104_profile->key, (void *)image, (unsigned long)size_of_image, (unsigned)sections, (unsigned long)entry, (unsigned)dll_characteristics,
+              (unsigned)x104_profile->sections_patched, (unsigned long)x104_profile->entry_rva);
+    if (sections != x104_profile->sections_patched)
+        x104_logf("X104 warning: %u sections, the patched %s exe has %u (stock + .d3imp)", (unsigned)sections, x104_profile->title, (unsigned)x104_profile->sections_patched);
+    if (entry != x104_profile->entry_rva) x104_logf("X104 warning: entry %08lx, the %s exe has %08lx (another build?)", (unsigned long)entry, x104_profile->title,
+                                                    (unsigned long)x104_profile->entry_rva);
     if (dll_characteristics & 0x1000u) x104_logf("X104 warning: IMAGE_DLLCHARACTERISTICS_APPCONTAINER still set (patcher step hdr.dllchars missing)");
-    if (!arm32_check_bytes(image + X104_RVA_CALLSITE, x104_callsite_patched_bytes, sizeof(x104_callsite_patched_bytes), "X104 patched call site 0x200A72"))
-        x104_logf("X104 warning: the CRT call site does not hold the patcher's bl 0x20A364 (we were entered some other way?)");
+    {
+        char label[64];
+        wsprintfA(label, "X104 patched call site 0x%lX", (unsigned long)x104_profile->callsite_rva);
+        if (!arm32_check_bytes(image + x104_profile->callsite_rva, x104_profile->callsite_bytes, sizeof(x104_profile->callsite_bytes), label))
+            x104_logf("X104 warning: the CRT call site does not hold the patcher's bl 0x%lX (we were entered some other way?)", (unsigned long)x104_profile->trampoline_rva);
+    }
     return 0;
 }
 
@@ -148,6 +161,21 @@ static void x104_parse_options(void)
               x104.opt_window_explicit ? " (explicit)" : " (default, clamped to the work area when the window is created)", (unsigned)arm32_feature_level_cap);
 }
 
+/* the user chose a feature level (WIN32CRAFT_FEATURE_LEVEL or --feature-level[=]...) */
+static BOOL x104_feature_level_explicit(void)
+{
+    char value[8];
+    const wchar_t *line = GetCommandLineW();
+    static const wchar_t needle[] = L"--feature-level";
+    unsigned index;
+    if (GetEnvironmentVariableA("WIN32CRAFT_FEATURE_LEVEL", value, sizeof(value))) return TRUE;
+    for (; line && *line; ++line) {
+        for (index = 0; needle[index] && line[index] == needle[index]; ++index) { }
+        if (!needle[index]) return TRUE;
+    }
+    return FALSE;
+}
+
 /* ---- failure / diagnostics ---- */
 static int x104_boot_fail(int code, const char *what)
 {
@@ -156,7 +184,7 @@ static int x104_boot_fail(int code, const char *what)
     x104_logf("X104 bootstrap FAILED at step '%s': %s -> process exit code %d", arm32_boot_step_name, what, code);
     arm32_boot_watchdog_stop = 1;
     arm32_boot_narrow(log_path, sizeof(log_path), Win32CraftLogPathW);
-    wsprintfA(message, "Win32Craft could not start Minecraft PE 0.10.4 (error %d at step '%s').\n\n%s\n\nLog file: %s", code, arm32_boot_step_name, what,
+    wsprintfA(message, "Win32Craft could not start %s (error %d at step '%s').\n\n%s\n\nLog file: %s", x104_profile->title, code, arm32_boot_step_name, what,
               log_path[0] ? log_path : "(none)");
     MessageBoxA(NULL, message, "Win32Craft", 0x00000010u | 0x00010000u);
     log_line("X104 bootstrap: terminating the process after the failure");
@@ -193,11 +221,20 @@ static int X104_API x104_hook_purecall(void)
     return ((int (X104_API *)(void))x104_orig_purecall)();
 }
 
+/* _exit_app(code): msvcr120_app ends a Store app through CoreApplication.Exit.  A desktop process has no CoreApplication view, so that call never
+ * returns: every 0.10.4 and REDCON device run hung there until the 30 s exit guard terminated it (logs of 2026-10-21/22).  The process is ended at
+ * once instead, the same way the guard ended it 30 s later (and the way the app model ends a phone app: no static destructors).  The game has already
+ * handled Suspending and the UI loop has finished. */
 static void X104_API x104_hook_exit_app(UINT a, UINT b, UINT c, UINT d)
 {
+    (void)c;
+    (void)d;
     x104_logf("X104 game called _exit_app(%08lx, %08lx) from game rva %08lx", (unsigned long)a, (unsigned long)b,
               (unsigned long)x104_game_rva_of((ULONG_PTR)__builtin_return_address(0)));
-    ((void (X104_API *)(UINT, UINT, UINT, UINT))x104_orig_exit_app)(a, b, c, d);
+    x104_logf("X104 exit: the original _exit_app would wait for CoreApplication.Exit for ever in a desktop process - ending the process now (code %lu)",
+              (unsigned long)a);
+    arm32_boot_watchdog_stop = 1;
+    TerminateProcess(GetCurrentProcess(), a);
 }
 
 static void X104_API x104_hook_exit(UINT a, UINT b, UINT c, UINT d)
@@ -245,16 +282,34 @@ X104_RAISE_HOOK(NullReference, "NullReference", 0x20B6B0)
 X104_RAISE_HOOK(InvalidCast, "InvalidCast", 0x20B6B4)
 X104_RAISE_HOOK(NotImplemented, "NotImplemented", 0x20B6B8)
 
+/* rva = the MCPE fact through x104_iat_fact(): 0 for a game whose cells are not known by rva.  Such a game is hooked by NAME ONLY: an import it
+ * does not have is skipped (arm32_iat_resolve_cell would otherwise fall back to image + 0 = the PE header). */
 static BOOL x104_hook_one(BYTE *image, const char *name, DWORD rva, void *hook, void **original, const char *what)
 {
+    if (!rva) {
+        void **cell = arm32_iat_find_cell(image, FALSE, name);
+        if (!cell) {
+            x104_logf("X104 hook %s: %s is not imported by this game - skipped", what, name);
+            return FALSE;
+        }
+        rva = (DWORD)((ULONG_PTR)cell - (ULONG_PTR)image);
+    }
     return arm32_iat_hook_import(image, FALSE, name, rva, hook, original, what);
+}
+
+/* rva of a regular import cell by name, else the MCPE fact for the MCPE exe, else 0 (the two raw-cell installers of win32_host.c need an rva) */
+static DWORD x104_import_cell_rva(BYTE *image, const char *name, DWORD mcpe_rva)
+{
+    void **cell = arm32_iat_find_cell(image, FALSE, name);
+    if (cell) return (DWORD)((ULONG_PTR)cell - (ULONG_PTR)image);
+    return x104_iat_fact(mcpe_rva);
 }
 
 static void x104_install_diagnostic_hooks(BYTE *image)
 {
     unsigned installed = 0;
     unsigned wanted = 0;
-#define X104_DIAG(name, rva, hook, original, what) do { ++wanted; if (x104_hook_one(image, (name), (rva), (void *)(hook), (void **)&(original), (what))) ++installed; } while (0)
+#define X104_DIAG(name, rva, hook, original, what) do { ++wanted; if (x104_hook_one(image, (name), x104_iat_fact(rva), (void *)(hook), (void **)&(original), (what))) ++installed; } while (0)
 #define X104_RAISE(short_name, rva) \
     X104_DIAG("?__abi_WinRTraise" #short_name "Exception@@YAXXZ", (rva), x104_hook_raise_##short_name, x104_orig_raise_##short_name, "raise" #short_name);
     X104_DIAG("abort", X104_RVA_IAT_ABORT, x104_hook_abort, x104_orig_abort, "abort");
@@ -276,16 +331,21 @@ static void x104_install_diagnostic_hooks(BYTE *image)
 static BOOL x104_install_iat_hooks(BYTE *image)
 {
     BOOL activation_ok;
-    activation_ok = arm32_iat_hook_import(image, FALSE, "?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z",
-                                          X104_RVA_IAT_GETACTIVATIONFACTORY, (void *)x104_activation_hook, &x104.original_activation,
-                                          "GetActivationFactoryByPCWSTR (X104 router)");
+    activation_ok = x104_hook_one(image, "?GetActivationFactoryByPCWSTR@@YAJPAXAAVGuid@Platform@@PAPAX@Z", x104_iat_fact(X104_RVA_IAT_GETACTIVATIONFACTORY),
+                                  (void *)x104_activation_hook, &x104.original_activation, "GetActivationFactoryByPCWSTR (X104 router)");
     if (!activation_ok) {
         x104_logf("X104 FATAL: the WinRT activation router could not be installed");
         return FALSE;
     }
     x104_logf("X104: WinRT activation router installed; original vccorlib function %p", x104.original_activation);
-    if (!install_exception_trace(image, X104_RVA_IAT_CXXTHROW)) x104_logf("X104 warning: _CxxThrowException trace not installed");
-    if (!install_d3d_compile_trace(image, X104_RVA_IAT_D3DCOMPILE)) x104_logf("X104 warning: D3DCompile logger not installed");
+    {
+        DWORD cxx_throw = x104_import_cell_rva(image, "_CxxThrowException", X104_RVA_IAT_CXXTHROW);
+        DWORD d3d_compile = x104_import_cell_rva(image, "D3DCompile", X104_RVA_IAT_D3DCOMPILE);
+        if (!cxx_throw) x104_logf("X104: _CxxThrowException is not imported by this game - no C++ exception trace");
+        else if (!install_exception_trace(image, cxx_throw)) x104_logf("X104 warning: _CxxThrowException trace not installed");
+        if (!d3d_compile) x104_logf("X104: D3DCompile is not imported by this game (precompiled shaders) - no D3DCompile logger");
+        else if (!install_d3d_compile_trace(image, d3d_compile)) x104_logf("X104 warning: D3DCompile logger not installed");
+    }
     x104_install_diagnostic_hooks(image);
     return TRUE;
 }
@@ -525,7 +585,7 @@ static HWND x104_create_window(HINSTANCE instance)
     klass.hInstance = instance;
     klass.hCursor = LoadCursorW(NULL, MAKEINTRESOURCEW(32512));
     klass.hbrBackground = (HBRUSH)(ULONG_PTR)(COLOR_WINDOWTEXT + 1);
-    klass.lpszClassName = L"MCPE0104Win32";
+    klass.lpszClassName = x104_profile->window_class;
     arm32_boot_step("window class");
     if (!RegisterClassExW(&klass) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
         x104_logf("X104 RegisterClassExW failed, GetLastError=%lu", (unsigned long)GetLastError());
@@ -582,7 +642,7 @@ static HWND x104_create_window(HINSTANCE instance)
               (long)(work.bottom - work.top), (long)work.left, (long)work.top, frame_w, frame_h, client_w, client_h, width, height, x, y,
               x104.opt_window_explicit ? " [--window given]" : "", x104.opt_fullscreen ? " [fullscreen]" : "");
     arm32_boot_step("create window");
-    window = CreateWindowExW(0, klass.lpszClassName, L"Win32Craft - Minecraft PE 0.10.4", style, x, y, width, height, NULL, NULL, instance, NULL);
+    window = CreateWindowExW(0, klass.lpszClassName, x104_profile->window_title, style, x, y, width, height, NULL, NULL, instance, NULL);
     if (!window) {
         x104_logf("X104 CreateWindowExW failed, GetLastError=%lu", (unsigned long)GetLastError());
         return NULL;
@@ -613,7 +673,7 @@ static char *x104_command_tail(void)
 static int x104_call_game_winmain(HINSTANCE instance, BOOL *crashed)
 {
     typedef int (*X104WinMainFn)(HINSTANCE, HINSTANCE, char *, int);
-    X104WinMainFn winmain = (X104WinMainFn)X104_CODE(X104_RVA_WINMAIN_WRAPPER);
+    X104WinMainFn winmain = (X104WinMainFn)X104_CODE(x104_profile->winmain_wrapper_rva);
     int result = -1;
     X104Seh seh;
     *crashed = FALSE;
@@ -658,15 +718,20 @@ static int x104_bootstrap(BYTE *image)
     lstrcpyW(x104.game_root, package_path);
     host_is_0104 = TRUE;
     game_image = image;
-    x104_logf("X104: Win32Craft Minecraft PE 0.10.4.40 (Windows Phone 8.1 XAML build) ARM32 host, built %s %s, thread %04lx = UI thread", __DATE__, __TIME__,
+    x104_logf("X104: Win32Craft %s (Windows Phone 8.1 XAML build) ARM32 host, built %s %s, thread %04lx = UI thread", x104_profile->title, __DATE__, __TIME__,
               (unsigned long)x104.main_thread_id);
 
     arm32_boot_step("X104 identify image");
     code = x104_identify_image(image);
-    if (code) return x104_boot_fail(code, "image identification: this is not the patched Minecraft PE 0.10.4.40 ARM32 exe (SizeOfImage 0x00E6F000)");
+    if (code) return x104_boot_fail(code, "image identification: this is not a patched ARM32 game exe of a known profile (SizeOfImage of the patcher's output)");
 
     arm32_boot_step("X104 host options");
     Win32CraftParseHostOptions();           /* feature-level cap (default 9_1), --input/--osk/--touch-api, -maxfps: shared with 1.2.8 */
+    if (!x104_feat(X104_FEAT_MCPE_PATCHES) && !x104_feature_level_explicit()) {
+        /* never force a level the game did not ask for: REDCON 1 offers 11_1 .. 9_1 itself and ships level_9 shaders */
+        arm32_feature_level_cap = 0;
+        x104_logf("X104: feature level: %s passes its own list to D3D11CreateDevice - no cap (WIN32CRAFT_FEATURE_LEVEL / --feature-level=... still force one)", x104_profile->title);
+    }
     x104_parse_options();
     {
         char root[MAX_PATH];
@@ -716,8 +781,12 @@ static int x104_bootstrap(BYTE *image)
     x104_flag_set(&x104.f_units_ready, "f_units_ready: all units initialised, window messages are routed to them from now on");
 
     arm32_boot_step("X104 verify WinMain wrapper");
-    if (!arm32_check_bytes(image + X104_RVA_WINMAIN_WRAPPER, ARM0104_STARTUP_FLOW_WINMAIN_THUNK_EXPECTED, 12, "X104 WinMain thunk 0x203EFC"))
-        return x104_boot_fail(X104_BOOT_WRAPPER_BYTES, "the game's WinMain thunk (rva 0x203EFC) does not hold the expected bytes: wrong exe build");
+    {
+        char label[64];
+        wsprintfA(label, "X104 WinMain thunk 0x%lX", (unsigned long)x104_profile->winmain_wrapper_rva);
+        if (!arm32_check_bytes(image + x104_profile->winmain_wrapper_rva, ARM0104_STARTUP_FLOW_WINMAIN_THUNK_EXPECTED, 12, label))
+            return x104_boot_fail(X104_BOOT_WRAPPER_BYTES, "the game's WinMain thunk does not hold the expected bytes: wrong exe build");
+    }
 
     if (x104.opt_selftest) {
         int failures;
@@ -737,8 +806,8 @@ static int x104_bootstrap(BYTE *image)
     }
 
     arm32_boot_step("X104 game WinMain");
-    x104_logf("X104: calling the game's WinMain wrapper (rva 0x203EFC, original-style arguments hInstance=%p, 0, command tail \"%s\", 1) on the UI thread; "
-              "Application::Start will run the fake UI loop inside it", (void *)instance, x104_command_tail());
+    x104_logf("X104: calling the game's WinMain wrapper (rva 0x%lX, original-style arguments hInstance=%p, 0, command tail \"%s\", 1) on the UI thread; "
+              "Application::Start will run the fake UI loop inside it", (unsigned long)x104_profile->winmain_wrapper_rva, (void *)instance, x104_command_tail());
     result = x104_call_game_winmain(instance, &crashed);
     x104_logf("X104: the game's WinMain returned %d%s", result, crashed ? " (after an unhandled exception)" : "");
 

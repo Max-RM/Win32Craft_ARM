@@ -333,7 +333,7 @@ static BOOL x104_platform_try_root(const wchar_t *candidate, const char *source,
     return TRUE;
 }
 
-/* (a) --data-dir=, (b) %APPDATA%\MinecraftPE\0.10.4, (c) <game_root>\LocalState: the first usable one becomes x104.data_root */
+/* (a) --data-dir=, (b) %APPDATA%\<profile data_subdir> (MinecraftPE\0.10.4, Win32Craft\Redcon), (c) <game_root>\LocalState: the first usable one becomes x104.data_root */
 static BOOL x104_platform_choose_data_root(void)
 {
     wchar_t appdata[MAX_PATH];
@@ -367,10 +367,10 @@ static BOOL x104_platform_choose_data_root(void)
                 x104_logf("X104 platform: <AppData> (%s) contains non-ASCII characters and has no ASCII 8.3 name", shown);
             }
         }
-        if (x104_platform_join(candidate, MAX_PATH, appdata, L"MinecraftPE\\0.10.4") &&
-            x104_platform_try_root(candidate, "%APPDATA%\\MinecraftPE\\0.10.4", chosen)) {
+        if (x104_platform_join(candidate, MAX_PATH, appdata, x104_profile->data_subdir) &&
+            x104_platform_try_root(candidate, x104_profile->data_subdir_text, chosen)) {
             lstrcpyW(x104.data_root, chosen);
-            lstrcpynA(x104_platform_state.data_root_source, "%APPDATA%\\MinecraftPE\\0.10.4", (int)sizeof(x104_platform_state.data_root_source));
+            lstrcpynA(x104_platform_state.data_root_source, x104_profile->data_subdir_text, (int)sizeof(x104_platform_state.data_root_source));
             return TRUE;
         }
     }
@@ -381,8 +381,8 @@ static BOOL x104_platform_choose_data_root(void)
         lstrcpynA(x104_platform_state.data_root_source, "<game root>\\LocalState", (int)sizeof(x104_platform_state.data_root_source));
         return TRUE;
     }
-    x104_logf("X104 platform: FATAL no usable data folder: tried --data-dir, <AppData>\\MinecraftPE\\0.10.4 and <game root>\\LocalState (each reason is logged above). "
-              "Pass --data-dir=<ASCII path of a writable folder>");
+    x104_logf("X104 platform: FATAL no usable data folder: tried --data-dir, %s and <game root>\\LocalState (each reason is logged above). "
+              "Pass --data-dir=<ASCII path of a writable folder>", x104_profile->data_subdir_text);
     return FALSE;
 }
 
@@ -511,6 +511,11 @@ static void x104_platform_xaudio2_probe(void)
         return;
     }
     x104_logf("X104 platform: XAudio2 probe FAILED hr=%08lx - sound disabled", (unsigned long)hr);
+    if (!x104_feat(X104_FEAT_MCPE_PATCHES)) {
+        x104_logf("X104 platform:   failing step: %s (%s) - no audio endpoint / audio service down?  (%s handles a failing XAudio2Create itself: it runs silently)", stage,
+                  x104_hr_name(hr), x104_profile->title);
+        return;
+    }
     x104_logf("X104 platform:   failing step: %s (%s) - no audio endpoint / audio service down?  SoundSystemRT::play and ::init become no-ops", stage, x104_hr_name(hr));
     patched_play = arm32_patch_cell((void **)X104_DATA(X104_RVA_CELL_SOUND_PLAY), X104_CODE(0x106688), X104_CODE(X104_RVA_NOOP_FUNCTION), NULL,
                                     "SoundSystemRT::play");
@@ -725,6 +730,68 @@ static HRESULT X104_API x104_platform_appdata_get_local_settings(void *self, voi
     return x104_return_iface(x104_platform_container_object(), &X104_IID_IApplicationDataContainer, value, "ApplicationData.LocalSettings");
 }
 
+/* RoamingSettings (REDCON 1 keeps string key/values there: games_recon/redcon_redcon-platform.md F9).  Values = a real Windows.Foundation.Collections.PropertySet
+ * from the OS runtime (IPropertySet -> IMap<String,Object>; works in a desktop process), created once; in memory only (not persisted between runs yet). */
+static void *x104_platform_roaming_values;          /* IInspectable of the PropertySet (AddRef'd once, kept) */
+
+static HRESULT X104_API x104_platform_roaming_get_values(void *self, void **value)
+{
+    static volatile LONG state;
+    static volatile LONG logged;
+    HRESULT hr = S_OK;
+    (void)self;
+    if (!value) return E_POINTER;
+    *value = NULL;
+    if (x104_once_begin(&state)) {
+        void *factory = NULL;
+        if (!x104.original_activation) {
+            hr = E_FAIL;
+        } else {
+            hr = ((X104ActivationFn)x104.original_activation)(L"Windows.Foundation.Collections.PropertySet", &X104_IID_IActivationFactory, &factory);
+            if (SUCCEEDED(hr) && factory) {
+                hr = X104_VFN(factory, 6, HRESULT (X104_API *)(void *, void **))(factory, &x104_platform_roaming_values);   /* IActivationFactory.ActivateInstance */
+                x104_raw_release(factory);
+            }
+        }
+        x104_logf("X104 platform: RoamingSettings.Values = OS PropertySet %p (hr 0x%08lx %s; in memory only, not persisted between runs)", x104_platform_roaming_values,
+                  (unsigned long)hr, x104_hr_name(hr));
+        x104_once_end(&state);
+    }
+    if (!x104_platform_roaming_values) {
+        X104_LOG_LIMITED(&logged, 6, "X104 platform: ERROR RoamingSettings.Values unavailable (no PropertySet) -> E_FAIL");
+        return E_FAIL;
+    }
+    x104_raw_addref(x104_platform_roaming_values);
+    *value = x104_platform_roaming_values;
+    return S_OK;
+}
+
+static HRESULT X104_API x104_platform_roaming_get_name(void *self, HSTRING *value)
+{
+    (void)self;
+    if (!value) return E_POINTER;
+    *value = NULL;
+    return S_OK;
+}
+
+X104_VTBL(x104_platform_vt_roaming, IApplicationDataContainer) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(IApplicationDataContainer, get_Name, x104_platform_roaming_get_name),
+    X104_SLOT(IApplicationDataContainer, get_Values, x104_platform_roaming_get_values)
+};
+static const X104IfaceDesc x104_platform_roaming_ifaces[] = { X104_IFACE(IApplicationDataContainer, x104_platform_vt_roaming) };
+X104_CLASS_DEF(x104_platform_roaming_class, "ApplicationDataContainer(Roaming)", L"Windows.Storage.ApplicationDataContainer", x104_platform_roaming_ifaces,
+               X104_CLASS_AGILE, NULL);
+X104_SINGLETON(x104_platform_roaming_object, x104_platform_roaming_class, X104Object)
+
+static HRESULT X104_API x104_platform_appdata_get_roaming_settings(void *self, void **value)
+{
+    static volatile LONG logged;
+    (void)self;
+    X104_LOG_LIMITED(&logged, 4, "X104 platform: ApplicationData.Current.RoamingSettings -> container object");
+    return x104_return_iface(x104_platform_roaming_object(), &X104_IID_IApplicationDataContainer, value, "ApplicationData.RoamingSettings");
+}
+
 static HRESULT X104_API x104_platform_appdata_get_local_folder(void *self, void **value)
 {
     static volatile LONG logged;
@@ -740,6 +807,7 @@ static HRESULT X104_API x104_platform_appdata_get_local_folder(void *self, void 
 X104_VTBL(x104_platform_vt_appdata, IApplicationData) = {
     X104_INSPECTABLE_SLOTS,
     X104_SLOT(IApplicationData, get_LocalSettings, x104_platform_appdata_get_local_settings),
+    X104_SLOT(IApplicationData, get_RoamingSettings, x104_platform_appdata_get_roaming_settings),
     X104_SLOT(IApplicationData, get_LocalFolder, x104_platform_appdata_get_local_folder)
 };
 static const X104IfaceDesc x104_platform_appdata_ifaces[] = { X104_IFACE(IApplicationData, x104_platform_vt_appdata) };
@@ -908,9 +976,82 @@ static HRESULT X104_API x104_platform_network_get_profile(void *self, void **pro
     return hr;
 }
 
+static X104Event x104_platform_network_status_event = { 0, "NetworkInformation.NetworkStatusChanged" };
+
+static HRESULT X104_API x104_platform_network_add_status_changed(void *self, void *handler, LONGLONG *token)
+{
+    (void)self;
+    x104_logf("X104 platform: NetworkInformation.add_NetworkStatusChanged(%p) stored (never raised: the host network state does not change)", handler);
+    return x104_event_add(&x104_platform_network_status_event, handler, token);
+}
+
+static HRESULT X104_API x104_platform_network_remove_status_changed(void *self, LONGLONG token)
+{
+    (void)self;
+    return x104_event_remove(&x104_platform_network_status_event, token);
+}
+
+/* an EMPTY IVectorView (parameterised: no IID of its own is needed, the game calls the slots on the typed out pointer) */
+static HRESULT X104_API x104_platform_emptyvec_get_at(void *self, UINT32 index, void **item)
+{
+    (void)self;
+    (void)index;
+    if (item) *item = NULL;
+    return X104_E_BOUNDS;
+}
+
+static HRESULT X104_API x104_platform_emptyvec_get_size(void *self, UINT32 *size)
+{
+    (void)self;
+    if (!size) return E_POINTER;
+    *size = 0;
+    return S_OK;
+}
+
+static HRESULT X104_API x104_platform_emptyvec_index_of(void *self, void *item, UINT32 *index, BYTE *found)
+{
+    (void)self;
+    (void)item;
+    if (index) *index = 0;
+    if (found) *found = 0;
+    return S_OK;
+}
+
+static HRESULT X104_API x104_platform_emptyvec_get_many(void *self, UINT32 start, UINT32 capacity, void **items, UINT32 *actual)
+{
+    (void)self;
+    (void)start;
+    (void)capacity;
+    (void)items;
+    if (actual) *actual = 0;
+    return S_OK;
+}
+
+X104_VTBL(x104_platform_vt_emptyvec, IVectorView) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(IVectorView, GetAt, x104_platform_emptyvec_get_at),
+    X104_SLOT(IVectorView, get_Size, x104_platform_emptyvec_get_size),
+    X104_SLOT(IVectorView, IndexOf, x104_platform_emptyvec_index_of),
+    X104_SLOT(IVectorView, GetMany, x104_platform_emptyvec_get_many)
+};
+static const X104IfaceDesc x104_platform_emptyvec_ifaces[] = { X104_IFACE_IID(&X104_IID_IInspectable, "IVectorView(empty)", x104_platform_vt_emptyvec) };
+X104_CLASS_DEF(x104_platform_emptyvec_class, "EmptyVectorView", L"Windows.Foundation.Collections.IVectorView`1", x104_platform_emptyvec_ifaces, X104_CLASS_AGILE, NULL);
+X104_SINGLETON(x104_platform_emptyvec_object, x104_platform_emptyvec_class, X104Object)
+
+static HRESULT X104_API x104_platform_network_get_profiles(void *self, void **profiles)
+{
+    static volatile LONG logged;
+    (void)self;
+    X104_LOG_LIMITED(&logged, 3, "X104 platform: NetworkInformation.GetConnectionProfiles -> empty vector (no adapter GUID for the game's device id)");
+    return x104_return_iface(x104_platform_emptyvec_object(), &X104_IID_IInspectable, profiles, "NetworkInformation.GetConnectionProfiles");
+}
+
 X104_VTBL(x104_platform_vt_network_statics, INetworkInformationStatics) = {
     X104_INSPECTABLE_SLOTS,
-    X104_SLOT(INetworkInformationStatics, GetInternetConnectionProfile, x104_platform_network_get_profile)
+    X104_SLOT(INetworkInformationStatics, GetConnectionProfiles, x104_platform_network_get_profiles),
+    X104_SLOT(INetworkInformationStatics, GetInternetConnectionProfile, x104_platform_network_get_profile),
+    X104_SLOT(INetworkInformationStatics, add_NetworkStatusChanged, x104_platform_network_add_status_changed),
+    X104_SLOT(INetworkInformationStatics, remove_NetworkStatusChanged, x104_platform_network_remove_status_changed)
 };
 static const X104IfaceDesc x104_platform_network_statics_ifaces[] = { X104_IFACE(INetworkInformationStatics, x104_platform_vt_network_statics) };
 X104_CLASS_DEF(x104_platform_network_statics_class, "NetworkInformationStatics", L"Windows.Networking.Connectivity.NetworkInformation", x104_platform_network_statics_ifaces,
@@ -920,12 +1061,92 @@ X104_SINGLETON(x104_platform_network_statics, x104_platform_network_statics_clas
 /* ======================================================================================================================
  * 11. CurrentAppSimulator / CurrentApp (+ LicenseInformation).  The AppPlatform "buy" cell is patched, so none of this runs on the boot path.
  * ====================================================================================================================== */
-static HRESULT X104_API x104_platform_license_get_product_licenses(void *self, void **value)
+/* ProductLicense: IsActive FALSE for every product (policy: the Windows Phone Store is closed, purchases cannot happen, nothing is reported as owned) */
+static HRESULT X104_API x104_platform_product_get_id(void *self, HSTRING *value)
 {
     (void)self;
     if (!value) return E_POINTER;
     *value = NULL;
     return S_OK;
+}
+
+static HRESULT X104_API x104_platform_product_get_is_active(void *self, BYTE *value)
+{
+    (void)self;
+    if (!value) return E_POINTER;
+    *value = 0;
+    return S_OK;
+}
+
+static HRESULT X104_API x104_platform_product_get_expiration(void *self, LONGLONG *value)
+{
+    (void)self;
+    if (!value) return E_POINTER;
+    *value = 0;
+    return S_OK;
+}
+
+X104_VTBL(x104_platform_vt_product, IProductLicense) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(IProductLicense, get_ProductId, x104_platform_product_get_id),
+    X104_SLOT(IProductLicense, get_IsActive, x104_platform_product_get_is_active),
+    X104_SLOT(IProductLicense, get_ExpirationDate, x104_platform_product_get_expiration)
+};
+static const X104IfaceDesc x104_platform_product_ifaces[] = { X104_IFACE(IProductLicense, x104_platform_vt_product) };
+X104_CLASS_DEF(x104_platform_product_class, "ProductLicense", L"Windows.ApplicationModel.Store.ProductLicense", x104_platform_product_ifaces, X104_CLASS_AGILE, NULL);
+X104_SINGLETON(x104_platform_product_object, x104_platform_product_class, X104Object)
+
+/* IMapView<String, ProductLicense>: Lookup(any id) -> the not-active license, HasKey TRUE, Size 0 */
+static HRESULT X104_API x104_platform_licmap_lookup(void *self, HSTRING key, void **value)
+{
+    static volatile LONG logged;
+    char shown[96];
+    (void)self;
+    x104_hstring_ascii(key, shown, sizeof(shown));
+    X104_LOG_LIMITED(&logged, 20, "X104 platform: ProductLicenses.Lookup(\"%s\") -> not active (the Store is closed: nothing is owned)", shown);
+    return x104_return_iface(x104_platform_product_object(), &X104_IID_IProductLicense, value, "ProductLicenses.Lookup");
+}
+
+static HRESULT X104_API x104_platform_licmap_get_size(void *self, UINT32 *size)
+{
+    (void)self;
+    if (!size) return E_POINTER;
+    *size = 0;
+    return S_OK;
+}
+
+static HRESULT X104_API x104_platform_licmap_has_key(void *self, HSTRING key, BYTE *found)
+{
+    (void)self;
+    (void)key;
+    if (!found) return E_POINTER;
+    *found = 1;
+    return S_OK;
+}
+
+static HRESULT X104_API x104_platform_licmap_split(void *self, void **first, void **second)
+{
+    (void)self;
+    if (first) *first = NULL;
+    if (second) *second = NULL;
+    return S_OK;
+}
+
+X104_VTBL(x104_platform_vt_licmap, IMapView) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(IMapView, Lookup, x104_platform_licmap_lookup),
+    X104_SLOT(IMapView, get_Size, x104_platform_licmap_get_size),
+    X104_SLOT(IMapView, HasKey, x104_platform_licmap_has_key),
+    X104_SLOT(IMapView, Split, x104_platform_licmap_split)
+};
+static const X104IfaceDesc x104_platform_licmap_ifaces[] = { X104_IFACE_IID(&X104_IID_IInspectable, "IMapView(ProductLicenses)", x104_platform_vt_licmap) };
+X104_CLASS_DEF(x104_platform_licmap_class, "ProductLicenses", L"Windows.Foundation.Collections.IMapView`2", x104_platform_licmap_ifaces, X104_CLASS_AGILE, NULL);
+X104_SINGLETON(x104_platform_licmap_object, x104_platform_licmap_class, X104Object)
+
+static HRESULT X104_API x104_platform_license_get_product_licenses(void *self, void **value)
+{
+    (void)self;
+    return x104_return_iface(x104_platform_licmap_object(), &X104_IID_IInspectable, value, "LicenseInformation.ProductLicenses");
 }
 
 static HRESULT X104_API x104_platform_license_get_is_active(void *self, BYTE *value)
@@ -1012,8 +1233,26 @@ X104_CLASS_DEF(x104_platform_simulator_class, "CurrentAppSimulatorStatics", L"Wi
                X104_CLASS_AGILE | X104_CLASS_FACTORY, NULL);
 X104_SINGLETON(x104_platform_simulator_statics, x104_platform_simulator_class, X104Object)
 
+static HRESULT X104_API x104_platform_store_load_listing(void *self, void **operation)
+{
+    (void)self;
+    if (operation) *operation = NULL;
+    x104_logf("X104 platform: CurrentApp.LoadListingInformationAsync - the Store is not available on this host -> E_NOTIMPL");
+    return X104_E_NOT_IMPL;
+}
+
+static HRESULT X104_API x104_platform_store_get_app_receipt(void *self, void **operation)
+{
+    (void)self;
+    if (operation) *operation = NULL;
+    x104_logf("X104 platform: CurrentApp.GetAppReceiptAsync - the Store is not available on this host -> E_NOTIMPL");
+    return X104_E_NOT_IMPL;
+}
+
 X104_VTBL(x104_platform_vt_currentapp, ICurrentApp) = {
     X104_INSPECTABLE_SLOTS,
+    X104_SLOT(ICurrentApp, LoadListingInformationAsync, x104_platform_store_load_listing),
+    X104_SLOT(ICurrentApp, GetAppReceiptAsync, x104_platform_store_get_app_receipt),
     X104_SLOT(ICurrentApp, get_LicenseInformation, x104_platform_store_get_license),
     X104_SLOT(ICurrentApp, RequestAppPurchaseAsync, x104_platform_store_request_app_purchase),
     X104_SLOT(ICurrentApp, RequestProductPurchaseAsync, x104_platform_store_request_product_purchase),
@@ -1112,15 +1351,20 @@ static BOOL x104_platform_install(BYTE *image)
     x104_narrow(game_shown, sizeof(game_shown), x104.game_root);
     x104_narrow(data_shown, sizeof(data_shown), x104.data_root);
     x104_logf("X104 platform: game root=%s data root=%s (source %s) writable=1", game_shown, data_shown, x104_platform_state.data_root_source);
-    x104_logf("X104 platform: the game creates %s\\games\\com.mojang\\minecraftpe (options.txt, clientId.txt, minecraftWorlds) below the data root; assets are read from %s\\data",
-              data_shown, game_shown);
+    if (x104_feat(X104_FEAT_MCPE_PATCHES))
+        x104_logf("X104 platform: the game creates %s\\games\\com.mojang\\minecraftpe (options.txt, clientId.txt, minecraftWorlds) below the data root; assets are read from %s\\data",
+                  data_shown, game_shown);
+    else
+        x104_logf("X104 platform: %s keeps its saves / settings files in %s (ApplicationData.LocalFolder); assets are read from %s", x104_profile->title, data_shown, game_shown);
 
     x104_platform_memory_decide();
-    x104_platform_patch_cells();
+    if (x104_feat(X104_FEAT_MCPE_PATCHES)) x104_platform_patch_cells();
+    else x104_logf("X104 platform: no AppPlatform cell patches for %s (its store / network / vibration calls go through the WinRT fakes)", x104_profile->title);
     x104_platform_xaudio2_probe();
 
-    x104_logf("X104 platform: Windows.Web.Http.* is NOT faked (decision: dead code - IHttpClient at WinRTRestRequestJob+0xD8 is never assigned); the real runtime answers. "
-              "Visible effect: tapping 'Play on Realms' crashes at WinRTRestRequestJob::vf2 0x10E9D4 (load at 0x10ED56) - known, no patch for M1");
+    if (x104_feat(X104_FEAT_MCPE_PATCHES))
+        x104_logf("X104 platform: Windows.Web.Http.* is NOT faked (decision: dead code - IHttpClient at WinRTRestRequestJob+0xD8 is never assigned); the real runtime answers. "
+                  "Visible effect: tapping 'Play on Realms' crashes at WinRTRestRequestJob::vf2 0x10E9D4 (load at 0x10ED56) - known, no patch for M1");
     x104_platform_state.installed = TRUE;
     x104_logf("X104 platform: install done (offline=%d, xaudio2=%s)", (int)x104_platform_state.offline, x104_platform_state.xaudio2_ok ? "ok" : "DISABLED");
     return TRUE;

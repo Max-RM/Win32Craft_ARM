@@ -1,0 +1,176 @@
+﻿device: driver=WARP hr=0x00000000 FL=0x9100 debug-layer=1 GetFeatureLevel=0x9100
+adapter: "Microsoft Basic Render Driver" vendor=1414 device=008c dedicated=0 MiB
+
+[A] interfaces Unity requires (sub_ffdc74)
+  QI ID3D11Device1                                                         hr=0x00000000 as-expected
+  QI ID3D11Device2                                                         hr=0x00000000 info
+  QI IDXGIDevice3                                                          hr=0x00000000 as-expected
+  identity: device=000001F6A1133000 vtbl=00007FFCAD41DA18 | Device1=000001F6A1133000 vtbl=00007FFCAD41DA18 | Device2=000001F6A1133000 vtbl=00007FFCAD41DA18
+  device vtable page protect=0x2 type=0x1000000
+  context vtable=00007FFCAD41E508 page protect=0x2 type=0x1000000
+
+[B] feature data at 9_1
+  D3D9_OPTIONS hr=0x00000000 FullNonPow2TextureSupport=1
+  D3D11_OPTIONS hr=0x00000000 OutputMergerLogicOp=1 ConstantBufferOffsetting=1 ConstantBufferPartialUpdate=1 MapNoOverwriteOnDynamicConstantBuffer=1 MapNoOverwriteOnDynamicBufferSRV=0
+  D3D9_SHADOW_SUPPORT hr=0x00000000 SupportsDepthAsTextureWithLessEqualComparisonFilter=1
+  D3D9_SIMPLE_INSTANCING hr=0x00000000 SimpleInstancingSupported=1
+  CheckFormatSupport R8G8B8A8_TYPELESS      hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R8G8B8A8_UNORM         hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=1
+  CheckFormatSupport B8G8R8A8_UNORM         hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=0
+  CheckFormatSupport B8G8R8A8_TYPELESS      hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R32G8X24_TYPELESS      hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport D32_FLOAT_S8X24_UINT   hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport D24_UNORM_S8_UINT      hr=0x00000000 tex2d=1 rt=0 ds=1 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R24G8_TYPELESS         hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport D16_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=1 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R16_TYPELESS           hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport A8_UNORM               hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=0 ib=0 vb=0
+  CheckFormatSupport B4G4R4A4_UNORM         hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0
+  CheckFormatSupport BC1_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0
+  CheckFormatSupport BC3_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0
+  CheckFormatSupport R16G16B16A16_FLOAT     hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R32_UINT               hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R16_UINT               hr=0x00000000 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=1 vb=0
+
+[C] textures Unity creates (hw-unitygfx F6/F7, hw-content F4/F5)
+  depth R32G8X24_TYPELESS DS|SR (Unity 24-bit depth, sub_1006980)          hr=0x80070057 as-expected
+      [debug depth R32G8X24_TYPELESS DS|SR (Unity 24-bit depth, sub_1006980)] ID3D11Device::CreateTexture2D: CreateResource: This format (R32G8X24_TYPELESS) is not supported for non-buffer uses at this feature level.
+      [debug depth R32G8X24_TYPELESS DS|SR (Unity 24-bit depth, sub_1006980)] ID3D11Device::CreateTexture2D: CreateResource: This format (R32G8X24_TYPELESS) is not supported.
+      [debug depth R32G8X24_TYPELESS DS|SR (Unity 24-bit depth, sub_1006980)] ID3D11Device::CreateTexture2D: CreateResource: This format does not support binding as a shader resource.
+      [debug depth R32G8X24_TYPELESS DS|SR (Unity 24-bit depth, sub_1006980)] ID3D11Device::CreateTexture2D: Device does not support the format R32G8X24_TYPELESS.
+      [debug depth R32G8X24_TYPELESS DS|SR (Unity 24-bit depth, sub_1006980)] ID3D11Device::CreateTexture2D: Returning E_INVALIDARG, meaning invalid parameters were passed.
+  depth R32G8X24_TYPELESS DS only                                          hr=0x80070057 as-expected
+      [debug depth R32G8X24_TYPELESS DS only] ID3D11Device::CreateTexture2D: CreateResource: This format (R32G8X24_TYPELESS) is not supported for non-buffer uses at this feature level.
+      [debug depth R32G8X24_TYPELESS DS only] ID3D11Device::CreateTexture2D: CreateResource: This format (R32G8X24_TYPELESS) is not supported.
+      [debug depth R32G8X24_TYPELESS DS only] ID3D11Device::CreateTexture2D: Device does not support the format R32G8X24_TYPELESS.
+      [debug depth R32G8X24_TYPELESS DS only] ID3D11Device::CreateTexture2D: Returning E_INVALIDARG, meaning invalid parameters were passed.
+  depth D24_UNORM_S8_UINT DS (fix)                                         hr=0x00000000 as-expected
+  depth R24G8_TYPELESS DS|SR                                               hr=0x00000000 info
+  depth D24_UNORM_S8_UINT DS|SR                                            hr=0x80070057 info
+      [debug depth D24_UNORM_S8_UINT DS|SR] ID3D11Device::CreateTexture2D: The format (0x2d, D24_UNORM_S8_UINT) cannot be bound as a ShaderResource or cast to a format that could be bound as a ShaderResource. Therefore this format cannot support D3D11_BIND_SHADER_RESOURCE.
+      [debug depth D24_UNORM_S8_UINT DS|SR] ID3D11Device::CreateTexture2D: Returning E_INVALIDARG, meaning invalid parameters were passed.
+  depth R16_TYPELESS DS|SR (16-bit branch)                                 hr=0x00000000 info
+  colour RT R8G8B8A8_TYPELESS RT|SR (sub_1007a58 typeless column)          hr=0x80070057 info
+      [debug colour RT R8G8B8A8_TYPELESS RT|SR (sub_1007a58 typeless column)] ID3D11Device::CreateTexture2D: CreateResource: This format (R8G8B8A8_TYPELESS) is not supported for non-buffer uses at this feature level.
+      [debug colour RT R8G8B8A8_TYPELESS RT|SR (sub_1007a58 typeless column)] ID3D11Device::CreateTexture2D: CreateResource: This format (R8G8B8A8_TYPELESS) is not supported.
+      [debug colour RT R8G8B8A8_TYPELESS RT|SR (sub_1007a58 typeless column)] ID3D11Device::CreateTexture2D: CreateResource: This format does not support binding as a shader resource.
+      [debug colour RT R8G8B8A8_TYPELESS RT|SR (sub_1007a58 typeless column)] ID3D11Device::CreateTexture2D: CreateResource: This format does not support binding as a render target.
+      [debug colour RT R8G8B8A8_TYPELESS RT|SR (sub_1007a58 typeless column)] ID3D11Device::CreateTexture2D: Device does not support the format R8G8B8A8_TYPELESS.
+      [debug colour RT R8G8B8A8_TYPELESS RT|SR (sub_1007a58 typeless column)] ID3D11Device::CreateTexture2D: Returning E_INVALIDARG, meaning invalid parameters were passed.
+  colour RT B8G8R8A8_TYPELESS RT|SR                                        hr=0x80070057 info
+      [debug colour RT B8G8R8A8_TYPELESS RT|SR] ID3D11Device::CreateTexture2D: CreateResource: This format (B8G8R8A8_TYPELESS) is not supported for non-buffer uses at this feature level.
+      [debug colour RT B8G8R8A8_TYPELESS RT|SR] ID3D11Device::CreateTexture2D: CreateResource: This format (B8G8R8A8_TYPELESS) is not supported.
+      [debug colour RT B8G8R8A8_TYPELESS RT|SR] ID3D11Device::CreateTexture2D: CreateResource: This format does not support binding as a shader resource.
+      [debug colour RT B8G8R8A8_TYPELESS RT|SR] ID3D11Device::CreateTexture2D: CreateResource: This format does not support binding as a render target.
+      [debug colour RT B8G8R8A8_TYPELESS RT|SR] ID3D11Device::CreateTexture2D: Device does not support the format B8G8R8A8_TYPELESS.
+      [debug colour RT B8G8R8A8_TYPELESS RT|SR] ID3D11Device::CreateTexture2D: Returning E_INVALIDARG, meaning invalid parameters were passed.
+  colour RT R8G8B8A8_UNORM RT|SR (fix)                                     hr=0x00000000 as-expected
+  tex 2160x1080 RGBA8 1 mip (Innovation_VersionSelector_Background)        hr=0x00000000 info
+      [debug tex 2160x1080 RGBA8 1 mip (Innovation_VersionSelector_Background)] ID3D11Device::CreateTexture2D: CreateResource: This format (R8G8B8A8_TYPELESS) is not supported for non-buffer uses at this feature level.
+      [debug tex 2160x1080 RGBA8 1 mip (Innovation_VersionSelector_Background)] ID3D11Device::CreateTexture2D: CreateResource: This format (R8G8B8A8_TYPELESS) is not supported.
+      [debug tex 2160x1080 RGBA8 1 mip (Innovation_VersionSelector_Background)] ID3D11Device::CreateTexture2D: CreateResource: This format does not support binding as a shader resource.
+      [debug tex 2160x1080 RGBA8 1 mip (Innovation_VersionSelector_Background)] ID3D11Device::CreateTexture2D: CreateResource: This format does not support binding as a render target.
+      [debug tex 2160x1080 RGBA8 1 mip (Innovation_VersionSelector_Background)] ID3D11Device::CreateTexture2D: Device does not support the format R8G8B8A8_TYPELESS.
+      [debug tex 2160x1080 RGBA8 1 mip (Innovation_VersionSelector_Background)] ID3D11Device::CreateTexture2D: Returning E_INVALIDARG, meaning invalid parameters were passed.
+      [debug tex 2160x1080 RGBA8 1 mip (Innovation_VersionSelector_Background)] ID3D11Device::CreateTexture2D: CreateResource: Texture2D width is greater than the minimum requirements for this feature level. If this application is run on other machines that satisfy this feature level but have a lower maximum texture dimension, this texture creation will fail.
+  tex 2048x2048 BC3 1 mip (atlases)                                        hr=0x00000000 as-expected
+  tex 4096x2048 RGBA8 12 mips (NPOT round-up of 2160x1080)                 hr=0x00000000 info
+      [debug tex 4096x2048 RGBA8 12 mips (NPOT round-up of 2160x1080)] ID3D11Device::CreateTexture2D: CreateResource: Texture2D width is greater than the minimum requirements for this feature level. If this application is run on other machines that satisfy this feature level but have a lower maximum texture dimension, this texture creation will fail.
+  tex 124x124 RGBA8 7 mips ('loading', NPOT+mips)                          hr=0x00000000 info
+  tex 124x124 RGBA8 1 mip                                                  hr=0x00000000 as-expected
+  tex 128x128 RGBA8 8 mips (POT round-up)                                  hr=0x00000000 as-expected
+  tex 1024x652 RGBA8 11 mips ('Comic_DailyChallenge')                      hr=0x00000000 info
+  tex 36x16 BC3 1 mip (35x16 DXT5 rounded to block size)                   hr=0x00000000 info
+  tex 200x200 BC3 1 mip (UI buttons)                                       hr=0x00000000 info
+  tex 128x128 A8_UNORM 8 mips (built-in 'Soft')                            hr=0x80070057 info
+      [debug tex 128x128 A8_UNORM 8 mips (built-in 'Soft')] ID3D11Device::CreateTexture2D: Invalid MipLevels (8).  The format (0x41, A8_UNORM) does not support mipmapping, so MipLevels must be 1.
+      [debug tex 128x128 A8_UNORM 8 mips (built-in 'Soft')] ID3D11Device::CreateTexture2D: Returning E_INVALIDARG, meaning invalid parameters were passed.
+  tex 64x64 B4G4R4A4 1 mip (IMGUI skin)                                    hr=0x00000000 info
+  tex 1024x1024 A8_UNORM 1 mip (SDF atlases)                               hr=0x00000000 info
+
+[D] swap chain like Unity's (sub_2f458c desc, but HWND)
+  CreateSwapChainForHwnd usage=0x30 FLIP_SEQUENTIAL flags=0x40             hr=0x00000000 info
+      back buffer bind=0x28
+        CreateShaderResourceView(back buffer)                              hr=0x00000000 info
+        CreateRenderTargetView(back buffer)                                hr=0x00000000 as-expected
+        Present(1,0)                                                       hr=0x00000000 as-expected
+  CreateSwapChainForHwnd usage=0x20 FLIP_SEQUENTIAL flags=0x40             hr=0x00000000 info
+      back buffer bind=0x20
+        CreateShaderResourceView(back buffer)                              hr=0x80070057 info
+      [debug       CreateShaderResourceView(back buffer)] ID3D11Device::CreateShaderResourceView: A ShaderResourceView cannot be created of a Resource that did not specify the D3D11_BIND_SHADER_RESOURCE BindFlag.
+      [debug       CreateShaderResourceView(back buffer)] ID3D11Device::CreateShaderResourceView: Returning E_INVALIDARG, meaning invalid parameters were passed.
+        CreateRenderTargetView(back buffer)                                hr=0x00000000 as-expected
+        Present(1,0)                                                       hr=0x00000000 as-expected
+
+[E] state objects (hw-unitygfx F9)
+  sampler ANISOTROPIC MaxAnisotropy=16                                     hr=0x80070057 as-expected
+      [debug sampler ANISOTROPIC MaxAnisotropy=16] ID3D11Device::CreateSamplerState: CreateSampler: Maximum supported anisotropy for this feature level is being exceeded. 
+  sampler ANISOTROPIC MaxAnisotropy=2                                      hr=0x00000000 as-expected
+  sampler LINEAR with MaxAnisotropy=16 (field ignored?)                    hr=0x00000000 info
+  sampler LINEAR MinLOD=-FLT_MAX MaxLOD=FLT_MAX (Unity default)            hr=0x00000000 as-expected
+  sampler LINEAR MipLODBias=-0.5                                           hr=0x00000000 info
+  sampler LINEAR MaxAnisotropy=0                                           hr=0x00000000 info
+  sampler MIRROR_ONCE                                                      hr=0x80070057 as-expected
+      [debug sampler MIRROR_ONCE] ID3D11Device::CreateSamplerState: CreateSampler: This feature level does not support D3D10_TEXTURE_ADDRESS_MIRRORONCE.
+  sampler comparison (shadow)                                              hr=0x00000000 info
+  rasterizer DepthClipEnable=FALSE ('ZClip False')                         hr=0x8007000e as-expected
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] Using ID3D11Debug::ReportLiveDeviceObjects with D3D11_RLDO_DETAIL will help drill into object lifetimes. Objects with Refcount=0 and IntRef=0 will be eventually destroyed through typical Immediate Context usage. However, if the application requires these objects to be destroyed sooner, ClearState followed by Flush on the Immediate Context will realize their destruction.
+
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] Live ID3D11Device at 0x000001F6A1133000, Refcount: 6
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] Live                  ID3D11Context :      1
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] Live         ID3DDeviceContextState :      1
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] Live               ID3D11BlendState :      1
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] Live        ID3D11DepthStencilState :      1
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] Live          ID3D11RasterizerState :      1
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] Live                  ID3D11Sampler :      1
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] Live                    ID3D11Query :      1
+      [debug rasterizer DepthClipEnable=FALSE ('ZClip False')] ID3D11Device::CreateRasterizerState: CreateRasterizerState: Depth Clip cannot be disabled, so DepthClipEnable must be set to TRUE. 
+  rasterizer DepthClip=TRUE scissor, depth bias                            hr=0x00000000 as-expected
+  blend SrcAlpha/InvSrcAlpha, alpha = colour factors                       hr=0x00000000 as-expected
+  blend separate alpha factors (IMGUI: One,One)                            hr=0x00000000 info
+  blend separate alpha op (BlendOpAlpha=MAX)                               hr=0x00000000 info
+  blend AlphaToCoverageEnable=TRUE                                         hr=0x80070057 as-expected
+      [debug blend AlphaToCoverageEnable=TRUE] ID3D11Device::CreateBlendState: CreateBlendState: Alpha-to-coverage is not supported.
+  blend colour mask 14 (RGB)                                               hr=0x00000000 as-expected
+  blend colour mask 0                                                      hr=0x00000000 as-expected
+  CreateBlendState1 (no logic op)                                          hr=0x00000000 info
+  depth-stencil front == back                                              hr=0x00000000 as-expected
+  depth-stencil front != back (two-sided)                                  hr=0x00000000 info
+  query TIMESTAMP_DISJOINT (optional at 9_1)                               hr=0x00000000 info
+  query EVENT                                                              hr=0x00000000 as-expected
+  query OCCLUSION                                                          hr=0x80070057 info
+      [debug query OCCLUSION] ID3D11Device::CreateQuery: CreateQuery: OCCLUSION queries are not available at this feature level.
+  dynamic index buffer                                                     hr=0x00000000 as-expected
+  IASetIndexBuffer R16_UINT                                                hr=0x00000000 info
+  buffer VB|IB combined                                                    hr=0x80070057 as-expected
+      [debug buffer VB|IB combined] ID3D11Device::CreateBuffer: CreateResource: Buffers can only be bound as index or vertex buffers, not both.
+      [debug buffer VB|IB combined] ID3D11Device::CreateBuffer: CreateBuffer returning E_INVALIDARG, meaning invalid parameters were passed.
+  constant buffer 368 bytes (UnityPerFrame)                                hr=0x00000000 as-expected
+
+[F] shaders: Unity originals vs the level_9_1 table
+  table: 113 entries
+  table entries created directly: 39 VS + 74 PS, OK 113, failed 0
+  needed program without replacement: 69_Hidden_Internal-GUIRoundedRect\b001_ps_640b0073a23b.dxbc
+  unique Unity programs: 402; created as-is on the 9_1 device: 0 (expect 0)
+  table hits: 111, replacement created OK: 111; input layouts from Unity's ISGN + l9 VS: OK 38, failed 0
+  needed programs (index.csv): 112, with replacement: 111, created OK: 111
+
+[F2] draw test through the lookup (Sprites/Default)
+  lookup Sprites/Default VS hit, PS hit
+  CreateVertexShader(replacement)                                          hr=0x00000000 as-expected
+  CreatePixelShader(replacement)                                           hr=0x00000000 as-expected
+  CreateInputLayout(Unity-style float3/Color32/float2, replacement VS)     hr=0x00000000 as-expected
+  VSSetShaderResources(NULL) - unbinding, as engines do                    hr=0x00000000 info
+  VSSetSamplers(NULL)                                                      hr=0x00000000 info
+  DrawIndexed(6) with replacement Sprites/Default                          hr=0x00000000 info
+  read-back centre pixel RGBA = 200 100 50 255 (expected 200 100 50 255)
+  GetDeviceRemovedReason after draw                                        hr=0x00000000 as-expected
+
+[G] LAST: IASetIndexBuffer with R32_UINT (Unity Supports32bitsIndexBuffer=1)
+  GetDeviceRemovedReason before                                            hr=0x00000000 as-expected
+  IASetIndexBuffer R32_UINT (void call)                                    hr=0x00000000 info
+      [debug IASetIndexBuffer R32_UINT (void call)] ID3D11DeviceContext::IASetIndexBuffer: The Format (0x2a, R32_UINT) is not valid for usage as an IAIndexBuffer Format.
+      [debug IASetIndexBuffer R32_UINT (void call)] ID3D11DeviceContext::IASetIndexBuffer: CreateResource: 32-bit indices are not supported.
+  GetDeviceRemovedReason after                                             hr=0x00000000 info
+
+SUMMARY: 35 as-expected, 1 unexpected

@@ -119,6 +119,8 @@ typedef struct x104_input_state_t {
     X104Object *devices[3];
     /* event lists */
     X104Event cw_key_down, cw_key_up, cw_ptr[3], cw_visibility;
+    X104Event cw_activated, cw_char, cw_closed, cw_capture_lost, cw_size_changed;    /* REDCON 1 registers these too (Activated / Closed are never raised) */
+    UINT32 cur_char;                                                                  /* CharacterReceivedEventArgs.KeyCode of the delivery in progress */
     X104Event text_changed, pane_showing, pane_hiding;
     /* independent input sources */
     X104Lock source_lock;
@@ -187,6 +189,8 @@ extern SHORT WINAPI GetKeyState(int);
 extern DWORD WINAPI GetCurrentThreadId(void);
 extern BOOL WINAPI QueryPerformanceCounter(LARGE_INTEGER *);
 extern BOOL WINAPI QueryPerformanceFrequency(LARGE_INTEGER *);
+
+static void x104_input_raise_character(UINT32 code);           /* section 12 (WM_CHAR -> CoreWindow.CharacterReceived) */
 
 /* ======================================================================================================================
  * 2. small helpers
@@ -507,6 +511,24 @@ static const X104IfaceDesc x104_input_vargs_ifaces[] = { X104_IFACE(IVisibilityC
 X104_CLASS_DEF(x104_input_vargs_class, "VisibilityChangedEventArgs", L"Windows.UI.Core.VisibilityChangedEventArgs", x104_input_vargs_ifaces, X104_CLASS_AGILE, NULL);
 X104_SINGLETON(x104_input_get_vis_args, x104_input_vargs_class, X104Object)
 
+/* CharacterReceivedEventArgs: KeyCode = the UTF-16 unit of WM_CHAR; KeyStatus = the status of the key event in progress (REDCON 1 reads KeyCode only) */
+static HRESULT X104_API x104_input_cargs_get_code(void *self, UINT32 *value)
+{
+    (void)self;
+    if (!value) return E_POINTER;
+    *value = x104_input_st.cur_char;
+    return S_OK;
+}
+
+X104_VTBL(x104_input_vt_cargs, ICharacterReceivedEventArgs) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(ICharacterReceivedEventArgs, get_KeyCode, x104_input_cargs_get_code),
+    X104_SLOT(ICharacterReceivedEventArgs, get_KeyStatus, x104_input_kargs_get_status)
+};
+static const X104IfaceDesc x104_input_cargs_ifaces[] = { X104_IFACE(ICharacterReceivedEventArgs, x104_input_vt_cargs), X104_IFACE(ICoreWindowEventArgs, x104_input_vt_cwargs) };
+X104_CLASS_DEF(x104_input_cargs_class, "CharacterReceivedEventArgs", L"Windows.UI.Core.CharacterReceivedEventArgs", x104_input_cargs_ifaces, X104_CLASS_AGILE, NULL);
+X104_SINGLETON(x104_input_get_char_args, x104_input_cargs_class, X104Object)
+
 /* ---- TextChangedEventArgs (the game's handler ignores it; holes are fine) ---- */
 X104_VTBL(x104_input_vt_targs, ITextChangedEventArgs) = { X104_INSPECTABLE_SLOTS };
 static const X104IfaceDesc x104_input_targs_ifaces[] = { X104_IFACE(ITextChangedEventArgs, x104_input_vt_targs) };
@@ -537,6 +559,11 @@ X104_INPUT_EVENT_PAIR(x104_input_cw_moved, "CoreWindow.add_PointerMoved", x104_i
 X104_INPUT_EVENT_PAIR(x104_input_cw_pressed, "CoreWindow.add_PointerPressed", x104_input_st.cw_ptr[X104_INPUT_EV_PRESSED])
 X104_INPUT_EVENT_PAIR(x104_input_cw_released, "CoreWindow.add_PointerReleased", x104_input_st.cw_ptr[X104_INPUT_EV_RELEASED])
 X104_INPUT_EVENT_PAIR(x104_input_cw_visibility, "CoreWindow.add_VisibilityChanged", x104_input_st.cw_visibility)
+X104_INPUT_EVENT_PAIR(x104_input_cw_activated, "CoreWindow.add_Activated", x104_input_st.cw_activated)
+X104_INPUT_EVENT_PAIR(x104_input_cw_char, "CoreWindow.add_CharacterReceived", x104_input_st.cw_char)
+X104_INPUT_EVENT_PAIR(x104_input_cw_closed, "CoreWindow.add_Closed", x104_input_st.cw_closed)
+X104_INPUT_EVENT_PAIR(x104_input_cw_capture_lost, "CoreWindow.add_PointerCaptureLost", x104_input_st.cw_capture_lost)
+X104_INPUT_EVENT_PAIR(x104_input_cw_size_changed, "CoreWindow.add_SizeChanged", x104_input_st.cw_size_changed)
 
 static HRESULT X104_API x104_input_cw_get_bounds(void *self, X104Rect *value)
 {
@@ -677,7 +704,17 @@ X104_VTBL(x104_input_vt_corewindow, ICoreWindow) = {
     X104_SLOT(ICoreWindow, add_PointerReleased, x104_input_cw_released_add),
     X104_SLOT(ICoreWindow, remove_PointerReleased, x104_input_cw_released_remove),
     X104_SLOT(ICoreWindow, add_VisibilityChanged, x104_input_cw_visibility_add),
-    X104_SLOT(ICoreWindow, remove_VisibilityChanged, x104_input_cw_visibility_remove)
+    X104_SLOT(ICoreWindow, remove_VisibilityChanged, x104_input_cw_visibility_remove),
+    X104_SLOT(ICoreWindow, add_Activated, x104_input_cw_activated_add),
+    X104_SLOT(ICoreWindow, remove_Activated, x104_input_cw_activated_remove),
+    X104_SLOT(ICoreWindow, add_CharacterReceived, x104_input_cw_char_add),
+    X104_SLOT(ICoreWindow, remove_CharacterReceived, x104_input_cw_char_remove),
+    X104_SLOT(ICoreWindow, add_Closed, x104_input_cw_closed_add),
+    X104_SLOT(ICoreWindow, remove_Closed, x104_input_cw_closed_remove),
+    X104_SLOT(ICoreWindow, add_PointerCaptureLost, x104_input_cw_capture_lost_add),
+    X104_SLOT(ICoreWindow, remove_PointerCaptureLost, x104_input_cw_capture_lost_remove),
+    X104_SLOT(ICoreWindow, add_SizeChanged, x104_input_cw_size_changed_add),
+    X104_SLOT(ICoreWindow, remove_SizeChanged, x104_input_cw_size_changed_remove)
 };
 static const X104IfaceDesc x104_input_cw_ifaces[] = { X104_IFACE(ICoreWindow, x104_input_vt_corewindow) };
 X104_CLASS_DEF(x104_input_cw_class, "CoreWindow", L"Windows.UI.Core.CoreWindow", x104_input_cw_ifaces, X104_CLASS_AGILE, NULL);
@@ -1788,7 +1825,7 @@ static BOOL x104_input_on_key(UINT message, WPARAM wparam, LPARAM lparam)
         return TRUE;
     }
     if (down) {
-        if (!x104_input_key_wanted(vk)) {
+        if (x104_feat(X104_FEAT_XAML_PAGE) && !x104_input_key_wanted(vk)) {
             X104_LOG_LIMITED(&dropped_logged, 6, "X104 input: key VK=0x%02x dropped (the game would turn it into a garbage text event)", vk);
             return TRUE;
         }
@@ -1833,7 +1870,8 @@ static void x104_input_release_all_keys(const char *why)
 static BOOL x104_input_install(BYTE *image)
 {
     (void)image;
-    x104_logf("X104 input: install ok (no patches: the touch-only cell 0x%08lx is left alone)", (unsigned long)X104_RVA_CELL_TOUCHONLY);
+    if (x104_feat(X104_FEAT_MCPE_PATCHES)) x104_logf("X104 input: install ok (no patches: the touch-only cell 0x%08lx is left alone)", (unsigned long)X104_RVA_CELL_TOUCHONLY);
+    else x104_logf("X104 input: install ok (no patches)");
     return TRUE;
 }
 
@@ -1997,7 +2035,8 @@ static void x104_backbtn_create(HWND owner)
     }
     SetLayeredWindowAttributes(x104_backbtn.hwnd, 0, X104_BB_ALPHA, X104_BB_LWA_ALPHA);
     x104_logf("X104 input: on-screen Back/Pause button created (window %p, top-left of the game window, shown %s; a tap = the phone's Back key)",
-              (void *)x104_backbtn.hwnd, x104_backbtn.always ? "always (--back-button-always)" : "only in a world with no menu open");
+              (void *)x104_backbtn.hwnd, x104_backbtn.always ? "always (--back-button-always)" :
+              (x104_feat(X104_FEAT_XAML_PAGE) ? "only in a world with no menu open" : "only with --back-button-always (the game has its own back navigation)"));
 }
 
 /* every UI pass: follow the game window (move / resize / maximise / minimise); SetWindowPos only when something changed */
@@ -2011,7 +2050,7 @@ static void x104_backbtn_place(HWND owner)
 
     if (!x104_backbtn.hwnd) return;
     show = owner && IsWindowVisible(owner) && !IsIconic(owner) && GetClientRect(owner, &client) && client.right > 64 && client.bottom > 64 &&
-           (x104_backbtn.always || x104_backbtn_in_world());
+           (x104_backbtn.always || (x104_feat(X104_FEAT_XAML_PAGE) && x104_backbtn_in_world()));
     if (!show) {
         if (x104_backbtn.shown) {
             SetWindowPos(x104_backbtn.hwnd, NULL, 0, 0, 0, 0, X104_BB_SWP_NOMOVE | X104_BB_SWP_NOSIZE | X104_BB_SWP_NOZORDER | X104_BB_SWP_NOACTIVATE | X104_BB_SWP_HIDEWINDOW);
@@ -2050,6 +2089,11 @@ static BOOL x104_input_init(HWND window)
     x104_event_init(&x104_input_st.cw_key_up, "CoreWindow.KeyUp");
     for (index = 0; index < 3; ++index) x104_event_init(&x104_input_st.cw_ptr[index], x104_input_ptr_event_names[index]);
     x104_event_init(&x104_input_st.cw_visibility, "CoreWindow.VisibilityChanged");
+    x104_event_init(&x104_input_st.cw_activated, "CoreWindow.Activated");
+    x104_event_init(&x104_input_st.cw_char, "CoreWindow.CharacterReceived");
+    x104_event_init(&x104_input_st.cw_closed, "CoreWindow.Closed");
+    x104_event_init(&x104_input_st.cw_capture_lost, "CoreWindow.PointerCaptureLost");
+    x104_event_init(&x104_input_st.cw_size_changed, "CoreWindow.SizeChanged");
     x104_event_init(&x104_input_st.text_changed, "TextBox.TextChanged");
     x104_event_init(&x104_input_st.pane_showing, "InputPane.Showing");
     x104_event_init(&x104_input_st.pane_hiding, "InputPane.Hiding");
@@ -2204,7 +2248,8 @@ static BOOL x104_input_window_message(HWND window, UINT message, WPARAM wparam, 
         consumed = x104_input_on_key(message, wparam, lparam);
         break;
     case X104_INPUT_WM_CHAR:
-        x104_input_on_char((wchar_t)wparam);
+        if (x104_event_count(&x104_input_st.cw_char)) x104_input_raise_character((UINT32)(wparam & 0xFFFFu));
+        else x104_input_on_char((wchar_t)wparam);
         consumed = TRUE;
         break;
     case X104_INPUT_WM_SETCURSOR:
@@ -2243,6 +2288,27 @@ static X104Object *x104_input_core_window(void) { return x104_input_st.initializ
 static X104Object *x104_input_element_logo(void) { return x104_input_st.logo; }
 static X104Object *x104_input_element_editbox(void) { return x104_input_st.editbox; }
 static X104Object *x104_input_element_button(void) { return x104_input_st.button; }
+
+/* UI thread: CoreWindow.CharacterReceived(KeyCode = one UTF-16 unit of WM_CHAR, control characters included as on a real CoreWindow) */
+static void x104_input_raise_character(UINT32 code)
+{
+    static volatile LONG logged;
+    X104Object *args = x104_input_get_char_args();
+    unsigned handlers;
+    x104_input_st.cur_char = code;
+    args->user[1] = NULL;
+    handlers = x104_event_invoke_guarded(&x104_input_st.cw_char, &x104_input_get_core_window()->views[0], &args->views[0]);
+    X104_LOG_LIMITED(&logged, arm32_input_verbose ? 100000 : 20, "X104 input: CoreWindow.CharacterReceived U+%04X handlers=%u", (unsigned)code, handlers);
+}
+
+/* UI thread: CoreWindow.SizeChanged (REDCON 1's handler ignores the args and re-reads CoreWindow.Bounds = the current client size) */
+static unsigned x104_input_raise_core_size_changed(void)
+{
+    unsigned handlers;
+    if (!x104_input_st.initialized) return 0;
+    handlers = x104_event_invoke_guarded(&x104_input_st.cw_size_changed, &x104_input_get_core_window()->views[0], NULL);
+    return handlers;
+}
 
 /* UI thread: CoreWindow.VisibilityChanged (VisibilityChangedEventArgs.get_Visible is read straight on the pointer at 0x1DF9CC) */
 static void x104_input_raise_visibility_changed(BOOL visible)

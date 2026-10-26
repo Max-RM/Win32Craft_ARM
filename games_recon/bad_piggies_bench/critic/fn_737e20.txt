@@ -1,0 +1,98 @@
+function sub_737e20  [00737e20..00737f40) len=288
+00737e20: 2de9ff4b push.w   {r0, r1, r2, r3, r4, r5, r6, r7, r8, sb, fp, lr}
+00737e24: 0df1280b add.w    fp, sp, #0x28               
+00737e28: 6f46     mov      r7, sp                      
+00737e2a: 6ff00103 mvn      r3, #1                      
+00737e2e: c7e90033 strd     r3, r3, [r7]                
+00737e32: 0446     mov      r4, r0                      
+00737e34: 7af782f1 bl       #0x2b213c                     ; sub_2b213c
+00737e38: d4f8bc30 ldr.w    r3, [r4, #0xbc]             
+00737e3c: 4ff00009 mov.w    sb, #0                      
+00737e40: 13f0800f tst.w    r3, #0x80                   
+00737e44: 11d0     beq      #0x737e6a                   
+00737e46: d4f84833 ldr.w    r3, [r4, #0x348]            
+00737e4a: 13f0080f tst.w    r3, #8                      
+00737e4e: 0cd0     beq      #0x737e6a                   
+00737e50: 10b1     cbz      r0, #0x737e58               
+00737e52: b0f5e17f cmp.w    r0, #0x1c2                  
+00737e56: 08db     blt      #0x737e6a                   
+00737e58: 0123     movs     r3, #1                      
+00737e5a: 84f8da33 strb.w   r3, [r4, #0x3da]            
+00737e5e: d4f8ec30 ldr.w    r3, [r4, #0xec]             
+00737e62: 042b     cmp      r3, #4                      
+00737e64: 03db     blt      #0x737e6e                   
+00737e66: 0123     movs     r3, #1                      
+00737e68: 02e0     b        #0x737e70                     ; sub_737e70
+00737e6a: 84f8da93 strb.w   sb, [r4, #0x3da]            
+00737e6e: 0023     movs     r3, #0                      
+00737e70: 4af6f458 movw     r8, #0xadf4                   ; -> 0x12b1adf4 .data+0x1cadf4
+00737e74: c1f2b128 movt     r8, #0x12b1                 
+00737e78: 84f8db33 strb.w   r3, [r4, #0x3db]            
+00737e7c: d8f80000 ldr.w    r0, [r8]                    
+00737e80: 38b9     cbnz     r0, #0x737e92               
+00737e82: 44f2b070 movw     r0, #0x47b0                   ; -> 0x11d547b0 str "initializedGraphicsCaps.Invoke"
+00737e86: c1f2d510 movt     r0, #0x11d5                 
+00737e8a: d6f4f5ff bl       #0x40ee78                     ; sub_40ee78
+00737e8e: c8f80000 str.w    r0, [r8]                    
+00737e92: d6f4e5ff bl       #0x40ee60                     ; sub_40ee60
+00737e96: d7f467fc bl       #0x40f768                     ; sub_40f768
+00737e9a: 47f6fc63 movw     r3, #0x7efc                 
+00737e9e: c418     adds     r4, r0, r3                  
+00737ea0: d4f80036 ldr.w    r3, [r4, #0x600]            
+00737ea4: 0026     movs     r6, #0                      
+00737ea6: c4f80446 str.w    r4, [r4, #0x604]            
+00737eaa: 83b1     cbz      r3, #0x737ece               
+00737eac: 2546     mov      r5, r4                      
+00737eae: 55f80c2b ldr      r2, [r5], #0xc              
+00737eb2: 3ab1     cbz      r2, #0x737ec4               
+00737eb4: 15f8043c ldrb     r3, [r5, #-0x4]             
+00737eb8: 0bb9     cbnz     r3, #0x737ebe               
+00737eba: 9047     blx      r2                          
+00737ebc: 02e0     b        #0x737ec4                     ; sub_737ec4
+00737ebe: 55f8080c ldr      r0, [r5, #-0x8]             
+00737ec2: 9047     blx      r2                          
+00737ec4: d4f80036 ldr.w    r3, [r4, #0x600]            
+00737ec8: 761c     adds     r6, r6, #1                  
+00737eca: 9e42     cmp      r6, r3                      
+00737ecc: efd3     blo      #0x737eae                   
+00737ece: 94f80836 ldrb.w   r3, [r4, #0x608]            
+00737ed2: 3bb3     cbz      r3, #0x737f24               
+00737ed4: d4f80026 ldr.w    r2, [r4, #0x600]            
+00737ed8: 0021     movs     r1, #0                      
+00737eda: 0ab3     cbz      r2, #0x737f20               
+00737edc: 2046     mov      r0, r4                      
+00737ede: 0368     ldr      r3, [r0]                    
+00737ee0: c3b9     cbnz     r3, #0x737f14               
+00737ee2: 0d46     mov      r5, r1                      
+00737ee4: 9142     cmp      r1, r2                      
+00737ee6: 0ed2     bhs      #0x737f06                   
+00737ee8: 0246     mov      r2, r0                      
+00737eea: d368     ldr      r3, [r2, #0xc]              
+00737eec: 6d1c     adds     r5, r5, #1                  
+00737eee: 42f80c3b str      r3, [r2], #0xc              
+00737ef2: 5368     ldr      r3, [r2, #4]                
+00737ef4: 42f8083c str      r3, [r2, #-0x8]             
+00737ef8: 137a     ldrb     r3, [r2, #8]                
+00737efa: 02f8043c strb     r3, [r2, #-0x4]             
+00737efe: d4f80036 ldr.w    r3, [r4, #0x600]            
+00737f02: 9d42     cmp      r5, r3                      
+00737f04: f1d3     blo      #0x737eea                   
+00737f06: d4f80036 ldr.w    r3, [r4, #0x600]            
+00737f0a: 491e     subs     r1, r1, #1                  
+00737f0c: 0c38     subs     r0, #0xc                    
+00737f0e: 5b1e     subs     r3, r3, #1                  
+00737f10: c4f80036 str.w    r3, [r4, #0x600]            
+00737f14: d4f80026 ldr.w    r2, [r4, #0x600]            
+00737f18: 491c     adds     r1, r1, #1                  
+00737f1a: 0c30     adds     r0, #0xc                    
+00737f1c: 9142     cmp      r1, r2                      
+00737f1e: ded3     blo      #0x737ede                   
+00737f20: 84f80896 strb.w   sb, [r4, #0x608]            
+00737f24: c4f80496 str.w    sb, [r4, #0x604]            
+00737f28: d8f80000 ldr.w    r0, [r8]                    
+00737f2c: 20b9     cbnz     r0, #0x737f38               
+00737f2e: 0020     movs     r0, #0                      
+00737f30: d6f4a2ff bl       #0x40ee78                     ; sub_40ee78
+00737f34: c8f80000 str.w    r0, [r8]                    
+00737f38: d7f4f2fb bl       #0x40f720                     ; sub_40f720
+00737f3c: bde8ff8b pop.w    {r0, r1, r2, r3, r4, r5, r6, r7, r8, sb, fp, pc}

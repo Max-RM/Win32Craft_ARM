@@ -1,0 +1,278 @@
+function GfxDeviceD3D11::vf11  [0100396c..01003c96) len=810
+0100396c: 2de9f04f push.w   {r4, r5, r6, r7, r8, sb, sl, fp, lr}
+01003970: 0df11c0b add.w    fp, sp, #0x1c               
+01003974: e9b0     sub      sp, #0x1a4                  
+01003976: 6f46     mov      r7, sp                      
+01003978: 82b0     sub      sp, #8                      
+0100397a: 8846     mov      r8, r1                      
+0100397c: 0446     mov      r4, r0                      
+0100397e: 6ff00103 mvn      r3, #1                      
+01003982: 17f11000 adds.w   r0, r7, #0x10               
+01003986: 0021     movs     r1, #0                      
+01003988: 4822     movs     r2, #0x48                   
+0100398a: 3c60     str      r4, [r7]                    
+0100398c: c7e90233 strd     r3, r3, [r7, #8]            
+01003990: aff3e4fc bl       #0x13b335c                    ; thunk[VCRUNTIME140_APP.dll!memset]
+01003994: 17f11000 adds.w   r0, r7, #0x10               
+01003998: cff78ed2 bl       #0x3d2eb8                     ; sub_3d2eb8
+0100399c: 43f6cc43 movw     r3, #0x3ccc                 
+010039a0: 54f803a0 ldr.w    sl, [r4, r3]                
+010039a4: daf80450 ldr.w    r5, [sl, #4]                
+010039a8: d146     mov      sb, sl                      
+010039aa: 95f90d30 ldrsb.w  r3, [r5, #0xd]              
+010039ae: f3bb     cbnz     r3, #0x1003a2e              
+010039b0: b8f842e0 ldrh.w   lr, [r8, #0x42]             
+010039b4: 05f11006 add.w    r6, r5, #0x10               
+010039b8: b6f84230 ldrh.w   r3, [r6, #0x42]             
+010039bc: 2124     movs     r4, #0x21                   
+010039be: 7345     cmp      r3, lr                      
+010039c0: 0ad1     bne      #0x10039d8                  
+010039c2: 08f14201 add.w    r1, r8, #0x42               
+010039c6: a6eb0800 sub.w    r0, r6, r8                  
+010039ca: 6cb1     cbz      r4, #0x10039e8              
+010039cc: 891e     subs     r1, r1, #2                  
+010039ce: 425a     ldrh     r2, [r0, r1]                
+010039d0: 0b88     ldrh     r3, [r1]                    
+010039d2: 641e     subs     r4, r4, #1                  
+010039d4: 9a42     cmp      r2, r3                      
+010039d6: f8d0     beq      #0x10039ca                  
+010039d8: 38f81420 ldrh.w   r2, [r8, r4, lsl #1]        
+010039dc: 36f81430 ldrh.w   r3, [r6, r4, lsl #1]        
+010039e0: 9342     cmp      r3, r2                      
+010039e2: 01d2     bhs      #0x10039e8                  
+010039e4: ad68     ldr      r5, [r5, #8]                
+010039e6: 01e0     b        #0x10039ec                    ; sub_10039ec
+010039e8: a946     mov      sb, r5                      
+010039ea: 2d68     ldr      r5, [r5]                    
+010039ec: 95f90d30 ldrsb.w  r3, [r5, #0xd]              
+010039f0: 002b     cmp      r3, #0                      
+010039f2: dfd0     beq      #0x10039b4                  
+010039f4: d145     cmp      sb, sl                      
+010039f6: 1ad0     beq      #0x1003a2e                  
+010039f8: 09f11005 add.w    r5, sb, #0x10               
+010039fc: b5f84230 ldrh.w   r3, [r5, #0x42]             
+01003a00: 2120     movs     r0, #0x21                   
+01003a02: 9e45     cmp      lr, r3                      
+01003a04: 0ad1     bne      #0x1003a1c                  
+01003a06: 08f14201 add.w    r1, r8, #0x42               
+01003a0a: a5eb0804 sub.w    r4, r5, r8                  
+01003a0e: 58b1     cbz      r0, #0x1003a28              
+01003a10: 891e     subs     r1, r1, #2                  
+01003a12: 625a     ldrh     r2, [r4, r1]                
+01003a14: 0b88     ldrh     r3, [r1]                    
+01003a16: 401e     subs     r0, r0, #1                  
+01003a18: 9342     cmp      r3, r2                      
+01003a1a: f8d0     beq      #0x1003a0e                  
+01003a1c: 38f81020 ldrh.w   r2, [r8, r0, lsl #1]        
+01003a20: 35f81030 ldrh.w   r3, [r5, r0, lsl #1]        
+01003a24: 9a42     cmp      r2, r3                      
+01003a26: 02d3     blo      #0x1003a2e                  
+01003a28: 09f15400 add.w    r0, sb, #0x54               
+01003a2c: 30e1     b        #0x1003c90                    ; sub_1003c90
+01003a2e: 17f15800 adds.w   r0, r7, #0x58               
+01003a32: 4422     movs     r2, #0x44                   
+01003a34: 4146     mov      r1, r8                      
+01003a36: aff385fc bl       #0x13b3344                    ; thunk[VCRUNTIME140_APP.dll!memcpy]
+01003a3a: 17f11005 adds.w   r5, r7, #0x10               
+01003a3e: 0fcd     ldm      r5!, {r0, r1, r2, r3}       
+01003a40: 17f19c06 adds.w   r6, r7, #0x9c               
+01003a44: 0fc6     stm      r6!, {r0, r1, r2, r3}       
+01003a46: 0fcd     ldm      r5!, {r0, r1, r2, r3}       
+01003a48: 0fc6     stm      r6!, {r0, r1, r2, r3}       
+01003a4a: 1bcd     ldm      r5!, {r0, r1, r3, r4}       
+01003a4c: 1bc6     stm      r6!, {r0, r1, r3, r4}       
+01003a4e: 1bcd     ldm      r5!, {r0, r1, r3, r4}       
+01003a50: 1bc6     stm      r6!, {r0, r1, r3, r4}       
+01003a52: 0acd     ldm      r5!, {r1, r3}               
+01003a54: 43f6cc45 movw     r5, #0x3ccc                 
+01003a58: 3c68     ldr      r4, [r7]                    
+01003a5a: 0ac6     stm      r6!, {r1, r3}               
+01003a5c: 17f15801 adds.w   r1, r7, #0x58               
+01003a60: 6019     adds     r0, r4, r5                  
+01003a62: fbf787fd bl       #0xfff574                     ; sub_fff574
+01003a66: 00f11003 add.w    r3, r0, #0x10               
+01003a6a: 0090     str      r0, [sp]                    
+01003a6c: 3946     mov      r1, r7                      
+01003a6e: 4a46     mov      r2, sb                      
+01003a70: 6019     adds     r0, r4, r5                  
+01003a72: fcf71dfa bl       #0xfffeb0                     ; sub_fffeb0
+01003a76: 3e68     ldr      r6, [r7]                    
+01003a78: 4422     movs     r2, #0x44                   
+01003a7a: 4146     mov      r1, r8                      
+01003a7c: 06f15400 add.w    r0, r6, #0x54               
+01003a80: aff360fc bl       #0x13b3344                    ; thunk[VCRUNTIME140_APP.dll!memcpy]
+01003a84: 2ff7d0dc bl       #0x733428                     ; sub_733428
+01003a88: 98f80550 ldrb.w   r5, [r8, #5]                
+01003a8c: 0446     mov      r4, r0                      
+01003a8e: 052d     cmp      r5, #5                      
+01003a90: 5bd3     blo      #0x1003b4a                  
+01003a92: 142d     cmp      r5, #0x14                   
+01003a94: 59d8     bhi      #0x1003b4a                  
+01003a96: 98f84030 ldrb.w   r3, [r8, #0x40]             
+01003a9a: 002b     cmp      r3, #0                      
+01003a9c: 55d1     bne      #0x1003b4a                  
+01003a9e: 90f80131 ldrb.w   r3, [r0, #0x101]            
+01003aa2: 002b     cmp      r3, #0                      
+01003aa4: 51d0     beq      #0x1003b4a                  
+01003aa6: 17f15800 adds.w   r0, r7, #0x58               
+01003aaa: 4ff4a472 mov.w    r2, #0x148                  
+01003aae: 0021     movs     r1, #0                      
+01003ab0: aff354fc bl       #0x13b335c                    ; thunk[VCRUNTIME140_APP.dll!memset]
+01003ab4: 98f84130 ldrb.w   r3, [r8, #0x41]             
+01003ab8: 98f80020 ldrb.w   r2, [r8]                    
+01003abc: 4ff0080e mov.w    lr, #8                      
+01003ac0: bb65     str      r3, [r7, #0x58]             
+01003ac2: 0023     movs     r3, #0                      
+01003ac4: c7e91733 strd     r3, r3, [r7, #0x5c]         
+01003ac8: 0123     movs     r3, #1                      
+01003aca: 7b66     str      r3, [r7, #0x64]             
+01003acc: 4cf2c823 movw     r3, #0xc2c8                   ; -> 0x1266c2c8 .rdata+0xf552c8
+01003ad0: c1f26623 movt     r3, #0x1266                 
+01003ad4: 53f82530 ldr.w    r3, [r3, r5, lsl #2]        
+01003ad8: c7f88030 str.w    r3, [r7, #0x80]             
+01003adc: 0023     movs     r3, #0                      
+01003ade: 12ea0e0f tst.w    r2, lr                      
+01003ae2: 18bf     it       ne                          
+01003ae4: 0123     movne    r3, #1                      
+01003ae6: 0425     movs     r5, #4                      
+01003ae8: 0224     movs     r4, #2                      
+01003aea: 2a42     tst      r2, r5                      
+01003aec: 18bf     it       ne                          
+01003aee: 2343     orrne    r3, r4                      
+01003af0: 2242     tst      r2, r4                      
+01003af2: 18bf     it       ne                          
+01003af4: 2b43     orrne    r3, r5                      
+01003af6: 12f0010f tst.w    r2, #1                      
+01003afa: 01d0     beq      #0x1003b00                  
+01003afc: 43ea0e03 orr.w    r3, r3, lr                  
+01003b00: 87f88430 strb.w   r3, [r7, #0x84]             
+01003b04: 0023     movs     r3, #0                      
+01003b06: 3b60     str      r3, [r7]                    
+01003b08: f9f710f8 bl       #0xffcb2c                     ; sub_ffcb2c
+01003b0c: 0346     mov      r3, r0                      
+01003b0e: 1b68     ldr      r3, [r3]                    
+01003b10: 3a46     mov      r2, r7                      
+01003b12: 17f15801 adds.w   r1, r7, #0x58               
+01003b16: d3f8b430 ldr.w    r3, [r3, #0xb4]             
+01003b1a: 9847     blx      r3                          
+01003b1c: 3b68     ldr      r3, [r7]                    
+01003b1e: 47f2dc51 movw     r1, #0x75dc                   ; -> 0x126675dc str "BlendState-%d-%d"
+01003b22: c1f26621 movt     r1, #0x1266                 
+01003b26: ba6e     ldr      r2, [r7, #0x68]             
+01003b28: c6f89830 str.w    r3, [r6, #0x98]             
+01003b2c: fb6e     ldr      r3, [r7, #0x6c]             
+01003b2e: 17f11000 adds.w   r0, r7, #0x10               
+01003b32: 11f40df0 bl       #0x814b50                     ; sub_814b50
+01003b36: 0146     mov      r1, r0                      
+01003b38: d6f89800 ldr.w    r0, [r6, #0x98]             
+01003b3c: fbf772f8 bl       #0xffec24                     ; sub_ffec24
+01003b40: 17f11000 adds.w   r0, r7, #0x10               
+01003b44: 6cf45cd6 bl       #0x70800                      ; sub_70800
+01003b48: a0e0     b        #0x1003c8c                    ; sub_1003c8c
+01003b4a: 17f15800 adds.w   r0, r7, #0x58               
+01003b4e: 4ff48472 mov.w    r2, #0x108                  
+01003b52: 0021     movs     r1, #0                      
+01003b54: aff302fc bl       #0x13b335c                    ; thunk[VCRUNTIME140_APP.dll!memset]
+01003b58: 98f84130 ldrb.w   r3, [r8, #0x41]             
+01003b5c: bb65     str      r3, [r7, #0x58]             
+01003b5e: 98f84030 ldrb.w   r3, [r8, #0x40]             
+01003b62: 2bb1     cbz      r3, #0x1003b70              
+01003b64: 94f8ff30 ldrb.w   r3, [r4, #0xff]             
+01003b68: 13b1     cbz      r3, #0x1003b70              
+01003b6a: 0123     movs     r3, #1                      
+01003b6c: 0826     movs     r6, #8                      
+01003b6e: 01e0     b        #0x1003b74                    ; sub_1003b74
+01003b70: 0023     movs     r3, #0                      
+01003b72: 0126     movs     r6, #1                      
+01003b74: 4cf20829 movw     sb, #0xc208                   ; -> 0x1266c208 .rdata+0xf55208
+01003b78: c1f26629 movt     sb, #0x1266                 
+01003b7c: 4cf2382a movw     sl, #0xc238                   ; -> 0x1266c238 .rdata+0xf55238
+01003b80: c1f2662a movt     sl, #0x1266                 
+01003b84: 4cf2dc11 movw     r1, #0xc1dc                   ; -> 0x1266c1dc .rdata+0xf551dc
+01003b88: c1f26621 movt     r1, #0x1266                 
+01003b8c: 17f16000 adds.w   r0, r7, #0x60               
+01003b90: 0425     movs     r5, #4                      
+01003b92: 0224     movs     r4, #2                      
+01003b94: fb65     str      r3, [r7, #0x5c]             
+01003b96: 4ff0080e mov.w    lr, #8                      
+01003b9a: 98f80120 ldrb.w   r2, [r8, #1]                
+01003b9e: 012a     cmp      r2, #1                      
+01003ba0: 12d1     bne      #0x1003bc8                  
+01003ba2: 98f80230 ldrb.w   r3, [r8, #2]                
+01003ba6: 7bb9     cbnz     r3, #0x1003bc8              
+01003ba8: 98f80330 ldrb.w   r3, [r8, #3]                
+01003bac: 012b     cmp      r3, #1                      
+01003bae: 0bd1     bne      #0x1003bc8                  
+01003bb0: 98f80430 ldrb.w   r3, [r8, #4]                
+01003bb4: 43b9     cbnz     r3, #0x1003bc8              
+01003bb6: 98f80530 ldrb.w   r3, [r8, #5]                
+01003bba: 2bb9     cbnz     r3, #0x1003bc8              
+01003bbc: 98f80630 ldrb.w   r3, [r8, #6]                
+01003bc0: 002b     cmp      r3, #0                      
+01003bc2: 08bf     it       eq                          
+01003bc4: 0023     moveq    r3, #0                      
+01003bc6: 00d0     beq      #0x1003bca                  
+01003bc8: 0123     movs     r3, #1                      
+01003bca: 40f8203b str      r3, [r0], #0x20             
+01003bce: 51f82230 ldr.w    r3, [r1, r2, lsl #2]        
+01003bd2: 98f80220 ldrb.w   r2, [r8, #2]                
+01003bd6: 40f81c3c str      r3, [r0, #-0x1c]            
+01003bda: 51f82220 ldr.w    r2, [r1, r2, lsl #2]        
+01003bde: 98f80530 ldrb.w   r3, [r8, #5]                
+01003be2: 40f8182c str      r2, [r0, #-0x18]            
+01003be6: 5af82330 ldr.w    r3, [sl, r3, lsl #2]        
+01003bea: 98f80320 ldrb.w   r2, [r8, #3]                
+01003bee: 40f8143c str      r3, [r0, #-0x14]            
+01003bf2: 59f82220 ldr.w    r2, [sb, r2, lsl #2]        
+01003bf6: 98f80430 ldrb.w   r3, [r8, #4]                
+01003bfa: 40f8102c str      r2, [r0, #-0x10]            
+01003bfe: 59f82330 ldr.w    r3, [sb, r3, lsl #2]        
+01003c02: 98f80620 ldrb.w   r2, [r8, #6]                
+01003c06: 18f8081b ldrb     r1, [r8], #8                
+01003c0a: 40f80c3c str      r3, [r0, #-0xc]             
+01003c0e: 0023     movs     r3, #0                      
+01003c10: 11ea0e0f tst.w    r1, lr                      
+01003c14: 18bf     it       ne                          
+01003c16: 0123     movne    r3, #1                      
+01003c18: 2942     tst      r1, r5                      
+01003c1a: 5af82220 ldr.w    r2, [sl, r2, lsl #2]        
+01003c1e: 18bf     it       ne                          
+01003c20: 2343     orrne    r3, r4                      
+01003c22: 2142     tst      r1, r4                      
+01003c24: 18bf     it       ne                          
+01003c26: 2b43     orrne    r3, r5                      
+01003c28: 11f0010f tst.w    r1, #1                      
+01003c2c: 40f8082c str      r2, [r0, #-0x8]             
+01003c30: 01d0     beq      #0x1003c36                  
+01003c32: 43ea0e03 orr.w    r3, r3, lr                  
+01003c36: 4cf2dc11 movw     r1, #0xc1dc                   ; -> 0x1266c1dc .rdata+0xf551dc
+01003c3a: c1f26621 movt     r1, #0x1266                 
+01003c3e: 00f8043c strb     r3, [r0, #-0x4]             
+01003c42: 761e     subs     r6, r6, #1                  
+01003c44: a9d1     bne      #0x1003b9a                  
+01003c46: f8f749ff bl       #0xffcadc                     ; sub_ffcadc
+01003c4a: 0346     mov      r3, r0                      
+01003c4c: 1b68     ldr      r3, [r3]                    
+01003c4e: 3e68     ldr      r6, [r7]                    
+01003c50: 17f15801 adds.w   r1, r7, #0x58               
+01003c54: 1b6d     ldr      r3, [r3, #0x50]             
+01003c56: 06f19802 add.w    r2, r6, #0x98               
+01003c5a: 9847     blx      r3                          
+01003c5c: 47f2dc51 movw     r1, #0x75dc                   ; -> 0x126675dc str "BlendState-%d-%d"
+01003c60: c1f26621 movt     r1, #0x1266                 
+01003c64: d7e91923 ldrd     r2, r3, [r7, #0x64]         
+01003c68: 17f11000 adds.w   r0, r7, #0x10               
+01003c6c: 6031     adds     r1, #0x60                   
+01003c6e: 10f46ff7 bl       #0x814b50                     ; sub_814b50
+01003c72: 0146     mov      r1, r0                      
+01003c74: d6f89800 ldr.w    r0, [r6, #0x98]             
+01003c78: faf7d4ff bl       #0xffec24                     ; sub_ffec24
+01003c7c: 3869     ldr      r0, [r7, #0x10]             
+01003c7e: 28b1     cbz      r0, #0x1003c8c              
+01003c80: 7b69     ldr      r3, [r7, #0x14]             
+01003c82: 1bb1     cbz      r3, #0x1003c8c              
+01003c84: 17f12801 adds.w   r1, r7, #0x28               
+01003c88: 2ff718d2 bl       #0x3330bc                     ; sub_3330bc
+01003c8c: 06f15400 add.w    r0, r6, #0x54               
+01003c90: 6bb0     add      sp, #0x1ac                  
+01003c92: bde8f08f pop.w    {r4, r5, r6, r7, r8, sb, sl, fp, pc}

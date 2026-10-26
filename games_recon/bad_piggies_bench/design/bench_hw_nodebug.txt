@@ -1,0 +1,122 @@
+﻿device: driver=HARDWARE hr=0x00000000 FL=0x9100 debug-layer=1 GetFeatureLevel=0x9100
+adapter: "Intel(R) UHD Graphics 620" vendor=8086 device=5917 dedicated=128 MiB
+
+[A] interfaces Unity requires (sub_ffdc74)
+  QI ID3D11Device1                                                         hr=0x00000000 as-expected
+  QI ID3D11Device2                                                         hr=0x00000000 info
+  QI IDXGIDevice3                                                          hr=0x00000000 as-expected
+  identity: device=000001AFACDF55C0 vtbl=00007FFD27299148 | Device1=000001AFACDF55C0 vtbl=00007FFD27299148 | Device2=000001AFACDF55C0 vtbl=00007FFD27299148
+  device vtable page protect=0x2 type=0x1000000
+  context vtable=000001AFACDF6950 page protect=0x4 type=0x20000
+
+[B] feature data at 9_1
+  D3D9_OPTIONS hr=0x00000000 FullNonPow2TextureSupport=1
+  D3D11_OPTIONS hr=0x00000000 OutputMergerLogicOp=1 ConstantBufferOffsetting=1 ConstantBufferPartialUpdate=1 MapNoOverwriteOnDynamicConstantBuffer=1 MapNoOverwriteOnDynamicBufferSRV=0
+  D3D9_SHADOW_SUPPORT hr=0x00000000 SupportsDepthAsTextureWithLessEqualComparisonFilter=1
+  D3D9_SIMPLE_INSTANCING hr=0x00000000 SimpleInstancingSupported=1
+  CheckFormatSupport R8G8B8A8_TYPELESS      hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R8G8B8A8_UNORM         hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=1
+  CheckFormatSupport B8G8R8A8_UNORM         hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=1 ib=0 vb=0
+  CheckFormatSupport B8G8R8A8_TYPELESS      hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R32G8X24_TYPELESS      hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport D32_FLOAT_S8X24_UINT   hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport D24_UNORM_S8_UINT      hr=0x00000000 tex2d=1 rt=0 ds=1 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R24G8_TYPELESS         hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport D16_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=1 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R16_TYPELESS           hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport A8_UNORM               hr=0x00000000 tex2d=1 rt=1 ds=0 sample=1 mip=0 ib=0 vb=0
+  CheckFormatSupport B4G4R4A4_UNORM         hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0
+  CheckFormatSupport BC1_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0
+  CheckFormatSupport BC3_UNORM              hr=0x00000000 tex2d=1 rt=0 ds=0 sample=1 mip=1 ib=0 vb=0
+  CheckFormatSupport R16G16B16A16_FLOAT     hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R32_UINT               hr=0x80004005 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=0 vb=0
+  CheckFormatSupport R16_UINT               hr=0x00000000 tex2d=0 rt=0 ds=0 sample=0 mip=0 ib=1 vb=0
+
+[C] textures Unity creates (hw-unitygfx F6/F7, hw-content F4/F5)
+  depth R32G8X24_TYPELESS DS|SR (Unity 24-bit depth, sub_1006980)          hr=0x80070057 as-expected
+  depth R32G8X24_TYPELESS DS only                                          hr=0x80070057 as-expected
+  depth D24_UNORM_S8_UINT DS (fix)                                         hr=0x00000000 as-expected
+  depth R24G8_TYPELESS DS|SR                                               hr=0x00000000 info
+  depth D24_UNORM_S8_UINT DS|SR                                            hr=0x80070057 info
+  depth R16_TYPELESS DS|SR (16-bit branch)                                 hr=0x00000000 info
+  colour RT R8G8B8A8_TYPELESS RT|SR (sub_1007a58 typeless column)          hr=0x80070057 info
+  colour RT B8G8R8A8_TYPELESS RT|SR                                        hr=0x80070057 info
+  colour RT R8G8B8A8_UNORM RT|SR (fix)                                     hr=0x00000000 as-expected
+  tex 2160x1080 RGBA8 1 mip (Innovation_VersionSelector_Background)        hr=0x00000000 info
+  tex 2048x2048 BC3 1 mip (atlases)                                        hr=0x00000000 as-expected
+  tex 4096x2048 RGBA8 12 mips (NPOT round-up of 2160x1080)                 hr=0x00000000 info
+  tex 124x124 RGBA8 7 mips ('loading', NPOT+mips)                          hr=0x00000000 info
+  tex 124x124 RGBA8 1 mip                                                  hr=0x00000000 as-expected
+  tex 128x128 RGBA8 8 mips (POT round-up)                                  hr=0x00000000 as-expected
+  tex 1024x652 RGBA8 11 mips ('Comic_DailyChallenge')                      hr=0x00000000 info
+  tex 36x16 BC3 1 mip (35x16 DXT5 rounded to block size)                   hr=0x00000000 info
+  tex 200x200 BC3 1 mip (UI buttons)                                       hr=0x00000000 info
+  tex 128x128 A8_UNORM 8 mips (built-in 'Soft')                            hr=0x80070057 info
+  tex 64x64 B4G4R4A4 1 mip (IMGUI skin)                                    hr=0x00000000 info
+  tex 1024x1024 A8_UNORM 1 mip (SDF atlases)                               hr=0x00000000 info
+
+[D] swap chain like Unity's (sub_2f458c desc, but HWND)
+  CreateSwapChainForHwnd usage=0x30 FLIP_SEQUENTIAL flags=0x40             hr=0x00000000 info
+      back buffer bind=0x28
+        CreateShaderResourceView(back buffer)                              hr=0x00000000 info
+        CreateRenderTargetView(back buffer)                                hr=0x00000000 as-expected
+        Present(1,0)                                                       hr=0x00000000 as-expected
+  CreateSwapChainForHwnd usage=0x20 FLIP_SEQUENTIAL flags=0x40             hr=0x00000000 info
+      back buffer bind=0x20
+        CreateShaderResourceView(back buffer)                              hr=0x80070057 info
+        CreateRenderTargetView(back buffer)                                hr=0x00000000 as-expected
+        Present(1,0)                                                       hr=0x00000000 as-expected
+
+[E] state objects (hw-unitygfx F9)
+  sampler ANISOTROPIC MaxAnisotropy=16                                     hr=0x80070057 as-expected
+  sampler ANISOTROPIC MaxAnisotropy=2                                      hr=0x00000000 as-expected
+  sampler LINEAR with MaxAnisotropy=16 (field ignored?)                    hr=0x00000000 info
+  sampler LINEAR MinLOD=-FLT_MAX MaxLOD=FLT_MAX (Unity default)            hr=0x00000000 as-expected
+  sampler LINEAR MipLODBias=-0.5                                           hr=0x00000000 info
+  sampler LINEAR MaxAnisotropy=0                                           hr=0x00000000 info
+  sampler MIRROR_ONCE                                                      hr=0x80070057 as-expected
+  sampler comparison (shadow)                                              hr=0x00000000 info
+  rasterizer DepthClipEnable=FALSE ('ZClip False')                         hr=0x8007000e as-expected
+  rasterizer DepthClip=TRUE scissor, depth bias                            hr=0x00000000 as-expected
+  blend SrcAlpha/InvSrcAlpha, alpha = colour factors                       hr=0x00000000 as-expected
+  blend separate alpha factors (IMGUI: One,One)                            hr=0x00000000 info
+  blend separate alpha op (BlendOpAlpha=MAX)                               hr=0x00000000 info
+  blend AlphaToCoverageEnable=TRUE                                         hr=0x80070057 as-expected
+  blend colour mask 14 (RGB)                                               hr=0x00000000 as-expected
+  blend colour mask 0                                                      hr=0x00000000 as-expected
+  CreateBlendState1 (no logic op)                                          hr=0x00000000 info
+  depth-stencil front == back                                              hr=0x00000000 as-expected
+  depth-stencil front != back (two-sided)                                  hr=0x00000000 info
+  query TIMESTAMP_DISJOINT (optional at 9_1)                               hr=0x00000000 info
+  query EVENT                                                              hr=0x00000000 as-expected
+  query OCCLUSION                                                          hr=0x80070057 info
+  dynamic index buffer                                                     hr=0x00000000 as-expected
+  IASetIndexBuffer R16_UINT                                                hr=0x00000000 info
+  buffer VB|IB combined                                                    hr=0x80070057 as-expected
+  constant buffer 368 bytes (UnityPerFrame)                                hr=0x00000000 as-expected
+
+[F] shaders: Unity originals vs the level_9_1 table
+  table: 113 entries
+  table entries created directly: 39 VS + 74 PS, OK 113, failed 0
+  needed program without replacement: 69_Hidden_Internal-GUIRoundedRect\b001_ps_640b0073a23b.dxbc
+  unique Unity programs: 402; created as-is on the 9_1 device: 0 (expect 0)
+  table hits: 111, replacement created OK: 111; input layouts from Unity's ISGN + l9 VS: OK 38, failed 0
+  needed programs (index.csv): 112, with replacement: 111, created OK: 111
+
+[F2] draw test through the lookup (Sprites/Default)
+  lookup Sprites/Default VS hit, PS hit
+  CreateVertexShader(replacement)                                          hr=0x00000000 as-expected
+  CreatePixelShader(replacement)                                           hr=0x00000000 as-expected
+  CreateInputLayout(Unity-style float3/Color32/float2, replacement VS)     hr=0x00000000 as-expected
+  VSSetShaderResources(NULL) - unbinding, as engines do                    hr=0x00000000 info
+  VSSetSamplers(NULL)                                                      hr=0x00000000 info
+  DrawIndexed(6) with replacement Sprites/Default                          hr=0x00000000 info
+  read-back centre pixel RGBA = 200 100 50 255 (expected 200 100 50 255)
+  GetDeviceRemovedReason after draw                                        hr=0x00000000 as-expected
+
+[G] LAST: IASetIndexBuffer with R32_UINT (Unity Supports32bitsIndexBuffer=1)
+  GetDeviceRemovedReason before                                            hr=0x00000000 as-expected
+  IASetIndexBuffer R32_UINT (void call)                                    hr=0x00000000 info
+  GetDeviceRemovedReason after                                             hr=0x887a0020 info
+
+SUMMARY: 35 as-expected, 1 unexpected

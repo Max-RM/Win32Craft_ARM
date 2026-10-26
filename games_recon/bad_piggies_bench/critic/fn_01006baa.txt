@@ -1,0 +1,5 @@
+function GfxDeviceD3D11::vf221  [01006ba0..01006bae) len=14
+01006ba0: 2de90048 push.w   {fp, lr}                    
+01006ba4: eb46     mov      fp, sp                      
+01006ba6: bde80048 pop.w    {fp, lr}                    
+01006baa: f5f797bf b.w      #0xffcadc                     ; sub_ffcadc

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Assemble the ready-to-run device package of Minecraft PE 0.10.4.40 (Windows Phone 8.1 XAML build) for Win32Craft ARM32.
+"""Assemble the ready-to-run device package of a Windows Phone 8.1 game on the x104 host for Win32Craft ARM32:
+Minecraft PE 0.10.4.40 (default, --game 0104) or REDCON 1 1.3.0.0 (--game redcon; output dist-redcon\\REDCON_1.3.0.0_ARM32_Win32Craft).
 
     python tools\\make_0104_package.py                 patch + assemble from the existing dist-arm32\\win32craft.dll
+    python tools\\make_0104_package.py --game redcon   the same for REDCON 1 (game folder Redcon_1.3.0.0_ARM next to the repo files, WIN32CRAFT_GAME_DIR_REDCON)
     python tools\\make_0104_package.py --build         run build_arm32.bat and build_loadcheck_arm32.bat first
     python tools\\make_0104_package.py --allow-stubs   foundation dry run: units that are still stubs are accepted, the package is named ...-FOUNDATION-ONLY
 
@@ -50,7 +52,8 @@ SOURCES_OF_DLL = ["win32_host.c", "api_compat.c", "win32_compat.h", "win32_host_
 # present on Windows 8.1 RT / Windows 10 ARM32 (not shipped)
 SYSTEM_DLLS = {"kernel32.dll", "user32.dll", "shell32.dll", "comdlg32.dll", "d3d11.dll", "dxgi.dll", "d3dcompiler_47.dll", "ws2_32.dll", "xaudio2_8.dll",
                "oleaut32.dll", "ole32.dll", "combase.dll", "ntdll.dll", "advapi32.dll", "gdi32.dll", "iphlpapi.dll", "winmm.dll", "bcrypt.dll", "rpcrt4.dll",
-               "propsys.dll", "wintypes.dll", "msvcrt.dll", "imm32.dll", "psapi.dll"}
+               "propsys.dll", "wintypes.dll", "msvcrt.dll", "imm32.dll", "psapi.dll",
+               "d2d1.dll", "dwrite.dll", "mfplat.dll"}          # REDCON 1: text through Direct2D / DirectWrite, music through Media Foundation
 
 BATCHES = [
     ("start.bat", "", "normal start (Direct3D feature level 9_1, HWND swap chain, window fitted to the screen)"),
@@ -122,6 +125,75 @@ Files:
 """
 
 
+REDCON_BATCHES = [
+    ("start.bat", "", "normal start (the game's own Direct3D feature-level list 11_1..9_1, HWND swap chain, window fitted to the screen)"),
+    ("start_selftest.bat", "--selftest-fakes=only", "RUN THIS FIRST on a new device: checks the ABI of every host fake and exits with a message box (no game)"),
+    ("start_selftest_then_game.bat", "--selftest-fakes", "self test, then the game"),
+    ("start_window_1024.bat", "--window=1024x576", "window of 1024x576 client pixels"),
+    ("start_window_1280.bat", "--window=1280x720", "window of 1280x720 client pixels (may not fit a 1366x768 screen with a taskbar)"),
+    ("start_fullscreen.bat", "--fullscreen", "borderless window on the whole screen"),
+    ("start_fl91.bat", "--feature-level=9_1", "force a Direct3D feature level 9_1 device (the game normally picks the highest itself)"),
+    ("start_touch.bat", "--input=touch", "pin touch input"),
+    ("start_touch_wmtouch.bat", "--touch-api=wmtouch", "touch through WM_TOUCH (Windows RT 8.1 sends no WM_POINTER)"),
+    ("start_touch_legacy.bat", "--touch-api=legacy", "touch through emulated mouse messages (single finger)"),
+    ("start_back_button.bat", "--back-button-always", "show a small on-screen Back button in the top-left corner (a tap = the phone's Back key)"),
+    ("start_inputlog.bat", "--input-log", "log every input event (large log)"),
+    ("start_trace.bat", "--trace-fakes", "log every call of the chatty host fakes (very large log)"),
+]
+
+REDCON_README = """Win32Craft - REDCON 1 1.3.0.0 (Hexage, Windows Phone 8.1 build) for ARM32 Windows        [{status}]
+===========================================================================================================
+
+This folder is COMPLETE and READY TO RUN. Nothing needs to be patched or installed on the device (no Python).
+Target devices: Surface RT / Surface 2 class, Windows RT 8.1 or Windows 10 ARM32 (desktop).  The game ships Direct3D "level 9" shaders and asks for the
+best feature level itself, so feature level 9_1 GPUs are supported without any trick.
+{foundation_note}
+1. Copy this whole folder to the device, to a SHORT, writable location whose path contains ONLY plain ASCII letters/digits/spaces/punctuation
+   (for example C:\\Games\\Redcon).  The game copies the folder path into a 256-byte buffer: keep it well below 150 characters and ASCII-only.
+   Do NOT run it from the WindowsApps folder.  Saves and settings go to %APPDATA%\\Win32Craft\\Redcon (or --data-dir=<short ASCII folder>).
+   Windows RT 8.1: the Universal C Runtime and the missing API-set DLLs are included (ucrtbase.dll + api-ms-win-*.dll, ignored on Windows 10).
+2. FIRST: double-click  start_selftest.bat  .  It checks every host fake (ABI, values) before the game and shows "all checks passed" or "FAILURES".
+   Then double-click  start.bat  (or  {exe}  directly).
+3. LOG: win32craft.log is written next to the exe (or in %TEMP% if the folder is read-only).  If anything goes wrong - nothing starts, black window,
+   crash, freeze, no input, no sound - close the game and send me win32craft.log (and win32craft.log.old if it exists) plus a short note of what you saw.
+   STARTUP ERRORS ("missing DLL", "procedure entry point ... could not be located"): run  loadcheck.exe  and send loadcheck.txt too.
+4. Options (start*.bat show the useful ones):
+{batches}
+5. Back: the game has its own back buttons on screen.  On a keyboard the phone's Back key is Esc (or Alt+Left); start_back_button.bat adds a small
+   host Back button in the top-left corner of the window (a tap = Back) if you ever need one.
+6. Purchases: REDCON 1 sells its premium editions as in-app products of the Windows Phone Store, which is closed.  This host reports every product as
+   NOT owned (free edition); buying is not possible.
+7. Known limitations: verified on a Surface 2 only.  Music (Media Foundation), the online leaderboard and the game's own
+   dialogs (XAML pop-ups) are the parts most likely to need a fix - the log will show it.
+
+Files:
+  {exe}       patched game executable (the stock Redcon.exe is not shipped)
+  win32craft.dll                    the ARM32 host (window, Direct3D device, fake WinRT/XAML services, input)
+  msvcr120_app.dll msvcp120_app.dll vccorlib120_app.dll    the Visual C++ 2013 runtime of the game (genuine Microsoft files, one flag in the header changed)
+  vcruntime140.dll                  runtime of the host
+  ucrtbase.dll + api-ms-win-*.dll   app-local Universal CRT and API-set forwarders for WINDOWS RT 8.1
+  res\\ , Assets\\ , resources.pri  the game's own files
+  loadcheck.exe                     diagnostic: finds missing DLLs / entry points
+  start*.bat                        helpers
+  APISETS.txt                       which API-set contracts the shipped binaries import
+  patch_report.json                 every byte the patcher changed
+  MANIFEST.txt                      SHA-256 of every file
+"""
+
+# per game: what the generic steps below need
+GAMES = {
+    "0104": {"title": "Minecraft PE 0.10.4.40", "folder": FOLDER, "exe_name": EXE_NAME, "stock_exe": "MCPE.Host.WindowsPhone.exe", "profile": "v0_10_4",
+             "game_env": "WIN32CRAFT_GAME_DIR_0104", "default_game": DEFAULT_GAME, "default_out": "dist-0104", "batches": BATCHES, "readme": README,
+             "status": "verified on a Surface 2 (Windows 10 ARM32): menu, touch, keyboard, world, HUD work; NOT yet verified: Windows RT 8.1, audio, saving",
+             "work": "apiset-shims-0104"},
+    "redcon": {"title": "REDCON 1 1.3.0.0", "folder": "REDCON_1.3.0.0_ARM32_Win32Craft", "exe_name": "Win32Craft.Redcon-arm32.exe", "stock_exe": "Redcon.exe",
+               "profile": "redcon", "game_env": "WIN32CRAFT_GAME_DIR_REDCON", "default_game": str(ROOT / "Redcon_1.3.0.0_ARM"), "default_out": "dist-redcon",
+               "batches": REDCON_BATCHES, "readme": REDCON_README,
+               "status": "runs on a Surface 2 (Windows 10 ARM32, first device test 2026-10-22); NOT yet verified: Windows RT 8.1",
+               "work": "apiset-shims-redcon"},
+}
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -165,11 +237,12 @@ def pe_machine(path: Path) -> int:
 
 
 def main() -> None:
+    global FOLDER, EXE_NAME, BATCHES, README
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--game-dir", type=Path, default=Path(os.environ.get("WIN32CRAFT_GAME_DIR_0104", DEFAULT_GAME)),
-                        help="folder with the ORIGINAL MCPE.Host.WindowsPhone.exe (read only)")
+    parser.add_argument("--game", choices=sorted(GAMES), default="0104", help="which game (default 0104 = Minecraft PE 0.10.4.40)")
+    parser.add_argument("--game-dir", type=Path, help="folder with the ORIGINAL game exe (read only); default per game (WIN32CRAFT_GAME_DIR_0104 / _REDCON)")
     parser.add_argument("--dist", type=Path, default=Path(os.environ.get("DIST", ROOT / "dist-arm32")), help="dist-arm32 (win32craft.dll, loadcheck.exe)")
-    parser.add_argument("--out", type=Path, default=ROOT / "dist-0104", help="output root (default dist-0104)")
+    parser.add_argument("--out", type=Path, help="output root (default dist-0104 / dist-redcon)")
     parser.add_argument("--redist", type=Path, default=Path(os.environ.get("WIN32CRAFT_REDIST", DEFAULT_REDIST)), help="VC++ onecore\\arm redistributable folder")
     parser.add_argument("--llvm-bin", type=Path, default=Path(os.environ.get("LLVM_BIN", DEFAULT_LLVM_BIN)))
     parser.add_argument("--companion-appx", type=Path, help="Microsoft.VCLibs.120.00.Phone appx (passed to the patcher)")
@@ -178,6 +251,12 @@ def main() -> None:
     parser.add_argument("--no-apiset", action="store_true", help="skip the Windows RT 8.1 runtime (UCRT + api-set forwarders)")
     parser.add_argument("--no-zip", action="store_true")
     args = parser.parse_args()
+    G = GAMES[args.game]
+    FOLDER, EXE_NAME, BATCHES, README = G["folder"], G["exe_name"], G["batches"], G["readme"]
+    if args.game_dir is None:
+        args.game_dir = Path(os.environ.get(G["game_env"], G["default_game"]))
+    if args.out is None:
+        args.out = ROOT / G["default_out"]
 
     game = args.game_dir.resolve()
     dist = args.dist.resolve()
@@ -185,8 +264,8 @@ def main() -> None:
     target = out_root / FOLDER
     if game in target.parents or target == game:
         die("the package folder must not be inside the game folder")
-    if not (game / "MCPE.Host.WindowsPhone.exe").is_file():
-        die("MCPE.Host.WindowsPhone.exe not found in %s (set --game-dir or WIN32CRAFT_GAME_DIR_0104)" % game)
+    if not (game / G["stock_exe"]).is_file():
+        die("%s not found in %s (set --game-dir or %s)" % (G["stock_exe"], game, G["game_env"]))
     if any(ord(ch) > 127 for ch in str(target)):
         print("WARNING: the OUTPUT path %s is not ASCII-only; copy the finished folder to an ASCII-only path on the device (the host refuses non-ASCII paths)" % target)
 
@@ -194,7 +273,7 @@ def main() -> None:
     stubs = [name for name in UNIT_FILES if "*** STUB" in (ROOT / name).read_text(encoding="utf-8", errors="replace")]
     if stubs and not args.allow_stubs:
         die("these unit files are still STUBS: %s - the package would not run the game (use --allow-stubs for a foundation dry run)" % ", ".join(stubs))
-    status = "FOUNDATION-ONLY: units still stubs: " + ", ".join(s.replace("win32_host_arm32_0104_", "").replace(".inl", "") for s in stubs) if stubs else "verified on a Surface 2 (Windows 10 ARM32): menu, touch, keyboard, world, HUD work; NOT yet verified: Windows RT 8.1, audio, saving"
+    status = "FOUNDATION-ONLY: units still stubs: " + ", ".join(s.replace("win32_host_arm32_0104_", "").replace(".inl", "") for s in stubs) if stubs else G["status"]
     folder_name = FOLDER + ("-FOUNDATION-ONLY" if stubs else "")
     target = out_root / folder_name
 
@@ -224,7 +303,7 @@ def main() -> None:
             shutil.rmtree(target)                       # only our own generated output folder
         elif any(target.iterdir()):
             die("%s exists, is not empty and is not a package generated by this tool" % target)
-    command = [sys.executable, ROOT / "tools" / "arm32-patcher.py", "patch", "--profile", "v0_10_4", game, target, "--host-dll", dll]
+    command = [sys.executable, ROOT / "tools" / "arm32-patcher.py", "patch", "--profile", G["profile"], game, target, "--host-dll", dll]
     if args.companion_appx:
         command += ["--companion-appx", args.companion_appx]
     need_ok(run(command, cwd=ROOT), "the patcher (tools/arm32-patcher.py)")
@@ -234,7 +313,7 @@ def main() -> None:
             die("the patcher did not produce %s" % name)
     if sha256(target / "win32craft.dll") != sha256(dll):
         die("package win32craft.dll differs from %s" % dll)
-    if sha256(exe) == sha256(game / "MCPE.Host.WindowsPhone.exe"):
+    if sha256(exe) == sha256(game / G["stock_exe"]):
         die("the patched exe is identical to the original")
     marker.write_text("generated by tools/make_0104_package.py\n", encoding="ascii")
 
@@ -275,7 +354,7 @@ def main() -> None:
     runtime_files: list[Path] = []
     if not args.no_apiset:
         staging = out_root / "_win81-runtime"
-        result = run([sys.executable, ROOT / "tools" / "make_arm32_apiset_shims.py", "--out", staging, "--work", ROOT / "build-arm32" / "apiset-shims-0104",
+        result = run([sys.executable, ROOT / "tools" / "make_arm32_apiset_shims.py", "--out", staging, "--work", ROOT / "build-arm32" / G["work"],
                       "--pe"] + [str(p) for p in pes], cwd=ROOT)
         need_ok(result, "make_arm32_apiset_shims.py (a contract could not be satisfied)")
         runtime_files = sorted(staging.glob("*.dll"))
@@ -320,9 +399,9 @@ def main() -> None:
     summary = "patch_report.json: profile %s" % report.get("profile", report.get("exe", {}).get("profile", "?")) if isinstance(report, dict) else "patch_report.json"
 
     # MANIFEST
-    lines = ["Win32Craft Minecraft PE 0.10.4.40 ARM32 package manifest", "", "Status: " + status, "Generated: " + time.strftime("%Y-%m-%d %H:%M:%S"), "",
+    lines = ["Win32Craft %s ARM32 package manifest" % G["title"], "", "Status: " + status, "Generated: " + time.strftime("%Y-%m-%d %H:%M:%S"), "",
              "Inputs (read only):",
-             "  MCPE.Host.WindowsPhone.exe  %s  %d bytes" % (sha256(game / "MCPE.Host.WindowsPhone.exe"), (game / "MCPE.Host.WindowsPhone.exe").stat().st_size),
+             "  %-26s  %s  %d bytes" % (G["stock_exe"], sha256(game / G["stock_exe"]), (game / G["stock_exe"]).stat().st_size),
              "  win32craft.dll (built %s)   %s  %d bytes" % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(dll.stat().st_mtime)), sha256(dll), dll.stat().st_size),
              "  redistributable dir         %s" % redist, "  " + summary, "",
              "Package files (SHA-256, size):"]

@@ -1,0 +1,53 @@
+function sub_7337e0  [007337e0..00733876) len=150
+007337e0: 03b4     push     {r0, r1}                    
+007337e2: 2de9fe49 push.w   {r1, r2, r3, r4, r5, r6, r7, r8, fp, lr}
+007337e6: 0df1200b add.w    fp, sp, #0x20               
+007337ea: 6f46     mov      r7, sp                      
+007337ec: 6ff00103 mvn      r3, #1                      
+007337f0: b862     str      r0, [r7, #0x28]             
+007337f2: c7e90033 strd     r3, r3, [r7]                
+007337f6: 4ef6e063 movw     r3, #0xeee0                   ; -> 0x1298eee0 .data+0x3eee0
+007337fa: c1f29823 movt     r3, #0x1298                 
+007337fe: 0d46     mov      r5, r1                      
+00733800: 0022     movs     r2, #0                      
+00733802: 1968     ldr      r1, [r3]                    
+00733804: 8046     mov      r8, r0                      
+00733806: 0029     cmp      r1, #0                      
+00733808: 28dd     ble      #0x73385c                   
+0073380a: 4ef63060 movw     r0, #0xee30                   ; -> 0x1298ee30 .data+0x3ee30
+0073380e: c1f29820 movt     r0, #0x1298                 
+00733812: 0446     mov      r4, r0                      
+00733814: 54f8083b ldr      r3, [r4], #8                
+00733818: ab42     cmp      r3, r5                      
+0073381a: 03d0     beq      #0x733824                   
+0073381c: 521c     adds     r2, r2, #1                  
+0073381e: 8a42     cmp      r2, r1                      
+00733820: f8db     blt      #0x733814                   
+00733822: 1be0     b        #0x73385c                     ; sub_73385c
+00733824: 4cf6d075 movw     r5, #0xcfd0                   ; -> 0x1298cfd0 .data+0x3cfd0
+00733828: c1f29825 movt     r5, #0x1298                 
+0073382c: 00ebc203 add.w    r3, r0, r2, lsl #3          
+00733830: 5e68     ldr      r6, [r3, #4]                
+00733832: 0021     movs     r1, #0                      
+00733834: c8f80010 str.w    r1, [r8]                    
+00733838: c8f81410 str.w    r1, [r8, #0x14]             
+0073383c: 0dcd     ldm      r5!, {r0, r2, r3}           
+0073383e: 08f11804 add.w    r4, r8, #0x18               
+00733842: 0dc4     stm      r4!, {r0, r2, r3}           
+00733844: 88f80410 strb.w   r1, [r8, #4]                
+00733848: 3046     mov      r0, r6                      
+0073384a: 7ff0edd5 bl       #0x13b3428                    ; thunk[api-ms-win-crt-string-l1-1-0.dll!strlen]
+0073384e: 0246     mov      r2, r0                      
+00733850: 4046     mov      r0, r8                      
+00733852: 3146     mov      r1, r6                      
+00733854: 4cf596f5 bl       #0x80384                      ; sub_80384
+00733858: 4046     mov      r0, r8                      
+0073385a: 08e0     b        #0x73386e                     ; sub_73386e
+0073385c: 44f6dc11 movw     r1, #0x49dc                   ; -> 0x11d549dc str "Unknown (ID=%x)"
+00733860: c1f2d511 movt     r1, #0x11d5                 
+00733864: 2a46     mov      r2, r5                      
+00733866: 4046     mov      r0, r8                      
+00733868: e1f072f9 bl       #0x814b50                     ; sub_814b50
+0073386c: 4046     mov      r0, r8                      
+0073386e: bde8fe09 pop.w    {r1, r2, r3, r4, r5, r6, r7, r8, fp}
+00733872: 5df80cfb ldr      pc, [sp], #0xc              

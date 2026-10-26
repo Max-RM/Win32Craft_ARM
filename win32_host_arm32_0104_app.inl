@@ -96,6 +96,13 @@ typedef struct X104AppState {
     X104Element *page;                          /* the object IPageFactory.CreateInstance made (NULL before) */
     X104Event back_pressed;                     /* HardwareButtons.BackPressed (a static event) */
     X104Event contents_invalidated;             /* DisplayInformation.DisplayContentsInvalidated (a static event) */
+    /* games without the XAML-page template (REDCON 1) */
+    X104Event core_suspending;                  /* CoreApplication.Suspending (static): raised by the exit proc together with Application.Suspending */
+    X104Event core_resuming;                    /* CoreApplication.Resuming (static): never raised (the host never suspends a running game) */
+    X104Event rendering;                        /* CompositionTarget.Rendering (static): the whole game frame; raised by x104_app_rendering_tick */
+    volatile LONG in_rendering;                 /* a Rendering handler is running (a modal loop inside a frame must not start another frame) */
+    volatile LONG rendering_frames;             /* Rendering ticks delivered */
+    volatile LONG rendering_exceptions;         /* consecutive ticks that ended in an escaped exception */
 } X104AppState;
 
 static X104AppState x104_app_g;
@@ -138,7 +145,9 @@ static void x104_app_set_pending_hidden(LONG hidden, const char *why)
 static BOOL x104_app_render_loop_exists(void)
 {
     DWORD value = 0;
-    BYTE *app = x104_game_appmain();
+    BYTE *app;
+    if (!x104_feat(X104_FEAT_XAML_PAGE)) return TRUE;       /* no AppMain: frames come from CompositionTarget.Rendering, nothing to guard */
+    app = x104_game_appmain();
     return app && x104_read_u32(app + X104_APP_APPMAIN_RENDER_ACTION, &value) && value != 0;
 }
 
@@ -243,7 +252,8 @@ static HRESULT X104_API x104_app_susp_op_get_deferral(void *self, void **deferra
     *deferral = NULL;
     obj = x104_object_new(&x104_app_deferral_class, sizeof(X104Object));
     if (!obj) return E_OUTOFMEMORY;
-    *deferral = &obj->views[0];                              /* refs = 1: owned by the caller */
+    InterlockedIncrement(&obj->refs);                        /* refs = 2: one owned by the caller, one kept by the host (REDCON 1 releases it twice) */
+    *deferral = &obj->views[0];
     x104_logf("X104 app: SuspendingOperation.GetDeferral() -> %p", *deferral);
     return S_OK;
 }
@@ -686,12 +696,13 @@ static unsigned x104_app_raise_suspending(void)
     X104Object *operation;
     unsigned count;
     unsigned raised;
+    unsigned core_count = x104_event_count(&x104_app_g.core_suspending);
     if (!application) {
         x104_logf("X104 app: Suspending not raised: the game never created its Application object");
         return 0;
     }
     count = x104_event_count(&application->suspending);
-    if (!count) {
+    if (!count && !core_count) {
         x104_logf("X104 app: Suspending not raised: no handler is registered");
         return 0;
     }
@@ -703,7 +714,14 @@ static unsigned x104_app_raise_suspending(void)
     }
     args->user[0] = operation;
     x104_logf("X104 app: raising Suspending (sender=%p args=%p, %u handler(s) registered)", &application->base.views[0], &args->views[0], count);
-    raised = x104_event_invoke_guarded(&application->suspending, &application->base.views[0], &args->views[0]);
+    raised = count ? x104_event_invoke_guarded(&application->suspending, &application->base.views[0], &args->views[0]) : 0;
+    if (core_count) {
+        unsigned core_raised;
+        x104_logf("X104 app: raising CoreApplication.Suspending (args=%p, %u handler(s) registered)", &args->views[0], core_count);
+        core_raised = x104_event_invoke_guarded(&x104_app_g.core_suspending, NULL, &args->views[0]);
+        x104_logf("X104 app: CoreApplication.Suspending raised to %u handler(s)", core_raised);
+        raised += core_raised;
+    }
     x104_logf("X104 app: Suspending raised to %u handler(s)", raised);
     return raised;
 }
@@ -792,6 +810,12 @@ static HRESULT X104_API x104_app_window_put_content(void *self, void *content)
     window->content = content;
     x104_unlock(&window->content_lock);
     if (content && x104_app_g.page && !IsBadReadPtr(content, sizeof(X104View))) is_page = ((X104View *)content)->obj == &x104_app_g.page->base;
+    if (!x104_feat(X104_FEAT_XAML_PAGE)) {
+        BOOL is_panel = content && !IsBadReadPtr(content, sizeof(X104View)) && ((X104View *)content)->obj == x104_panel_object();
+        x104_logf("X104 app: Window.put_Content(%p) [%s]", content, content ? (is_panel ? "the code-built SwapChainPanel" : "NOT the host's SwapChainPanel") : "NULL: content cleared");
+        if (old) x104_raw_release(old);
+        return S_OK;
+    }
     x104_logf("X104 app: Window.put_Content(%p) [%s]", content, content ? (is_page ? "the Page inner of IPageFactory.CreateInstance" : "NOT the Page inner this host created") : "NULL: content cleared");
     if (old) x104_raw_release(old);
     if (content) x104_flag_set(&x104.f_content_set, "f_content_set: Window.Content set: the MainPage constructor has returned");
@@ -1146,7 +1170,22 @@ X104_VTBL(x104_app_vt_display, IDisplayInformation) = {
     X104_SLOT(IDisplayInformation, add_DpiChanged, x104_app_di_add_dpi_changed),
     X104_SLOT(IDisplayInformation, remove_DpiChanged, x104_app_di_remove_dpi_changed)
 };
-static const X104IfaceDesc x104_app_display_ifaces[] = { X104_IFACE(IDisplayInformation, x104_app_vt_display) };
+/* IDisplayInformation2.get_RawPixelsPerViewPixel: 1.0 (the host reports 96 dpi / scale 1.0 everywhere; REDCON 1 multiplies CoreWindow.Bounds by it) */
+static HRESULT X104_API x104_app_di_get_raw_pixels_per_view_pixel(void *self, double *value)
+{
+    static volatile LONG logged;
+    (void)self;
+    if (!value) return E_POINTER;
+    *value = 1.0;
+    X104_LOG_LIMITED(&logged, 1, "X104 app: DisplayInformation.get_RawPixelsPerViewPixel -> 1.0");
+    return S_OK;
+}
+
+X104_VTBL(x104_app_vt_display2, IDisplayInformation2) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(IDisplayInformation2, get_RawPixelsPerViewPixel, x104_app_di_get_raw_pixels_per_view_pixel)
+};
+static const X104IfaceDesc x104_app_display_ifaces[] = { X104_IFACE(IDisplayInformation, x104_app_vt_display), X104_IFACE(IDisplayInformation2, x104_app_vt_display2) };
 X104_CLASS_DEF(x104_app_display_class, "DisplayInformation", L"Windows.Graphics.Display.DisplayInformation", x104_app_display_ifaces, X104_CLASS_AGILE, NULL);
 
 /* the one DisplayInformation object (GetForCurrentView) */
@@ -1204,6 +1243,189 @@ X104_VTBL(x104_app_vt_displaystatics, IDisplayInformationStatics) = {
 static const X104IfaceDesc x104_app_displaystatics_ifaces[] = { X104_IFACE(IDisplayInformationStatics, x104_app_vt_displaystatics) };
 X104_CLASS_DEF(x104_app_displaystatics_class, "DisplayInformationStatics", L"Windows.Graphics.Display.DisplayInformation", x104_app_displaystatics_ifaces, X104_CLASS_AGILE | X104_CLASS_FACTORY, NULL);
 X104_SINGLETON(x104_app_get_displaystatics, x104_app_displaystatics_class, X104Object)
+
+/* ======================================================================================================================
+ * 7b. classes of games without the XAML-page template (REDCON 1: games_recon/redcon_redcon-startup.md F3-F6, F9):
+ *     CoreApplication (Suspending / Resuming), ApplicationView (SuppressSystemOverlays), CoreWindowResizeManager (NotifyLayoutCompleted) and
+ *     CompositionTarget (Rendering = the game frame, raised every UI pass by x104_app_rendering_tick)
+ * ====================================================================================================================== */
+X104_APP_GLOBAL_EVENT_PAIR(x104_app_core_add_suspending, x104_app_core_remove_suspending, core_suspending)
+X104_APP_GLOBAL_EVENT_PAIR(x104_app_core_add_resuming, x104_app_core_remove_resuming, core_resuming)
+
+X104_VTBL(x104_app_vt_coreapp, ICoreApplication) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(ICoreApplication, add_Suspending, x104_app_core_add_suspending),
+    X104_SLOT(ICoreApplication, remove_Suspending, x104_app_core_remove_suspending),
+    X104_SLOT(ICoreApplication, add_Resuming, x104_app_core_add_resuming),
+    X104_SLOT(ICoreApplication, remove_Resuming, x104_app_core_remove_resuming)
+};
+static const X104IfaceDesc x104_app_coreapp_ifaces[] = { X104_IFACE(ICoreApplication, x104_app_vt_coreapp) };
+X104_CLASS_DEF(x104_app_coreapp_class, "CoreApplicationStatics", L"Windows.ApplicationModel.Core.CoreApplication", x104_app_coreapp_ifaces, X104_CLASS_AGILE | X104_CLASS_FACTORY, NULL);
+X104_SINGLETON(x104_app_get_coreapp, x104_app_coreapp_class, X104Object)
+
+/* ApplicationView.GetForCurrentView() -> an object the game QIs for IApplicationView2 (slot 7 put_SuppressSystemOverlays: no system overlays on a desktop) */
+static HRESULT X104_API x104_app_view_get_suppress(void *self, BYTE *value)
+{
+    (void)self;
+    if (!value) return E_POINTER;
+    *value = 1;
+    return S_OK;
+}
+
+static HRESULT X104_API x104_app_view_put_suppress(void *self, BYTE value)
+{
+    (void)self;
+    x104_logf("X104 app: ApplicationView.put_SuppressSystemOverlays(%u) accepted (no-op on a desktop window)", (unsigned)value);
+    return S_OK;
+}
+
+X104_VTBL(x104_app_vt_view2, IApplicationView2) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(IApplicationView2, get_SuppressSystemOverlays, x104_app_view_get_suppress),
+    X104_SLOT(IApplicationView2, put_SuppressSystemOverlays, x104_app_view_put_suppress)
+};
+static const X104IfaceDesc x104_app_view_ifaces[] = { X104_IFACE(IApplicationView2, x104_app_vt_view2) };
+X104_CLASS_DEF(x104_app_view_class, "ApplicationView", L"Windows.UI.ViewManagement.ApplicationView", x104_app_view_ifaces, X104_CLASS_AGILE, NULL);
+X104_SINGLETON(x104_app_get_view, x104_app_view_class, X104Object)
+
+static HRESULT X104_API x104_app_viewstatics_get_for_current_view(void *self, void **current)
+{
+    (void)self;
+    return x104_return_iface(x104_app_get_view(), &X104_IID_IApplicationView2, current, "ApplicationView.GetForCurrentView");
+}
+
+X104_VTBL(x104_app_vt_viewstatics, IApplicationViewStatics2) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(IApplicationViewStatics2, GetForCurrentView, x104_app_viewstatics_get_for_current_view)
+};
+static const X104IfaceDesc x104_app_viewstatics_ifaces[] = { X104_IFACE(IApplicationViewStatics2, x104_app_vt_viewstatics) };
+X104_CLASS_DEF(x104_app_viewstatics_class, "ApplicationViewStatics", L"Windows.UI.ViewManagement.ApplicationView", x104_app_viewstatics_ifaces, X104_CLASS_AGILE | X104_CLASS_FACTORY, NULL);
+X104_SINGLETON(x104_app_get_viewstatics, x104_app_viewstatics_class, X104Object)
+
+/* CoreWindowResizeManager.GetForCurrentView().NotifyLayoutCompleted(): the end of the game's rotation handler; nothing waits for it on a desktop */
+static HRESULT X104_API x104_app_resize_notify_layout_completed(void *self)
+{
+    static volatile LONG logged;
+    (void)self;
+    X104_LOG_LIMITED(&logged, 4, "X104 app: CoreWindowResizeManager.NotifyLayoutCompleted (no-op)");
+    return S_OK;
+}
+
+X104_VTBL(x104_app_vt_resize, ICoreWindowResizeManager) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(ICoreWindowResizeManager, NotifyLayoutCompleted, x104_app_resize_notify_layout_completed)
+};
+static const X104IfaceDesc x104_app_resize_ifaces[] = { X104_IFACE(ICoreWindowResizeManager, x104_app_vt_resize) };
+X104_CLASS_DEF(x104_app_resize_class, "CoreWindowResizeManager", L"Windows.UI.Core.CoreWindowResizeManager", x104_app_resize_ifaces, X104_CLASS_AGILE, NULL);
+X104_SINGLETON(x104_app_get_resize, x104_app_resize_class, X104Object)
+
+static HRESULT X104_API x104_app_resizestatics_get_for_current_view(void *self, void **current)
+{
+    (void)self;
+    return x104_return_iface(x104_app_get_resize(), &X104_IID_ICoreWindowResizeManager, current, "CoreWindowResizeManager.GetForCurrentView");
+}
+
+X104_VTBL(x104_app_vt_resizestatics, ICoreWindowResizeManagerStatics) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(ICoreWindowResizeManagerStatics, GetForCurrentView, x104_app_resizestatics_get_for_current_view)
+};
+static const X104IfaceDesc x104_app_resizestatics_ifaces[] = { X104_IFACE(ICoreWindowResizeManagerStatics, x104_app_vt_resizestatics) };
+X104_CLASS_DEF(x104_app_resizestatics_class, "CoreWindowResizeManagerStatics", L"Windows.UI.Core.CoreWindowResizeManager", x104_app_resizestatics_ifaces,
+               X104_CLASS_AGILE | X104_CLASS_FACTORY, NULL);
+X104_SINGLETON(x104_app_get_resizestatics, x104_app_resizestatics_class, X104Object)
+
+/* CompositionTarget statics: Rendering (EventHandler<Object>; the handler ignores sender and args) and SurfaceContentsLost (accepted, never raised) */
+static HRESULT X104_API x104_app_ct_add_rendering(void *self, void *handler, LONGLONG *token)
+{
+    HRESULT hr;
+    (void)self;
+    hr = x104_event_add(&x104_app_g.rendering, handler, token);
+    x104_logf("X104 app: CompositionTarget.add_Rendering(%p) -> 0x%08lx (%u handler(s); frames are raised every UI pass while the window is visible)", handler,
+              (unsigned long)hr, x104_event_count(&x104_app_g.rendering));
+    return hr;
+}
+
+static HRESULT X104_API x104_app_ct_remove_rendering(void *self, LONGLONG token)
+{
+    HRESULT hr;
+    (void)self;
+    hr = x104_event_remove(&x104_app_g.rendering, token);
+    x104_logf("X104 app: CompositionTarget.remove_Rendering -> %u handler(s) left (the game paused its frames)", x104_event_count(&x104_app_g.rendering));
+    return hr;
+}
+
+static HRESULT X104_API x104_app_ct_add_surface_lost(void *self, void *handler, LONGLONG *token)
+{
+    static LONGLONG next = 0x5C0000;
+    (void)self;
+    (void)handler;
+    if (!token) return E_POINTER;
+    *token = ++next;
+    return S_OK;
+}
+
+static HRESULT X104_API x104_app_ct_remove_surface_lost(void *self, LONGLONG token)
+{
+    (void)self;
+    (void)token;
+    return S_OK;
+}
+
+X104_VTBL(x104_app_vt_compositiontarget, ICompositionTargetStatics) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(ICompositionTargetStatics, add_Rendering, x104_app_ct_add_rendering),
+    X104_SLOT(ICompositionTargetStatics, remove_Rendering, x104_app_ct_remove_rendering),
+    X104_SLOT(ICompositionTargetStatics, add_SurfaceContentsLost, x104_app_ct_add_surface_lost),
+    X104_SLOT(ICompositionTargetStatics, remove_SurfaceContentsLost, x104_app_ct_remove_surface_lost)
+};
+static const X104IfaceDesc x104_app_compositiontarget_ifaces[] = { X104_IFACE(ICompositionTargetStatics, x104_app_vt_compositiontarget) };
+X104_CLASS_DEF(x104_app_compositiontarget_class, "CompositionTargetStatics", L"Windows.UI.Xaml.Media.CompositionTarget", x104_app_compositiontarget_ifaces,
+               X104_CLASS_AGILE | X104_CLASS_FACTORY, NULL);
+X104_SINGLETON(x104_app_get_compositiontarget, x104_app_compositiontarget_class, X104Object)
+
+/* TRUE while a Rendering handler is registered and the window shows: the UI loop then waits at most 1 ms (the game's own limiter and Present(1,0) pace the frames) */
+static BOOL x104_app_rendering_active(void)
+{
+    HWND window = x104_app_g.window ? x104_app_g.window : x104.window;
+    return x104_event_count(&x104_app_g.rendering) && x104.f_launched && !x104.f_exit_requested && window && IsWindowVisible(window) && !IsIconic(window);
+}
+
+/* UI thread, every pass: one CompositionTarget.Rendering = one game frame (update + draw + Present(1,0)) */
+static void x104_app_rendering_tick(void)
+{
+    void *snapshot[X104_EVENT_MAX];
+    unsigned count = 0;
+    unsigned index;
+    LONG frame;
+    X104Event *event = &x104_app_g.rendering;
+    if (!x104_app_rendering_active() || x104_app_g.delivered_hidden) return;
+    if (x104_app_g.rendering_exceptions >= 30) return;          /* the frame keeps throwing: stop (logged once below) instead of spinning on it */
+    if (InterlockedExchange(&x104_app_g.in_rendering, 1)) return;
+    x104_lock(&event->lock);
+    for (index = 0; index < X104_EVENT_MAX; ++index) {
+        if (event->handler[index]) snapshot[count++] = event->handler[index];
+    }
+    for (index = 0; index < count; ++index) x104_raw_addref(snapshot[index]);
+    x104_unlock(&event->lock);
+    frame = InterlockedIncrement(&x104_app_g.rendering_frames);
+    if (frame == 1) x104_logf("X104 app: first CompositionTarget.Rendering tick (%u handler(s), %lu ms after OnLaunched returned)", count,
+                              (unsigned long)(GetTickCount() - x104_app_g.launched_tick));
+    for (index = 0; index < count; ++index) {
+        HRESULT hr = S_OK;
+        X104Seh seh;
+        if (!x104_call_guarded3(((void **)*(void ***)snapshot[index])[X104_SLOT_DELEGATE_Invoke], snapshot[index], NULL, NULL, &hr, &seh)) {
+            LONG failures = InterlockedIncrement(&x104_app_g.rendering_exceptions);
+            if (failures <= 5 || failures == 30)
+                x104_logf("X104 app: EXCEPTION escaped from the Rendering handler (frame %ld): code=%08lx at %p (game rva %08lx)%s%s", (long)frame, (unsigned long)seh.code,
+                          seh.address, (unsigned long)seh.rva, seh.code == 0xE06D7363u ? " [C++ exception]" : "",
+                          failures == 30 ? " - 30 in a row: frames are no longer raised" : "");
+        } else {
+            InterlockedExchange(&x104_app_g.rendering_exceptions, 0);
+        }
+        x104_raw_release(snapshot[index]);
+    }
+    InterlockedExchange(&x104_app_g.in_rendering, 0);
+}
 
 /* ======================================================================================================================
  * 8. Application statics + factory: the fake Application::Start that drives the whole game
@@ -1626,7 +1848,11 @@ static const X104FactoryDef x104_app_factories[] = {
     { L"Windows.UI.ViewManagement.StatusBar",          x104_app_get_statusbarstatics },
     { L"Windows.Phone.UI.Input.HardwareButtons",       x104_app_get_hwbuttons },
     { L"Windows.Graphics.Display.DisplayInformation",  x104_app_get_displaystatics },
-    { L"Windows.Foundation.Uri",                       x104_app_get_urifactory }
+    { L"Windows.Foundation.Uri",                       x104_app_get_urifactory },
+    { L"Windows.ApplicationModel.Core.CoreApplication", x104_app_get_coreapp },
+    { L"Windows.UI.ViewManagement.ApplicationView",    x104_app_get_viewstatics },
+    { L"Windows.UI.Core.CoreWindowResizeManager",      x104_app_get_resizestatics },
+    { L"Windows.UI.Xaml.Media.CompositionTarget",      x104_app_get_compositiontarget }
 };
 
 /* nothing to patch in the game image; the static events get their names here (before anything can be activated) */
@@ -1635,6 +1861,9 @@ static BOOL x104_app_install(BYTE *image)
     (void)image;
     x104_event_init(&x104_app_g.back_pressed, "HardwareButtons.BackPressed");
     x104_event_init(&x104_app_g.contents_invalidated, "DisplayInformation.DisplayContentsInvalidated");
+    x104_event_init(&x104_app_g.core_suspending, "CoreApplication.Suspending");
+    x104_event_init(&x104_app_g.core_resuming, "CoreApplication.Resuming");
+    x104_event_init(&x104_app_g.rendering, "CompositionTarget.Rendering");
     x104_app_gs_parse();
     x104_logf("X104 app: install ok (nothing to patch; --trace-game-state=%d)", (int)x104_app_gs.enabled);
     return TRUE;
@@ -1682,8 +1911,9 @@ static void x104_app_ui_tick(void)
         }
     }
 
-    /* minimise / restore -> CoreWindow.VisibilityChanged (the game stops / restarts its render loop) */
-    if (x104.f_content_set && !x104.f_exit_requested) {
+    /* minimise / restore -> CoreWindow.VisibilityChanged (the game stops / restarts its render loop).  XAML-page games: once MainPage exists; others
+     * (REDCON 1, handlers registered inside OnLaunched): once the window was activated */
+    if ((x104_feat(X104_FEAT_XAML_PAGE) ? x104.f_content_set != 0 : x104_app_g.activate_called != 0) && !x104.f_exit_requested) {
         LONG hidden = x104_app_g.pending_hidden;
         BOOL hold = FALSE;
         if (hidden != x104_app_g.delivered_hidden && x104_game_is_ready() && !x104_app_render_loop_exists()) {
@@ -1717,6 +1947,9 @@ static void x104_app_ui_tick(void)
             X104_TRACE("X104 app: Page size -> %dx%d", (int)w, (int)h);
         }
     }
+
+    /* CompositionTarget.Rendering: the game frame of games that draw on the UI thread (REDCON 1); nothing registers it in 0.10.4 */
+    x104_app_rendering_tick();
 
     /* --trace-game-state (off by default): snapshots of the game's own state, read-only */
     if (x104_app_gs.enabled) x104_app_gs_tick();
