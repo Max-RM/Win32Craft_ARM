@@ -1180,7 +1180,7 @@ static void x104_panel_tr_dump_frame(const char *tag)
     x104_logf("X104 dump[%s]: end", tag);
 }
 
-/* render thread, from the Present stub (before the real Present): log (1 s / 10 s, and when the "frame has U draws" flag flips), then start a new frame record */
+/* Render thread, before Present. Keep the frame record until the HRESULT is known. */
 static void x104_panel_tr_frame_end(void)
 {
     x104_panel_tr_t *t = &x104_panel_tr;
@@ -1211,11 +1211,34 @@ static void x104_panel_tr_frame_end(void)
     if (why || (t->frames % 30) == 1) x104_panel_tr_verify_cells();
     if (why) x104_panel_tr_log_frame(why, now);
     t->last_ui = ui;
+}
+
+static void x104_panel_tr_reset_frame(void)
+{
+    x104_panel_tr_t *t = &x104_panel_tr;
     t->draws = t->indexed = t->cls_w = t->cls_b = t->cls_u_ui = t->cls_u_flat = t->clears_rt = t->clears_ds = 0;
     t->n_rtv = t->n_vp = t->n_bs = t->n_dss = t->n_rs = t->n_sc = 0;
     t->maps = t->maps_discard = t->maps_nooverwrite = t->maps_failed = 0;
     t->ring_pos = 0;
     t->nruns = t->run_overflow = 0;
+}
+
+static void x104_panel_tr_present_failed(HRESULT hr)
+{
+    x104_panel_tr_t *t = &x104_panel_tr;
+    static volatile LONG failures;
+    UINT shown = t->ring_pos < 16u ? t->ring_pos : 16u;
+    UINT first = t->ring_pos - shown;
+    UINT i;
+    if (InterlockedIncrement(&failures) > 4) return;
+    x104_logf("X104 panel: DEVICE LOST DIAG: Present hr=0x%08lx, trace frame #%ld: %u draws, RT/DS clears %u/%u, %u maps (%u failed); last %u draws",
+              (unsigned long)hr, (long)t->frames, t->draws, t->clears_rt, t->clears_ds, t->maps, t->maps_failed, shown);
+    for (i = 0; i < shown; ++i) {
+        const x104_panel_tr_draw_t *d = &t->ring[(first + i) % X104_PANEL_TR_RING];
+        x104_logf("X104 panel: DEVICE LOST DIAG draw[-%u] %c %c count=%u start=%u vp=%dx%d blend=%d(%d/%d) depth=%d cull=%d vs=%p ps=%p layout=%p vb0=%p stride=%u tex0=%p rtv=%p dsv=%p caller=%p",
+                  shown - i, (char)d->kind, (char)d->cls, d->count, d->start, (int)d->vp_w, (int)d->vp_h, (int)d->bl_en, (int)d->bl_src, (int)d->bl_dst,
+                  (int)d->ds_en, (int)d->rs_cull, d->vs, d->ps, d->layout, d->vb0, d->vstride, d->srv0, d->rtv, d->dsv, d->draw_caller);
+    }
 }
 
 /* ======================================================================================================================
@@ -1237,6 +1260,18 @@ typedef struct x104_panel_cf_sampler_t {                 /* D3D11_SAMPLER_DESC (
 typedef struct x104_panel_cf_vt_t { void **vtbl; void *orig[X104_PANEL_CF_SLOTS]; } x104_panel_cf_vt_t;
 typedef struct x104_panel_cf_t { volatile LONG count; x104_panel_cf_vt_t vts[2]; } x104_panel_cf_t;
 static x104_panel_cf_t x104_panel_cf;
+
+/* Log shader creation so draw traces can be joined to the bytecode by object pointer. */
+static void x104_panel_shader_log(void *object, BYTE kind, const void *code, SIZE_T length)
+{
+    const BYTE *bytes = (const BYTE *)code;
+    DWORD hash = 2166136261u;
+    SIZE_T i;
+    if (!x104_panel_tr.enabled || !object || !bytes || !length || length > 1024u * 1024u || IsBadReadPtr(bytes, length)) return;
+    for (i = 0; i < length; ++i) hash = (hash ^ bytes[i]) * 16777619u;
+    x104_logf("X104 panel: shader %c object=%p bytecode_length=%lu FNV1a=0x%08lx", kind, object,
+              (unsigned long)length, (unsigned long)hash);
+}
 
 typedef HRESULT (X104_API *x104_panel_cf_fn_view)(void *, void *, const void *, void **);          /* (this, resource, desc, out) */
 typedef HRESULT (X104_API *x104_panel_cf_fn_state)(void *, const void *, void **);                  /* (this, desc, out) */
@@ -1374,6 +1409,7 @@ static HRESULT X104_API x104_panel_cf_create_vs(void *self, const void *code, SI
     HRESULT hr;
     if (!original) return E_FAIL;
     hr = original(self, code, length, linkage, shader);
+    if (SUCCEEDED(hr) && shader && *shader) x104_panel_shader_log(*shader, 'V', code, length);
     if (FAILED(hr)) {
         X104_LOG_LIMITED(&lines, 20, "X104 panel: CreateVertexShader FAILED hr=0x%08lx %s bytecode=%p (%lu bytes)", (unsigned long)hr, x104_hr_name(hr), code, (unsigned long)length);
         if (__sync_val_compare_and_swap(&dumped, 0, 1) == 0) x104_panel_dump_shader_blob("CreateVertexShader FAILED", code, length);
@@ -1389,6 +1425,7 @@ static HRESULT X104_API x104_panel_cf_create_ps(void *self, const void *code, SI
     HRESULT hr;
     if (!original) return E_FAIL;
     hr = original(self, code, length, linkage, shader);
+    if (SUCCEEDED(hr) && shader && *shader) x104_panel_shader_log(*shader, 'P', code, length);
     if (FAILED(hr)) {
         X104_LOG_LIMITED(&lines, 20, "X104 panel: CreatePixelShader FAILED hr=0x%08lx %s bytecode=%p (%lu bytes)", (unsigned long)hr, x104_hr_name(hr), code, (unsigned long)length);
         if (__sync_val_compare_and_swap(&dumped, 0, 1) == 0) x104_panel_dump_shader_blob("CreatePixelShader FAILED", code, length);
@@ -1694,6 +1731,11 @@ static HRESULT X104_API x104_panel_present_stub(void *self, UINT sync, UINT flag
     sync = x104_present_sync(sync);
     x104_present_pace();
     hr = original(self, sync, flags);
+    if (x104_panel_tr.installed) {
+        if (x104_panel_tr.enabled && ((DWORD)hr == 0x887a0005u || (DWORD)hr == 0x887a0006u || (DWORD)hr == 0x887a0007u || (DWORD)hr == 0x887a0020u))
+            x104_panel_tr_present_failed(hr);
+        x104_panel_tr_reset_frame();
+    }
     x104_present_end(hr, sync, flags);
     return hr;
 }
@@ -2183,23 +2225,6 @@ static void x104_panel_report_device_lost(HRESULT reason, const char *where)
     char text[400];
     if (InterlockedExchange(&x104_panel_state.lost_reported, 1)) return;
     x104_logf("X104 panel: DEVICE LOST reason=%08lx %s (detected by %s) - the game does not rebuild its GPU resources, so the frame loop cannot continue", (unsigned long)reason, x104_hr_name(reason), where);
-    /* diagnostics: with --trace-game-state the tracer has recorded the draws of the frame that is being presented right now
-     * (the one the driver died on).  Without the tracer there is nothing recorded and this prints nothing. */
-    if (x104_panel_tr.installed) {
-        x104_panel_tr_t *t = &x104_panel_tr;
-        UINT shown = t->ring_pos < 16u ? t->ring_pos : 16u;
-        UINT first = t->ring_pos - shown;
-        UINT i;
-        x104_logf("X104 panel: DEVICE LOST DIAG: the dying frame holds %u draws, %u clears (RT %u, DS %u), %u maps (%u FAILED); showing the last %u",
-                  t->draws, t->clears_rt + t->clears_ds, t->clears_rt, t->clears_ds, t->maps, t->maps_failed, shown);
-        for (i = 0; i < shown; ++i) {
-            const x104_panel_tr_draw_t *d = &t->ring[(first + i) % X104_PANEL_TR_RING];
-            unsigned long caller = (x104.image && d->draw_caller) ? (unsigned long)((const BYTE *)d->draw_caller - (const BYTE *)x104.image) : 0ul;
-            x104_logf("X104 panel: DEVICE LOST DIAG   draw[-%u] %c %c count=%u start=%u vp=%dx%d blend=%d(%d/%d) depth=%d cull=%d vs=%p ps=%p layout=%p vb0=%p stride=%u tex0=%p rtv=%p dsv=%p game_rva=0x%lx",
-                      shown - i, (char)d->kind, (char)d->cls, d->count, d->start, (int)d->vp_w, (int)d->vp_h, (int)d->bl_en, (int)d->bl_src, (int)d->bl_dst,
-                      (int)d->ds_en, (int)d->rs_cull, d->vs, d->ps, d->layout, d->vb0, d->vstride, d->srv0, d->rtv, d->dsv, caller);
-        }
-    }
     wsprintfA(text, "The graphics device was lost (reason 0x%08lX %s).\r\n\r\n%s cannot recover from this. Restart the game.", (unsigned long)reason, x104_hr_name(reason), x104_profile_title());
     x104_panel_show_message(text, TRUE);
 }
