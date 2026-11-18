@@ -681,6 +681,11 @@ static void x104_async_run_node(x104_async_node *node)
         item->handler = NULL;
         x104_raw_release(node->handler);
     } else if (node->fn) {
+        static volatile LONG traced_items;
+        /* DIAGNOSTIC: a hang inside a queue item leaves no trace otherwise (the pass counter only says "somewhere in queued work") */
+        if (InterlockedIncrement(&traced_items) <= 400)
+            x104_logf("X104 async: UI queue item #%ld: function %p (game rva %08lx) starting", (long)traced_items, (void *)node->fn,
+                      (unsigned long)x104_game_rva_of((ULONG_PTR)node->fn));
         if (!x104_async_call_fn_guarded(node->fn, node->arg, &seh)) {
             x104_logf("X104 async: a UI queue item (function %p, rva %08lx) threw:", (void *)node->fn, (unsigned long)x104_game_rva_of((ULONG_PTR)node->fn));
             x104_async_log_seh("a UI queue item", &seh);

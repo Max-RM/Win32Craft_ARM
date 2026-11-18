@@ -305,6 +305,24 @@ typedef HRESULT (X104_API *X104_FN_ISwapChainPanel_add_CompositionScaleChanged)(
 typedef HRESULT (X104_API *X104_FN_ISwapChainPanel_remove_CompositionScaleChanged)(void *, LONGLONG);
 typedef HRESULT (X104_API *X104_FN_ISwapChainPanel_CreateCoreIndependentInputSource)(void *, int, void **);
 
+/* Windows.UI.Xaml.Controls.IGrid (windows.ui.xaml.controls.h; ABI contract 1.0 has only the two definition collections) */
+static const GUID X104_IID_IGrid = {0x280335ae,0x5570,0x46c7,{0x8e,0x0b,0x60,0x2b,0xe7,0x12,0x29,0xa2}};
+enum { X104_SLOT_IGrid_get_RowDefinitions = 6, X104_SLOT_IGrid_get_ColumnDefinitions = 7, X104_NSLOTS_IGrid = 8 };
+typedef HRESULT (X104_API *X104_FN_IGrid_get_RowDefinitions)(void *, void **);
+typedef HRESULT (X104_API *X104_FN_IGrid_get_ColumnDefinitions)(void *, void **);
+
+/* Windows.UI.Xaml.Controls.IContentControl (windows.ui.xaml.controls.h) */
+static const GUID X104_IID_IContentControl = {0xfd104460,0x2e15,0x4ba3,{0x8b,0x8f,0xfa,0x69,0x3a,0x41,0x61,0xe9}};
+enum { X104_SLOT_IContentControl_get_Content = 6, X104_SLOT_IContentControl_put_Content = 7, X104_SLOT_IContentControl_get_ContentTemplate = 8, X104_SLOT_IContentControl_put_ContentTemplate = 9, X104_SLOT_IContentControl_get_ContentTemplateSelector = 10, X104_SLOT_IContentControl_put_ContentTemplateSelector = 11, X104_SLOT_IContentControl_get_ContentTransitions = 12, X104_SLOT_IContentControl_put_ContentTransitions = 13, X104_NSLOTS_IContentControl = 14 };
+typedef HRESULT (X104_API *X104_FN_IContentControl_get_Content)(void *, void **);
+typedef HRESULT (X104_API *X104_FN_IContentControl_put_Content)(void *, void *);
+typedef HRESULT (X104_API *X104_FN_IContentControl_get_ContentTemplate)(void *, void **);
+typedef HRESULT (X104_API *X104_FN_IContentControl_put_ContentTemplate)(void *, void *);
+typedef HRESULT (X104_API *X104_FN_IContentControl_get_ContentTemplateSelector)(void *, void **);
+typedef HRESULT (X104_API *X104_FN_IContentControl_put_ContentTemplateSelector)(void *, void *);
+typedef HRESULT (X104_API *X104_FN_IContentControl_get_ContentTransitions)(void *, void **);
+typedef HRESULT (X104_API *X104_FN_IContentControl_put_ContentTransitions)(void *, void *);
+
 /* Windows.UI.Xaml.Controls.IControl (windows.ui.xaml.controls.h) */
 static const GUID X104_IID_IControl = {0xa8912263,0x2951,0x4f58,{0xa9,0xc5,0x5a,0x13,0x4e,0xaa,0x7f,0x07}};
 enum { X104_SLOT_IControl_get_FontSize = 6, X104_SLOT_IControl_put_FontSize = 7, X104_SLOT_IControl_get_FontFamily = 8, X104_SLOT_IControl_put_FontFamily = 9, X104_SLOT_IControl_get_FontWeight = 10, X104_SLOT_IControl_put_FontWeight = 11, X104_SLOT_IControl_get_FontStyle = 12, X104_SLOT_IControl_put_FontStyle = 13, X104_SLOT_IControl_get_FontStretch = 14, X104_SLOT_IControl_put_FontStretch = 15, X104_SLOT_IControl_get_CharacterSpacing = 16, X104_SLOT_IControl_put_CharacterSpacing = 17, X104_SLOT_IControl_get_Foreground = 18, X104_SLOT_IControl_put_Foreground = 19, X104_SLOT_IControl_get_IsTabStop = 20, X104_SLOT_IControl_put_IsTabStop = 21, X104_SLOT_IControl_get_IsEnabled = 22, X104_SLOT_IControl_put_IsEnabled = 23, X104_SLOT_IControl_get_TabIndex = 24, X104_SLOT_IControl_put_TabIndex = 25, X104_SLOT_IControl_get_TabNavigation = 26, X104_SLOT_IControl_put_TabNavigation = 27, X104_SLOT_IControl_get_Template = 28, X104_SLOT_IControl_put_Template = 29, X104_SLOT_IControl_get_Padding = 30, X104_SLOT_IControl_put_Padding = 31, X104_SLOT_IControl_get_HorizontalContentAlignment = 32, X104_SLOT_IControl_put_HorizontalContentAlignment = 33, X104_SLOT_IControl_get_VerticalContentAlignment = 34, X104_SLOT_IControl_put_VerticalContentAlignment = 35, X104_SLOT_IControl_get_Background = 36, X104_SLOT_IControl_put_Background = 37, X104_SLOT_IControl_get_BorderThickness = 38, X104_SLOT_IControl_put_BorderThickness = 39, X104_SLOT_IControl_get_BorderBrush = 40, X104_SLOT_IControl_put_BorderBrush = 41, X104_SLOT_IControl_get_FocusState = 42, X104_SLOT_IControl_add_IsEnabledChanged = 43, X104_SLOT_IControl_remove_IsEnabledChanged = 44, X104_SLOT_IControl_ApplyTemplate = 45, X104_SLOT_IControl_Focus = 46, X104_NSLOTS_IControl = 47 };
@@ -1081,6 +1099,21 @@ typedef HRESULT (X104_API *X104_FN_IMapView_Lookup)(void *, HSTRING, void **);
 typedef HRESULT (X104_API *X104_FN_IMapView_get_Size)(void *, UINT32 *);
 typedef HRESULT (X104_API *X104_FN_IMapView_HasKey)(void *, HSTRING, BYTE *);
 typedef HRESULT (X104_API *X104_FN_IMapView_Split)(void *, void **, void **);
+/* Windows.Foundation.Collections IMap<K,V> / IObservableMap<K,V> (parameterised as well, but the ABI slot layout is the same for every K,V):
+ * the host hands out its own IPropertySet wrapper so every HasKey/Lookup/Insert/Remove reaches the log. */
+enum { X104_SLOT_IMap_Lookup = 6, X104_SLOT_IMap_get_Size = 7, X104_SLOT_IMap_HasKey = 8, X104_SLOT_IMap_GetView = 9,
+       X104_SLOT_IMap_Insert = 10, X104_SLOT_IMap_Remove = 11, X104_SLOT_IMap_Clear = 12,
+       X104_SLOT_IObservableMap_add_MapChanged = 13, X104_SLOT_IObservableMap_remove_MapChanged = 14,
+       X104_NSLOTS_IMap = 15 };
+typedef HRESULT (X104_API *X104_FN_IMap_Lookup)(void *, HSTRING, void **);
+typedef HRESULT (X104_API *X104_FN_IMap_get_Size)(void *, UINT32 *);
+typedef HRESULT (X104_API *X104_FN_IMap_HasKey)(void *, HSTRING, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IMap_GetView)(void *, void **);
+typedef HRESULT (X104_API *X104_FN_IMap_Insert)(void *, HSTRING, void *, BYTE *);
+typedef HRESULT (X104_API *X104_FN_IMap_Remove)(void *, HSTRING);
+typedef HRESULT (X104_API *X104_FN_IMap_Clear)(void *);
+typedef HRESULT (X104_API *X104_FN_IObservableMap_add_MapChanged)(void *, void *, LONGLONG *);
+typedef HRESULT (X104_API *X104_FN_IObservableMap_remove_MapChanged)(void *, LONGLONG);
 
 
 /* readable names for the logs: x104_iid_name() walks this table */

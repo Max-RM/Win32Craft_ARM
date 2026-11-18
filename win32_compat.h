@@ -20,6 +20,7 @@ typedef signed int LONG;
 typedef unsigned int ULONG;
 typedef unsigned int DWORD;
 typedef unsigned long long ULONGLONG;
+typedef unsigned long long UINT64;
 typedef signed long long LONGLONG;
 typedef unsigned int SIZE_T;
 typedef unsigned int ULONG_PTR;
@@ -115,6 +116,8 @@ typedef int ptrdiff_t;
 #define INVALID_HANDLE_VALUE ((HANDLE)(INT_PTR)-1)
 #define ERROR_FILE_EXISTS 80U
 #define ERROR_CLASS_ALREADY_EXISTS 1410U
+/* Win32 error -> HRESULT (winerror.h's macro: the 16-bit code in FACILITY_WIN32) */
+#define HRESULT_FROM_WIN32(code) ((HRESULT)((code) ? ((((DWORD)(code)) & 0xFFFFu) | 0x80070000u) : 0u))
 #define GetFileExInfoStandard 0
 #define CP_ACP 0U
 #define CP_UTF8 65001U
@@ -374,6 +377,7 @@ extern HANDLE WINAPI GetCurrentProcess(void);
 extern DWORD WINAPI GetCurrentThreadId(void);
 extern HANDLE WINAPI GetProcessHeap(void);
 extern LPVOID WINAPI HeapAlloc(HANDLE,DWORD,SIZE_T);
+extern LPVOID WINAPI HeapReAlloc(HANDLE,DWORD,LPVOID,SIZE_T);
 extern BOOL WINAPI HeapFree(HANDLE,DWORD,LPVOID);
 extern BOOL WINAPI VirtualProtect(LPVOID,SIZE_T,DWORD,DWORD*);
 extern LPVOID WINAPI VirtualAlloc(LPVOID,SIZE_T,DWORD,DWORD);
@@ -474,6 +478,7 @@ extern LRESULT WINAPI DispatchMessageW(const MSG*);
 extern HDC WINAPI BeginPaint(HWND,PAINTSTRUCT*);
 extern BOOL WINAPI EndPaint(HWND,const PAINTSTRUCT*);
 extern int WINAPIV wsprintfA(LPSTR,LPCSTR,...);
+extern int WINAPIV wsprintfW(LPWSTR,LPCWSTR,...);
 
 /* Shell / WinRT */
 extern HRESULT WINAPI SHGetFolderPathW(HWND,int,HANDLE,DWORD,LPWSTR);

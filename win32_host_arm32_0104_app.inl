@@ -933,6 +933,46 @@ X104_SINGLETON(x104_app_get_windowstatics, x104_app_windowstatics_class, X104Obj
 /* ======================================================================================================================
  * 6. Page  (IPageFactory 6 CreateInstance; the inner object is an XAML element with FindName)
  * ====================================================================================================================== */
+/* ---- Grid and ContentControl: the two extra named elements of the WP8.1 "DirectX App (XAML)" page.
+ * OpenGLESPage.xaml names cocos2d_editbox (a Grid) and SnapInView (a ContentControl); InitializeComponent
+ * FindName's them and safe_casts the results to IGrid / IContentControl, so the objects must exist even
+ * though Application.LoadComponent itself is a no-op here. ---- */
+X104_VTBL_N(x104_app_vt_grid, X104_NSLOTS_IGrid) = { X104_INSPECTABLE_SLOTS };
+static const X104IfaceDesc x104_app_grid_ifaces[] = {
+    X104_ELEMENT_IFACES,
+    X104_IFACE(IGrid, x104_app_vt_grid)
+};
+X104_CLASS_DEF(x104_app_grid_class, "Grid(cocos2d_editbox)", L"Windows.UI.Xaml.Controls.Grid", x104_app_grid_ifaces, X104_CLASS_AGILE, NULL);
+
+X104_VTBL_N(x104_app_vt_contentcontrol, X104_NSLOTS_IContentControl) = { X104_INSPECTABLE_SLOTS };
+static const X104IfaceDesc x104_app_contentcontrol_ifaces[] = {
+    X104_ELEMENT_IFACES,
+    X104_IFACE(IContentControl, x104_app_vt_contentcontrol)
+};
+X104_CLASS_DEF(x104_app_contentcontrol_class, "ContentControl(SnapInView)", L"Windows.UI.Xaml.Controls.ContentControl", x104_app_contentcontrol_ifaces, X104_CLASS_AGILE, NULL);
+
+static X104Object *x104_app_grid_element(void)
+{
+    static volatile LONG state_;
+    static X104Element *element_;
+    if (x104_once_begin(&state_)) {
+        element_ = x104_element_new(&x104_app_grid_class, sizeof(X104Element), "Grid(cocos2d_editbox)");
+        x104_once_end(&state_);
+    }
+    return element_ ? &element_->base : NULL;
+}
+
+static X104Object *x104_app_contentcontrol_element(void)
+{
+    static volatile LONG state_;
+    static X104Element *element_;
+    if (x104_once_begin(&state_)) {
+        element_ = x104_element_new(&x104_app_contentcontrol_class, sizeof(X104Element), "ContentControl(SnapInView)");
+        x104_once_end(&state_);
+    }
+    return element_ ? &element_->base : NULL;
+}
+
 /* FindName on the Page (called by InitializeComponent 0x1EDDD8 through the MainPage's QI(IFrameworkElement), four times): the four elements of MainPage.xaml, which
  * the other units own.  Names are case sensitive.  The result is the identity (IInspectable) view; the game QIs it for ISwapChainPanel / IImage / ITextBox / IButton. */
 static HRESULT x104_app_page_find_name(X104Element *element, HSTRING name, void **result)
@@ -947,6 +987,8 @@ static HRESULT x104_app_page_find_name(X104Element *element, HSTRING name, void 
     else if (x104_hstring_equals(name, L"Logo")) found = x104_input_element_logo();
     else if (x104_hstring_equals(name, L"EditBox")) found = x104_input_element_editbox();
     else if (x104_hstring_equals(name, L"Button")) found = x104_input_element_button();
+    else if (x104_hstring_equals(name, L"cocos2d_editbox")) found = x104_app_grid_element();
+    else if (x104_hstring_equals(name, L"SnapInView")) found = x104_app_contentcontrol_element();
     else known = FALSE;
     if (!known) {
         *result = NULL;
@@ -1432,14 +1474,27 @@ static void x104_app_rendering_tick(void)
  * ====================================================================================================================== */
 static HRESULT X104_API x104_app_statics_get_current(void *self, void **value)
 {
+    X104AppApplication *app = x104_app_g.application;
+    void *outer;
     (void)self;
     if (!value) return E_POINTER;
     *value = NULL;
-    if (!x104_app_g.application) {
+    if (!app) {
         x104_logf("X104 app: Application.get_Current but no application object exists yet -> E_FAIL");
         return E_FAIL;
     }
-    return x104_object_qi(&x104_app_g.application->base, &X104_IID_IApplication, value);
+    /* the aggregated game object (App2) is the Application identity: the real runtime returns it, so a safe_cast<App2^>(Application::Current)
+     * lands on the game's own object (HCR does exactly that from its thread-pool init and then reads its own members through the result).
+     * Without an outer (Application created standalone) the fake identity view is the only object there is. */
+    outer = app->base.outer;
+    if (outer) {
+        static volatile LONG logged;
+        x104_raw_addref(outer);
+        *value = outer;
+        X104_LOG_LIMITED(&logged, 3, "X104 app: Application.get_Current -> the aggregated App object %p (outer, the real runtime identity; safe_cast<App^> works)", outer);
+        return S_OK;
+    }
+    return x104_object_qi(&app->base, &X104_IID_IApplication, value);
 }
 
 /* Start() cannot continue: say so on the screen and in the log, leave without a loop (the process ends) */
@@ -1837,6 +1892,194 @@ static void x104_app_gs_tick(void)
     }
 }
 
+/* ---- Fingersoft.AdSdk.AdManager (HCR): the game activates this statics class inside App2::OnLaunched and treats a failed
+ *      activation as fatal.  Ads are allowed to be blocked, so the host returns a statics object whose only implemented method is the
+ *      getter in slot 6 (IAdManagerStatics slot 6 -> the manager object, the game calls it right after activation).  The manager object
+ *      implements the whole IAdManagerClass interface (see the vtable below) as successful no-ops.  IID = IAdManagerStatics
+ *      {F60DC58D-4746-5CC0-7095-1F14E8653C1B}, from the game's activation call; the manager IID is private (the game uses the returned
+ *      pointer directly and never QIs it). */
+static const GUID x104_app_iid_admanager_statics = {0xf60dc58d,0x4746,0x5cc0,{0x70,0x95,0x1f,0x14,0xe8,0x65,0x3c,0x1b}};
+static const GUID x104_app_iid_admanager = {0x7e2b0f61,0x3c4a,0x5d18,{0x9a,0x41,0x2c,0x77,0xbe,0x05,0x63,0xd4}};
+/* the real instance interface of the runtime class, from the game's Fingersoft.AdSdk.winmd (IAdManagerClass) */
+static const GUID x104_app_iid_admanager_class = {0x550b03af,0x4b87,0x57b3,{0x43,0xc0,0xdb,0xa2,0x12,0x3b,0xd4,0x5e}};
+
+/* every method of the ad API is an argument-ignoring stub: ads are blocked, so S_OK is the answer the game wants (ARM callers pop
+ * their own arguments, so ignoring them is safe) */
+static HRESULT X104_API x104_app_admanager_ok(void *self)
+{
+    static volatile LONG logged;
+    (void)self;
+    X104_LOG_LIMITED(&logged, 4, "X104 AdManager: ad API method -> S_OK (ads are blocked)");
+    return S_OK;
+}
+
+/* add_* event registrations (slots 6-13: add_OnXxx(handler, EventRegistrationToken*)): S_OK with a zero token, so a later
+ * remove_* with the same token is a no-op as well */
+static HRESULT X104_API x104_app_admanager_add_event(void *self, void *handler, void *token)
+{
+    static volatile LONG logged;
+    (void)self; (void)handler;
+    if (token) *(LONGLONG *)token = 0;
+    X104_LOG_LIMITED(&logged, 4, "X104 AdManager: add_* event -> S_OK (zero token, ads are blocked)");
+    return S_OK;
+}
+
+/* slot 24: GetIntSetting(name, defaultValue, int *value).  The SDK would answer with the server-configured value; with no ad server the
+ *      host answers 0, which switches the ad-driven UI (e.g. "merchandise_button_mode") off. */
+static HRESULT X104_API x104_app_admanager_get_int(void *self, void *name, LONG default_value, LONG *value)
+{
+    static volatile LONG logged;
+    char shown[96];
+    (void)self;
+    if (!value) return E_POINTER;
+    *value = 0;
+    x104_hstring_ascii(name, shown, sizeof(shown));
+    X104_LOG_LIMITED(&logged, 6, "X104 AdManager: GetIntSetting(\"%s\", default %ld) -> 0", shown, (long)default_value);
+    return S_OK;
+}
+
+/* slot 21: CanDisplayVideoAds(BOOLEAN *value) - the game branches into the video path when TRUE.
+ *      FALSE is the honest answer while ads are blocked. */
+static HRESULT X104_API x104_app_admanager_get_bool(void *self, BYTE *value)
+{
+    static volatile LONG logged;
+    (void)self;
+    if (!value) return E_POINTER;
+    *value = 0;
+    X104_LOG_LIMITED(&logged, 6, "X104 AdManager: boolean property -> FALSE (ads are blocked)");
+    return S_OK;
+}
+
+/* remove_*: the token comes by value, nothing to do */
+static HRESULT X104_API x104_app_admanager_remove_event(void *self, LONGLONG token)
+{
+    (void)self; (void)token;
+    return S_OK;
+}
+
+/* slot 23: get_ServerUrl(HSTRING *value) */
+static HRESULT X104_API x104_app_admanager_get_server_url(void *self, HSTRING *value)
+{
+    (void)self;
+    if (!value) return E_POINTER;
+    return WindowsCreateString(L"", 0, value);
+}
+
+/* slot 25: GetStringSetting(name, defaultValue, HSTRING *value) - answer the caller's own default */
+static HRESULT X104_API x104_app_admanager_get_string_setting(void *self, HSTRING name, HSTRING default_value, HSTRING *value)
+{
+    UINT32 length = 0;
+    const wchar_t *raw;
+    (void)self; (void)name;
+    if (!value) return E_POINTER;
+    *value = NULL;
+    raw = default_value ? WindowsGetStringRawBuffer(default_value, &length) : NULL;
+    return WindowsCreateString(raw, raw ? length : 0, value);
+}
+
+/* the manager object returned by IAdManagerStatics slot 6.  The vtable layout is IAdManagerClass
+ * {550B03AF-4B87-57B3-43C0-DBA2123BD45E} (dumped from the game's own Fingersoft.AdSdk.winmd); the game uses the pointer it gets from
+ * the statics getter directly and never QIs the instance interface.  Ads are blocked: every method is a successful no-op, every
+ * "is an ad playing / is an ad ready" getter says FALSE, and the events are never raised. */
+X104_VTBL_N(x104_app_vt_admanager, 56) = {
+    X104_INSPECTABLE_SLOTS,
+    [6]  = (const void *)x104_app_admanager_add_event,          /* add_InterstitialCancelled */
+    [7]  = (const void *)x104_app_admanager_add_event,          /* add_InterstitialFailed */
+    [8]  = (const void *)x104_app_admanager_add_event,          /* add_InterstitialFinished */
+    [9]  = (const void *)x104_app_admanager_add_event,          /* add_InterstitialLoaded */
+    [10] = (const void *)x104_app_admanager_add_event,          /* add_VideoCancelled */
+    [11] = (const void *)x104_app_admanager_add_event,          /* add_VideoFailed */
+    [12] = (const void *)x104_app_admanager_add_event,          /* add_VideoFinished */
+    [13] = (const void *)x104_app_admanager_add_event,          /* add_VideoLoaded */
+    [14] = (const void *)x104_app_admanager_ok,                 /* AddAdDuplexBannerProvider */
+    [15] = (const void *)x104_app_admanager_ok,                 /* AddAdDuplexInterstitialProvider */
+    [16] = (const void *)x104_app_admanager_ok,                 /* AddMicrosoftBannerProvider */
+    [17] = (const void *)x104_app_admanager_ok,                 /* AddMicrosoftInterstitialProvider */
+    [18] = (const void *)x104_app_admanager_ok,                 /* AddMicrosoftVideoProvider */
+    [19] = (const void *)x104_app_admanager_ok,                 /* AddSmaatoBannerProvider */
+    [20] = (const void *)x104_app_admanager_ok,                 /* AddSmaatoInterstitialProvider */
+    [21] = (const void *)x104_app_admanager_get_bool,           /* CanDisplayVideoAds */
+    [22] = (const void *)x104_app_admanager_ok,                 /* ClearData */
+    [23] = (const void *)x104_app_admanager_get_server_url,     /* get_ServerUrl */
+    [24] = (const void *)x104_app_admanager_get_int,            /* GetIntSetting */
+    [25] = (const void *)x104_app_admanager_get_string_setting, /* GetStringSetting */
+    [26] = (const void *)x104_app_admanager_get_bool,           /* HasInternetAccess */
+    [27] = (const void *)x104_app_admanager_ok,                 /* HideBanners */
+    [28] = (const void *)x104_app_admanager_ok,                 /* Initialize */
+    [29] = (const void *)x104_app_admanager_get_bool,           /* IsCrossPromotionOpen */
+    [30] = (const void *)x104_app_admanager_get_bool,           /* IsDisplayingVideoAds */
+    [31] = (const void *)x104_app_admanager_ok,                 /* LoadAndPlayVideo */
+    [32] = (const void *)x104_app_admanager_ok,                 /* LoadInterstitial */
+    [33] = (const void *)x104_app_admanager_ok,                 /* LoadVideo */
+    [34] = (const void *)x104_app_admanager_ok,                 /* OverridePackageName */
+    [35] = (const void *)x104_app_admanager_remove_event,       /* remove_InterstitialCancelled */
+    [36] = (const void *)x104_app_admanager_remove_event,       /* remove_InterstitialFailed */
+    [37] = (const void *)x104_app_admanager_remove_event,       /* remove_InterstitialFinished */
+    [38] = (const void *)x104_app_admanager_remove_event,       /* remove_InterstitialLoaded */
+    [39] = (const void *)x104_app_admanager_remove_event,       /* remove_VideoCancelled */
+    [40] = (const void *)x104_app_admanager_remove_event,       /* remove_VideoFailed */
+    [41] = (const void *)x104_app_admanager_remove_event,       /* remove_VideoFinished */
+    [42] = (const void *)x104_app_admanager_remove_event,       /* remove_VideoLoaded */
+    [43] = (const void *)x104_app_admanager_ok,                 /* SetAdFree */
+    [44] = (const void *)x104_app_admanager_ok,                 /* SetDefaultPriority */
+    [45] = (const void *)x104_app_admanager_ok,                 /* SetLogLevel */
+    [46] = (const void *)x104_app_admanager_ok,                 /* ShowBanners */
+    [47] = (const void *)x104_app_admanager_ok,                 /* ShowCrosspromotion */
+    [48] = (const void *)x104_app_admanager_ok,                 /* ShowInterstitial */
+    [49] = (const void *)x104_app_admanager_ok,                 /* ShowVideo */
+    [50] = (const void *)x104_app_admanager_ok,                 /* SimulateNetwork */
+    [51] = (const void *)x104_app_admanager_ok,                 /* SkipAd */
+    [52] = (const void *)x104_app_admanager_ok,                 /* UseMobileAppTracking */
+    [53] = (const void *)x104_app_admanager_ok                  /* UseStaging */
+};
+static const X104IfaceDesc x104_app_admanager_ifaces[] = {
+    X104_IFACE_IID(&x104_app_iid_admanager, "IAdManager", x104_app_vt_admanager),
+    X104_IFACE_IID(&x104_app_iid_admanager_class, "IAdManagerClass", x104_app_vt_admanager)
+};
+X104_CLASS_DEF(x104_app_admanager_class, "AdManagerInstance", L"Fingersoft.AdSdk.AdManagerInstance", x104_app_admanager_ifaces, X104_CLASS_AGILE, NULL);
+X104_SINGLETON(x104_app_get_admanager_instance, x104_app_admanager_class, X104Object)
+
+/* IAdManagerStatics slot 6: hand the (singleton) manager object to the game */
+static HRESULT X104_API x104_app_admanager_statics_slot6(void *self, void **value)
+{
+    (void)self;
+    return x104_return_iface(x104_app_get_admanager_instance(), &x104_app_iid_admanager, value, "AdManager instance");
+}
+
+/* the activated statics object */
+X104_VTBL_N(x104_app_vt_admanager_statics, 56) = {
+    X104_INSPECTABLE_SLOTS,
+    [6] = (const void *)x104_app_admanager_statics_slot6
+};
+static const X104IfaceDesc x104_app_admanager_statics_ifaces[] = { X104_IFACE_IID(&x104_app_iid_admanager_statics, "IAdManagerStatics", x104_app_vt_admanager_statics) };
+X104_CLASS_DEF(x104_app_admanager_statics_class, "AdManager", L"Fingersoft.AdSdk.AdManager", x104_app_admanager_statics_ifaces, X104_CLASS_AGILE | X104_CLASS_FACTORY, NULL);
+X104_SINGLETON(x104_app_get_admanager, x104_app_admanager_statics_class, X104Object)
+
+/* ---- Fingersoft.AdSdk.Providers (HCR): the second statics class App2::OnLaunched activates.  Slots 6/7/8 are string getters
+ *      (the ad provider names/ids); the game collects them into vectors and hands them to the ad manager (slot 44, a no-op), so an
+ *      empty string is enough.  IID from the game's activation call: {EEE1C54C-132A-56F1-6156-A5C53E222EF8}. */
+static const GUID x104_app_iid_adproviders_statics = {0xeee1c54c,0x132a,0x56f1,{0x61,0x56,0xa5,0xc5,0x3e,0x22,0x2e,0xf8}};
+
+static HRESULT X104_API x104_app_adproviders_get_string(void *self, void *arg, HSTRING *value)
+{
+    static volatile LONG logged;
+    (void)self; (void)arg;
+    if (!value) return E_POINTER;
+    *value = NULL;
+    X104_LOG_LIMITED(&logged, 3, "X104 AdProviders: provider string -> empty");
+    return WindowsCreateString(L"", 0, value);
+}
+
+X104_VTBL_N(x104_app_vt_adproviders_statics, 56) = {
+    X104_INSPECTABLE_SLOTS,
+    [6] = (const void *)x104_app_adproviders_get_string,
+    [7] = (const void *)x104_app_adproviders_get_string,
+    [8] = (const void *)x104_app_adproviders_get_string
+};
+static const X104IfaceDesc x104_app_adproviders_ifaces[] = { X104_IFACE_IID(&x104_app_iid_adproviders_statics, "IAdProvidersStatics", x104_app_vt_adproviders_statics) };
+X104_CLASS_DEF(x104_app_adproviders_class, "AdProviders", L"Fingersoft.AdSdk.Providers", x104_app_adproviders_ifaces, X104_CLASS_AGILE | X104_CLASS_FACTORY, NULL);
+X104_SINGLETON(x104_app_get_adproviders, x104_app_adproviders_class, X104Object)
+
 /* ======================================================================================================================
  * 9. activation table and the contract functions (HOST_DESIGN.md section 8)
  * ====================================================================================================================== */
@@ -1852,7 +2095,9 @@ static const X104FactoryDef x104_app_factories[] = {
     { L"Windows.ApplicationModel.Core.CoreApplication", x104_app_get_coreapp },
     { L"Windows.UI.ViewManagement.ApplicationView",    x104_app_get_viewstatics },
     { L"Windows.UI.Core.CoreWindowResizeManager",      x104_app_get_resizestatics },
-    { L"Windows.UI.Xaml.Media.CompositionTarget",      x104_app_get_compositiontarget }
+    { L"Windows.UI.Xaml.Media.CompositionTarget",      x104_app_get_compositiontarget },
+    { L"Fingersoft.AdSdk.AdManager",                   x104_app_get_admanager },
+    { L"Fingersoft.AdSdk.Providers",                   x104_app_get_adproviders }
 };
 
 /* nothing to patch in the game image; the static events get their names here (before anything can be activated) */
@@ -1939,6 +2184,7 @@ static void x104_app_ui_tick(void)
     /* the Page follows the client size */
     page = x104_app_g.page;
     if (page) {
+        if (x104.f_launched) x104_element_raise_loaded(page, "Page in the live tree, OnLaunched returned");
         x104_app_client_size(&w, &h);
         if (w > 0.0f && h > 0.0f && (w != x104_app_g.page_w || h != x104_app_g.page_h)) {
             x104_app_g.page_w = w;

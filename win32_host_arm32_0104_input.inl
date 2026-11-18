@@ -285,11 +285,15 @@ X104_VTBL(x104_input_vt_cwargs, ICoreWindowEventArgs) = {
 };
 
 /* ---- PointerPointProperties ---- */
+static volatile LONG x104_input_diag_device, x104_input_diag_position, x104_input_diag_id, x104_input_diag_contact, x104_input_diag_props;
+static volatile LONG x104_input_diag_left, x104_input_diag_primary, x104_input_diag_inrange, x104_input_diag_pressure;
+
 static HRESULT X104_API x104_input_props_get_pressure(void *self, float *value)
 {
     (void)self;
     if (!value) return E_POINTER;
     *value = x104_input_st.cur_contact ? 0.5f : 0.0f;
+    X104_LOG_LIMITED(&x104_input_diag_pressure, 4, "X104 input diag: Properties.get_Pressure -> %.2f", *value);
     return S_OK;
 }
 
@@ -298,6 +302,7 @@ static HRESULT X104_API x104_input_props_get_left(void *self, BYTE *value)
     (void)self;
     if (!value) return E_POINTER;
     *value = x104_input_st.cur_left ? 1 : 0;
+    X104_LOG_LIMITED(&x104_input_diag_left, 8, "X104 input diag: Properties.get_IsLeftButtonPressed -> %d", (int)*value);
     return S_OK;
 }
 
@@ -314,6 +319,7 @@ static HRESULT X104_API x104_input_props_get_true(void *self, BYTE *value)
     (void)self;
     if (!value) return E_POINTER;
     *value = 1;
+    X104_LOG_LIMITED(&x104_input_diag_primary, 8, "X104 input diag: Properties.get_IsPrimary/IsInRange -> 1");
     return S_OK;
 }
 
@@ -378,6 +384,7 @@ static HRESULT X104_API x104_input_pt_get_device(void *self, void **value)
 {
     int device = x104_input_st.cur_device;
     (void)self;
+    X104_LOG_LIMITED(&x104_input_diag_device, 6, "X104 input diag: PointerPoint.get_PointerDevice -> type %d", device);
     if (device < 0 || device > 2) device = X104_INPUT_DEV_TOUCH;
     return x104_return_iface(x104_input_st.devices[device], &X104_IID_IPointerDevice, value, "PointerPoint.get_PointerDevice");
 }
@@ -388,6 +395,7 @@ static HRESULT X104_API x104_input_pt_get_position(void *self, X104Point *value)
     if (!value) return E_POINTER;
     value->X = x104_input_st.cur_x;
     value->Y = x104_input_st.cur_y;
+    X104_LOG_LIMITED(&x104_input_diag_position, 12, "X104 input diag: PointerPoint.get_Position -> %d,%d", (int)value->X, (int)value->Y);
     return S_OK;
 }
 
@@ -396,6 +404,7 @@ static HRESULT X104_API x104_input_pt_get_id(void *self, UINT32 *value)
     (void)self;
     if (!value) return E_POINTER;
     *value = x104_input_st.cur_id;
+    X104_LOG_LIMITED(&x104_input_diag_id, 8, "X104 input diag: PointerPoint.get_PointerId -> %lu", (unsigned long)*value);
     return S_OK;
 }
 
@@ -420,12 +429,14 @@ static HRESULT X104_API x104_input_pt_get_in_contact(void *self, BYTE *value)
     (void)self;
     if (!value) return E_POINTER;
     *value = x104_input_st.cur_contact ? 1 : 0;
+    X104_LOG_LIMITED(&x104_input_diag_contact, 8, "X104 input diag: PointerPoint.get_IsInContact -> %d", (int)*value);
     return S_OK;
 }
 
 static HRESULT X104_API x104_input_pt_get_properties(void *self, void **value)
 {
     (void)self;
+    X104_LOG_LIMITED(&x104_input_diag_props, 6, "X104 input diag: PointerPoint.get_Properties");
     return x104_return_iface(x104_input_get_props(), &X104_IID_IPointerPointProperties, value, "PointerPoint.get_Properties");
 }
 
@@ -1421,10 +1432,23 @@ static unsigned x104_input_raise_pointer(int kind, const x104_input_pointer_t *p
 }
 
 /* the pointer handlers exist only after HID::Initialize ran (first ready Tick): KeyDown is registered by Initialize itself, the CoreWindow pointer lists
- * (r2 == NULL path) synchronously as well; the source lists a moment later from the pool work item */
+ * (r2 == NULL path) synchronously as well; the source lists a moment later from the pool work item.
+ * HCR (and every Cocos2d-x/ANGLE title) registers ONLY on the CoreIndependentInputSource, so the source lists count as well. */
+static BOOL x104_input_source_has_handlers(void)
+{
+    LONG count = __atomic_load_n(&x104_input_st.source_count, __ATOMIC_ACQUIRE);
+    LONG index;
+    for (index = 0; index < count && index < X104_INPUT_MAX_SOURCES; ++index) {
+        x104_input_source_t *source = x104_input_st.sources[index];
+        if (source && x104_event_count(&source->ptr[X104_INPUT_EV_PRESSED]) > 0) return TRUE;
+    }
+    return FALSE;
+}
+
 static BOOL x104_input_pointer_gate(void)
 {
-    return x104_event_count(&x104_input_st.cw_key_down) > 0 || x104_event_count(&x104_input_st.cw_ptr[X104_INPUT_EV_PRESSED]) > 0;
+    return x104_event_count(&x104_input_st.cw_key_down) > 0 || x104_event_count(&x104_input_st.cw_ptr[X104_INPUT_EV_PRESSED]) > 0 ||
+           x104_input_source_has_handlers();
 }
 
 static void x104_input_note_dropped(const char *what)
@@ -1531,6 +1555,8 @@ static void x104_input_flush_moves(void)
 }
 
 /* UI thread: Released for every pressed pointer (focus loss, minimise, capture lost, device change, shutdown) */
+static void x104_input_pad_reset(void);   /* defined with the keyboard pad below */
+
 static void x104_input_release_all_pointers(const char *why)
 {
     x104_input_pointer_t copy[X104_INPUT_MAX_POINTERS];
@@ -1540,6 +1566,7 @@ static void x104_input_release_all_pointers(const char *why)
     memcpy(copy, x104_input_st.pointers, sizeof(copy));
     memset(x104_input_st.pointers, 0, sizeof(x104_input_st.pointers));
     x104_input_st.mouse_down = FALSE;
+    x104_input_pad_reset();
     for (index = 0; index < X104_INPUT_MAX_POINTERS; ++index) {
         if (!copy[index].used) continue;
         x104_input_raise_pointer(X104_INPUT_EV_RELEASED, &copy[index], FALSE, FALSE, TRUE);
@@ -1796,6 +1823,55 @@ static void x104_input_back(const char *why)
     X104_LOG_LIMITED(&logged, 60, "X104 input: BackPressed handled=%d (%s)", (int)handled, why);
 }
 
+/* ---- keyboard pad (X104_FEAT_KEYBOARD_PAD) ----
+ * A title written for Windows Phone reads touches only: HCR's whole input is "is a finger on the GAS button / on the BRAKE button", and the
+ * Windows build of the same game adds a left/right button panel for keyboard users.  The host provides the same thing here: Right (and Up)
+ * press a synthetic touch on the on-screen GAS button, Left (and Down) do the same on BRAKE, releasing the key lifts that finger.  The
+ * coordinates are fractions of the client area (HCR draws both buttons at the bottom, ~8% from the left / right edge and ~80% down), so the
+ * mapping survives a resize.  The key itself is consumed: the game has no key handlers that would want it. */
+static int x104_input_pad_pointer[2] = { -1, -1 };                    /* [0] = brake, [1] = gas: tracked-pointer table index or -1 */
+static const UINT32 x104_input_pad_ids[2] = { 0xFFFFF001u, 0xFFFFF002u };   /* synthetic: no real device produces these */
+
+#define X104_VK_LEFT   0x25u
+#define X104_VK_UP     0x26u
+#define X104_VK_RIGHT  0x27u
+#define X104_VK_DOWN   0x28u
+
+static void x104_input_pad_reset(void)
+{
+    x104_input_pad_pointer[0] = -1;
+    x104_input_pad_pointer[1] = -1;
+}
+
+static void x104_input_pad_point(int slot, int *x, int *y)
+{
+    RECT rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = 888;
+    rect.bottom = 444;
+    if (x104_input_st.window) GetClientRect(x104_input_st.window, &rect);
+    *x = slot ? rect.right - rect.right / 11 : rect.right / 11;
+    *y = rect.bottom - rect.bottom / 5;
+}
+
+static void x104_input_pad_key(UINT vk, BOOL down)
+{
+    static volatile LONG logged;
+    int slot = (vk == X104_VK_RIGHT || vk == X104_VK_UP) ? 1 : 0;
+    int x, y;
+    x104_input_pad_point(slot, &x, &y);
+    if (down) {
+        if (x104_input_pad_pointer[slot] >= 0) return;                /* auto-repeat of a held key */
+        x104_input_pad_pointer[slot] = x104_input_ptr_begin(x104_input_pad_ids[slot], X104_INPUT_DEV_TOUCH, x, y, "keyboard pad");
+        X104_LOG_LIMITED(&logged, 8, "X104 input: keyboard pad: %s -> touch at (%d,%d)", slot ? "GAS (Right/Up)" : "BRAKE (Left/Down)", x, y);
+    } else {
+        if (x104_input_pad_pointer[slot] < 0) return;
+        x104_input_ptr_end(x104_input_pad_pointer[slot], x, y, "keyboard pad", FALSE);
+        x104_input_pad_pointer[slot] = -1;
+    }
+}
+
 /* WM_KEYDOWN / WM_KEYUP / WM_SYSKEYDOWN / WM_SYSKEYUP.  TRUE = consumed; FALSE only for Alt+F4 (DefWindowProc turns it into WM_CLOSE). */
 static BOOL x104_input_on_key(UINT message, WPARAM wparam, LPARAM lparam)
 {
@@ -1811,6 +1887,10 @@ static BOOL x104_input_on_key(UINT message, WPARAM wparam, LPARAM lparam)
     BOOL extended = ((DWORD)lparam & (1u << 24)) ? TRUE : FALSE;
 
     if (sys && vk == VK_F4 && alt) return FALSE;                 /* the ONE exception: Alt+F4 must reach DefWindowProc */
+    if (x104_feat(X104_FEAT_KEYBOARD_PAD) && !alt && (vk == X104_VK_LEFT || vk == X104_VK_RIGHT || vk == X104_VK_UP || vk == X104_VK_DOWN)) {
+        x104_input_pad_key(vk, down);
+        return TRUE;
+    }
     if (down && !was_down && vk != 0xE7 /* VK_PACKET: injected by the touch keyboard */) {
         /* a hardware key means a keyboard is in use, unless a finger is down or the key was injected by our own touch keyboard */
         if (!x104_input_any_pointer_down() && !(text_input_active && arm32_osk_visible_now())) {

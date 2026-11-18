@@ -381,6 +381,16 @@ static const BYTE ARM_TOUCH_IMPL_MAPPER_VTABLE_DEVICEBUTTON_EXPECTED[8] = { 0x6d
 #define ARM_TOUCH_IMPL_MAPPER_VTABLE_BEHAVIOR                0x0135b798   /* vtable: RTTI vtable of BehaviorActionMapper (InputDeviceMapper subclass). An element of the InputHandler */
 static const BYTE ARM_TOUCH_IMPL_MAPPER_VTABLE_BEHAVIOR_EXPECTED[8] = { 0x5d,0x55,0x77,0x00,0xb1,0x55,0x77,0x00 };
 
+/* ---- config (win32craft.ini) ---- */
+/* The host reads a small ini next to the exe so that a per-install setting the game would otherwise take from the system does not
+ * need a rebuild:
+ *     [platform]
+ *     language=ru
+ * The value feeds both the LocalSettings "language" key the game reads and the locale Windows.Globalization reports.  No file, no
+ * key or a language the game has no translation for keeps the old behaviour (English). */
+const wchar_t *x104_config_language_code(void);     /* the game's own spelling: L"en", L"ru", L"zh-TW", ... */
+const wchar_t *x104_config_language_locale(void);   /* the WinRT locale tag: L"en-US", L"ru-RU", ... */
+
 /* ---- winmain ---- */
 #define ARM_WINMAIN_ENTRY_CHAIN                              0x00b49b28   /* function: ARM PE entry point 0xB49B29 (Thumb) = sub_b49b28: bl __security_init_cookie (0xb49cf8) then b.w  */
 static const BYTE ARM_WINMAIN_ENTRY_CHAIN_EXPECTED[12] = { 0x2d,0xe9,0x00,0x48,0xeb,0x46,0x00,0xf0,0xe3,0xf8,0xbd,0xe8 };

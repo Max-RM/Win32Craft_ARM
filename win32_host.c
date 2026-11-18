@@ -2715,7 +2715,8 @@ UINT Win32CraftLogPrefix(char *out, UINT capacity)
 }
 
 /* The file is append-only (several runs follow each other), but it never grows past ARM32_LOG_MAX_BYTES (1 MiB):
- *  - at start an existing file above the limit is emptied (and a leftover win32craft.log.old of older builds is deleted);
+ *  - at start an existing file above the limit is moved to win32craft.log.prev (one generation; if the move fails it is emptied)
+ *    so the log of a run that was killed is not lost;
  *  - while the game runs, log_line checks the size every ARM32_LOG_CHECK_LINES lines; above the limit the file is emptied and
  *    restarted with a note plus the first ARM32_LOG_HEAD_BYTES of this run (the start-up lines: Windows version, options, devices),
  *    so the file still starts with the facts that identify the machine.  Lines written between the check and the restart are lost. */
@@ -2730,10 +2731,13 @@ static void arm32_log_rotate(const wchar_t *path)
     wchar_t old_path[MAX_PATH + 8];
     if (lstrlenW(path) + 5 >= MAX_PATH + 8) return;
     lstrcpyW(old_path, path);
-    lstrcatW(old_path, L".old");
-    DeleteFileW(old_path);
+    lstrcatW(old_path, L".prev");
+    DeleteFileW(old_path);                                   /* one generation only */
     if (!GetFileAttributesExW(path, GetFileExInfoStandard, &info)) return;
     if (info.nFileSizeHigh == 0 && info.nFileSizeLow <= ARM32_LOG_MAX_BYTES) return;
+    /* an oversized file from the previous run is kept as win32craft.log.prev: a run that was killed (device-lost box, Task
+     * Manager) leaves its log behind for the next start to hand over, instead of losing it to the truncation below */
+    if (MoveFileExW(path, old_path, 1 /* MOVEFILE_REPLACE_EXISTING */)) return;
     /* CREATE_ALWAYS truncates; the other writers (api_compat.c) open with share read|write, so this is allowed */
     {
         HANDLE empty = CreateFileW(path, 2 /* FILE_WRITE_DATA */, 3, NULL, 2 /* CREATE_ALWAYS */, 0x80, NULL);
@@ -5379,15 +5383,15 @@ static HRESULT WINAPI fake_api_contract_minor(
 static HRESULT WINAPI fake_language_get_at(
     FakeInspectable *object, UINT32 index, HSTRING *result)
 {
-    static const wchar_t language[] = L"en-US";
     static const wchar_t currency[] = L"USD";
     const wchar_t *value;
     (void)object;
     if (!result) return E_POINTER;
     *result = NULL;
     if (index != 0) return E_BOUNDS;
+    /* the language comes from win32craft.ini next to the exe (default en-US), so a phone-only title follows the file, not the system */
     value = object && object->kind == FAKE_CURRENCY_VECTOR
-        ? currency : language;
+        ? currency : x104_config_language_locale();
     return WindowsCreateString(
         value, (UINT32)lstrlenW(value), result);
 }
@@ -5433,7 +5437,7 @@ static HRESULT WINAPI fake_application_get_languages(
     if (!result) return E_POINTER;
     *result = &language_vector;
     fake_add_ref(&language_vector);
-    log_line("ApplicationLanguages returned en-US vector");
+    log_line("ApplicationLanguages returned the configured locale vector");
     return S_OK;
 }
 
@@ -22504,6 +22508,9 @@ static BOOL install_arm32_input_hooks(BYTE *image);
 static const char *volatile arm32_boot_step_name = "not started";
 static volatile LONG arm32_boot_progress;       /* bumped on every step change and every main-loop pass */
 static volatile LONG arm32_boot_loop_passes;
+/* which step of the X104 UI pass the UI thread is inside (0 = between passes): set by x104_ui_pass (core .inl), read by the watchdog */
+static volatile LONG x104_pass_stage;
+static const char *const x104_pass_stage_names[] = { "idle", "queued work", "panel tick", "input tick", "app tick" };
 static volatile LONG arm32_boot_frames_started;
 static volatile LONG arm32_boot_frames_done;
 static volatile LONG arm32_boot_watchdog_stop;
@@ -22698,9 +22705,10 @@ static DWORD WINAPI arm32_boot_watchdog_thread(void *parameter)
         } else if (now - last_change >= next_report) {
             stalled = now - last_change;
             stall_reported = TRUE;
-            wsprintfA(line, "ARM32 watchdog: NO PROGRESS for %lu s in step '%s' (loop passes=%ld frames started=%ld done=%ld)%s",
+            wsprintfA(line, "ARM32 watchdog: NO PROGRESS for %lu s in step '%s' (loop passes=%ld frames started=%ld done=%ld, UI pass stage '%s')%s",
                       (unsigned long)(stalled / 1000u), arm32_boot_step_name, (long)arm32_boot_loop_passes,
                       (long)arm32_boot_frames_started, (long)arm32_boot_frames_done,
+                      x104_pass_stage_names[(x104_pass_stage >= 0 && x104_pass_stage <= 4) ? (int)x104_pass_stage : 0],
                       arm32_boot_frames_started != arm32_boot_frames_done
                           ? " - a game frame call has not returned" : "");
             log_line(line);

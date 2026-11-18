@@ -36,6 +36,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from saves_folder import write_saves_helper  # noqa: E402  (tools/saves_folder.py)
 DEFAULT_REDIST = (r"D:\Program Files\vs22buildtools\VC\Redist\MSVC\14.44.35112"
                   r"\onecore\arm\Microsoft.VC143.CRT")
 DEFAULT_LLVM_BIN = r"D:\repo\llvm-rt\scratch\RT23P\build-rt21\bin"
@@ -216,6 +218,10 @@ def main() -> None:
     if sha256(out / "win32craft.dll") != sha256(dist / "win32craft.dll"):
         die("package/win32craft.dll differs from dist-arm32/win32craft.dll")
 
+    # double-click access to the folder the game saves into (Open-Saves-Folder.bat + .lnk)
+    saves_files = write_saves_helper(out, "MinecraftPE", "Minecraft 1.2.8")
+    print("save-folder helper:", ", ".join(saves_files))
+
     lines = [
         "Win32Craft 1.2.8 ARM32 package manifest",
         "",
@@ -229,6 +235,9 @@ def main() -> None:
     for source, relative in files:
         target = out / relative
         lines.append(f"  {sha256(target)}  {target.stat().st_size:>9}  {relative}   <- {source}")
+    for name in saves_files:
+        path = out / name
+        lines.append(f"  {sha256(path)}  {path.stat().st_size:>9}  {name}   <- generated")
     lines += ["", "Nothing in this package has been run on a device yet.", ""]
     (out / "MANIFEST.txt").write_text("\r\n".join(lines), encoding="ascii", errors="replace")
 
@@ -244,8 +253,11 @@ Direct3D 11.2 runtime. The game runs at Direct3D feature level 9_1 by default.
      {PATCHED_EXE_NAME}, fmod_ARM.dll (patched), win32craft.dll,
      {", ".join(sorted(wanted))}
    Minecraft.Windows.exe stays as it is (the original is not modified).
+   Also copy Open-Saves-Folder.bat and Open-Saves-Folder.lnk (they open the save folder, see step 4).
 4. Run {PATCHED_EXE_NAME}. The log is written to win32craft.log next to the exe (or in %TEMP% if that folder is
    not writable). If anything fails, send that file.
+   Double-click Open-Saves-Folder.bat (or the .lnk next to it) to open the folder the game saves into:
+   %APPDATA%\\MinecraftPE (worlds in %APPDATA%\\MinecraftPE\\games\\com.mojang\\minecraftWorlds).
 
 No sound / hang during startup in FMOD: replace the copied fmod_ARM.dll with fmod-silent\\fmod_ARM.dll
 (a silent stub, the game then runs without audio).

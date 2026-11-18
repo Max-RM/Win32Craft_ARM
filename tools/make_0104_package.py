@@ -36,6 +36,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE / "arm32"))
 import arm32re  # noqa: E402
+from saves_folder import write_saves_helper  # noqa: E402  (tools/saves_folder.py)
 
 FOLDER = "Minecraft_PE_0.10.4.40_ARM32_Win32Craft"
 EXE_NAME = "Win32Craft.0.10.4-arm32.exe"
@@ -119,6 +120,7 @@ Files:
   data\\ , *.xbf , resources.pri ...  the game's own files
   loadcheck.exe                     diagnostic: finds missing DLLs / entry points
   start*.bat                        helpers
+  Open-Saves-Folder.bat / .lnk      opens the save folder from step 1 (creates it if it is missing)
   APISETS.txt                       which API-set contracts the shipped binaries import
   patch_report.json                 every byte the patcher changed
   MANIFEST.txt                      SHA-256 of every file
@@ -175,6 +177,7 @@ Files:
   res\\ , Assets\\ , resources.pri  the game's own files
   loadcheck.exe                     diagnostic: finds missing DLLs / entry points
   start*.bat                        helpers
+  Open-Saves-Folder.bat / .lnk      opens the save folder from step 1 (creates it if it is missing)
   APISETS.txt                       which API-set contracts the shipped binaries import
   patch_report.json                 every byte the patcher changed
   MANIFEST.txt                      SHA-256 of every file
@@ -184,11 +187,13 @@ Files:
 GAMES = {
     "0104": {"title": "Minecraft PE 0.10.4.40", "folder": FOLDER, "exe_name": EXE_NAME, "stock_exe": "MCPE.Host.WindowsPhone.exe", "profile": "v0_10_4",
              "game_env": "WIN32CRAFT_GAME_DIR_0104", "default_game": DEFAULT_GAME, "default_out": "dist-0104", "batches": BATCHES, "readme": README,
+             "data_subdir": "MinecraftPE\\0.10.4",
              "status": "verified on a Surface 2 (Windows 10 ARM32): menu, touch, keyboard, world, HUD work; NOT yet verified: Windows RT 8.1, audio, saving",
              "work": "apiset-shims-0104"},
     "redcon": {"title": "REDCON 1 1.3.0.0", "folder": "REDCON_1.3.0.0_ARM32_Win32Craft", "exe_name": "Win32Craft.Redcon-arm32.exe", "stock_exe": "Redcon.exe",
                "profile": "redcon", "game_env": "WIN32CRAFT_GAME_DIR_REDCON", "default_game": str(ROOT / "Redcon_1.3.0.0_ARM"), "default_out": "dist-redcon",
                "batches": REDCON_BATCHES, "readme": REDCON_README,
+               "data_subdir": "Win32Craft\\Redcon",
                "status": "runs on a Surface 2 (Windows 10 ARM32, first device test 2026-10-22); NOT yet verified: Windows RT 8.1",
                "work": "apiset-shims-redcon"},
 }
@@ -369,6 +374,9 @@ def main() -> None:
     for name, options, text in BATCHES:
         (target / name).write_bytes(('@echo off\r\ncd /d "%~dp0"\r\nstart "" "{exe}" {opt}\r\n'.format(exe=EXE_NAME, opt=options)).encode("ascii"))
         option_help.append("   %-30s %-24s %s" % (name, options or "(none)", text))
+    # double-click access to the folder the app saves into (Open-Saves-Folder.bat + .lnk)
+    saves_files = write_saves_helper(target, G["data_subdir"], G["title"])
+    print("save-folder helper:", ", ".join(saves_files))
     foundation_note = ""
     if stubs:
         foundation_note = ("\n   *** THIS IS A FOUNDATION-ONLY BUILD: the host units are not implemented yet (%s); the game will NOT start.  It exists to verify\n"

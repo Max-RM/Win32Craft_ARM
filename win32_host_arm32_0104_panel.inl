@@ -32,6 +32,7 @@ extern BOOL WINAPI TerminateProcess(HANDLE, UINT);
 #define X104_PANEL_D3D11_DEVICE_CREATE_TEXTURE2D                   5
 #define X104_PANEL_D3D11_DEVICE_CHECK_FEATURE_SUPPORT             33
 #define X104_PANEL_D3D11_DEVICE_GET_DEVICE_REMOVED_REASON         39
+#define X104_PANEL_D3D11_DEVICE_GET_FEATURE_LEVEL                 37
 #define X104_PANEL_LOSS_POLL_MS    500u
 #define X104_PANEL_MIN_TRACK_W     320
 #define X104_PANEL_MIN_TRACK_H     240
@@ -1329,25 +1330,69 @@ static HRESULT X104_API x104_panel_cf_create_layout(void *self, const void *elem
     return hr;
 }
 
+/* one-shot dump of a shader blob whose creation failed: the first DWORDs and the DXBC chunk tags show whether Wine's wined3d skipped the code
+ * chunk because of the feature level (SHDR/SHEX are ignored at feature level 9_x: max_version 3) instead of failing to parse the container */
+static void x104_panel_dump_shader_blob(const char *what, const void *code, SIZE_T length)
+{
+    const BYTE *bytes = (const BYTE *)code;
+    char hex[3 * 32 + 1];
+    char tags[160];
+    UINT index, dump;
+    if (!bytes || length < 8) {
+        x104_logf("X104 panel: %s bytecode %p (%lu bytes) is unreadable", what, code, (unsigned long)length);
+        return;
+    }
+    dump = length < 32 ? (UINT)length : 32;
+    if (IsBadReadPtr(bytes, dump)) {
+        x104_logf("X104 panel: %s bytecode %p (%lu bytes) is unreadable", what, code, (unsigned long)length);
+        return;
+    }
+    for (index = 0; index < dump; ++index) wsprintfA(hex + index * 3, "%02x ", bytes[index]);
+    hex[dump * 3] = 0;
+    tags[0] = 0;
+    for (index = 0; index + 8 <= length && index < 1024; ++index) {
+        static const char *const names[] = { "SHDR", "SHEX", "Aon9", "ISGN", "OSGN", "ISG1", "OSG1" };
+        UINT n;
+        for (n = 0; n < ARRAYSIZE(names); ++n) {
+            if (memcmp(bytes + index, names[n], 4) == 0) {
+                char one[40];
+                wsprintfA(one, "%s@%u(v%08lx) ", names[n], index, (unsigned long)*(const DWORD *)(bytes + index + 4));
+                if (lstrlenA(tags) + lstrlenA(one) + 1 < ARRAYSIZE(tags)) lstrcatA(tags, one);
+                break;
+            }
+        }
+    }
+    x104_logf("X104 panel: %s bytecode %p (%lu bytes): first 32 bytes %s| chunks: %s", what, code, (unsigned long)length, hex,
+              tags[0] ? tags : "(none in the first 1024 bytes)");
+}
+
 static HRESULT X104_API x104_panel_cf_create_vs(void *self, const void *code, SIZE_T length, void *linkage, void **shader)
 {
     static volatile LONG lines;
+    static volatile LONG dumped;
     x104_panel_cf_fn_shader original = (x104_panel_cf_fn_shader)x104_panel_cf_orig(self, 12);
     HRESULT hr;
     if (!original) return E_FAIL;
     hr = original(self, code, length, linkage, shader);
-    if (FAILED(hr)) X104_LOG_LIMITED(&lines, 20, "X104 panel: CreateVertexShader FAILED hr=0x%08lx %s bytecode=%p (%lu bytes)", (unsigned long)hr, x104_hr_name(hr), code, (unsigned long)length);
+    if (FAILED(hr)) {
+        X104_LOG_LIMITED(&lines, 20, "X104 panel: CreateVertexShader FAILED hr=0x%08lx %s bytecode=%p (%lu bytes)", (unsigned long)hr, x104_hr_name(hr), code, (unsigned long)length);
+        if (__sync_val_compare_and_swap(&dumped, 0, 1) == 0) x104_panel_dump_shader_blob("CreateVertexShader FAILED", code, length);
+    }
     return hr;
 }
 
 static HRESULT X104_API x104_panel_cf_create_ps(void *self, const void *code, SIZE_T length, void *linkage, void **shader)
 {
     static volatile LONG lines;
+    static volatile LONG dumped;
     x104_panel_cf_fn_shader original = (x104_panel_cf_fn_shader)x104_panel_cf_orig(self, 15);
     HRESULT hr;
     if (!original) return E_FAIL;
     hr = original(self, code, length, linkage, shader);
-    if (FAILED(hr)) X104_LOG_LIMITED(&lines, 20, "X104 panel: CreatePixelShader FAILED hr=0x%08lx %s bytecode=%p (%lu bytes)", (unsigned long)hr, x104_hr_name(hr), code, (unsigned long)length);
+    if (FAILED(hr)) {
+        X104_LOG_LIMITED(&lines, 20, "X104 panel: CreatePixelShader FAILED hr=0x%08lx %s bytecode=%p (%lu bytes)", (unsigned long)hr, x104_hr_name(hr), code, (unsigned long)length);
+        if (__sync_val_compare_and_swap(&dumped, 0, 1) == 0) x104_panel_dump_shader_blob("CreatePixelShader FAILED", code, length);
+    }
     return hr;
 }
 
@@ -1994,14 +2039,168 @@ static void x104_panel_patch_device_vtable(void *device_iface, const char *which
 }
 
 /* ======================================================================================================================
+ * 4b. the Direct3D 11 feature level 9_1 shim (Surface RT / Surface 2: Tegra 3 is 9_1 only, ANGLE 2.1 knows 9_3 only)
+ *
+ * The games that render through ANGLE (libGLESv2.dll) pass a 9_3-only list to D3D11CreateDevice and compile their HLSL with the
+ * suffix "_level_9_3".  A 9_1 GPU therefore cannot create the device at all (DXGI_ERROR_UNSUPPORTED, then the host falls back to
+ * the WARP software rasteriser at ~1-3 fps), and a hand-made 9_1 device makes ANGLE crash in its 9_3-only code paths.
+ *
+ * The shim keeps the hardware and translates at the device boundary instead of touching the game:
+ *   (a) x104_panel_create_device retries the hardware with a 9_1-only list before it gives up to WARP,
+ *   (b) ID3D11Device::GetFeatureLevel (vtable cell 37) answers 9_3, so ANGLE takes exactly the path it takes on WARP,
+ *   (c) the "_level_9_3" literal inside the loaded libGLESv2.dll image becomes "_level_9_1", so D3DCompile emits the profile the
+ *       hardware really accepts (--angle-profile=9_3 keeps the original literal for A/B tests).
+ * ====================================================================================================================== */
+#define X104_PANEL_FL_LIE_LEVEL   0x9300u
+
+static UINT x104_panel_fl_level = X104_PANEL_FL_LIE_LEVEL;
+static void **x104_panel_fl_vts[X104_PANEL_MAX_VT];
+static void *x104_panel_fl_orig[X104_PANEL_MAX_VT];
+static volatile LONG x104_panel_fl_count;
+static BOOL x104_panel_fl_angle_done;
+
+/* ID3D11Device::GetFeatureLevel for a 9_1/9_2 hardware device */
+static UINT X104_API x104_panel_fl_get_feature_level(void *self)
+{
+    (void)self;
+    return x104_panel_fl_level;
+}
+
+static BOOL x104_panel_fl_install_vtable(void *device_iface, const char *which)
+{
+    void **vtbl;
+    void *original;
+    LONG index;
+    if (!device_iface) return FALSE;
+    vtbl = *(void ***)device_iface;
+    if (!vtbl || IsBadReadPtr(vtbl, (X104_PANEL_D3D11_DEVICE_GET_FEATURE_LEVEL + 1) * sizeof(void *))) {
+        x104_logf("X104 panel: ERROR d3d11 device vtable %p (%s) is unreadable - the 9_3 lie is NOT installed", (void *)vtbl, which);
+        return FALSE;
+    }
+    for (index = 0; index < x104_panel_fl_count; ++index)
+        if (x104_panel_fl_vts[index] == vtbl) {
+            x104_logf("X104 panel: vtable %p (%s) already answers GetFeatureLevel with 0x%04X (cell 37 = %p)", (void *)vtbl, which, x104_panel_fl_level,
+                      x104_panel_fl_orig[index]);
+            return TRUE;
+        }
+    if (x104_panel_fl_count >= X104_PANEL_MAX_VT) {
+        x104_logf("X104 panel: WARNING %d device vtables already carry the 9_3 lie - vtable %p (%s) skipped", (int)X104_PANEL_MAX_VT, (void *)vtbl, which);
+        return FALSE;
+    }
+    index = x104_panel_fl_count;
+    original = vtbl[X104_PANEL_D3D11_DEVICE_GET_FEATURE_LEVEL];
+    x104_panel_fl_vts[index] = vtbl;
+    x104_panel_fl_orig[index] = original;
+    __sync_synchronize();
+    x104_panel_fl_count = index + 1;
+    if (!arm32_patch_cell((void **)&vtbl[X104_PANEL_D3D11_DEVICE_GET_FEATURE_LEVEL], original, (void *)x104_panel_fl_get_feature_level, NULL,
+                          "ID3D11Device vtable cell 37 (GetFeatureLevel)")) {
+        x104_logf("X104 panel: ERROR vtable %p (%s): the GetFeatureLevel cell could not be patched - ANGLE keeps seeing the real level", (void *)vtbl, which);
+        return FALSE;
+    }
+    x104_logf("X104 panel: vtable %p (%s): GetFeatureLevel (cell 37) %p -> 0x%04X (the shim replaces the real 9_1/9_2 level)", (void *)vtbl, which, original,
+              x104_panel_fl_level);
+    return TRUE;
+}
+
+/* rewrite the "_level_9_<digit>" literal of one loaded ANGLE module; `digit` is the profile the hardware really supports */
+static BOOL x104_panel_fl_angle_module(HMODULE module, const wchar_t *name, char digit)
+{
+    typedef BOOL (WINAPI *x104_panel_module_info_fn)(HANDLE, HMODULE, void *, DWORD);
+    static const char prefix[9] = { '_', 'l', 'e', 'v', 'e', 'l', '_', '9', '_' };
+    x104_panel_module_info_fn information;
+    struct { void *base; DWORD size; void *entry; } info;
+    BYTE *image;
+    DWORD offset;
+    char shown[96];
+    char what[192];
+    BOOL found = FALSE;
+    BOOL already = FALSE;
+
+    x104_narrow(shown, sizeof(shown), name);
+    memset(&info, 0, sizeof(info));
+    information = (x104_panel_module_info_fn)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "K32GetModuleInformation");
+    if (!information || !information(GetCurrentProcess(), module, &info, sizeof(info)) || !info.size) {
+        x104_logf("X104 panel: WARNING ANGLE profile string: K32GetModuleInformation failed for %s (error %lu) - not patched", shown, (unsigned long)GetLastError());
+        return FALSE;
+    }
+    image = (BYTE *)module;
+    if (IsBadReadPtr(image, info.size)) {
+        x104_logf("X104 panel: WARNING ANGLE profile string: the image of %s is unreadable - not patched", shown);
+        return FALSE;
+    }
+    for (offset = 0; offset + 11 <= info.size; ++offset) {
+        BYTE current = image[offset + 9];
+        if (current < '1' || current > '3') continue;
+        if (image[offset + 10] != 0) continue;
+        if (memcmp(image + offset, prefix, sizeof(prefix)) != 0) continue;
+        if (current == (BYTE)digit) {
+            x104_logf("X104 panel: ANGLE profile string %s+0x%lX is already \"_level_9_%c\" - nothing to patch", shown, (unsigned long)offset, digit);
+            already = TRUE;
+            continue;
+        }
+        wsprintfA(what, "ANGLE HLSL suffix (%s+0x%lX) \"_level_9_%c\" -> \"_level_9_%c\"", shown, (unsigned long)offset, (char)current, digit);
+        if (!arm32_patch_byte(image + offset + 9, current, (BYTE)digit, what)) return FALSE;
+        found = TRUE;
+    }
+    if (!found && !already)
+        x104_logf("X104 panel: WARNING ANGLE profile string: no \"_level_9_<1|2|3>\" literal in %s (%lu bytes scanned) - the HLSL profile stays as it is", shown,
+                  (unsigned long)info.size);
+    return found || already;
+}
+
+/* install both halves of the shim for a device whose real level is below 9_3 */
+static void x104_panel_fl_install(void *device_iface, UINT actual)
+{
+    static const wchar_t *const modules[] = { L"libGLESv2.dll", L"libEGL.dll" };
+    char digit = 0;
+    unsigned index;
+
+    if (x104.opt_angle_profile == 3) {
+        digit = 0;                                                    /* --angle-profile=9_3: keep ANGLE's own suffix (A/B test) */
+    } else if (x104.opt_angle_profile == 1 || x104.opt_angle_profile == 0) {
+        digit = actual == 0x9200u ? '2' : '1';
+    }
+    x104_panel_fl_install_vtable(device_iface, "ID3D11Device");
+    if (x104_panel_fl_angle_done) return;
+    x104_panel_fl_angle_done = TRUE;
+    if (!digit) {
+        x104_logf("X104 panel: ANGLE profile string kept at \"_level_9_3\" (--angle-profile=9_3): D3DCompile is asked for a 9_3 profile on 9_1/9_2 hardware");
+        return;
+    }
+    for (index = 0; index < ARRAYSIZE(modules); ++index) {
+        HMODULE module = GetModuleHandleW(modules[index]);
+        if (module && x104_panel_fl_angle_module(module, modules[index], digit)) return;
+    }
+    x104_logf("X104 panel: WARNING no ANGLE module (libGLESv2.dll / libEGL.dll) carries the profile string - the shader suffix is unchanged");
+}
+
+/* ======================================================================================================================
  * 5. device loss
  * ====================================================================================================================== */
 static void x104_panel_report_device_lost(HRESULT reason, const char *where)
 {
     char text[400];
     if (InterlockedExchange(&x104_panel_state.lost_reported, 1)) return;
-    x104_logf("X104 panel: DEVICE LOST reason=%08lx %s (detected by %s) - unrecoverable: the game does not rebuild its GPU resources", (unsigned long)reason, x104_hr_name(reason), where);
-    wsprintfA(text, "The graphics device was lost (reason 0x%08lX %s).\r\n\r\nMinecraft cannot recover from this. Restart the game.", (unsigned long)reason, x104_hr_name(reason));
+    x104_logf("X104 panel: DEVICE LOST reason=%08lx %s (detected by %s) - the game does not rebuild its GPU resources, so the frame loop cannot continue", (unsigned long)reason, x104_hr_name(reason), where);
+    /* diagnostics: with --trace-game-state the tracer has recorded the draws of the frame that is being presented right now
+     * (the one the driver died on).  Without the tracer there is nothing recorded and this prints nothing. */
+    if (x104_panel_tr.installed) {
+        x104_panel_tr_t *t = &x104_panel_tr;
+        UINT shown = t->ring_pos < 16u ? t->ring_pos : 16u;
+        UINT first = t->ring_pos - shown;
+        UINT i;
+        x104_logf("X104 panel: DEVICE LOST DIAG: the dying frame holds %u draws, %u clears (RT %u, DS %u), %u maps (%u FAILED); showing the last %u",
+                  t->draws, t->clears_rt + t->clears_ds, t->clears_rt, t->clears_ds, t->maps, t->maps_failed, shown);
+        for (i = 0; i < shown; ++i) {
+            const x104_panel_tr_draw_t *d = &t->ring[(first + i) % X104_PANEL_TR_RING];
+            unsigned long caller = (x104.image && d->draw_caller) ? (unsigned long)((const BYTE *)d->draw_caller - (const BYTE *)x104.image) : 0ul;
+            x104_logf("X104 panel: DEVICE LOST DIAG   draw[-%u] %c %c count=%u start=%u vp=%dx%d blend=%d(%d/%d) depth=%d cull=%d vs=%p ps=%p layout=%p vb0=%p stride=%u tex0=%p rtv=%p dsv=%p game_rva=0x%lx",
+                      shown - i, (char)d->kind, (char)d->cls, d->count, d->start, (int)d->vp_w, (int)d->vp_h, (int)d->bl_en, (int)d->bl_src, (int)d->bl_dst,
+                      (int)d->ds_en, (int)d->rs_cull, d->vs, d->ps, d->layout, d->vb0, d->vstride, d->srv0, d->rtv, d->dsv, caller);
+        }
+    }
+    wsprintfA(text, "The graphics device was lost (reason 0x%08lX %s).\r\n\r\n%s cannot recover from this. Restart the game.", (unsigned long)reason, x104_hr_name(reason), x104_profile_title());
     x104_panel_show_message(text, TRUE);
 }
 
@@ -2186,6 +2385,12 @@ static HRESULT X104_API x104_panel_create_device(void *adapter, UINT driver_type
         x104_logf("X104 panel: ERROR D3D11CreateDevice hook called but the original function pointer is NULL");
         return E_FAIL;
     }
+    if (x104.opt_force_warp && driver_type != 5) {
+        x104_logf("X104 panel: --warp: the game asked for driver type %u, forcing D3D_DRIVER_TYPE_WARP", driver_type);
+        driver_type = 5;
+        adapter = NULL;
+        software = NULL;
+    }
     x104_panel_format_levels(requested, sizeof(requested), feature_levels, feature_level_count);
     if (cap) {
         if (feature_levels && feature_level_count && feature_level_count <= 64 && !IsBadReadPtr(feature_levels, (UINT_PTR)feature_level_count * sizeof(*feature_levels))) {
@@ -2196,6 +2401,17 @@ static HRESULT X104_API x104_panel_create_device(void *adapter, UINT driver_type
                 if (ladder[index] <= cap) clamped[clamped_count++] = ladder[index];
         }
         if (!clamped_count) clamped[clamped_count++] = cap;
+        /* games whose shaders are compiled at run time (HCR: ANGLE asks for a 9_3 device and then compiles *_4_0_level_9_3, which wined3d skips below
+         * feature level 10_0 -> CreateVertexShader E_INVALIDARG): raise the list to the cap so ANGLE compiles plain SM4.  DXGI picks the first
+         * supported level, so the cap goes first and the game's own levels stay behind it as a fallback. */
+        if (x104_feat(X104_FEAT_SM4_SHADERS) && cap >= 0xa000u && clamped_count && clamped[0] < 0xa000u) {
+            if (clamped_count < ARRAYSIZE(clamped)) {
+                for (index = clamped_count; index > 0; --index) clamped[index] = clamped[index - 1];
+                ++clamped_count;
+            }
+            clamped[0] = cap;
+            x104_logf("X104 panel: raising the requested 9_x list to the cap 0x%04X: the game's shaders are compiled at run time and wined3d implements SM4 only", cap);
+        }
         levels = clamped;
         level_count = clamped_count;
     }
@@ -2211,6 +2427,30 @@ static HRESULT X104_API x104_panel_create_device(void *adapter, UINT driver_type
     if (SUCCEEDED(hr) && (!device || !*device)) {
         x104_logf("X104 panel: ERROR D3D11CreateDevice returned success but the device output is NULL (device=%p)", (void *)device);
         hr = E_FAIL;
+    }
+    if (FAILED(hr) && driver_type == 1) {
+        /* before the software rasteriser: retry the same hardware at the lowest level the game's list implies.  A 9_1-only GPU (Surface RT,
+         * Tegra 3) answers DXGI_ERROR_UNSUPPORTED for a 9_3 device instead of walking down to what it has; a real 9_1 device is still
+         * hardware rendering (the 9_3 lie below keeps ANGLE on its normal path). */
+        if (level_count && levels && levels[0] > 0x9100u) {
+            static const UINT low[] = { 0x9100u };
+            x104_logf("X104 panel: D3D11CreateDevice (HARDWARE) hr=0x%08lx %s with levels [%s] - retrying the hardware at feature level 9_1 before the WARP fallback",
+                      (unsigned long)hr, x104_hr_name(hr), effective);
+            if (device) *device = NULL;
+            if (context) *context = NULL;
+            if (selected_level) *selected_level = 0;
+            hr = original(adapter, 1u, software, use_flags, low, 1, sdk_version, device, selected_level, context);
+            if (SUCCEEDED(hr) && device && *device) {
+                used_driver = 1;
+                levels = low;
+                level_count = 1;
+                x104_panel_format_levels(effective, sizeof(effective), levels, level_count);
+                x104_logf("X104 panel: D3D11CreateDevice hardware retry at 9_1: hr=0x00000000 selected=0x%04X device=%p - HARDWARE (9_1, the shim reports 9_3 to the game)",
+                          selected_level ? *selected_level : 0, (void *)*device);
+            } else {
+                x104_logf("X104 panel: D3D11CreateDevice hardware retry at 9_1 failed too: hr=0x%08lx %s", (unsigned long)hr, x104_hr_name(hr));
+            }
+        }
     }
     if (FAILED(hr) && driver_type == 1) {
         x104_logf("X104 panel: ERROR D3D11CreateDevice (HARDWARE) FAILED hr=0x%08lx %s with levels [%s] - retrying once with D3D_DRIVER_TYPE_WARP (software rasteriser: SLOW)",
@@ -2238,14 +2478,23 @@ static HRESULT X104_API x104_panel_create_device(void *adapter, UINT driver_type
     {
         UINT actual = selected_level ? *selected_level : 0;
         UINT reported = actual;
+        BOOL lie = x104.opt_fl_lie < 0 ? x104_feat(X104_FEAT_FL9_LIE) : (x104.opt_fl_lie != 0);
         x104_panel_created_t created;
-        if (!x104_feat(X104_FEAT_MCPE_PATCHES)) {
-            /* the game gets the true level (Redcon: precompiled level_9 shaders, no code compares the level) */
-        } else if (actual == 0x9100u || actual == 0x9200u) {
-            reported = 0x9300u;                                         /* the lie: the game's getShaderModelSuffix accepts only 0x9300 and >= 0xA000 */
-            if (selected_level) *selected_level = reported;
-            x104_panel_set_profile_digit(actual == 0x9100u ? '1' : '2', "device level differs from / confirms the cap");
-        } else if (actual == 0x9300u) {
+        if (actual == 0x9100u || actual == 0x9200u) {
+            if (x104_feat(X104_FEAT_MCPE_PATCHES)) {
+                reported = 0x9300u;                                         /* the lie: the game's getShaderModelSuffix accepts only 0x9300 and >= 0xA000 */
+                x104_panel_set_profile_digit(actual == 0x9100u ? '1' : '2', "device level differs from / confirms the cap");
+            } else if (lie) {
+                reported = 0x9300u;                                         /* ANGLE 2.1 has no 9_1 path: it gets 9_3 and compiles at 9_1 */
+                x104_logf("X104 panel: feature level shim: real device 0x%04X, reported 0x%04X to the game (GetFeatureLevel + the ANGLE HLSL suffix)", actual, reported);
+            } else {
+                x104_logf("X104 panel: real device level 0x%04X reported unchanged (--fl-lie=0, no X104_FEAT_FL9_LIE)", actual);
+            }
+            if (reported != actual) {
+                if (selected_level) *selected_level = reported;
+                if (lie) x104_panel_fl_install(device ? *device : NULL, actual);
+            }
+        } else if (actual == 0x9300u && x104_feat(X104_FEAT_MCPE_PATCHES)) {
             x104_panel_set_profile_digit('3', "the device really is feature level 9_3");
         }
         x104_logf("X104 panel: selected feature level 0x%04X, reported to the game 0x%04X (driver %s, device=%p context=%p, HRESULT 0x%08lx)", actual, reported,
@@ -2474,10 +2723,16 @@ X104_VTBL(x104_panel_vt_args, ISizeChangedEventArgs) = {
     X104_SLOT(ISizeChangedEventArgs, get_NewSize, x104_panel_args_get_new)
 };
 
+/* IPanel {A50A4BBD-8361-469C-90DA-E9A40C7474DF}: Cocos2dRenderer's constructor QIs the panel for IPanel and hands the pointer to
+ * cocos2d::CCEGLView::setPanel(), which only stores it (no method of it is reached), so the slots stay unimplemented holes. */
+static const GUID x104_panel_iid_ipanel = {0xa50a4bbd,0x8361,0x469c,{0x90,0xda,0xe9,0xa4,0x0c,0x74,0x74,0xdf}};
+X104_VTBL_N(x104_panel_vt_ipanel, 12) = { X104_INSPECTABLE_SLOTS };
+
 static const X104IfaceDesc x104_panel_ifaces[] = {
     X104_ELEMENT_IFACES,
     X104_IFACE(ISwapChainPanel, x104_panel_vt_scp),
-    X104_IFACE(ISwapChainPanelNative, x104_panel_vt_native)
+    X104_IFACE(ISwapChainPanelNative, x104_panel_vt_native),
+    X104_IFACE_IID(&x104_panel_iid_ipanel, "IPanel", x104_panel_vt_ipanel)
 };
 X104_CLASS_DEF(x104_panel_class, "SwapChainPanel", L"Windows.UI.Xaml.Controls.SwapChainPanel", x104_panel_ifaces, X104_CLASS_AGILE, NULL);
 
@@ -2635,6 +2890,7 @@ static void x104_panel_ui_tick(void)
     DWORD now;
     if (!x104_panel_state.panel || x104_panel_state.shutdown) return;
     now = GetTickCount();
+    x104_element_raise_loaded(&x104_panel_state.panel->base, "SwapChainPanel in the live tree");
     if (!x104_feat(X104_FEAT_XAML_PAGE)) {
         x104_panel_core_resize_tick(now);
     } else if (!x104_panel_state.first_done) {
@@ -2731,22 +2987,35 @@ static BOOL x104_panel_install(BYTE *image)
     x104_logf("X104 panel: install: feature level cap 0x%04X, presentation path %s, %s%s", cap, x104_panel_state.path == X104_PRESENT_HWND ? "B (HWND swap chain)" : "A (DirectComposition)",
               x104.opt_half_res ? "--half-res" : "full resolution", x104_panel_tr.enabled ? ", --trace-game-state (D3D draw tracer on)" : "");
 
-    /* (a) the D3D11CreateDevice IAT hook - the only fatal step */
-    if (!x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE) && !arm32_iat_find_cell(image, FALSE, "D3D11CreateDevice")) {
-        x104_logf("X104 panel: ERROR the game does not import D3D11CreateDevice by name - nothing to hook");
-        return FALSE;
-    }
-    if (!arm32_iat_hook_import(image, FALSE, "D3D11CreateDevice", x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE) ? x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE) :
-                               (DWORD)((ULONG_PTR)arm32_iat_find_cell(image, FALSE, "D3D11CreateDevice") - (ULONG_PTR)image),
-                               (void *)x104_panel_create_device, &x104_panel_orig_create_device, "D3D11CreateDevice")) {
-        x104_logf("X104 panel: ERROR the D3D11CreateDevice hook could NOT be installed (IAT rva %08lx): the game would fail on a 9_1 GPU and crash at the next QI",
-                  (unsigned long)x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE));
-        return FALSE;
-    }
+    /* (a) the D3D11CreateDevice IAT hook - the only fatal step.  Engines that render through ANGLE
+     *     (libGLESv2.dll / libEGL.dll) create the device inside the ANGLE module, not in the game exe. */
     {
-        void **cell = arm32_iat_find_cell(image, FALSE, "D3D11CreateDevice");
-        if (!cell) cell = (void **)(image + x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE));
-        wsprintfA(shown, "cell %p -> %p", (void *)cell, (void *)x104_panel_create_device);
+        BYTE *d3d_image = image;
+        DWORD d3d_rva = x104_iat_fact(X104_RVA_IAT_D3D11CREATEDEVICE);
+        if (!d3d_rva && !arm32_iat_find_cell(image, FALSE, "D3D11CreateDevice")) {
+            HMODULE angle = GetModuleHandleW(L"libGLESv2.dll");
+            if (!angle) angle = GetModuleHandleW(L"libEGL.dll");
+            if (angle && arm32_iat_find_cell((BYTE *)angle, FALSE, "D3D11CreateDevice")) {
+                d3d_image = (BYTE *)angle;
+                x104_logf("X104 panel: the game exe does not import D3D11CreateDevice; hooking it inside the ANGLE module at %p", (void *)angle);
+            }
+        }
+        if (!d3d_rva && !arm32_iat_find_cell(d3d_image, FALSE, "D3D11CreateDevice")) {
+            x104_logf("X104 panel: ERROR the game does not import D3D11CreateDevice by name - nothing to hook");
+            return FALSE;
+        }
+        if (!d3d_rva) d3d_rva = (DWORD)((ULONG_PTR)arm32_iat_find_cell(d3d_image, FALSE, "D3D11CreateDevice") - (ULONG_PTR)d3d_image);
+        if (!arm32_iat_hook_import(d3d_image, FALSE, "D3D11CreateDevice", d3d_rva,
+                                   (void *)x104_panel_create_device, &x104_panel_orig_create_device, "D3D11CreateDevice")) {
+            x104_logf("X104 panel: ERROR the D3D11CreateDevice hook could NOT be installed (IAT rva %08lx): the game would fail on a 9_1 GPU and crash at the next QI",
+                      (unsigned long)d3d_rva);
+            return FALSE;
+        }
+        {
+            void **cell = arm32_iat_find_cell(d3d_image, FALSE, "D3D11CreateDevice");
+            if (!cell) cell = (void **)(d3d_image + d3d_rva);
+            wsprintfA(shown, "cell %p -> %p", (void *)cell, (void *)x104_panel_create_device);
+        }
     }
     x104_logf("X104 panel: install: D3D11CreateDevice hook installed (%s, original %p)", shown, x104_panel_orig_create_device);
 

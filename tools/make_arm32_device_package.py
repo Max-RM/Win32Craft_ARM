@@ -17,7 +17,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(HERE / "arm32"))
+sys.path.insert(0, str(HERE))
 import arm32re  # noqa: E402
+from saves_folder import write_saves_helper  # noqa: E402  (tools/saves_folder.py)
 
 FOLDER = "Minecraft_1.2.8.0_ARM32_Win32Craft"
 SYSTEM_DLLS = {  # present on Windows 8.1+/10 ARM32 desktop (not shipped)
@@ -69,6 +71,7 @@ Files added to the original game folder:
   loadcheck.exe                diagnostic: finds missing DLLs / entry points on the device
   use_silent_audio.bat use_real_audio.bat start_fl*.bat          helpers
   start_touch*.bat start_mouse.bat   input helpers (see TOUCH above)
+  Open-Saves-Folder.bat / .lnk        opens %APPDATA%\\MinecraftPE (worlds are in games\\com.mojang\\minecraftWorlds)
   MANIFEST.txt                 SHA-256 of the added files
 """
 
@@ -183,6 +186,7 @@ def main():
     (target / "use_silent_audio.bat").write_bytes(SILENT_BAT.replace("\n", "\r\n").encode("ascii"))
     (target / "use_real_audio.bat").write_bytes(REAL_BAT.replace("\n", "\r\n").encode("ascii"))
     added += ["use_silent_audio.bat", "use_real_audio.bat"]
+    added += write_saves_helper(target, "MinecraftPE", "Minecraft 1.2.8")
     (target / "README_DEVICE.txt").write_bytes(README.replace("\n", "\r\n").encode("ascii", "replace"))
     added.append("README_DEVICE.txt")
 

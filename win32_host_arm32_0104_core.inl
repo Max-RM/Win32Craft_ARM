@@ -166,6 +166,9 @@ typedef struct X104State {
     int opt_max_fps;                     /* --max-fps=N: cap of the game's Present rate (render thread sleeps in the Present stub); 0 = automatic (x104_present_pace) */
     BOOL opt_vsync;                      /* --vsync: the Present stub changes SyncInterval 0 to 1 */
     int opt_selftest;                    /* --selftest-fakes: 1 = run the on-device fake self test before the game, 2 = run it and exit (--selftest-fakes=only) */
+    int opt_fl_lie;                      /* --fl-lie=0|1: report 9_3 to the game on a 9_1/9_2 hardware device (-1 = the profile's X104_FEAT_FL9_LIE) */
+    int opt_angle_profile;               /* --angle-profile=9_1|9_3: HLSL suffix patched into the loaded libGLESv2.dll when lying (0 = 9_1) */
+    BOOL opt_force_warp;                 /* --warp: force D3D_DRIVER_TYPE_WARP (software rasteriser) instead of the game's hardware request */
     /* hook bookkeeping */
     void *original_activation;           /* vccorlib120_app GetActivationFactoryByPCWSTR before our hook */
     /* ordering flags (HOST_DESIGN.md 4): each is set exactly once, by the owner named in the comment, with x104_flag_set */
@@ -196,6 +199,21 @@ static X104State x104;
 #define X104_FEAT_XAML_PAGE      0x00000004u   /* "DirectX App (XAML)" template: MainPage via IPageFactory, AppMain + ready flag, thread-pool render loop, the first SizeChanged
                                                   raised by the host (R2), DispatcherTimer gate.  Without it (REDCON 1): SwapChainPanel built in code, frames from
                                                   CompositionTarget.Rendering on the UI thread, resizes through CoreWindow.SizeChanged, "ready" = OnLaunched returned */
+#define X104_FEAT_SM4_SHADERS    0x00000008u   /* the game's shaders are compiled at run time (ANGLE -> d3dcompiler), not precompiled per feature level: when the game asks
+                                                  D3D11CreateDevice for a 9_x device only, the host raises it to the cap so ANGLE compiles plain SM4 (vs_4_0/ps_4_0).
+                                                  wined3d implements SM4 only (SHDR/SHEX chunks are skipped below feature level 10_0), and a *_4_0_level_9_3 blob
+                                                  would fail with E_INVALIDARG at CreateVertexShader (HCR 1.27) */
+#define X104_FEAT_KEYBOARD_PAD   0x00000010u   /* the game was built for a phone and has no keyboard input of its own (it only reads touches on its
+                                                  on-screen GAS / BRAKE buttons).  The host maps the arrow keys onto those two buttons (see
+                                                  x104_input_pad_key), so the title is playable on a desktop with a keyboard, like the Windows
+                                                  build of the same game */
+#define X104_FEAT_FL9_LIE        0x00000020u   /* the game renders through ANGLE 2.1 (libGLESv2.dll), which only asks for feature level 9_3 and
+                                                   crashes on anything lower (it has no 9_1 path at all).  On a 9_1-only GPU (Surface RT /
+                                                   Surface 2, Tegra 3) the host then (a) retries D3D11CreateDevice on the hardware with a
+                                                   9_1 list instead of falling back to WARP, (b) answers ID3D11Device::GetFeatureLevel with
+                                                   9_3 and (c) rewrites ANGLE's HLSL suffix "_level_9_3" to "_level_9_1" inside the loaded
+                                                   module, so D3DCompile produces what the hardware really supports.  See
+                                                   x104_panel_fl_install, --fl-lie, --angle-profile */
 
 typedef struct X104Profile {
     const char *key;                     /* short id in log lines */
@@ -231,7 +249,15 @@ static const X104Profile x104_profile_redcon = {
     L"Win32Craft\\Redcon", "%APPDATA%\\Win32Craft\\Redcon"
 };
 
-static const X104Profile *const x104_profiles[] = { &x104_profile_mcpe0104, &x104_profile_redcon };
+/* Hill Climb Racing 1.27.0.32 (Fingersoft): Cocos2d-x 2.2.5 + ANGLE, WP8.1 XAML page with a SwapChainPanel */
+static const X104Profile x104_profile_hcr = {
+    "hillclimbracing", "Hill Climb Racing 1.27.0.32", "Hill Climb Racing - Win32Craft", L"HCRWin32", L"Win32Craft - Hill Climb Racing",
+    0x001C9000u, 0x001C8000u, 0x0011A179u, 7, 0x0011A28Eu, { 0x00, 0xf0, 0x5f, 0xfe }, 0x0011AF50u, 0x0011A664u,
+    X104_FEAT_XAML_PAGE | X104_FEAT_SM4_SHADERS | X104_FEAT_KEYBOARD_PAD | X104_FEAT_FL9_LIE,
+    L"Win32Craft\\HillClimbRacing", "%APPDATA%\\Win32Craft\\HillClimbRacing"
+};
+
+static const X104Profile *const x104_profiles[] = { &x104_profile_mcpe0104, &x104_profile_redcon, &x104_profile_hcr };
 static const X104Profile *x104_profile = &x104_profile_mcpe0104;   /* the active game (set by x104_image_matches; the MCPE default keeps the PC harnesses unchanged) */
 
 #define x104_feat(flag)  ((x104_profile->features & (flag)) != 0)
@@ -487,6 +513,9 @@ typedef struct X104View {
 
 /* optional QI extension: return the view to hand out for `iid` (or NULL for E_NOINTERFACE) */
 typedef X104View *(*X104QiHook)(struct X104Object *obj, const GUID *iid);
+/* optional IActivationFactory::ActivateInstance body: create the instance and store its identity view (refs = 1) in *instance.
+ * NULL for the statics-only fakes; a real WinRT runtime class with a default constructor needs it (BackgroundTaskBuilder). */
+typedef HRESULT (*X104ActivateHook)(void **instance);
 
 typedef struct X104Class {
     const char *name;                   /* short name for logs */
@@ -495,6 +524,7 @@ typedef struct X104Class {
     unsigned iface_count;
     unsigned flags;
     X104QiHook qi_hook;
+    X104ActivateHook activate;          /* extra member: X104_CLASS_DEF leaves it NULL (zero-initialised) */
 } X104Class;
 
 typedef struct X104Object {
@@ -527,6 +557,9 @@ extern const void *x104_slot_signature_mismatch(const char *interface_and_method
 #define X104_IFACE_IID(iid_ptr, label, vtbl_array)  { (iid_ptr), (vtbl_array), (unsigned)ARRAYSIZE(vtbl_array), (label) }
 #define X104_CLASS_DEF(var, short_name, runtime, iface_array, class_flags, hook) \
     static const X104Class var = { (short_name), (runtime), (iface_array), (unsigned)ARRAYSIZE(iface_array), (class_flags), (hook) }
+/* same, plus the ActivateInstance body (classes the game creates with `ref new X()`) */
+#define X104_CLASS_DEF_NEW(var, short_name, runtime, iface_array, class_flags, hook, activate) \
+    static const X104Class var = { (short_name), (runtime), (iface_array), (unsigned)ARRAYSIZE(iface_array), (class_flags), (hook), (activate) }
 
 /* lazily created, thread-safe singleton accessor for a statics/factory object:
  *     X104_SINGLETON(my_factory, my_class, MyFactoryStruct)      -> static X104Object *my_factory(void)   (struct starts with X104Object base;) */
@@ -548,6 +581,33 @@ static HRESULT X104_API x104_get_trust_level(void *self, int *level);
 
 static void x104_vtable_fill_holes(const X104IfaceDesc *desc);
 
+/* ---- generic IActivationFactory view (Windows.Foundation.IActivationFactory) ----
+ * A statics class must answer RoGetActivationFactory(class, IID_IActivationFactory) like the real runtime does: C++/CX's activation helper
+ * (vccorlib __abi_GetActivationFactory) asks for IActivationFactory first and only then QIs the statics interface it actually needs.
+ * Every host class flagged X104_CLASS_FACTORY therefore gets this extra view for free; ActivateInstance stays a logged E_NOTIMPL (the host
+ * fakes are statics-only classes, exactly like their WinRT counterparts). */
+enum { X104_SLOT_IActivationFactory_ActivateInstance = 6, X104_NSLOTS_IActivationFactory = 7 };
+typedef HRESULT (X104_API *X104_FN_IActivationFactory_ActivateInstance)(void *, void **);
+
+static HRESULT X104_API x104_factory_activate_instance(void *self, void **instance)
+{
+    static volatile LONG logged;
+    X104Object *object = X104_OBJ(self);
+    if (!instance) return E_POINTER;
+    *instance = NULL;
+    if (object->cls->activate) return object->cls->activate(instance);
+    X104_LOG_LIMITED(&logged, 8, "X104 factory: %s.ActivateInstance -> E_NOTIMPL (statics-only class)", object->cls->name);
+    return E_NOTIMPL;
+}
+
+X104_VTBL(x104_vt_activation_factory, IActivationFactory) = {
+    X104_INSPECTABLE_SLOTS,
+    X104_SLOT(IActivationFactory, ActivateInstance, x104_factory_activate_instance)
+};
+static const X104IfaceDesc x104_factory_view_desc = {
+    &X104_IID_IActivationFactory, x104_vt_activation_factory, (unsigned)ARRAYSIZE(x104_vt_activation_factory), "IActivationFactory"
+};
+
 /* initialise storage (static singleton or the start of a bigger struct) as an object of `cls`, refs = 1 */
 static void x104_object_init(X104Object *obj, const X104Class *cls)
 {
@@ -566,6 +626,13 @@ static void x104_object_init(X104Object *obj, const X104Class *cls)
         obj->views[index].vtbl = cls->ifaces[index].vtbl;
         obj->views[index].obj = obj;
         obj->views[index].desc = &cls->ifaces[index];
+    }
+    if ((cls->flags & X104_CLASS_FACTORY) && obj->view_count < X104_MAX_VIEWS) {
+        x104_vtable_fill_holes(&x104_factory_view_desc);
+        obj->views[obj->view_count].vtbl = x104_factory_view_desc.vtbl;
+        obj->views[obj->view_count].obj = obj;
+        obj->views[obj->view_count].desc = &x104_factory_view_desc;
+        ++obj->view_count;
     }
 }
 
@@ -597,7 +664,7 @@ static X104View *x104_object_find_view(X104Object *obj, const GUID *iid)
     if (!obj || !iid) return NULL;
     if (memcmp(iid, &X104_IID_IUnknown, sizeof(GUID)) == 0 || memcmp(iid, &X104_IID_IInspectable, sizeof(GUID)) == 0) return &obj->views[0];
     for (index = 0; index < obj->view_count; ++index) {
-        if (memcmp(obj->cls->ifaces[index].iid, iid, sizeof(GUID)) == 0) return &obj->views[index];
+        if (memcmp(obj->views[index].desc->iid, iid, sizeof(GUID)) == 0) return &obj->views[index];
     }
     if ((obj->cls->flags & X104_CLASS_AGILE) && memcmp(iid, &X104_IID_IAgileObject, sizeof(GUID)) == 0) return &obj->views[0];
     if (obj->cls->qi_hook) {
@@ -1095,16 +1162,27 @@ static const struct { const wchar_t *class_name; int unit; } x104_class_owners[]
     { L"Windows.ApplicationModel.Store.CurrentAppSimulator",        X104_UNIT_PLATFORM },
     { L"Windows.ApplicationModel.Store.CurrentApp",                 X104_UNIT_PLATFORM },
     { L"Windows.Foundation.Diagnostics.AsyncCausalityTracer",       X104_UNIT_PLATFORM },
+    { L"Windows.Storage.Compression.Decompressor",                  X104_UNIT_PLATFORM },
+    { L"Windows.Storage.Compression.Compressor",                    X104_UNIT_PLATFORM },
+    { L"Windows.Storage.Streams.DataReader",                        X104_UNIT_PLATFORM },
+    { L"Windows.Storage.Streams.DataWriter",                        X104_UNIT_PLATFORM },
     { L"Windows.Web.Http.HttpRequestMessage",                       X104_UNIT_PLATFORM },
     { L"Windows.Web.Http.HttpMethod",                               X104_UNIT_PLATFORM },
     { L"Windows.Web.Http.HttpStringContent",                        X104_UNIT_PLATFORM },
     { L"Windows.Web.Http.HttpClient",                               X104_UNIT_PLATFORM },
+    { L"Windows.ApplicationModel.Background.MaintenanceTrigger",    X104_UNIT_PLATFORM },
+    { L"Windows.ApplicationModel.Background.BackgroundTaskBuilder", X104_UNIT_PLATFORM },
+    { L"Windows.ApplicationModel.Background.BackgroundTaskRegistration", X104_UNIT_PLATFORM },
+    { L"HillClimbRacing.BackgroundTasks.UpdateTileTask",            X104_UNIT_PLATFORM },
     /* REDCON 1 (never activated by Minecraft PE 0.10.4) */
     { L"Windows.UI.Xaml.Controls.SwapChainPanel",                   X104_UNIT_PANEL },
     { L"Windows.UI.Xaml.Media.CompositionTarget",                   X104_UNIT_APP },
     { L"Windows.ApplicationModel.Core.CoreApplication",             X104_UNIT_APP },
     { L"Windows.UI.ViewManagement.ApplicationView",                 X104_UNIT_APP },
-    { L"Windows.UI.Core.CoreWindowResizeManager",                   X104_UNIT_APP }
+    { L"Windows.UI.Core.CoreWindowResizeManager",                   X104_UNIT_APP },
+    { L"Fingersoft.AdSdk.AdManager",                                X104_UNIT_APP },
+    { L"Fingersoft.AdSdk.AdManagerInstance",                        X104_UNIT_APP },
+    { L"Fingersoft.AdSdk.Providers",                                X104_UNIT_APP }
     /* Windows.Globalization.ApplicationLanguages, Windows.Foundation.PropertyValue and Windows.System.Launcher are left to the real runtime on purpose:
      * they work in a desktop process (logged as "X104 WinRT FALLBACK") */
 };
@@ -1189,7 +1267,12 @@ static HRESULT X104_API x104_activation_hook(const wchar_t *class_name, const GU
     hr = ((X104ActivationFn)x104.original_activation)(class_name, iid, result);
     x104_narrow(name, sizeof(name), class_name);
     x104_describe_iid(text, iid);
-    x104_logf("X104 WinRT FALLBACK %s %s -> real runtime: 0x%08lx %s", name[0] ? name : "(null)", text, (unsigned long)hr, x104_hr_name(hr));
+    {
+        char where[160];
+        arm32_iat_describe_address(__builtin_return_address(0), where, sizeof(where));
+        x104_logf("X104 WinRT FALLBACK %s %s from %s -> real runtime: 0x%08lx %s", name[0] ? name : "(null)", text, where, (unsigned long)hr,
+                  x104_hr_name(hr));
+    }
     return hr;
 }
 
@@ -1267,7 +1350,8 @@ static BOOL x104_check_game_bytes(DWORD rva, const BYTE *expected, SIZE_T size, 
  *     Implemented slots (everything else is a logging hole):
  *       IDependencyObject  11 get_Dispatcher
  *       IUIElement         21 get_Visibility  22 put_Visibility  23 get_RenderSize(Size*)
- *       IFrameworkElement  13 get_ActualWidth(double*) 14 get_ActualHeight(double*) 47 add_SizeChanged 48 remove_SizeChanged
+ *       IFrameworkElement  13 get_ActualWidth(double*) 14 get_ActualHeight(double*) 43 add_Loaded 44 remove_Loaded 45 add_Unloaded 46 remove_Unloaded
+ *                          47 add_SizeChanged 48 remove_SizeChanged
  *                          51 FindName -> x104_element.find_name (NULL = E_FAIL with a log)
  * ====================================================================================================================== */
 typedef struct X104Element {
@@ -1276,6 +1360,8 @@ typedef struct X104Element {
     float render_w, render_h;           /* IUIElement.RenderSize */
     double actual_w, actual_h;          /* IFrameworkElement.ActualWidth/Height (DIPs) */
     X104Event size_changed;             /* IFrameworkElement.SizeChanged (delegate = SizeChangedEventHandler) */
+    X104Event loaded, unloaded;         /* IFrameworkElement.Loaded / Unloaded (delegate = RoutedEventHandler) */
+    volatile LONG loaded_raised;        /* Loaded was delivered once (WinRT raises it from the layout pass, never again) */
     HRESULT (*find_name)(struct X104Element *element, HSTRING name, void **result);   /* optional (Page) */
     const char *label;                  /* "Page", "SwapChainPanel", ... for logs */
 } X104Element;
@@ -1349,6 +1435,59 @@ static HRESULT X104_API x104_fe_remove_size_changed(void *self, LONGLONG token)
     return x104_event_remove(&X104_ELEMENT(self)->size_changed, token);
 }
 
+/* IFrameworkElement.add_Loaded / remove_Loaded: stored, and delivered once by x104_element_raise_loaded() from the UI tick after
+ * OnLaunched returned (WinRT raises Loaded from the layout pass, i.e. after the tree is built - never from inside the += call).
+ * add_Unloaded / remove_Unloaded are stored too but never raised: the host does not unload elements while the game runs. */
+static HRESULT X104_API x104_fe_add_loaded(void *self, void *handler, LONGLONG *token)
+{
+    X104Element *element = X104_ELEMENT(self);
+    HRESULT hr = x104_event_add(&element->loaded, handler, token);
+    x104_logf("X104 %s.add_Loaded(handler=%p) -> 0x%08lx %s", element->label ? element->label : "element", handler, (unsigned long)hr, x104_hr_name(hr));
+    return hr;
+}
+
+static HRESULT X104_API x104_fe_remove_loaded(void *self, LONGLONG token)
+{
+    return x104_event_remove(&X104_ELEMENT(self)->loaded, token);
+}
+
+static HRESULT X104_API x104_fe_add_unloaded(void *self, void *handler, LONGLONG *token)
+{
+    X104Element *element = X104_ELEMENT(self);
+    HRESULT hr = x104_event_add(&element->unloaded, handler, token);
+    x104_logf("X104 %s.add_Unloaded(handler=%p) -> 0x%08lx %s (never raised: the host keeps every element alive)", element->label ? element->label : "element",
+              handler, (unsigned long)hr, x104_hr_name(hr));
+    return hr;
+}
+
+static HRESULT X104_API x104_fe_remove_unloaded(void *self, LONGLONG token)
+{
+    return x104_event_remove(&X104_ELEMENT(self)->unloaded, token);
+}
+
+/* deliver Loaded once (UI thread): sender = the element, args = NULL (the game's handlers do not read RoutedEventArgs) */
+static void x104_element_raise_loaded(X104Element *element, const char *why)
+{
+    unsigned handlers;
+    unsigned invoked;
+    DWORD started;
+    if (!element) return;
+    handlers = x104_event_count(&element->loaded);
+    if (!handlers) {
+        static volatile LONG none_logged;
+        if (!element->loaded_raised)
+            X104_LOG_LIMITED(&none_logged, 4, "X104 %s: no Loaded handler registered yet (%s) - not delivered", element->label ? element->label : "element",
+                             why ? why : "tick");
+        return;
+    }
+    if (__sync_val_compare_and_swap(&element->loaded_raised, 0, 1) != 0) return;
+    x104_logf("X104 %s: raising Loaded (%s) to %u handler(s)", element->label ? element->label : "element", why ? why : "tick", handlers);
+    started = GetTickCount();
+    invoked = x104_event_invoke_guarded(&element->loaded, x104_object_iface0(&element->base), NULL);
+    x104_logf("X104 %s: Loaded delivered to %u of %u handler(s), took %lu ms", element->label ? element->label : "element", invoked, handlers,
+              (unsigned long)(GetTickCount() - started));
+}
+
 static HRESULT X104_API x104_fe_find_name(void *self, HSTRING name, void **result)
 {
     X104Element *element = X104_ELEMENT(self);
@@ -1390,6 +1529,10 @@ X104_VTBL(x104_vt_frameworkelement, IFrameworkElement) = {
     X104_SLOT(IFrameworkElement, get_ActualHeight, x104_fe_get_actual_height),
     X104_SLOT(IFrameworkElement, add_SizeChanged, x104_fe_add_size_changed),
     X104_SLOT(IFrameworkElement, remove_SizeChanged, x104_fe_remove_size_changed),
+    X104_SLOT(IFrameworkElement, add_Loaded, x104_fe_add_loaded),
+    X104_SLOT(IFrameworkElement, remove_Loaded, x104_fe_remove_loaded),
+    X104_SLOT(IFrameworkElement, add_Unloaded, x104_fe_add_unloaded),
+    X104_SLOT(IFrameworkElement, remove_Unloaded, x104_fe_remove_unloaded),
     X104_SLOT(IFrameworkElement, FindName, x104_fe_find_name)
 };
 #define X104_ELEMENT_IFACES \
@@ -1403,6 +1546,8 @@ static X104Element *x104_element_new(const X104Class *cls, SIZE_T size, const ch
     if (!element) return NULL;
     element->label = label;
     x104_event_init(&element->size_changed, "FrameworkElement.SizeChanged");
+    x104_event_init(&element->loaded, "FrameworkElement.Loaded");
+    x104_event_init(&element->unloaded, "FrameworkElement.Unloaded");
     return element;
 }
 
@@ -1661,6 +1806,7 @@ static HRESULT x104_input_create_independent_source(UINT device_types, void **re
  * 15. the UI-thread pass shared by the loop and the modal-loop pump
  * ====================================================================================================================== */
 static volatile LONG x104_in_pass;
+/* x104_pass_stage / x104_pass_stage_names live in win32_host.c (the watchdog that prints them is compiled before this file) */
 
 /* ONE pass of the UI thread's work: queued items + due timers (async), then the three unit ticks (panel: first/coalesced SizeChanged, device-loss poll; input: TabTip
  * poll, deferred pointer release; app: visibility), then a watchdog progress bump.  Called by x104_ui_run_loop after it drained the message queue, and by the window
@@ -1670,10 +1816,15 @@ static void x104_ui_pass(void)
 {
     if (!x104.f_units_ready) return;
     if (__sync_val_compare_and_swap(&x104_in_pass, 0, 1) != 0) return;
+    InterlockedExchange(&x104_pass_stage, 1);
     x104_ui_pump_once();
+    InterlockedExchange(&x104_pass_stage, 2);
     x104_panel_ui_tick();
+    InterlockedExchange(&x104_pass_stage, 3);
     x104_input_ui_tick();
+    InterlockedExchange(&x104_pass_stage, 4);
     x104_app_ui_tick();
+    InterlockedExchange(&x104_pass_stage, 0);
     InterlockedIncrement(&arm32_boot_progress);
     InterlockedIncrement(&arm32_boot_loop_passes);
     InterlockedExchange(&x104_in_pass, 0);

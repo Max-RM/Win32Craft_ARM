@@ -114,6 +114,9 @@ static void x104_parse_options(void)
     x104.opt_max_fps = 0;
     x104.opt_vsync = FALSE;
     x104.opt_selftest = 0;
+    x104.opt_fl_lie = -1;
+    x104.opt_angle_profile = 0;
+    x104.opt_force_warp = FALSE;
     cursor = host_next_argument(cursor, argument, ARRAYSIZE(argument));          /* skip argv[0] */
     while (*cursor) {
         cursor = host_next_argument(cursor, argument, ARRAYSIZE(argument));
@@ -140,6 +143,15 @@ static void x104_parse_options(void)
             if (host_argument_equals(value, L"hwnd")) x104.opt_present = X104_PRESENT_HWND;
             else if (host_argument_equals(value, L"dcomp")) x104.opt_present = X104_PRESENT_DCOMP;
             else x104_logf("X104 option --present=%s is not hwnd|dcomp - ignored", (x104_narrow(shown, sizeof(shown), value), shown));
+        } else if (host_argument_equals(argument, L"--warp")) {
+            x104.opt_force_warp = TRUE;
+        } else if ((value = arm32_iat_argument_value(argument, L"--angle-profile=")) != NULL) {
+            if (host_argument_equals(value, L"9_1")) x104.opt_angle_profile = 1;
+            else if (host_argument_equals(value, L"9_3")) x104.opt_angle_profile = 3;
+            else x104_logf("X104 option --angle-profile=%s is not 9_1|9_3 - ignored", (x104_narrow(shown, sizeof(shown), value), shown));
+        } else if ((value = arm32_iat_argument_value(argument, L"--fl-lie=")) != NULL) {
+            if (*value == L'0' || *value == L'1') x104.opt_fl_lie = (int)(*value - L'0');
+            else x104_logf("X104 option --fl-lie=%s needs 0 or 1 - ignored", (x104_narrow(shown, sizeof(shown), value), shown));
         } else if ((value = arm32_iat_argument_value(argument, L"--window=")) != NULL) {
             width = 0;
             height = 0;
@@ -155,10 +167,12 @@ static void x104_parse_options(void)
             }
         }
     }
-    x104_logf("X104 options: present=%s full-res=%d fullscreen=%d trace-fakes=%d vsync=%d max-fps=%d selftest-fakes=%d window=%dx%d%s (feature level cap 0x%04X, osk/input options as in ARM32.md)",
+    x104_logf("X104 options: present=%s full-res=%d fullscreen=%d trace-fakes=%d vsync=%d max-fps=%d selftest-fakes=%d window=%dx%d%s (feature level cap 0x%04X, fl-lie=%d angle-profile=9_%d, osk/input options as in ARM32.md)",
               x104.opt_present == X104_PRESENT_DCOMP ? "dcomp" : "hwnd", (int)!x104.opt_half_res, (int)x104.opt_fullscreen, (int)x104.opt_trace,
               (int)x104.opt_vsync, x104.opt_max_fps, x104.opt_selftest, x104.opt_width, x104.opt_height,
-              x104.opt_window_explicit ? " (explicit)" : " (default, clamped to the work area when the window is created)", (unsigned)arm32_feature_level_cap);
+              x104.opt_window_explicit ? " (explicit)" : " (default, clamped to the work area when the window is created)", (unsigned)arm32_feature_level_cap,
+              x104.opt_fl_lie < 0 ? (x104_feat(X104_FEAT_FL9_LIE) ? 1 : 0) : x104.opt_fl_lie, x104.opt_angle_profile ? x104.opt_angle_profile : 1);
+    if (x104.opt_force_warp) x104_logf("X104 option --warp: D3D11CreateDevice is forced to D3D_DRIVER_TYPE_WARP (software rasteriser)");
 }
 
 /* the user chose a feature level (WIN32CRAFT_FEATURE_LEVEL or --feature-level[=]...) */
@@ -352,25 +366,64 @@ static BOOL x104_install_iat_hooks(BYTE *image)
 
 /* ---- VC120 runtime diagnostics (review finding 12) ----
  * msvcr120_app and vccorlib120_app import RoGetActivationFactory from api-ms-win-core-winrt-l1-1-0 and call it on their own (ConcRT / PPL scheduling, vccorlib's
- * activation helpers, tmpfile paths) - NOT through the game's single choke point that the activation router covers.  A real activation failure there would show
- * up as a hang or a crash with nothing in the log, so the import cell of every VC120 module that has one is patched with a log-only forwarder (class name, IID,
- * HRESULT, caller module+offset), and the loaded module list (base, size) is logged once at boot.  (msvcp120_app has no such import: checked in the genuine DLL.) */
+ * activation helpers, tmpfile paths) - NOT through the game's single choke point that the activation router covers.  Their import cell is patched with a forwarder
+ * that asks the host fakes first (libcocos2d's C++/CX projection activates ApplicationData through vccorlib) and only then the real runtime, logging class name,
+ * IID, HRESULT and caller module+offset either way.  The loaded module list (base, size) is logged once at boot.
+ * (msvcp120_app has no such import: checked in the genuine DLL.) */
 static void *x104_orig_ro_get_activation_factory;
 static volatile LONG x104_ro_calls;
 static volatile LONG x104_ro_failures;
 
 static HRESULT X104_API x104_hook_ro_get_activation_factory(HSTRING class_id, const GUID *iid, void **factory)
 {
-    HRESULT hr = ((HRESULT (X104_API *)(HSTRING, const GUID *, void **))x104_orig_ro_get_activation_factory)(class_id, iid, factory);
-    LONG number = InterlockedIncrement(&x104_ro_calls);
-    if (number <= 120 || (FAILED(hr) && InterlockedIncrement(&x104_ro_failures) <= 200)) {
-        char name[128];
-        char iid_text[96];
-        char where[160];
-        x104_hstring_ascii(class_id, name, sizeof(name));
-        x104_describe_iid(iid_text, iid);
-        arm32_iat_describe_address(__builtin_return_address(0), where, sizeof(where));
-        x104_logf("X104 VC120 RoGetActivationFactory #%ld %s %s from %s -> 0x%08lx %s", (long)number, name, iid_text, where, (unsigned long)hr, x104_hr_name(hr));
+    wchar_t wide[160];
+    const wchar_t *raw;
+    UINT32 length = 0;
+    UINT32 index;
+    HRESULT hr;
+
+    /* The host's fakes come first: libcocos2d's C++/CX projection activates Windows.Storage.ApplicationData from here, and the real Wine class
+     * answers E_NOTIMPL for ApplicationData.get_LocalFolder (its whole IApplicationData body is a stub), which cocos2d turns into
+     * Platform::NotImplementedException during CCUserDefault init.  Unknown classes still fall through to the real runtime. */
+    if (factory) {
+        *factory = NULL;
+        raw = class_id ? WindowsGetStringRawBuffer(class_id, &length) : NULL;
+        if (!raw) length = 0;
+        if (length >= ARRAYSIZE(wide)) length = ARRAYSIZE(wide) - 1;
+        for (index = 0; index < length; ++index) wide[index] = raw[index];
+        wide[length] = 0;
+        if (length) {
+            hr = x104_activation_override(wide, iid, factory);
+            if (hr != REGDB_E_CLASSNOTREG) {
+                LONG number = InterlockedIncrement(&x104_ro_calls);
+                if (number <= 120 || (FAILED(hr) && InterlockedIncrement(&x104_ro_failures) <= 200)) {
+                    char name[128];
+                    char iid_text[96];
+                    char where[160];
+                    x104_hstring_ascii(class_id, name, sizeof(name));
+                    x104_describe_iid(iid_text, iid);
+                    arm32_iat_describe_address(__builtin_return_address(0), where, sizeof(where));
+                    x104_logf("X104 VC120 RoGetActivationFactory #%ld %s %s from %s -> host: 0x%08lx %s", (long)number, name, iid_text, where,
+                              (unsigned long)hr, x104_hr_name(hr));
+                }
+                return hr;
+            }
+        }
+    }
+
+    hr = ((HRESULT (X104_API *)(HSTRING, const GUID *, void **))x104_orig_ro_get_activation_factory)(class_id, iid, factory);
+    {
+        LONG number = InterlockedIncrement(&x104_ro_calls);
+        if (number <= 120 || (FAILED(hr) && InterlockedIncrement(&x104_ro_failures) <= 200)) {
+            char name[128];
+            char iid_text[96];
+            char where[160];
+            x104_hstring_ascii(class_id, name, sizeof(name));
+            x104_describe_iid(iid_text, iid);
+            arm32_iat_describe_address(__builtin_return_address(0), where, sizeof(where));
+            x104_logf("X104 VC120 RoGetActivationFactory #%ld %s %s from %s -> real runtime: 0x%08lx %s", (long)number, name, iid_text, where,
+                      (unsigned long)hr, x104_hr_name(hr));
+        }
     }
     return hr;
 }
@@ -444,6 +497,138 @@ static void x104_install_vc120_diagnostics(void)
     }
     x104_logf("X104 VC120 diagnostics: %u RoGetActivationFactory forwarder(s) installed (a real activation by msvcr120_app / vccorlib120_app now appears as 'X104 VC120 RoGetActivationFactory')",
               installed);
+}
+
+/* ---- ANGLE WinRT forwarders (HCR) ----
+ * libGLESv2!Renderer11::initialize activates Windows.ApplicationModel.Core.CoreApplication (ICoreApplication) through its own
+ * RoGetActivationFactory import to subscribe to Suspending.  Wine's twinapi stub answers E_NOINTERFACE for that IID, the renderer
+ * treats the failure as fatal and eglInitialize returns EGL_NOT_INITIALIZED before it ever reaches D3D11CreateDevice.
+ * ANGLE is not a VC120 module and does not go through the game's activation choke point, so its import cells get their own
+ * forwarder: ask the host's activation router first, and only fall back to the real runtime when the class is unknown. */
+static void *x104_orig_ro_angle_get_activation_factory;
+static volatile LONG x104_ro_angle_calls;
+
+static HRESULT X104_API x104_hook_ro_angle_activation_factory(HSTRING class_id, const GUID *iid, void **factory)
+{
+    wchar_t name[160];
+    const wchar_t *raw;
+    UINT32 length = 0;
+    UINT32 index;
+    HRESULT hr;
+    LONG number;
+    char text[96];
+    char shown[128];
+    char where[160];
+
+    if (!factory) return E_POINTER;
+    *factory = NULL;
+    raw = class_id ? WindowsGetStringRawBuffer(class_id, &length) : NULL;
+    if (!raw) length = 0;
+    if (length >= ARRAYSIZE(name)) length = ARRAYSIZE(name) - 1;
+    for (index = 0; index < length; ++index) name[index] = raw[index];
+    name[length] = 0;
+    if (length) {
+        hr = x104_activation_override(name, iid, factory);
+        if (hr != REGDB_E_CLASSNOTREG) {
+            number = InterlockedIncrement(&x104_ro_angle_calls);
+            if (number <= 60 || FAILED(hr)) {
+                x104_describe_iid(text, iid);
+                x104_narrow(shown, sizeof(shown), name);
+                arm32_iat_describe_address(__builtin_return_address(0), where, sizeof(where));
+                x104_logf("X104 ANGLE RoGetActivationFactory #%ld %s %s from %s -> host: 0x%08lx %s", (long)number, shown, text, where,
+                          (unsigned long)hr, x104_hr_name(hr));
+            }
+            return hr;
+        }
+    }
+    if (!x104_orig_ro_angle_get_activation_factory) return REGDB_E_CLASSNOTREG;
+    hr = ((HRESULT (X104_API *)(HSTRING, const GUID *, void **))x104_orig_ro_angle_get_activation_factory)(class_id, iid, factory);
+    number = InterlockedIncrement(&x104_ro_angle_calls);
+    if (number <= 60 || FAILED(hr)) {
+        x104_describe_iid(text, iid);
+        x104_narrow(shown, sizeof(shown), name);
+        arm32_iat_describe_address(__builtin_return_address(0), where, sizeof(where));
+        x104_logf("X104 ANGLE RoGetActivationFactory #%ld %s %s from %s -> real runtime: 0x%08lx %s", (long)number, shown, text, where,
+                  (unsigned long)hr, x104_hr_name(hr));
+    }
+    return hr;
+}
+
+/* ---- diagnostic (HCR boot): who raises Platform::NotImplementedException?  A WinRT call returned E_NOTIMPL somewhere the host does not log
+ *      (libcocos2d's C++/CX projection raises it); the hook logs the call site inside libcocos2d so the failing method can be identified. ---- */
+static void X104_API x104_diag_raise_notimpl(void);
+static void *x104_diag_orig_raise_notimpl;
+
+static void X104_API x104_diag_raise_notimpl(void)
+{
+    char where[160];
+    arm32_iat_describe_address(__builtin_return_address(0), where, sizeof(where));
+    x104_logf("X104 diag: Platform::NotImplementedException raised, call site %s", where);
+    if (x104_diag_orig_raise_notimpl) ((void (X104_API *)(void))x104_diag_orig_raise_notimpl)();
+}
+
+static void x104_install_diag_raise_hook(void)
+{
+    HMODULE module = GetModuleHandleW(L"libcocos2d_v2.2.5_WindowsPhone_8.1.dll");
+    void **cell;
+    void *original;
+    if (!module) {
+        x104_logf("X104 diag: libcocos2d is not loaded - the raiseNotImplemented hook is not installed");
+        return;
+    }
+    cell = arm32_iat_find_cell((BYTE *)module, FALSE, "?__abi_WinRTraiseNotImplementedException@@YAXXZ");
+    if (!cell) {
+        x104_logf("X104 diag: libcocos2d at %p does not import __abi_WinRTraiseNotImplementedException", (void *)module);
+        return;
+    }
+    original = *cell;
+    if (!original) {
+        x104_logf("X104 diag: libcocos2d raiseNotImplemented cell %p is NULL", (void *)cell);
+        return;
+    }
+    if (arm32_patch_cell(cell, original, (void *)((ULONG_PTR)x104_diag_raise_notimpl | 1u), NULL, "diag raiseNotImplemented")) {
+        x104_diag_orig_raise_notimpl = original;
+        x104_logf("X104 diag: libcocos2d raiseNotImplemented hook installed (cell %p, original %p)", (void *)cell, original);
+    }
+}
+
+static void x104_install_angle_winrt_forwarders(void)
+{    static const wchar_t *const names[] = { L"libGLESv2.dll", L"libEGL.dll" };
+    unsigned index;
+    unsigned installed = 0;
+    for (index = 0; index < ARRAYSIZE(names); ++index) {
+        HMODULE module = GetModuleHandleW(names[index]);
+        char shown[64];
+        void **cell;
+        void *original;
+        x104_narrow(shown, sizeof(shown), names[index]);
+        if (!module) {
+            x104_logf("X104 ANGLE: %s is not loaded - its RoGetActivationFactory call is not routed", shown);
+            continue;
+        }
+        cell = arm32_iat_find_cell((BYTE *)module, FALSE, "RoGetActivationFactory");
+        if (!cell) cell = arm32_iat_find_cell((BYTE *)module, TRUE, "RoGetActivationFactory");
+        if (!cell) {
+            x104_logf("X104 ANGLE: %s at %p has no RoGetActivationFactory import", shown, (void *)module);
+            continue;
+        }
+        original = *cell;
+        if (!original) {
+            x104_logf("X104 ANGLE: %s RoGetActivationFactory cell %p is NULL (delay import not resolved yet) - not hooked", shown, (void *)cell);
+            continue;
+        }
+        if (x104_orig_ro_angle_get_activation_factory && original != x104_orig_ro_angle_get_activation_factory) {
+            x104_logf("X104 ANGLE: %s resolves RoGetActivationFactory to %p, another module to %p - not hooked", shown, original,
+                      x104_orig_ro_angle_get_activation_factory);
+            continue;
+        }
+        if (arm32_patch_cell(cell, original, (void *)((ULONG_PTR)x104_hook_ro_angle_activation_factory | 1u), NULL, "ANGLE RoGetActivationFactory router")) {
+            x104_orig_ro_angle_get_activation_factory = original;
+            ++installed;
+            x104_logf("X104 ANGLE: %s at %p: activation router installed (cell %p, original %p)", shown, (void *)module, (void *)cell, original);
+        }
+    }
+    x104_logf("X104 ANGLE diagnostics: %u RoGetActivationFactory router(s) installed (host fakes first, real runtime as fallback)", installed);
 }
 
 /* ---- window ---- */
@@ -760,6 +945,12 @@ static int x104_bootstrap(BYTE *image)
 
     arm32_boot_step("X104 VC120 diagnostics");
     x104_install_vc120_diagnostics();       /* module list + log-only RoGetActivationFactory forwarders in msvcr120_app / vccorlib120_app (ConcRT, PPL) */
+
+    arm32_boot_step("X104 ANGLE WinRT router");
+    x104_install_angle_winrt_forwarders();  /* ANGLE activates CoreApplication on its own: host fakes first, real runtime as fallback */
+
+    arm32_boot_step("X104 raiseNotImplemented diagnostic");
+    x104_install_diag_raise_hook();         /* HCR: identifies the WinRT call that returns E_NOTIMPL to libcocos2d's C++/CX projection */
 
     arm32_boot_step("X104 panel_install");
     if (!x104_panel_install(image)) return x104_boot_fail(X104_BOOT_PANEL_FAILED, "graphics setup failed (D3D11CreateDevice hook / shader profile patch / presentation path; see the lines above)");

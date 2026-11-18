@@ -18,6 +18,7 @@ the host and the per-game shims negotiate levels 11_1 → 9_1 instead of assumin
 | REDCON 1 (Hexage) | 1.3.0.0 | runs — ~30 fps, sound + music | `tools/arm32-patcher.py` profile `redcon`, shared `win32craft.dll` |
 | Geometry Dash | 2.0.1.0 | playable — menu, levels, music, touch | standalone `gd_host.exe` + `PhoneAppModelHost.dll` / `PhoneAudioSes.dll` |
 | Bad Piggies Rebooted | 1.0.0.0 | renders and runs at FL 9_1; not complete | `l9shim.dll` D3D11 feature-level shim (Unity IL2CPP UWP) |
+| Hill Climb Racing (Fingersoft) | 1.27.0.32 | runs in Wine 11 ARM32 on Android; on Surface RT the 9_1 shim reaches the menu but the driver drops the device after ~25 frames; Windows 11 ARM64 verification pending | `win32craft.dll` profile `x104_profile_hcr`, `--feature-level=10_0`, `X104_FEAT_FL9_LIE` |
 
 Minecraft 1.2.8 runs on Windows RT 8.1 / Windows 10 ARM32:
 
@@ -25,6 +26,7 @@ Minecraft 1.2.8 runs on Windows RT 8.1 / Windows 10 ARM32:
 
 Status details, device logs, known issues and the continuation plan: [`HANDOFF_FOR_FRIEND.md`](HANDOFF_FOR_FRIEND.md).
 Per-game recon and hand-off notes: [`games_recon/`](games_recon/).
+Per-game porting notes, structured for continuing a port: [`PortingInfo/`](PortingInfo/).
 
 ## Build
 
