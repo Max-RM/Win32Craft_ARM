@@ -1423,6 +1423,7 @@ static unsigned x104_input_raise_pointer(int kind, const x104_input_pointer_t *p
     x104_input_st.cur_device = pointer->device;
     x104_input_st.cur_x = (float)pointer->x;
     x104_input_st.cur_y = (float)pointer->y;
+    x104_panel_map_pointer(&x104_input_st.cur_x, &x104_input_st.cur_y);
     x104_input_st.cur_left = left ? 1 : 0;
     x104_input_st.cur_contact = contact ? 1 : 0;
     x104_input_st.cur_canceled = canceled ? 1 : 0;

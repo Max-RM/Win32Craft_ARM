@@ -207,13 +207,14 @@ static X104State x104;
                                                   on-screen GAS / BRAKE buttons).  The host maps the arrow keys onto those two buttons (see
                                                   x104_input_pad_key), so the title is playable on a desktop with a keyboard, like the Windows
                                                   build of the same game */
-#define X104_FEAT_FL9_LIE        0x00000020u   /* the game renders through ANGLE 2.1 (libGLESv2.dll), which only asks for feature level 9_3 and
-                                                   crashes on anything lower (it has no 9_1 path at all).  On a 9_1-only GPU (Surface RT /
-                                                   Surface 2, Tegra 3) the host then (a) retries D3D11CreateDevice on the hardware with a
-                                                   9_1 list instead of falling back to WARP, (b) answers ID3D11Device::GetFeatureLevel with
-                                                   9_3 and (c) rewrites ANGLE's HLSL suffix "_level_9_3" to "_level_9_1" inside the loaded
-                                                   module, so D3DCompile produces what the hardware really supports.  See
-                                                   x104_panel_fl_install, --fl-lie, --angle-profile */
+#define X104_FEAT_FL9_LIE        0x00000020u   /* the game renders through ANGLE (libGLESv2.dll) and asks D3D11CreateDevice for feature
+                                                   level 9_3 only.  A 9_1 GPU (Surface RT / Surface 2, Tegra 3) rejects that and the host
+                                                   used to fall back to WARP (~1-3 fps; a smaller window is the only thing that looks faster).
+                                                   On that GPU the host now (a) retries the hardware at 9_1, (b) still answers
+                                                   GetFeatureLevel with 9_3, because ANGLE's switch has no 9_1 case and faults if it
+                                                   sees one, (c) rewrites ANGLE's HLSL suffix and the D3DCompile target to
+                                                   *_4_0_level_9_1 so the bytecode is the one Tegra accepts, and (d) sanitises 9_3-only
+                                                   state the way the Bad Piggies 9_1 shim does.  --angle-profile=9_3 keeps the 9_3 suffix. */
 
 typedef struct X104Profile {
     const char *key;                     /* short id in log lines */
@@ -1784,6 +1785,7 @@ static BOOL x104_panel_window_message(HWND window, UINT message, WPARAM wparam, 
 static X104Object *x104_panel_object(void);                  /* the SwapChainPanel (not AddRef'd) */
 static void x104_panel_raise_size_changed(void);             /* UI: SizeChanged with the current client size; honours the ordering rules (no-op while blocked) */
 static void x104_panel_client_size(float *width_dips, float *height_dips);   /* any: current client size, == DIPs (scale 1.0) */
+static void x104_panel_map_pointer(float *x, float *y);      /* UI: HCR only, panel DIPs -> swap-chain buffer space after a resize matrix */
 /* ---- platform unit (win32_host_arm32_0104_platform.inl) ---- */
 static BOOL x104_platform_install(BYTE *image);              /* boot, FIRST: paths (ASCII check), data root, data-cell patches, XAudio2 probe */
 static void x104_platform_shutdown(void);

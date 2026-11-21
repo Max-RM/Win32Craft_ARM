@@ -144,6 +144,10 @@ typedef struct x104_panel_state_t {
     /* path A */
     void *dcomp_device, *dcomp_target, *dcomp_visual;
     BOOL dcomp_failed;
+    /* last IDXGISwapChain2::SetMatrixTransform, milli-units (1000 = 1.0).  ANGLE sets _11/_22 = panel / buffer
+     * on a SwapChainPanel; the HWND chain ignores that matrix and stretches instead, so pointer positions have
+     * to be divided back into buffer space or an in-level HUD keeps its pre-resize hit rects.  0 = not set. */
+    volatile LONG mx11, mx12, mx21, mx22, mx31, mx32;
 } x104_panel_state_t;
 
 static x104_panel_state_t x104_panel_state;
@@ -297,7 +301,7 @@ typedef struct x104_panel_tr_t {
     BOOL enabled, installed;
     volatile LONG vt_count;
     volatile LONG heals;                 /* draw/clear cells the runtime re-wrote and the tracer put back (x104_panel_tr_heal) */
-    x104_panel_tr_vt_t vts[2];
+    x104_panel_tr_vt_t vts[4];          /* a re-created device gets its own context vtable; two was not enough after a device loss */
     /* the context state as the wrappers saw it */
     void *rtv, *dsv, *ps, *srv0, *bs, *dss, *rs;
     void *vs, *layout, *vb0, *ib, *vscb0, *pscb0;
@@ -427,7 +431,7 @@ static void *x104_panel_tr_orig(void *self, int slot)
     LONG count = x104_panel_tr.vt_count;
     LONG index;
     if (slot < 0 || slot >= X104_PANEL_TR_SLOTS) return NULL;
-    for (index = 0; index < count && index < 2; ++index)
+    for (index = 0; index < count && index < 4; ++index)
         if (x104_panel_tr.vts[index].vtbl == vtbl) return x104_panel_tr.vts[index].orig[slot];
     return count > 0 ? x104_panel_tr.vts[0].orig[slot] : NULL;
 }
@@ -565,6 +569,14 @@ static void X104_API x104_panel_tr_set_ib(void *self, void *buffer, UINT format,
     x104_panel_tr.ibfmt = format;
     x104_panel_tr.iboffset = offset;
     x104_panel_tr.ib_caller = __builtin_return_address(0);
+    /* R32_UINT (42) is refused by a 9_1 device and is the call that removes the Tegra.  ANGLE emits it only while it still believes the level is 9_3. */
+    if (format == 42u && (x104_panel_state.actual_level == 0x9100u || x104_panel_state.actual_level == 0x9200u)) {
+        static volatile LONG logged;
+        format = 57u; /* R16_UINT */
+        x104_panel_tr.ibfmt = format;
+        if ((LONG)__sync_add_and_fetch(&logged, 1) <= 8)
+            x104_logf("X104 panel: IASetIndexBuffer R32_UINT -> R16_UINT on the 9_1 device (buffer=%p offset=%u)", buffer, offset);
+    }
     if (original) original(self, buffer, format, offset);
     x104_panel_tr_heal(self);
 }
@@ -615,6 +627,12 @@ static void X104_API x104_panel_tr_set_rtv(void *self, UINT count, void *const *
     t->rtv = (count && views && !IsBadReadPtr(views, sizeof(void *))) ? views[0] : NULL;
     t->dsv = depth;
     ++t->n_rtv;
+    if (count > 1u && (x104_panel_state.actual_level == 0x9100u || x104_panel_state.actual_level == 0x9200u)) {
+        static volatile LONG logged;
+        if ((LONG)__sync_add_and_fetch(&logged, 1) <= 8)
+            x104_logf("X104 panel: OMSetRenderTargets count %u -> 1 (feature level 9_1 has one render target)", count);
+        count = 1u;
+    }
     if (original) original(self, count, views, depth);
     x104_panel_tr_heal(self);
 }
@@ -747,6 +765,13 @@ static HRESULT X104_API x104_panel_tr_map(void *self, void *resource, UINT subre
     ++t->maps;
     if (type == 4u) ++t->maps_discard;
     else if (type == 5u) ++t->maps_nooverwrite;
+    if (FAILED(hr) && type == 5u && (x104_panel_state.actual_level == 0x9100u || x104_panel_state.actual_level == 0x9200u)) {
+        /* WRITE_NO_OVERWRITE is illegal on a constant buffer at feature level 9_1; ANGLE ignores the failure and keeps drawing stale constants.  DISCARD is legal. */
+        HRESULT retry = original(self, resource, subresource, 4u, flags, mapped);
+        X104_LOG_LIMITED(&failed_lines, 20, "X104 panel: Map WRITE_NO_OVERWRITE failed hr=0x%08lx on a 9_1 device; DISCARD retry hr=0x%08lx resource=%p", (unsigned long)hr, (unsigned long)retry, resource);
+        if (SUCCEEDED(retry)) return retry;
+        hr = retry;
+    }
     if (FAILED(hr)) {
         ++t->maps_failed;
         X104_LOG_LIMITED(&failed_lines, 40, "X104 d3dtrace: Map FAILED hr=0x%08lx %s resource=%p subresource=%u type=%u (4 discard, 5 no-overwrite) flags=%08lx", (unsigned long)hr, x104_hr_name(hr), resource,
@@ -792,7 +817,7 @@ static void x104_panel_tr_heal(void *self)
     void **vtbl = self ? *(void ***)self : NULL;
     LONG index;
     unsigned entry;
-    for (index = 0; index < t->vt_count && index < 2; ++index) {
+    for (index = 0; index < t->vt_count && index < 4; ++index) {
         if (t->vts[index].vtbl != vtbl) continue;
         for (entry = 0; entry < X104_PANEL_TR_NCELLS; ++entry) {
             int slot = x104_panel_tr_cells[entry].slot;
@@ -820,13 +845,13 @@ static void x104_panel_tr_install_vtable(void *context, const char *which)
         x104_logf("X104 d3dtrace: ERROR context vtable %p (%s) unreadable - the draw tracer is NOT installed for it", (void *)vtbl, which);
         return;
     }
-    for (index = 0; index < t->vt_count && index < 2; ++index)
+    for (index = 0; index < t->vt_count && index < 4; ++index)
         if (t->vts[index].vtbl == vtbl) {
             x104_logf("X104 d3dtrace: context vtable %p (%s) is already traced", (void *)vtbl, which);
             return;
         }
-    if (t->vt_count >= 2) {
-        x104_logf("X104 d3dtrace: WARNING a third context vtable %p (%s) - not traced", (void *)vtbl, which);
+    if (t->vt_count >= 4) {
+        x104_logf("X104 d3dtrace: WARNING context vtable %p (%s) - the 4 traced contexts are full, this one is not traced", (void *)vtbl, which);
         return;
     }
     index = t->vt_count;
@@ -861,7 +886,7 @@ static void x104_panel_tr_verify_cells(void)
     static volatile LONG reported;
     LONG index;
     unsigned entry;
-    for (index = 0; index < t->vt_count && index < 2; ++index) {
+    for (index = 0; index < t->vt_count && index < 4; ++index) {
         void **vtbl = t->vts[index].vtbl;
         if (!vtbl || IsBadReadPtr(vtbl, X104_PANEL_TR_SLOTS * sizeof(void *))) continue;
         for (entry = 0; entry < X104_PANEL_TR_NCELLS; ++entry) {
@@ -1294,12 +1319,32 @@ static BOOL x104_panel_cf_readable(const void *pointer, SIZE_T size)
     return pointer && !IsBadReadPtr(pointer, size);
 }
 
+static BOOL x104_panel_fl91(void);
+static UINT x104_panel_fl91_color(UINT format);
+static void x104_panel_fl91_note(const char *what);
+
 static HRESULT X104_API x104_panel_cf_create_srv(void *self, void *resource, const void *desc, void **view)
 {
     static volatile LONG lines;
     x104_panel_cf_fn_view original = (x104_panel_cf_fn_view)x104_panel_cf_orig(self, 7);
     HRESULT hr;
     if (!original) return E_FAIL;
+    if (x104_panel_fl91() && x104_panel_cf_readable(desc, 32)) {
+        UINT format = ((const UINT *)desc)[0];
+        UINT mapped = format == 21u ? 46u : x104_panel_fl91_color(format);   /* R32_FLOAT_X8X24_TYPELESS -> R24_UNORM_X8_TYPELESS */
+        if (mapped != format) {
+            BYTE local[32];
+            memcpy(local, desc, 32);
+            ((UINT *)local)[0] = mapped;
+            x104_panel_fl91_note("CreateShaderResourceView format");
+            hr = original(self, resource, local, view);
+            if (FAILED(hr)) {
+                HRESULT retry = original(self, resource, NULL, view);
+                if (SUCCEEDED(retry)) return retry;
+            }
+            if (SUCCEEDED(hr)) return hr;
+        }
+    }
     hr = original(self, resource, desc, view);
     if (FAILED(hr)) {
         const UINT *d = x104_panel_cf_readable(desc, 8) ? (const UINT *)desc : NULL;
@@ -1314,6 +1359,17 @@ static HRESULT X104_API x104_panel_cf_create_rtv(void *self, void *resource, con
     x104_panel_cf_fn_view original = (x104_panel_cf_fn_view)x104_panel_cf_orig(self, 9);
     HRESULT hr;
     if (!original) return E_FAIL;
+    if (x104_panel_fl91() && x104_panel_cf_readable(desc, 32)) {
+        UINT format = ((const UINT *)desc)[0];
+        UINT mapped = x104_panel_fl91_color(format);
+        if (mapped != format) {
+            BYTE local[32];
+            memcpy(local, desc, 32);
+            ((UINT *)local)[0] = mapped;
+            x104_panel_fl91_note("CreateRenderTargetView format");
+            desc = local;
+        }
+    }
     hr = original(self, resource, desc, view);
     if (FAILED(hr)) {
         const UINT *d = x104_panel_cf_readable(desc, 8) ? (const UINT *)desc : NULL;
@@ -1328,6 +1384,19 @@ static HRESULT X104_API x104_panel_cf_create_dsv(void *self, void *resource, con
     x104_panel_cf_fn_view original = (x104_panel_cf_fn_view)x104_panel_cf_orig(self, 10);
     HRESULT hr;
     if (!original) return E_FAIL;
+    if (x104_panel_fl91() && x104_panel_cf_readable(desc, 32)) {
+        UINT format = ((const UINT *)desc)[0];
+        UINT mapped = format;
+        if (format == 20u) mapped = 45u;          /* D32_FLOAT_S8X24_UINT -> D24_UNORM_S8_UINT */
+        else if (format == 40u) mapped = 55u;     /* D32_FLOAT -> D16_UNORM */
+        if (mapped != format) {
+            BYTE local[32];
+            memcpy(local, desc, 32);
+            ((UINT *)local)[0] = mapped;
+            x104_panel_fl91_note("CreateDepthStencilView format");
+            desc = local;
+        }
+    }
     hr = original(self, resource, desc, view);
     if (FAILED(hr)) {
         const UINT *d = x104_panel_cf_readable(desc, 12) ? (const UINT *)desc : NULL;
@@ -1401,15 +1470,36 @@ static void x104_panel_dump_shader_blob(const char *what, const void *code, SIZE
               tags[0] ? tags : "(none in the first 1024 bytes)");
 }
 
+/* 1 = the Aon9 chunk is vs/ps_2_0 (level_9_1, token ..0200), 3 = vs/ps_2_x (level_9_3, token ..0201), 0 = no Aon9 / plain SM4 */
+static int x104_panel_shader_level9(const void *code, SIZE_T length)
+{
+    const BYTE *bytes = (const BYTE *)code;
+    SIZE_T index;
+    if (!bytes || length < 32 || IsBadReadPtr(bytes, length > 4096 ? 4096 : length)) return 0;
+    for (index = 0; index + 16 < length && index < 4096; ++index) {
+        if (memcmp(bytes + index, "Aon9", 4) != 0) continue;
+        {
+            DWORD token = *(const DWORD *)(bytes + index + 8);
+            if ((token & 0xFFFFu) == 0x0200u) return 1;
+            if ((token & 0xFFFFu) == 0x0201u) return 3;
+            return 9;
+        }
+    }
+    return 0;
+}
+
 static HRESULT X104_API x104_panel_cf_create_vs(void *self, const void *code, SIZE_T length, void *linkage, void **shader)
 {
     static volatile LONG lines;
     static volatile LONG dumped;
+    static volatile LONG seen;
     x104_panel_cf_fn_shader original = (x104_panel_cf_fn_shader)x104_panel_cf_orig(self, 12);
     HRESULT hr;
     if (!original) return E_FAIL;
     hr = original(self, code, length, linkage, shader);
     if (SUCCEEDED(hr) && shader && *shader) x104_panel_shader_log(*shader, 'V', code, length);
+    if ((LONG)__sync_add_and_fetch(&seen, 1) <= 8)
+        x104_logf("X104 panel: CreateVertexShader hr=0x%08lx bytes=%lu level9=%d (1=9_1, 3=9_3, 0=plain SM4)", (unsigned long)hr, (unsigned long)length, x104_panel_shader_level9(code, length));
     if (FAILED(hr)) {
         X104_LOG_LIMITED(&lines, 20, "X104 panel: CreateVertexShader FAILED hr=0x%08lx %s bytecode=%p (%lu bytes)", (unsigned long)hr, x104_hr_name(hr), code, (unsigned long)length);
         if (__sync_val_compare_and_swap(&dumped, 0, 1) == 0) x104_panel_dump_shader_blob("CreateVertexShader FAILED", code, length);
@@ -1421,11 +1511,14 @@ static HRESULT X104_API x104_panel_cf_create_ps(void *self, const void *code, SI
 {
     static volatile LONG lines;
     static volatile LONG dumped;
+    static volatile LONG seen;
     x104_panel_cf_fn_shader original = (x104_panel_cf_fn_shader)x104_panel_cf_orig(self, 15);
     HRESULT hr;
     if (!original) return E_FAIL;
     hr = original(self, code, length, linkage, shader);
     if (SUCCEEDED(hr) && shader && *shader) x104_panel_shader_log(*shader, 'P', code, length);
+    if ((LONG)__sync_add_and_fetch(&seen, 1) <= 8)
+        x104_logf("X104 panel: CreatePixelShader hr=0x%08lx bytes=%lu level9=%d (1=9_1, 3=9_3, 0=plain SM4)", (unsigned long)hr, (unsigned long)length, x104_panel_shader_level9(code, length));
     if (FAILED(hr)) {
         X104_LOG_LIMITED(&lines, 20, "X104 panel: CreatePixelShader FAILED hr=0x%08lx %s bytecode=%p (%lu bytes)", (unsigned long)hr, x104_hr_name(hr), code, (unsigned long)length);
         if (__sync_val_compare_and_swap(&dumped, 0, 1) == 0) x104_panel_dump_shader_blob("CreatePixelShader FAILED", code, length);
@@ -1437,8 +1530,21 @@ static HRESULT X104_API x104_panel_cf_create_blend(void *self, const void *desc,
 {
     static volatile LONG lines;
     x104_panel_cf_fn_state original = (x104_panel_cf_fn_state)x104_panel_cf_orig(self, 20);
+    x104_panel_tr_blend_t fixed;
     HRESULT hr;
     if (!original) return E_FAIL;
+    if (x104_panel_fl91() && x104_panel_cf_readable(desc, sizeof(fixed))) {
+        UINT i;
+        fixed = *(const x104_panel_tr_blend_t *)desc;
+        fixed.AlphaToCoverageEnable = 0;
+        fixed.IndependentBlendEnable = 0;
+        fixed.rt[0].SrcBlendAlpha = fixed.rt[0].SrcBlend;
+        fixed.rt[0].DestBlendAlpha = fixed.rt[0].DestBlend;
+        fixed.rt[0].BlendOpAlpha = fixed.rt[0].BlendOp;
+        for (i = 1; i < 8; ++i) fixed.rt[i] = fixed.rt[0];
+        x104_panel_fl91_note("CreateBlendState (no separate alpha, one target)");
+        desc = &fixed;
+    }
     hr = original(self, desc, state);
     if (FAILED(hr)) {
         const x104_panel_tr_blend_t *d = x104_panel_cf_readable(desc, sizeof(*d)) ? (const x104_panel_tr_blend_t *)desc : NULL;
@@ -1456,8 +1562,17 @@ static HRESULT X104_API x104_panel_cf_create_depth(void *self, const void *desc,
 {
     static volatile LONG lines;
     x104_panel_cf_fn_state original = (x104_panel_cf_fn_state)x104_panel_cf_orig(self, 21);
+    x104_panel_tr_depth_t fixed;
     HRESULT hr;
     if (!original) return E_FAIL;
+    if (x104_panel_fl91() && x104_panel_cf_readable(desc, sizeof(fixed))) {
+        fixed = *(const x104_panel_tr_depth_t *)desc;
+        if (memcmp(fixed.front, fixed.back, sizeof(fixed.front)) != 0) {
+            memcpy(fixed.back, fixed.front, sizeof(fixed.front));   /* no two-sided stencil at 9_1 */
+            x104_panel_fl91_note("CreateDepthStencilState two-sided stencil");
+            desc = &fixed;
+        }
+    }
     hr = original(self, desc, state);
     if (FAILED(hr)) {
         const x104_panel_tr_depth_t *d = x104_panel_cf_readable(desc, sizeof(*d)) ? (const x104_panel_tr_depth_t *)desc : NULL;
@@ -1475,8 +1590,18 @@ static HRESULT X104_API x104_panel_cf_create_raster(void *self, const void *desc
 {
     static volatile LONG lines;
     x104_panel_cf_fn_state original = (x104_panel_cf_fn_state)x104_panel_cf_orig(self, 22);
+    x104_panel_tr_raster_t fixed;
     HRESULT hr;
     if (!original) return E_FAIL;
+    if (x104_panel_fl91() && x104_panel_cf_readable(desc, sizeof(fixed))) {
+        fixed = *(const x104_panel_tr_raster_t *)desc;
+        if (!fixed.DepthClipEnable || fixed.DepthBiasClamp != 0.0f) {
+            fixed.DepthClipEnable = 1;
+            fixed.DepthBiasClamp = 0.0f;
+            x104_panel_fl91_note("CreateRasterizerState depth clip");
+            desc = &fixed;
+        }
+    }
     hr = original(self, desc, state);
     if (FAILED(hr)) {
         const x104_panel_tr_raster_t *d = x104_panel_cf_readable(desc, sizeof(*d)) ? (const x104_panel_tr_raster_t *)desc : NULL;
@@ -1494,8 +1619,22 @@ static HRESULT X104_API x104_panel_cf_create_sampler(void *self, const void *des
 {
     static volatile LONG lines;
     x104_panel_cf_fn_state original = (x104_panel_cf_fn_state)x104_panel_cf_orig(self, 23);
+    x104_panel_cf_sampler_t fixed;
     HRESULT hr;
     if (!original) return E_FAIL;
+    if (x104_panel_fl91() && x104_panel_cf_readable(desc, sizeof(fixed))) {
+        BOOL changed = FALSE;
+        fixed = *(const x104_panel_cf_sampler_t *)desc;
+        if ((fixed.Filter & 0xC0u) == 0xC0u && fixed.MaxAnisotropy > 2u) { fixed.MaxAnisotropy = 2u; changed = TRUE; }
+        if (fixed.AddressU == 5u) { fixed.AddressU = 3u; changed = TRUE; }   /* MIRROR_ONCE -> MIRROR */
+        if (fixed.AddressV == 5u) { fixed.AddressV = 3u; changed = TRUE; }
+        if (fixed.AddressW == 5u) { fixed.AddressW = 3u; changed = TRUE; }
+        if (fixed.Filter & 0x80u) { fixed.Filter &= ~0x80u; changed = TRUE; } /* comparison filter is illegal at 9_1 */
+        if (changed) {
+            x104_panel_fl91_note("CreateSamplerState");
+            desc = &fixed;
+        }
+    }
     hr = original(self, desc, state);
     if (FAILED(hr)) {
         const x104_panel_cf_sampler_t *d = x104_panel_cf_readable(desc, sizeof(*d)) ? (const x104_panel_cf_sampler_t *)desc : NULL;
@@ -1743,10 +1882,36 @@ static HRESULT X104_API x104_panel_present_stub(void *self, UINT sync, UINT flag
 static HRESULT X104_API x104_panel_set_matrix_transform_ok(void *self, const void *matrix)
 {
     static volatile LONG calls;
-    (void)matrix;
-    X104_LOG_LIMITED(&calls, 6, "X104 panel: IDXGISwapChain2::SetMatrixTransform(%p) on chain %p -> S_OK (HWND chain: the composition transform does not exist; the swap-chain buffer is stretched by DXGI)",
-                     matrix, self);
+    const float *m = (const float *)matrix;
+    if (m && !IsBadReadPtr(m, 6 * sizeof(float))) {
+        InterlockedExchange(&x104_panel_state.mx11, (LONG)(m[0] * 1000.0f));
+        InterlockedExchange(&x104_panel_state.mx12, (LONG)(m[1] * 1000.0f));
+        InterlockedExchange(&x104_panel_state.mx21, (LONG)(m[2] * 1000.0f));
+        InterlockedExchange(&x104_panel_state.mx22, (LONG)(m[3] * 1000.0f));
+        InterlockedExchange(&x104_panel_state.mx31, (LONG)(m[4] * 1000.0f));
+        InterlockedExchange(&x104_panel_state.mx32, (LONG)(m[5] * 1000.0f));
+    }
+    X104_LOG_LIMITED(&calls, 8, "X104 panel: IDXGISwapChain2::SetMatrixTransform(%p) on chain %p -> S_OK (HWND chain stretches; matrix milli %ld %ld %ld %ld %ld %ld)",
+                     matrix, self, (long)x104_panel_state.mx11, (long)x104_panel_state.mx12, (long)x104_panel_state.mx21,
+                     (long)x104_panel_state.mx22, (long)x104_panel_state.mx31, (long)x104_panel_state.mx32);
     return S_OK;
+}
+
+/* panel DIPs -> the swap-chain buffer space ANGLE asked the matrix to cover.  Identity (or unset) leaves the point alone. */
+static void x104_panel_map_pointer(float *x, float *y)
+{
+    LONG s11, s22, s12, s21, t31, t32;
+    if (x104_feat(X104_FEAT_MCPE_PATCHES) || !x || !y) return;
+    s11 = x104_panel_state.mx11;
+    s22 = x104_panel_state.mx22;
+    s12 = x104_panel_state.mx12;
+    s21 = x104_panel_state.mx21;
+    t31 = x104_panel_state.mx31;
+    t32 = x104_panel_state.mx32;
+    if (s11 < 50 || s22 < 50 || s12 < -50 || s12 > 50 || s21 < -50 || s21 > 50) return;
+    if (s11 > 950 && s11 < 1050 && s22 > 950 && s22 < 1050 && t31 == 0 && t32 == 0) return;
+    *x = ((*x) * 1000.0f - (float)t31) / (float)s11;
+    *y = ((*y) * 1000.0f - (float)t32) / (float)s22;
 }
 
 /* patch Present on one vtable (and remember the original); returns TRUE when the cell now holds the stub */
@@ -1982,7 +2147,27 @@ static BOOL x104_panel_patch_factory_vtable(void *factory2, const char *source)
     return TRUE;
 }
 
-/* ---- ID3D11Device::CreateBuffer (slot 3) / CreateTexture2D (slot 5): diagnostics only, never change an argument or a result ---- */
+/* A real 9_1/9_2 device is in force (Surface RT).  Descriptors ANGLE built for 9_3 are rewritten before they reach the Tegra, the same rules as the Bad Piggies shim. */
+static BOOL x104_panel_fl91(void)
+{
+    UINT level = x104_panel_state.actual_level;
+    return level == 0x9100u || level == 0x9200u;
+}
+
+static UINT x104_panel_fl91_color(UINT format)
+{
+    if (format == 27u) return 28u;    /* R8G8B8A8_TYPELESS -> R8G8B8A8_UNORM */
+    if (format == 90u) return 87u;    /* B8G8R8A8_TYPELESS -> B8G8R8A8_UNORM */
+    return format;
+}
+
+static void x104_panel_fl91_note(const char *what)
+{
+    static volatile LONG notes;
+    X104_LOG_LIMITED(&notes, 24, "X104 panel: 9_1 state fix: %s", what);
+}
+
+/* ---- ID3D11Device::CreateBuffer (slot 3) / CreateTexture2D (slot 5) ---- */
 static HRESULT X104_API x104_panel_create_buffer_wrapper(void *self, const x104_panel_buffer_desc_t *desc, const void *initial, void **buffer)
 {
     static volatile LONG failed_count, warned_count;
@@ -2022,7 +2207,22 @@ static HRESULT X104_API x104_panel_create_texture2d_wrapper(void *self, const x1
         X104_LOG_LIMITED(&warned_count, 40, "X104 panel: WARNING CreateTexture2D %ux%u exceeds the 2048 limit of feature level 9_1 (fmt=%u mips=%u array=%u bind=%08lx usage=%u) - expect a failure",
                          desc->Width, desc->Height, desc->Format, desc->MipLevels, desc->ArraySize, (unsigned long)desc->BindFlags, desc->Usage);
     }
-    hr = original(self, desc, initial, texture);
+    if (readable && x104_panel_fl91()) {
+        x104_panel_tex2d_desc_t fixed = *desc;
+        UINT mapped = x104_panel_fl91_color(fixed.Format);
+        BOOL changed = FALSE;
+        if (mapped != fixed.Format) { fixed.Format = mapped; changed = TRUE; }
+        if (fixed.Format == 19u || fixed.Format == 39u) { fixed.Format = 44u; changed = TRUE; }   /* 32-bit depth typeless -> R24G8_TYPELESS */
+        if (fixed.Format == 65u && fixed.MipLevels != 1u) { fixed.MipLevels = 1u; changed = TRUE; } /* A8 has no mips at 9_1 */
+        if (changed) {
+            x104_panel_fl91_note("CreateTexture2D format/mips");
+            hr = original(self, &fixed, initial, texture);
+        } else {
+            hr = original(self, desc, initial, texture);
+        }
+    } else {
+        hr = original(self, desc, initial, texture);
+    }
     if (FAILED(hr)) {
         if (readable)
             X104_LOG_LIMITED(&failed_count, 40, "X104 panel: CreateTexture2D FAILED hr=0x%08lx %s: %ux%u fmt=%u mips=%u array=%u samples=%u bind=%08lx usage=%u cpu=%08lx misc=%08lx initial=%p",
@@ -2198,12 +2398,16 @@ static void x104_panel_fl_install(void *device_iface, UINT actual)
     char digit = 0;
     unsigned index;
 
+    /* ANGLE's own feature-level switch has no 9_1 case: telling it the truth access-violates inside libGLESv2 before the first frame
+     * (device log 2026-11-21, async item code c0000005, then SizeChanged waits forever).  It must keep hearing 9_3.  The shader profile
+     * is a separate question and is forced to 9_1 below, which is what the hardware can run. */
+    x104_panel_fl_install_vtable(device_iface, "ID3D11Device");
     if (x104.opt_angle_profile == 3) {
         digit = 0;                                                    /* --angle-profile=9_3: keep ANGLE's own suffix (A/B test) */
     } else if (x104.opt_angle_profile == 1 || x104.opt_angle_profile == 0) {
         digit = actual == 0x9200u ? '2' : '1';
+        x104_logf("X104 panel: ANGLE is told the level is 9_3 so it does not crash, and its HLSL suffix is rewritten to _level_9_%c", digit);
     }
-    x104_panel_fl_install_vtable(device_iface, "ID3D11Device");
     if (x104_panel_fl_angle_done) return;
     x104_panel_fl_angle_done = TRUE;
     if (!digit) {
@@ -2470,7 +2674,7 @@ static HRESULT X104_API x104_panel_create_device(void *adapter, UINT driver_type
                 levels = low;
                 level_count = 1;
                 x104_panel_format_levels(effective, sizeof(effective), levels, level_count);
-                x104_logf("X104 panel: D3D11CreateDevice hardware retry at 9_1: hr=0x00000000 selected=0x%04X device=%p - HARDWARE (9_1, the shim reports 9_3 to the game)",
+                x104_logf("X104 panel: D3D11CreateDevice hardware retry at 9_1: hr=0x00000000 selected=0x%04X device=%p - HARDWARE 9_1",
                           selected_level ? *selected_level : 0, (void *)*device);
             } else {
                 x104_logf("X104 panel: D3D11CreateDevice hardware retry at 9_1 failed too: hr=0x%08lx %s", (unsigned long)hr, x104_hr_name(hr));
@@ -2505,20 +2709,20 @@ static HRESULT X104_API x104_panel_create_device(void *adapter, UINT driver_type
         UINT reported = actual;
         BOOL lie = x104.opt_fl_lie < 0 ? x104_feat(X104_FEAT_FL9_LIE) : (x104.opt_fl_lie != 0);
         x104_panel_created_t created;
+        x104_panel_state.actual_level = actual;   /* the D3DCompile rewrite and the 9_1 state sanitiser read this, including anything ANGLE compiles before we return */
         if (actual == 0x9100u || actual == 0x9200u) {
             if (x104_feat(X104_FEAT_MCPE_PATCHES)) {
                 reported = 0x9300u;                                         /* the lie: the game's getShaderModelSuffix accepts only 0x9300 and >= 0xA000 */
                 x104_panel_set_profile_digit(actual == 0x9100u ? '1' : '2', "device level differs from / confirms the cap");
             } else if (lie) {
-                reported = 0x9300u;                                         /* ANGLE 2.1 has no 9_1 path: it gets 9_3 and compiles at 9_1 */
-                x104_logf("X104 panel: feature level shim: real device 0x%04X, reported 0x%04X to the game (GetFeatureLevel + the ANGLE HLSL suffix)", actual, reported);
+                reported = 0x9300u;                                         /* ANGLE crashes if it observes 9_1; the 9_1 work is the shader target and the state sanitiser */
+                x104_logf("X104 panel: feature level shim: real device 0x%04X, reported 0x%04X to ANGLE.  Shaders are compiled at level_9_%c", actual, reported,
+                          x104.opt_angle_profile == 3 ? '3' : '1');
             } else {
                 x104_logf("X104 panel: real device level 0x%04X reported unchanged (--fl-lie=0, no X104_FEAT_FL9_LIE)", actual);
             }
-            if (reported != actual) {
-                if (selected_level) *selected_level = reported;
-                if (lie) x104_panel_fl_install(device ? *device : NULL, actual);
-            }
+            if (reported != actual && selected_level) *selected_level = reported;
+            if (lie && !x104_feat(X104_FEAT_MCPE_PATCHES)) x104_panel_fl_install(device ? *device : NULL, actual);
         } else if (actual == 0x9300u && x104_feat(X104_FEAT_MCPE_PATCHES)) {
             x104_panel_set_profile_digit('3', "the device really is feature level 9_3");
         }
@@ -2861,7 +3065,9 @@ static void x104_panel_try_first(DWORD now)
     int height = (int)x104_panel_state.client_h;
     if (!x104_panel_state.panel) return;
     appmain = content ? x104_game_appmain() : NULL;
-    holder = appmain ? x104_game_client_has_holder() : FALSE;
+    /* client+0xC is Minecraft's init-job holder.  HCR keeps that dword at 0 for the whole run and still renders,
+     * so waiting on it means the first SizeChanged never arrives and a later maximize never reaches ANGLE. */
+    holder = !x104_feat(X104_FEAT_MCPE_PATCHES) || (appmain && x104_game_client_has_holder());
     if (!content || !appmain || !holder || width <= 0 || height <= 0) {
         if (now - x104_panel_state.first_wait_log_tick >= 2000u || !x104_panel_state.first_wait_log_tick) {
             x104_panel_state.first_wait_log_tick = now ? now : 1u;
@@ -2922,7 +3128,11 @@ static void x104_panel_ui_tick(void)
         x104_panel_try_first(now);
     } else if (x104_panel_state.pending_resize && !x104_panel_state.minimized) {
         BOOL due = x104_panel_state.in_size_move ? (now - x104_panel_state.last_raise_tick >= 100u) : (now - x104_panel_state.last_change_tick >= 30u);
-        if (due && !x104_game_is_ready()) {
+        /* Minecraft's init job races a SizeChanged (client+holder is written at the start of the job, isReady only at the end).
+         * HCR has the XAML page flag but not that job: AppMain+0x3C is not its ready byte, so the same wait never ends and a
+         * maximize during a level never reaches CCEGLView::UpdateForWindowSizeChange.  The HWND chain then just stretches the
+         * old buffer, the pause button moves on screen, and the touch scale stays at the size the level was built with. */
+        if (due && x104_feat(X104_FEAT_MCPE_PATCHES) && !x104_game_is_ready()) {
             if (now - x104_panel_state.deferred_log_tick >= 3000u) {
                 x104_panel_state.deferred_log_tick = now;
                 x104_logf("X104 panel: resize to %ldx%ld deferred until the game finished its init job (a SizeChanged during MinecraftClient::init would race it)",
@@ -3000,6 +3210,75 @@ static BOOL x104_panel_window_message(HWND window, UINT message, WPARAM wparam, 
 /* ======================================================================================================================
  * 10. contract functions
  * ====================================================================================================================== */
+/* ANGLE compiles HLSL after the device exists.  On a 9_1 device a target of ps_4_0_level_9_3 (or plain ps_4_0) is rewritten
+ * to *_4_0_level_9_1 before d3dcompiler sees it.  That is the shader half of the Bad Piggies fix: the bytecode that
+ * reaches CreatePixelShader is the 9_1 profile, not the 9_3 one that removes the Tegra. */
+typedef HRESULT (X104_API *x104_panel_compile_fn)(const void *, SIZE_T, const char *, const void *, void *, const char *, const char *, UINT, UINT, void **, void **);
+static x104_panel_compile_fn x104_panel_orig_compile;
+
+static const char *x104_panel_compile_target(const char *target, char *storage, size_t cap)
+{
+    size_t length = 0;
+    size_t index;
+    if (!x104_panel_fl91() || x104.opt_angle_profile == 3 || !target || IsBadReadPtr(target, 1)) return target;
+    while (target[length] && length < 60) ++length;
+    if (!length || length + 12 >= cap) return target;
+    for (index = 0; index <= length; ++index) storage[index] = target[index];
+    if (length >= 10 && memcmp(storage + length - 10, "_level_9_3", 10) == 0) {
+        storage[length - 1] = '1';
+        return storage;
+    }
+    if (length == 6 && (memcmp(storage, "vs_4_0", 6) == 0 || memcmp(storage, "ps_4_0", 6) == 0)) {
+        memcpy(storage + length, "_level_9_1", 11);
+        return storage;
+    }
+    return target;
+}
+
+static HRESULT X104_API x104_panel_d3d_compile(const void *source, SIZE_T source_size, const char *source_name, const void *defines, void *include_handler,
+                                              const char *entry, const char *target, UINT flags1, UINT flags2, void **code, void **errors)
+{
+    char rewritten[72];
+    const char *use;
+    HRESULT hr;
+    static volatile LONG seen;
+    if (!x104_panel_orig_compile) return E_FAIL;
+    use = x104_panel_compile_target(target, rewritten, sizeof(rewritten));
+    hr = x104_panel_orig_compile(source, source_size, source_name, defines, include_handler, entry, use, flags1, flags2, code, errors);
+    if ((LONG)__sync_add_and_fetch(&seen, 1) <= 12)
+        x104_logf("X104 panel: D3DCompile #%ld target '%s' -> '%s' hr=0x%08lx entry=%.32s", (long)seen, target ? target : "(null)", use ? use : "(null)",
+                  (unsigned long)hr, entry ? entry : "(null)");
+    return hr;
+}
+
+static void x104_panel_install_compile_hook(void)
+{
+    static const wchar_t *const modules[] = { L"libGLESv2.dll", L"libEGL.dll" };
+    unsigned index;
+    if (!x104_feat(X104_FEAT_FL9_LIE)) return;
+    for (index = 0; index < ARRAYSIZE(modules); ++index) {
+        HMODULE module = GetModuleHandleW(modules[index]);
+        void **cell;
+        BOOL delay = FALSE;
+        DWORD rva;
+        char shown[96];
+        if (!module) continue;
+        cell = arm32_iat_find_cell((BYTE *)module, FALSE, "D3DCompile");
+        if (!cell) {
+            cell = arm32_iat_find_cell((BYTE *)module, TRUE, "D3DCompile");
+            delay = TRUE;
+        }
+        if (!cell) continue;
+        rva = (DWORD)((ULONG_PTR)cell - (ULONG_PTR)module);
+        if (!arm32_iat_hook_import((BYTE *)module, delay, "D3DCompile", rva, (void *)x104_panel_d3d_compile, (void **)&x104_panel_orig_compile, "ANGLE D3DCompile"))
+            continue;
+        x104_narrow(shown, sizeof(shown), modules[index]);
+        x104_logf("X104 panel: D3DCompile hooked in %s%s - on a 9_1 device ps/vs_4_0 and *_level_9_3 become *_4_0_level_9_1", shown, delay ? " (delay import)" : "");
+        return;
+    }
+    x104_logf("X104 panel: WARNING no ANGLE module imports D3DCompile - the profile change is only the _level_9_3 literal patch");
+}
+
 /* hooks that must be live before the game creates its device */
 static BOOL x104_panel_install(BYTE *image)
 {
@@ -3043,6 +3322,7 @@ static BOOL x104_panel_install(BYTE *image)
         }
     }
     x104_logf("X104 panel: install: D3D11CreateDevice hook installed (%s, original %p)", shown, x104_panel_orig_create_device);
+    x104_panel_install_compile_hook();
 
     /* (b) shader profile string, (c) resolution float, (d) cwd + include: Minecraft compiles HLSL at run time with a feature-level suffix; other games ship
      *     precompiled shaders and need none of this */

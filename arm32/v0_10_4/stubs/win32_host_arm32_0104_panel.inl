@@ -73,4 +73,10 @@ static void x104_panel_client_size(float *width_dips, float *height_dips)
     if (height_dips) *height_dips = 0.0f;
 }
 
+static void x104_panel_map_pointer(float *x, float *y)
+{
+    (void)x;
+    (void)y;
+}
+
 #endif /* WIN32_HOST_ARM32_0104_PANEL_INL */
