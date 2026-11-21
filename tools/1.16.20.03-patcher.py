@@ -1,16 +1,42 @@
 #!/usr/bin/env python3
-"""Create the Win32-hosted Minecraft 1.16.20.0.3 executable."""
+"""Create the Win32-hosted Minecraft 1.16.20.03 executable.
+
+The executable-side patch sites are version-specific.  The matching Win32
+host profile lives in ``win32_host_116.inl`` (``game_profile_116_02003``,
+selected by ``SizeOfImage == 0x02DB1000``).  Two retail x86 revisions are
+accepted (see ``SUPPORTED_SHA256``); they patch identically.
+
+Use ``--package`` to assemble a ready-to-run folder from an extracted game
+folder or an ``.appx``: it copies/extracts the game, patches the exe to
+``Win32Craft.1.16.20.03.exe``, rewrites the package-only ``*_APP`` CRT
+imports, copies the host DLL as ``win32craft.dll``, creates ``fmod.dll`` from
+``fmod_X86.dll``, removes ``*.p7x`` files and writes the ``.Win32Craft``
+marker (``Minecraft Bedrock Edition``).
+"""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import shutil
 import struct
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from mcbe_package import prepare_mcbe_package
 
-EXPECTED_SHA256 = "9ab7e10904d5acf1afe83ab0b666c1426aa61d71f6b15d782d1ae7062703ec63"
+
+# Two retail revisions of the same x86 build are in circulation.  Every patch
+# site is identical, so both are accepted.
+SUPPORTED_SHA256 = {
+    "9ab7e10904d5acf1afe83ab0b666c1426aa61d71f6b15d782d1ae7062703ec63":
+        "retail x86 revision A",
+    "330d3898aec87fad0b9a47da317418cfb1431673438cf60dc7dee5ed35161b9f":
+        "retail x86 revision B (Minecraft_1.16.20.03_x86-Cracked_by_MaxRM)",
+}
+
+PACKAGE_EXE_NAME = "Win32Craft.1.16.20.03.exe"
 
 WIN32CRAFT_API_SETS = {
     b"xinputuap.dll",
@@ -132,9 +158,13 @@ class Pe32:
 def patch(source: Path, output: Path) -> None:
     original = source.read_bytes()
     digest = hashlib.sha256(original).hexdigest()
-    if digest != EXPECTED_SHA256:
+    if digest not in SUPPORTED_SHA256:
+        supported = "\n  ".join(
+            f"{value}  ({label})" for value, label in SUPPORTED_SHA256.items()
+        )
         raise ValueError(
-            f"unsupported input SHA-256 {digest}; expected {EXPECTED_SHA256}"
+            f"unsupported input SHA-256 {digest}; supported inputs:\n  "
+            f"{supported}"
         )
     image = bytearray(original)
     pe = Pe32(image)
@@ -389,6 +419,11 @@ def patch(source: Path, output: Path) -> None:
         image, pe.optional + 0x38, struct.pack("<I", old_image_size),
         struct.pack("<I", new_image_size), "image size"
     )
+    if new_image_size != 0x02DB1000:
+        raise ValueError(
+            f"patched SizeOfImage is 0x{new_image_size:08X}, expected "
+            "0x02DB1000 for the 1.16.20.03 host profile"
+        )
     checked_write(
         image, pe.optional + 0x68, struct.pack("<2I", import_rva, import_size),
         struct.pack("<2I", new_rva, new_descriptor_count * 20),
@@ -541,14 +576,276 @@ def patch_cohtml_windows7(source: Path, output: Path) -> None:
     print(f"output SHA-256 {hashlib.sha256(image).hexdigest()}")
 
 
+CRT_IMPORT_REPLACEMENTS = {
+    b"vccorlib140_app.dll": b"vccorlib140.dll",
+    b"vcruntime140_app.dll": b"vcruntime140.dll",
+    b"msvcp140_app.dll": b"msvcp140.dll",
+    b"concrt140_app.dll": b"concrt140.dll",
+}
+
+
+def patch_crt_imports(source: Path, output: Path) -> None:
+    """Redirect UWP app-local CRT imports in a game DLL to desktop names.
+
+    The retail package ships ChakraCore, cohtml, HttpServer, MediaDecoders,
+    RenoirCore and fmod with ``*_APP`` CRT imports.  Those DLLs only exist
+    inside the package graph; an unpackaged process must use the regular
+    VC++ runtime names or the loader stops with STATUS_DLL_NOT_FOUND before
+    the host can log anything.
+    """
+    original = source.read_bytes()
+    image = bytearray(original)
+    pe = Pe32(image)
+    import_rva, import_size = struct.unpack_from("<2I", image, pe.optional + 0x68)
+    if not import_rva or import_size < 20:
+        raise ValueError(f"{source}: no import directory")
+    cursor = pe.rva_to_offset(import_rva)
+    patched = 0
+    while True:
+        values = struct.unpack_from("<5I", image, cursor)
+        if not any(values):
+            break
+        name_offset = pe.rva_to_offset(values[3])
+        end = image.index(0, name_offset)
+        name = bytes(image[name_offset:end])
+        replacement = CRT_IMPORT_REPLACEMENTS.get(name.lower())
+        if replacement is not None:
+            if len(replacement) > len(name):
+                raise ValueError(
+                    f"{source}: replacement {replacement!r} is longer than "
+                    f"the import name {name!r}"
+                )
+            image[name_offset:end] = replacement.ljust(len(name), b"\0")
+            patched += 1
+        cursor += 20
+    if patched:
+        print(f"{source.name}: {patched} UWP CRT import(s) -> desktop")
+    else:
+        print(f"{source.name}: no UWP CRT imports")
+    output.write_bytes(image)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def pe_identity(path: Path) -> tuple[int, int, int]:
+    """Return (machine, characteristics, optional-header magic)."""
+    data = path.read_bytes()
+    if len(data) < 0x40:
+        raise ValueError(f"{path}: file is too short for a PE image")
+    pe_offset = struct.unpack_from("<I", data, 0x3C)[0]
+    if data[pe_offset:pe_offset + 4] != b"PE\0\0":
+        raise ValueError(f"{path}: invalid PE signature")
+    machine = struct.unpack_from("<H", data, pe_offset + 4)[0]
+    characteristics = struct.unpack_from("<H", data, pe_offset + 4 + 18)[0]
+    optional_magic = struct.unpack_from("<H", data, pe_offset + 24)[0]
+    return machine, characteristics, optional_magic
+
+
+def pe_size_of_image(path: Path) -> int:
+    data = path.read_bytes()
+    pe_offset = struct.unpack_from("<I", data, 0x3C)[0]
+    return struct.unpack_from("<I", data, pe_offset + 0x50)[0]
+
+
+def validate_host_dll(path: Path) -> None:
+    machine, characteristics, optional_magic = pe_identity(path)
+    if machine != 0x014C:
+        raise ValueError(f"{path}: host DLL is not x86 (machine 0x{machine:04x})")
+    if not characteristics & 0x2000:
+        raise ValueError(f"{path}: host image is not a DLL")
+    if optional_magic != 0x10B:
+        raise ValueError(f"{path}: host DLL is not PE32")
+
+
+def validate_exe_name(name: str) -> str:
+    path = Path(name)
+    if not name or path.name != name or path.suffix.lower() != ".exe":
+        raise ValueError(
+            f"exe name {name!r} must be a bare file name ending in .exe"
+        )
+    return name
+
+
+def remove_analysis_files(folder: Path) -> None:
+    """Drop IDA database files; they are large and useless in a package."""
+    for path in sorted(folder.rglob("*")):
+        if path.is_file() and path.suffix.lower() == ".i64":
+            path.unlink()
+            print(f"removed {path.relative_to(folder)}")
+
+
+def write_patch_notes(output: Path, exe: Path, host_dll: Path,
+                      input_digest: str) -> None:
+    fmod = output / "fmod.dll"
+    exe_digest = sha256_file(exe)
+    host_digest = sha256_file(host_dll)
+    fmod_digest = sha256_file(fmod)
+    size_of_image = pe_size_of_image(exe)
+    text = f"""# Minecraft 1.16.20.03 x86 - Win32Craft
+
+Ready-to-run folder assembled by `tools\\1.16.20.03-patcher.py --package`.
+
+## Files
+
+* `{exe.name}` - patched game executable
+  * input SHA-256: `{input_digest}`
+  * output SHA-256: `{exe_digest}`
+  * size: {exe.stat().st_size} bytes
+  * `SizeOfImage`: `0x{size_of_image:08X}`
+* `win32craft.dll` - Win32Craft x86 host (includes the shared 1.16
+  `FileOpenPicker.FileTypeFilter` skin-picker fix)
+  * SHA-256: `{host_digest}`
+  * size: {host_dll.stat().st_size} bytes
+* `fmod.dll` - desktop FMOD, copied from `fmod_X86.dll`
+  * SHA-256: `{fmod_digest}`
+  * size: {fmod.stat().st_size} bytes
+
+The retail game DLLs (`ChakraCore.dll`, `cohtml.UWP.dll`,
+`HttpServer.UWP.dll`, `MediaDecoders.UWP.dll`, `RenoirCore.UWP.dll` and
+`fmod_X86.dll`) had their package-only `*_APP` CRT imports redirected to the
+desktop VC++ runtime names.
+
+Every `*.p7x` file and `AppxMetadata\\` were removed: the game runs as an
+unpackaged Win32 process.  The `.Win32Craft` file contains the game type
+(`Minecraft Bedrock Edition`) so repack tools can identify the folder.
+
+Run `{exe.name}` with `WIN32CRAFT_DEBUG=1` to write `win32craft.log` next to
+the executable.  User data lives under
+`%APPDATA%\\MinecraftPE\\games\\com.mojang`.
+"""
+    (output / "PATCH_NOTES.md").write_text(text, encoding="utf-8",
+                                            newline="\n")
+    print("wrote PATCH_NOTES.md")
+
+
+def package(source: Path, output: Path, host_dll: Path,
+            force: bool = False,
+            exe_name: str = PACKAGE_EXE_NAME) -> None:
+    """Copy or extract a game folder and turn it into a Win32Craft package."""
+    exe_name = validate_exe_name(exe_name)
+    if not source.exists():
+        raise ValueError(f"package source does not exist: {source}")
+    if not host_dll.is_file():
+        raise ValueError(f"host DLL does not exist: {host_dll}")
+    validate_host_dll(host_dll)
+
+    source_resolved = source.resolve()
+    output_resolved = output.resolve()
+    if source_resolved == output_resolved:
+        raise ValueError("package output must differ from the source")
+    if source.is_dir() and source_resolved in output_resolved.parents:
+        raise ValueError("package output must not be inside the source folder")
+
+    if output.exists():
+        if not force:
+            raise ValueError(
+                f"package output already exists: {output} (use --force)"
+            )
+        if output.is_dir():
+            shutil.rmtree(output)
+        else:
+            output.unlink()
+    output.mkdir(parents=True)
+
+    if source.is_dir():
+        print(f"copying game folder {source} -> {output}")
+        shutil.copytree(source, output, dirs_exist_ok=True)
+    elif source.suffix.lower() == ".appx":
+        print(f"extracting {source} -> {output}")
+        with zipfile.ZipFile(source) as archive:
+            archive.extractall(output)
+    else:
+        raise ValueError(
+            "package source must be an extracted game folder or an .appx file"
+        )
+
+    # These belong to the signed package identity and are meaningless (and
+    # confusing) in an unpackaged desktop folder.
+    for name in ("AppxSignature.p7x", "AppxMetadata"):
+        path = output / name
+        if path.is_dir():
+            shutil.rmtree(path)
+            print(f"removed {name}/")
+        elif path.exists():
+            path.unlink()
+            print(f"removed {name}")
+    remove_analysis_files(output)
+
+    original_exe = output / "Minecraft.Windows.exe"
+    if not original_exe.is_file():
+        raise ValueError(f"Minecraft.Windows.exe not found in {output}")
+    input_digest = sha256_file(original_exe)
+    exe = output / exe_name
+    patch(original_exe, exe)
+    if exe != original_exe:
+        original_exe.unlink()
+        print(f"renamed patched exe to {exe.name}")
+
+    # The retail game DLLs import the package-only *_APP CRT names.  The
+    # loader fails with STATUS_DLL_NOT_FOUND before the host can log anything
+    # unless these are redirected to the desktop runtime names.
+    for name in (
+        "ChakraCore.dll",
+        "cohtml.UWP.dll",
+        "HttpServer.UWP.dll",
+        "MediaDecoders.UWP.dll",
+        "RenoirCore.UWP.dll",
+        "fmod_X86.dll",
+    ):
+        path = output / name
+        if path.is_file():
+            patch_crt_imports(path, path)
+        else:
+            print(f"warning: {name} not found; skipped")
+
+    fmod_source = output / "fmod_X86.dll"
+    if not fmod_source.is_file():
+        raise ValueError(f"fmod_X86.dll not found in {output}")
+    shutil.copyfile(fmod_source, output / "fmod.dll")
+    print("fmod.dll <- fmod_X86.dll")
+
+    shutil.copyfile(host_dll, output / "win32craft.dll")
+    print(f"win32craft.dll <- {host_dll}")
+
+    prepare_mcbe_package(output)
+    write_patch_notes(output, exe, host_dll, input_digest)
+    print(f"package ready: {output}")
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("source", nargs="?", type=Path,
-                        default=Path("Minecraft.Windows.exe"))
-    parser.add_argument("output", nargs="?", type=Path,
-                        default=Path("Win32Craft.1.16.20.0.3.exe"))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source", nargs="?", type=Path)
+    parser.add_argument("output", nargs="?", type=Path)
+    parser.add_argument("--package", action="store_true",
+                        help="assemble a ready-to-run folder from a game "
+                             "folder or .appx")
+    parser.add_argument("--host", type=Path,
+                        help="path to the Win32Craft x86 host DLL "
+                             "(required with --package)")
+    parser.add_argument("--exe-name", default=PACKAGE_EXE_NAME,
+                        help="patched exe name inside the package "
+                             f"(default: {PACKAGE_EXE_NAME})")
+    parser.add_argument("--force", action="store_true",
+                        help="replace an existing package output folder")
     args = parser.parse_args()
-    patch(args.source, args.output)
+
+    if args.package:
+        if args.source is None or args.output is None or args.host is None:
+            parser.error(
+                "--package requires SOURCE, OUTPUT and --host PATH"
+            )
+        package(args.source, args.output, args.host, args.force,
+                args.exe_name)
+        return
+
+    patch(args.source or Path("Minecraft.Windows.exe"),
+          args.output or Path(PACKAGE_EXE_NAME))
 
 
 if __name__ == "__main__":

@@ -38,6 +38,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from saves_folder import write_saves_helper  # noqa: E402  (tools/saves_folder.py)
+from mcbe_package import prepare_mcbe_package  # noqa: E402  (tools/mcbe_package.py)
 DEFAULT_REDIST = (r"D:\Program Files\vs22buildtools\VC\Redist\MSVC\14.44.35112"
                   r"\onecore\arm\Microsoft.VC143.CRT")
 DEFAULT_LLVM_BIN = r"D:\repo\llvm-rt\scratch\RT23P\build-rt21\bin"
@@ -221,6 +222,7 @@ def main() -> None:
     # double-click access to the folder the game saves into (Open-Saves-Folder.bat + .lnk)
     saves_files = write_saves_helper(out, "MinecraftPE", "Minecraft 1.2.8")
     print("save-folder helper:", ", ".join(saves_files))
+    marker = prepare_mcbe_package(out)
 
     lines = [
         "Win32Craft 1.2.8 ARM32 package manifest",
@@ -238,6 +240,7 @@ def main() -> None:
     for name in saves_files:
         path = out / name
         lines.append(f"  {sha256(path)}  {path.stat().st_size:>9}  {name}   <- generated")
+    lines.append(f"  {sha256(marker)}  {marker.stat().st_size:>9}  {marker.name}   <- generated")
     lines += ["", "Nothing in this package has been run on a device yet.", ""]
     (out / "MANIFEST.txt").write_text("\r\n".join(lines), encoding="ascii", errors="replace")
 
@@ -251,7 +254,7 @@ Direct3D 11.2 runtime. The game runs at Direct3D feature level 9_1 by default.
 2. In the COPY, rename fmod_ARM.dll to fmod_ARM.dll.orig (backup of the original).
 3. Copy everything in this folder EXCEPT MANIFEST.txt, INSTALL.txt and the fmod-silent folder into the game copy:
      {PATCHED_EXE_NAME}, fmod_ARM.dll (patched), win32craft.dll,
-     {", ".join(sorted(wanted))}
+     {", ".join(sorted(wanted))}, .Win32Craft (game type marker)
    Minecraft.Windows.exe stays as it is (the original is not modified).
    Also copy Open-Saves-Folder.bat and Open-Saves-Folder.lnk (they open the save folder, see step 4).
 4. Run {PATCHED_EXE_NAME}. The log is written to win32craft.log next to the exe (or in %TEMP% if that folder is

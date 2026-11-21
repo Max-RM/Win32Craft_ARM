@@ -20,6 +20,7 @@ sys.path.insert(0, str(HERE / "arm32"))
 sys.path.insert(0, str(HERE))
 import arm32re  # noqa: E402
 from saves_folder import write_saves_helper  # noqa: E402  (tools/saves_folder.py)
+from mcbe_package import prepare_mcbe_package  # noqa: E402  (tools/mcbe_package.py)
 
 FOLDER = "Minecraft_1.2.8.0_ARM32_Win32Craft"
 SYSTEM_DLLS = {  # present on Windows 8.1+/10 ARM32 desktop (not shipped)
@@ -72,6 +73,7 @@ Files added to the original game folder:
   use_silent_audio.bat use_real_audio.bat start_fl*.bat          helpers
   start_touch*.bat start_mouse.bat   input helpers (see TOUCH above)
   Open-Saves-Folder.bat / .lnk        opens %APPDATA%\\MinecraftPE (worlds are in games\\com.mojang\\minecraftWorlds)
+  .Win32Craft                  game type marker (Minecraft Bedrock Edition) for repack/import tools
   MANIFEST.txt                 SHA-256 of the added files
 """
 
@@ -154,6 +156,8 @@ def main():
     shutil.copytree(game, target)
 
     added = []
+    marker = prepare_mcbe_package(target)
+    added.append(marker.name)
     orig_fmod = target / "fmod_ARM.dll"
     orig_fmod.rename(target / "fmod_ARM.dll.orig")
     for name in ("Win32Craft.1.2.8-arm32.exe", "win32craft.dll", "fmod_ARM.dll", "vccorlib140.dll", "msvcp140.dll",

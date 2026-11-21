@@ -40,6 +40,8 @@ and the traps that cost time. Meant to let an agent act without guessing.
 | Game | Version | Platform | Status | Documents |
 |---|---|---|---|---|
 | Hill Climb Racing (Fingersoft) | 1.27.0.32 | Windows Phone 8.1 XAML, ARM32 | runs in Wine 11 ARM32 on Android (VNC); Surface RT 8.1 creates a 9_1 hardware device but the driver drops it after ~25 frames; Windows 11 ARM64 pending | [`-HillClimbRacing-Short-Explain.md`](-HillClimbRacing-Short-Explain.md), [`-HillClimbRacing-Full-Explain.md`](-HillClimbRacing-Full-Explain.md) |
+| Minecraft Bedrock (Mojang / Microsoft) | 1.16.20.03 | x86 UWP APPX, unpackaged Win32 | runs: startup, menu, `Win32Craft 1.16.20.03` title and skin import (shared skin-picker fix); package uses `Win32Craft.1.16.20.03.exe`; audio output not fixed | [`-Minecraft-1.16.20.03-Short-Explain.md`](-Minecraft-1.16.20.03-Short-Explain.md) |
+| Minecraft Bedrock (Mojang / Microsoft) | 1.16.40.02 | x86 UWP APPX, unpackaged Win32 | runs: menu, world load, skin import, resize and `Win32Craft 1.16.40.02` title; package uses `Win32Craft.1.16.40.02.exe`; audio output not initialized by the UWP FMOD 1.09.04 build on the test machine | [`-Minecraft-1.16.40.02-Short-Explain.md`](-Minecraft-1.16.40.02-Short-Explain.md), [`-Minecraft-1.16.40.02-Full-Explain.md`](-Minecraft-1.16.40.02-Full-Explain.md) |
 
 | Reference | What it is |
 |---|---|

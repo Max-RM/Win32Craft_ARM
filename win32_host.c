@@ -1329,6 +1329,12 @@ static volatile LONG game_draw_indexed_count;
 static volatile LONG game_draw_count;
 typedef HRESULT (STDMETHODCALLTYPE *SwapChainPresentFn)(IDXGISwapChain *, UINT, UINT);
 static SwapChainPresentFn original_swap_chain_present;
+/* Defined in win32_host_116.inl; installed as soon as the 1.16 HWND swap
+ * chain exists so the frame wrapper can detect the game's own Present. */
+static BOOL install_present_hook_116(IDXGISwapChain *swap_chain);
+/* Defined in win32_host_116.inl; logs the game's render-target creation so
+ * the resize path can be matched to the actual 1.16.40.02 code. */
+static BOOL install_device_hooks_116(ID3D11Device *device);
 static FakeInspectable package_factory;
 static FakeInspectable appdata_factory;
 static FakeInspectable memory_factory;
@@ -1459,6 +1465,13 @@ static FakeInspectable file_open_picker_factory;
 static FakeInspectable file_open_picker;
 static FakeInspectable file_type_choices;
 static FakeInspectable file_type_filter;
+/* FileOpenPicker.FileTypeFilter is a projected IVector<HSTRING>.  The game
+ * appends entries such as ".png" before showing the dialog; remember them so
+ * the Win32 dialog can offer the requested types instead of the historical
+ * hard-coded .mcworld filter. */
+#define MAX_FILE_TYPE_FILTERS 8
+static wchar_t file_type_filter_extensions[MAX_FILE_TYPE_FILTERS][16];
+static unsigned file_type_filter_count;
 static FakeInspectable file_save_async_operation;
 static FakeInspectable file_open_async_operation;
 static FakeInspectable storage_file;
@@ -2487,6 +2500,12 @@ static int try_fmod_init_output(void *self, int output, int channels,
         }
     }
     code = real_fmod_init(self, channels, flags, extra);
+    if (code == 28 && extra) {
+        /* 1.16 is a UWP build: its driver extra data can be a CoreWindow or
+         * another package-identity object.  The desktop DLL cannot use it. */
+        log_line("FMOD bridge: init retry without UWP driver extra data");
+        code = real_fmod_init(self, channels, flags, NULL);
+    }
     {
         char line[320];
         wsprintfA(line, "FMOD bridge: init output=%s channels=%d flags=0x%x result=%d (%s)",
@@ -3989,6 +4008,7 @@ static HRESULT WINAPI fake_factory_current(
         object = &file_save_picker;
     } else if (factory->kind == FAKE_FILE_OPEN_PICKER_FACTORY) {
         object = &file_open_picker;
+        file_type_filter_count = 0;
     } else if (factory->kind == FAKE_LAUNCHER_OPTIONS_FACTORY) {
         object = &launcher_options;
     } else {
@@ -4738,10 +4758,40 @@ static HRESULT WINAPI fake_picker_get_file_type_filter(
     return S_OK;
 }
 
+extern int WINAPI lstrcmpiW(LPCWSTR left, LPCWSTR right);
+
+static void store_file_type_filter_extension(HSTRING value)
+{
+    const wchar_t *text;
+    UINT32 length;
+    wchar_t extension[16];
+    unsigned index, out;
+
+    if (!value || file_type_filter_count >= MAX_FILE_TYPE_FILTERS) return;
+    text = WindowsGetStringRawBuffer(value, &length);
+    if (!text || !length) return;
+    out = 0;
+    if (text[0] != L'.' && text[0] != L'*' &&
+        out + 1 < ARRAYSIZE(extension))
+        extension[out++] = L'.';
+    for (index = 0; index < length && out + 1 < ARRAYSIZE(extension);
+         ++index) {
+        wchar_t ch = text[index];
+        if (ch >= L'A' && ch <= L'Z') ch = (wchar_t)(ch - L'A' + L'a');
+        extension[out++] = ch;
+    }
+    extension[out] = 0;
+    if (!extension[0]) return;
+    lstrcpynW(file_type_filter_extensions[file_type_filter_count], extension,
+              ARRAYSIZE(file_type_filter_extensions[0]));
+    ++file_type_filter_count;
+}
+
 static HRESULT WINAPI fake_vector_append_hstring(
     FakeInspectable *object, HSTRING value)
 {
-    (void)object; (void)value;
+    (void)object;
+    store_file_type_filter_extension(value);
     return S_OK;
 }
 
@@ -4750,17 +4800,20 @@ static HRESULT WINAPI fake_vector_get_size(
 {
     (void)object;
     if (!result) return E_POINTER;
-    *result = 0;
+    *result = file_type_filter_count;
     return S_OK;
 }
 
 static HRESULT WINAPI fake_vector_get_hstring_at(
     FakeInspectable *object, UINT index, HSTRING *result)
 {
-    (void)object; (void)index;
+    (void)object;
     if (!result) return E_POINTER;
     *result = NULL;
-    return E_BOUNDS;
+    if (index >= file_type_filter_count) return E_BOUNDS;
+    return WindowsCreateString(file_type_filter_extensions[index],
+                               (UINT32)lstrlenW(file_type_filter_extensions[index]),
+                               result);
 }
 
 static HRESULT WINAPI fake_vector_get_view(
@@ -4775,9 +4828,20 @@ static HRESULT WINAPI fake_vector_get_view(
 static HRESULT WINAPI fake_vector_index_of(
     FakeInspectable *object, HSTRING value, UINT *index, BYTE *found)
 {
-    (void)object; (void)value;
+    const wchar_t *text;
+    unsigned i;
+    (void)object;
     if (index) *index = 0;
     if (found) *found = FALSE;
+    text = value ? WindowsGetStringRawBuffer(value, NULL) : NULL;
+    if (!text) return S_OK;
+    for (i = 0; i < file_type_filter_count; ++i) {
+        if (lstrcmpiW(text, file_type_filter_extensions[i]) == 0) {
+            if (index) *index = i;
+            if (found) *found = TRUE;
+            break;
+        }
+    }
     return S_OK;
 }
 
@@ -4802,10 +4866,131 @@ static HRESULT WINAPI fake_vector_remove_at(
     return S_OK;
 }
 
+static HRESULT WINAPI fake_vector_remove_at_end(FakeInspectable *object)
+{
+    (void)object;
+    if (file_type_filter_count) --file_type_filter_count;
+    return S_OK;
+}
+
+static HRESULT WINAPI fake_vector_clear(FakeInspectable *object)
+{
+    (void)object;
+    file_type_filter_count = 0;
+    return S_OK;
+}
+
 static HRESULT WINAPI fake_vector_no_args(FakeInspectable *object)
 {
     (void)object;
     return S_OK;
+}
+
+/* Win32 OPENFILENAME filter built from the FileTypeFilter entries the game
+ * appended.  Stored as label\0pattern\0...\0\0. */
+static wchar_t open_picker_filter[1024];
+static wchar_t open_picker_default_extension[16];
+
+static size_t append_filter_chars(
+    wchar_t *buffer, size_t capacity, size_t offset, const wchar_t *text)
+{
+    while (*text && offset + 1 < capacity) buffer[offset++] = *text++;
+    return offset;
+}
+
+static size_t append_filter_end(
+    wchar_t *buffer, size_t capacity, size_t offset)
+{
+    if (offset < capacity) buffer[offset++] = 0;
+    return offset;
+}
+
+static BOOL file_type_filter_is_wildcard(const wchar_t *extension)
+{
+    return lstrcmpiW(extension, L"*") == 0 ||
+        lstrcmpiW(extension, L".*") == 0 ||
+        lstrcmpiW(extension, L"*.*") == 0;
+}
+
+static void file_type_filter_pattern(
+    const wchar_t *extension, wchar_t *pattern, size_t capacity)
+{
+    if (file_type_filter_is_wildcard(extension)) {
+        lstrcpynW(pattern, L"*.*", (int)capacity);
+        return;
+    }
+    pattern[0] = L'*';
+    pattern[1] = 0;
+    lstrcpynW(pattern + 1, extension, (int)(capacity - 1));
+}
+
+static const wchar_t *file_type_filter_label(const wchar_t *extension)
+{
+    if (lstrcmpiW(extension, L".png") == 0) return L"PNG image";
+    if (lstrcmpiW(extension, L".jpg") == 0 ||
+        lstrcmpiW(extension, L".jpeg") == 0) return L"JPEG image";
+    if (lstrcmpiW(extension, L".bmp") == 0) return L"Bitmap image";
+    if (lstrcmpiW(extension, L".gif") == 0) return L"GIF image";
+    if (lstrcmpiW(extension, L".tga") == 0) return L"TGA image";
+    if (lstrcmpiW(extension, L".mcworld") == 0) return L"Minecraft World";
+    if (lstrcmpiW(extension, L".mcpack") == 0) return L"Minecraft Resource Pack";
+    if (lstrcmpiW(extension, L".mcaddon") == 0) return L"Minecraft Add-on";
+    if (lstrcmpiW(extension, L".mctemplate") == 0) return L"Minecraft World Template";
+    if (lstrcmpiW(extension, L".zip") == 0) return L"ZIP archive";
+    return L"Supported file";
+}
+
+static void build_open_picker_filter(void)
+{
+    const size_t capacity = ARRAYSIZE(open_picker_filter);
+    size_t offset = 0;
+    unsigned i;
+
+    open_picker_filter[0] = 0;
+    open_picker_default_extension[0] = 0;
+
+    if (!file_type_filter_count) {
+        /* Historical fallback for callers that never touched FileTypeFilter
+         * (Import World before the game started appending entries). */
+        offset = append_filter_chars(open_picker_filter, capacity, offset,
+                                     L"Minecraft World (*.mcworld)");
+        offset = append_filter_end(open_picker_filter, capacity, offset);
+        offset = append_filter_chars(open_picker_filter, capacity, offset,
+                                     L"*.mcworld");
+        offset = append_filter_end(open_picker_filter, capacity, offset);
+    } else {
+        for (i = 0; i < file_type_filter_count; ++i) {
+            const wchar_t *extension = file_type_filter_extensions[i];
+            wchar_t pattern[20];
+            if (file_type_filter_is_wildcard(extension)) continue;
+            file_type_filter_pattern(extension, pattern, ARRAYSIZE(pattern));
+            offset = append_filter_chars(open_picker_filter, capacity, offset,
+                                         file_type_filter_label(extension));
+            offset = append_filter_chars(open_picker_filter, capacity, offset,
+                                         L" (");
+            offset = append_filter_chars(open_picker_filter, capacity, offset,
+                                         pattern);
+            offset = append_filter_chars(open_picker_filter, capacity, offset,
+                                         L")");
+            offset = append_filter_end(open_picker_filter, capacity, offset);
+            offset = append_filter_chars(open_picker_filter, capacity, offset,
+                                         pattern);
+            offset = append_filter_end(open_picker_filter, capacity, offset);
+            if (!open_picker_default_extension[0]) {
+                const wchar_t *dot = extension;
+                if (dot[0] == L'.') ++dot;
+                lstrcpynW(open_picker_default_extension, dot,
+                          ARRAYSIZE(open_picker_default_extension));
+            }
+        }
+    }
+
+    offset = append_filter_chars(open_picker_filter, capacity, offset,
+                                 L"All files (*.*)");
+    offset = append_filter_end(open_picker_filter, capacity, offset);
+    offset = append_filter_chars(open_picker_filter, capacity, offset, L"*.*");
+    offset = append_filter_end(open_picker_filter, capacity, offset);
+    append_filter_end(open_picker_filter, capacity, offset);
 }
 
 /* Some C++/CX builds call a projected Append thunk at slot 16 rather than
@@ -4813,21 +4998,21 @@ static HRESULT WINAPI fake_vector_no_args(FakeInspectable *object)
 static HRESULT WINAPI fake_picker_pick_open_file(
     FakeInspectable *object, void **operation)
 {
-    static const wchar_t filter[] =
-        L"Minecraft World (*.mcworld)\0*.mcworld\0All files (*.*)\0*.*\0\0";
     OPENFILENAMEW dialog;
     wchar_t filename[MAX_PATH * 4];
     (void)object;
     if (!operation) return E_POINTER;
     *operation = NULL;
+    build_open_picker_filter();
     ZeroMemory(&dialog, sizeof(dialog));
     ZeroMemory(filename, sizeof(filename));
     dialog.lStructSize = sizeof(dialog);
     dialog.hwndOwner = game_window;
-    dialog.lpstrFilter = filter;
+    dialog.lpstrFilter = open_picker_filter;
     dialog.lpstrFile = filename;
     dialog.nMaxFile = ARRAYSIZE(filename);
-    dialog.lpstrDefExt = L"mcworld";
+    dialog.lpstrDefExt = open_picker_default_extension[0]
+        ? open_picker_default_extension : L"mcworld";
     dialog.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST |
                    OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
     export_file_selected = GetOpenFileNameW(&dialog);
@@ -5379,6 +5564,55 @@ static HRESULT WINAPI fake_api_contract_minor(
     *result = FALSE;
     return S_OK;
 }
+
+#ifndef WIN32CRAFT_ARM32
+/* The x86 build does not include the ARM 0.10.4 platform block that normally
+ * provides this helper.  Read the same [platform] language key from
+ * win32craft.ini next to the exe and translate it to a WinRT locale tag. */
+extern DWORD WINAPI GetPrivateProfileStringW(
+    LPCWSTR section, LPCWSTR key, LPCWSTR default_value,
+    LPWSTR result, DWORD size, LPCWSTR file_name);
+extern int WINAPI lstrcmpiW(LPCWSTR left, LPCWSTR right);
+
+const wchar_t *x104_config_language_locale(void)
+{
+    static wchar_t locale[16] = L"en-US";
+    static BOOL loaded;
+    static const struct {
+        const wchar_t *match;
+        const wchar_t *value;
+    } languages[] = {
+        {L"en", L"en-US"}, {L"de", L"de-DE"}, {L"fr", L"fr-FR"},
+        {L"it", L"it-IT"}, {L"es", L"es-ES"}, {L"ru", L"ru-RU"},
+        {L"pt", L"pt-BR"}, {L"ja", L"ja-JP"}, {L"ko", L"ko-KR"},
+        {L"zh", L"zh-CN"}, {L"zh-cn", L"zh-CN"}, {L"zh-tw", L"zh-TW"}
+    };
+    if (!loaded) {
+        wchar_t value[16];
+        wchar_t primary[8];
+        int index, count = 0;
+        loaded = TRUE;
+        GetPrivateProfileStringW(L"platform", L"language", L"en-US",
+                                 value, ARRAYSIZE(value), L"win32craft.ini");
+        while (value[count] && value[count] != L'-' &&
+               count < (int)ARRAYSIZE(primary) - 1) {
+            primary[count] = value[count];
+            ++count;
+        }
+        primary[count] = 0;
+        for (index = 0; index < (int)ARRAYSIZE(languages); ++index) {
+            if (!lstrcmpiW(value, languages[index].match) ||
+                !lstrcmpiW(primary, languages[index].match)) {
+                lstrcpyW(locale, languages[index].value);
+                break;
+            }
+        }
+        if (index == (int)ARRAYSIZE(languages))
+            log_line("win32craft.ini language has no translation; using en-US");
+    }
+    return locale;
+}
+#endif
 
 static HRESULT WINAPI fake_language_get_at(
     FakeInspectable *object, UINT32 index, HSTRING *result)
@@ -7872,7 +8106,7 @@ static const void *file_type_filter_vtable[18] = {
     fake_vector_get_hstring_at, fake_vector_get_size, fake_vector_get_view,
     fake_vector_index_of, fake_vector_set_hstring, fake_vector_insert_hstring,
     fake_vector_remove_at, fake_vector_append_hstring,
-    fake_vector_no_args, fake_vector_no_args,
+    fake_vector_remove_at_end, fake_vector_clear,
     fake_vector_append_hstring, fake_vector_no_args
 };
 
@@ -12530,6 +12764,12 @@ static HRESULT WINAPI win32_d3d11_create_device(
         immediate_context && *immediate_context) {
         if (host_is_116) {
             install_clear_view_116(*immediate_context);
+            /* The renderer constructor hands D3D11CreateDevice its own
+             * context slot at renderer+0x170, so the renderer base is known
+             * before the game's first frame. */
+            game_renderer = (BYTE *)immediate_context - 0x170;
+            game_context = *immediate_context;
+            install_device_hooks_116(*device);
             IDXGISwapChain **renderer_swap_chain = (IDXGISwapChain **)(
                 (BYTE *)immediate_context - 0x3c);
             IDXGIDevice *dxgi_device = NULL;
@@ -12551,7 +12791,12 @@ static HRESULT WINAPI win32_d3d11_create_device(
                 description.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
                 description.SampleDesc.Count = 1;
                 description.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-                description.BufferCount = 1;
+                /* DISCARD with a single buffer renders straight into the
+                 * scanned-out surface: the desktop compositor then samples
+                 * a half-drawn frame every vblank, which shows up as heavy
+                 * flicker.  Match the 1.16.20.03 host: two buffers except on
+                 * Windows 7, where the legacy blt model needs one. */
+                description.BufferCount = host_is_windows7 ? 1 : 2;
                 description.OutputWindow = game_window;
                 description.Windowed = TRUE;
                 description.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
@@ -12565,6 +12810,7 @@ static HRESULT WINAPI win32_d3d11_create_device(
                     IDXGISwapChain_AddRef(game_swap_chain);
                     log_pointer("1.16 HWND swap chain installed at renderer+0x134",
                                 renderer_swap_chain);
+                    install_present_hook_116(game_swap_chain);
                 }
             }
             if (factory) IDXGIFactory_Release(factory);
@@ -14145,6 +14391,8 @@ static BOOL resolve_fmod_delay_imports_128(BYTE *image)
  * desktop FMOD DLL.  The imported C++ names are also an ABI check: an older or
  * otherwise incompatible FMOD build is rejected before the game can call it.
  */
+static DWORD fmod_delay_descriptor_116 = 0x024b25a4;
+
 static BOOL resolve_fmod_delay_imports_116(BYTE *image)
 {
     typedef struct DelayDescriptor {
@@ -14157,20 +14405,31 @@ static BOOL resolve_fmod_delay_imports_116(BYTE *image)
         DWORD unload_iat_rva;
         DWORD timestamp;
     } DelayDescriptor;
-    DelayDescriptor *descriptor = (DelayDescriptor *)(image + 0x024b25a4);
+    DelayDescriptor *descriptor;
     DWORD *name_table;
     void **address_table;
     HMODULE module;
     DWORD old_protection;
     DWORD ignored;
+    DWORD image_size;
     unsigned count = 0;
     unsigned index;
 
-    if (!image || descriptor->attributes != 1 ||
-        descriptor->name_rva != 0x01eaa230 ||
-        descriptor->module_handle_rva != 0x02ada400 ||
-        descriptor->iat_rva != 0x02ada320 ||
-        descriptor->int_rva != 0x024b25e4 ||
+    if (!image || !fmod_delay_descriptor_116) {
+        log_line("Minecraft 1.16 FMOD delay descriptor unavailable");
+        return FALSE;
+    }
+    descriptor = (DelayDescriptor *)(image + fmod_delay_descriptor_116);
+    image_size = *(DWORD *)(image + *(DWORD *)(image + 0x3c) + 0x50);
+    /* The descriptor address comes from the selected game profile.  Validate
+     * its shape and string instead of the RVAs of one retail build, so both
+     * 1.16.20.03 and 1.16.40.02 use the same code path. */
+    if (descriptor->attributes != 1 ||
+        !descriptor->name_rva || descriptor->name_rva + 9 > image_size ||
+        !descriptor->module_handle_rva ||
+        descriptor->module_handle_rva + 4 > image_size ||
+        !descriptor->iat_rva || descriptor->iat_rva + 4 > image_size ||
+        !descriptor->int_rva || descriptor->int_rva + 4 > image_size ||
         memcmp(image + descriptor->name_rva, "fmod.dll", 9) != 0) {
         log_line("Minecraft 1.16 FMOD delay descriptor mismatch");
         return FALSE;
@@ -14179,7 +14438,9 @@ static BOOL resolve_fmod_delay_imports_116(BYTE *image)
     name_table = (DWORD *)(image + descriptor->int_rva);
     address_table = (void **)(image + descriptor->iat_rva);
     while (name_table[count] && count < 64) ++count;
-    if (count != 48) {
+    if (count != 48 ||
+        descriptor->iat_rva + count * sizeof(DWORD) > image_size ||
+        descriptor->int_rva + count * sizeof(DWORD) > image_size) {
         log_line("Minecraft 1.16 FMOD delay import count mismatch");
         return FALSE;
     }
@@ -14205,6 +14466,14 @@ static BOOL resolve_fmod_delay_imports_116(BYTE *image)
         if (thunk & 0x80000000u) {
             name = (LPCSTR)(ULONG_PTR)(thunk & 0xffffu);
         } else {
+            DWORD limit = thunk + 2;
+            while (limit < image_size && image[limit]) ++limit;
+            if (limit >= image_size) {
+                log_line("Minecraft 1.16 FMOD import name outside image");
+                VirtualProtect(address_table, count * sizeof(*address_table),
+                               old_protection, &ignored);
+                return FALSE;
+            }
             name = (const char *)(image + thunk + 2);
         }
         target = GetProcAddress(module, name);
@@ -23303,7 +23572,8 @@ int WINAPI Win32Bootstrap(void)
     pe_offset = *(DWORD *)(image + 0x3c);
     image_size = *(DWORD *)(image + pe_offset + 0x50);
 #ifndef WIN32CRAFT_ARM32
-    if (image_size == 0x02db1000) return bootstrap_116(image, instance);
+    if (image_size == 0x02db1000 || image_size == 0x02daf000)
+        return bootstrap_116(image, instance);
     if (image_size == IMAGE_SIZE_0132_PATCHED ||
         image_size == IMAGE_SIZE_0142_PATCHED) {
         if (image_size == IMAGE_SIZE_0142_PATCHED) install_crash_trace();

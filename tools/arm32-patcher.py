@@ -59,6 +59,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+from mcbe_package import prepare_mcbe_package
+
 try:  # optional, self-checks only
     import capstone as _capstone
 except Exception:  # pragma: no cover
@@ -673,6 +675,7 @@ PROFILE_0104 = {
     "name": "v0_10_4",
     "status": COMPLETE,
     "title": "Minecraft PE 0.10.4.40 (Windows Phone 8.1 XAML app, ARM32 Thumb-2)",
+    "game_type": "Minecraft Bedrock Edition",
     "source": "arm32/v0_10_4/facts/pe_patch_plan.json (patch_profile, verified) + RECON_SUMMARY.md "
               "sections 4 and 5 (FL 9_1 profile byte); friend patcher NOT used (its .d3imp is RWX)",
     "identify": {
@@ -831,6 +834,7 @@ PROFILE_128 = {
     "name": "v1_2_8",
     "status": COMPLETE,
     "title": "Minecraft 1.2.8.0 UWP (CoreWindow app, ARM32 Thumb-2)",
+    "game_type": "Minecraft Bedrock Edition",
     "source": "tools/1.2.8-arm32-patcher.py (device-proven); byte identity with it is a self-test",
     "identify": {
         "exe_names": ["Minecraft.Windows.exe"],
@@ -2383,6 +2387,9 @@ def cmd_patch(args: argparse.Namespace) -> int:
 
         say(f"copying game folder to {out} ...")
         shutil.copytree(folder, out, ignore=ignore, dirs_exist_ok=True)
+    marker = None
+    if profile.get("game_type"):
+        marker = prepare_mcbe_package(out)
     out_name = args.exe_name or spec["output_name"]
     (out / out_name).write_bytes(patched)
     say(f"wrote {out / out_name}  sha256 {report['output']['sha256']}  {report['output']['size']} bytes  "
@@ -2395,6 +2402,8 @@ def cmd_patch(args: argparse.Namespace) -> int:
             "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "source_folder": str(folder), "output_folder": str(out), "exe": {**report, "file": out_name,
                                                                           "source_file": exe_path.name},
+            "game_type": profile.get("game_type"),
+            "game_marker": marker.name if marker else None,
             "companions": [], "problems": []}
 
     if not args.skip_companions:
