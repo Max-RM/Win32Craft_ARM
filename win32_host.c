@@ -6248,6 +6248,10 @@ static HRESULT WINAPI fake_core_window_pointer_position(
 
 static HRESULT WINAPI core_window_pointer_cursor_put_116(
     FakeInspectable *object, void *value);
+static HRESULT WINAPI core_window_release_pointer_capture_116(
+    FakeInspectable *object);
+static HRESULT WINAPI core_window_set_pointer_capture_116(
+    FakeInspectable *object);
 
 static HRESULT WINAPI fake_core_window_noop(FakeInspectable *object)
 {
@@ -6349,6 +6353,18 @@ static HRESULT WINAPI core_window_pointer_cursor_put_116(FakeInspectable *object
     return S_OK;
 }
 
+static HRESULT WINAPI core_window_release_pointer_capture_116(FakeInspectable *object)
+{
+    (void)object;
+    return S_OK;
+}
+
+static HRESULT WINAPI core_window_set_pointer_capture_116(FakeInspectable *object)
+{
+    (void)object;
+    return S_OK;
+}
+
 static BOOL activation_116(LPCWSTR class_name, const GUID *iid, void **result)
 { (void)class_name; (void)iid; (void)result; return FALSE; }
 static void refresh_scene_mouse_116(void)
@@ -6409,10 +6425,27 @@ static const void *core_window_visibility_args_table_116[8] = {
 static HRESULT WINAPI fake_core_window_key_state(
     FakeInspectable *object, INT key, INT *result)
 {
+    static BYTE logged[256];
+    SHORT state = 0;
+    extern SHORT WINAPI GetAsyncKeyState(int);
     (void)object;
-    (void)key;
     if (!result) return E_POINTER;
-    *result = 0;
+    /* The game's HID update polls GetAsyncKeyState/GetKeyState every frame.
+     * Returning 0 for the mouse buttons made a held attack look like a
+     * one-frame tap.  Only the mouse buttons are translated; keyboard input
+     * already arrives through the KeyDown/KeyUp events. */
+    if (key >= 1 && key <= 6) {
+        state = GetAsyncKeyState(key);
+        *result = (state & 0x8000) ? 1 : 0;
+    } else {
+        *result = 0;
+    }
+    if (key >= 0 && key < 256 && !logged[key]) {
+        char line[96];
+        logged[key] = 1;
+        wsprintfA(line, "1.16 CoreWindow key state: vk=%d down=%d", key, *result);
+        log_line(line);
+    }
     return S_OK;
 }
 
@@ -6746,7 +6779,8 @@ static const void *win32_core_window_vtable[58] = {
     fake_core_window_get_bool,
     fake_core_window_activate_116, fake_core_window_close,
     fake_core_window_key_state, fake_core_window_key_state,
-    fake_core_window_noop, fake_core_window_noop,
+    core_window_release_pointer_capture_116,
+    core_window_set_pointer_capture_116,
     fake_core_window_add_activated_116, fake_mouse_device_remove_moved, /* 24 */
     fake_mouse_device_add_moved, fake_mouse_device_remove_moved,       /* 26 */
     core_character_add_116, fake_mouse_device_remove_moved,            /* 28 */
@@ -14393,7 +14427,72 @@ static BOOL resolve_fmod_delay_imports_128(BYTE *image)
  */
 static DWORD fmod_delay_descriptor_116 = 0x024b25a4;
 
-static BOOL resolve_fmod_delay_imports_116(BYTE *image)
+/* 1.14 and 1.16 delay-load the same FMOD C++ API, but in different orders
+ * (42 and 48 entries).  Select the diagnostic bridge by decorated export
+ * name so one resolver serves both tables.  Prefixes include the owning
+ * class, so ?release@System@ and ?release@Sound@ stay distinct. */
+typedef struct FmodBridgeName {
+    const char *prefix;
+    void *target;
+} FmodBridgeName;
+
+static const FmodBridgeName fmod_bridge_names_116[] = {
+    {"?getVersion@System@", bridge_fmod_get_version},
+    {"?getNumDrivers@System@", bridge_fmod_get_num_drivers},
+    {"?getDriverInfo@System@", bridge_fmod_get_driver_info},
+    {"?setDriver@System@", bridge_fmod_set_driver},
+    {"?setOutput@System@", bridge_fmod_set_output},
+    {"?set3DSettings@System@", bridge_fmod_set_3d_settings},
+    {"?createChannelGroup@System@", bridge_fmod_create_group},
+    {"?getMasterChannelGroup@System@", bridge_fmod_get_group},
+    {"?addGroup@ChannelGroup@", bridge_fmod_add_group},
+    {"?mixerResume@System@", bridge_fmod_mixer_resume},
+    {"?mixerSuspend@System@", bridge_fmod_mixer_suspend},
+    {"?setMute@ChannelControl@", bridge_fmod_set_mute},
+    {"?createStream@System@", bridge_fmod_create_stream},
+    {"?stop@ChannelControl@", bridge_fmod_stop},
+    {"?createSound@System@", bridge_fmod_create_sound},
+    {"?set3DAttributes@ChannelControl@", bridge_fmod_set_attributes},
+    {"?init@System@", bridge_fmod_init},
+    {"?update@System@", bridge_fmod_update},
+    {"?release@System@", bridge_fmod_system_release},
+    {"?isPlaying@ChannelControl@", bridge_fmod_is_playing},
+    {"?set3DListenerAttributes@System@", bridge_fmod_set_listener},
+    {"?setPaused@ChannelControl@", bridge_fmod_set_paused},
+    {"?setPitch@ChannelControl@", bridge_fmod_set_pitch},
+    {"?setVolume@ChannelControl@", bridge_fmod_set_volume},
+    {"?playSound@System@", bridge_fmod_play_sound},
+    {"?set3DMinMaxDistance@Sound@", bridge_fmod_set_min_max},
+    {"?getSubSound@Sound@", bridge_fmod_get_sub_sound},
+    {"?getNumSubSounds@Sound@", bridge_fmod_get_sub_count},
+    {"FMOD_System_Create", bridge_fmod_system_create},
+    {"?release@Sound@", bridge_fmod_sound_release}
+};
+
+static BOOL fmod_name_has_prefix_116(const char *name, const char *prefix)
+{
+    if (!name || !prefix) return FALSE;
+    while (*prefix) {
+        if (*name++ != *prefix++) return FALSE;
+    }
+    return TRUE;
+}
+
+static void *fmod_bridge_target_116(const char *name, void *original)
+{
+    unsigned index;
+    if (!name) return original;
+    for (index = 0; index < sizeof(fmod_bridge_names_116) /
+                            sizeof(fmod_bridge_names_116[0]); ++index) {
+        if (fmod_name_has_prefix_116(
+                name, fmod_bridge_names_116[index].prefix))
+            return fmod_bridge_names_116[index].target;
+    }
+    return original;
+}
+
+static BOOL resolve_fmod_delay_imports_116(BYTE *image,
+                                           unsigned expected_count)
 {
     typedef struct DelayDescriptor {
         DWORD attributes;
@@ -14416,14 +14515,14 @@ static BOOL resolve_fmod_delay_imports_116(BYTE *image)
     unsigned index;
 
     if (!image || !fmod_delay_descriptor_116) {
-        log_line("Minecraft 1.16 FMOD delay descriptor unavailable");
+        log_line("Minecraft FMOD delay descriptor unavailable");
         return FALSE;
     }
     descriptor = (DelayDescriptor *)(image + fmod_delay_descriptor_116);
     image_size = *(DWORD *)(image + *(DWORD *)(image + 0x3c) + 0x50);
     /* The descriptor address comes from the selected game profile.  Validate
-     * its shape and string instead of the RVAs of one retail build, so both
-     * 1.16.20.03 and 1.16.40.02 use the same code path. */
+     * its shape and string instead of the RVAs of one retail build, so every
+     * profile uses the same code path. */
     if (descriptor->attributes != 1 ||
         !descriptor->name_rva || descriptor->name_rva + 9 > image_size ||
         !descriptor->module_handle_rva ||
@@ -14431,31 +14530,34 @@ static BOOL resolve_fmod_delay_imports_116(BYTE *image)
         !descriptor->iat_rva || descriptor->iat_rva + 4 > image_size ||
         !descriptor->int_rva || descriptor->int_rva + 4 > image_size ||
         memcmp(image + descriptor->name_rva, "fmod.dll", 9) != 0) {
-        log_line("Minecraft 1.16 FMOD delay descriptor mismatch");
+        log_line("Minecraft FMOD delay descriptor mismatch");
         return FALSE;
     }
 
     name_table = (DWORD *)(image + descriptor->int_rva);
     address_table = (void **)(image + descriptor->iat_rva);
     while (name_table[count] && count < 64) ++count;
-    if (count != 48 ||
+    if (count != expected_count ||
         descriptor->iat_rva + count * sizeof(DWORD) > image_size ||
         descriptor->int_rva + count * sizeof(DWORD) > image_size) {
-        log_line("Minecraft 1.16 FMOD delay import count mismatch");
+        char line[96];
+        wsprintfA(line, "Minecraft FMOD delay import count %u, expected %u",
+                  count, expected_count);
+        log_line(line);
         return FALSE;
     }
 
     module = LoadLibraryW(L"fmod.dll");
     if (!module) {
         char line[160];
-        wsprintfA(line, "Minecraft 1.16 desktop FMOD load failed, error=%u",
+        wsprintfA(line, "Minecraft desktop FMOD load failed, error=%u",
                   (unsigned)GetLastError());
         log_line(line);
         return FALSE;
     }
     if (!VirtualProtect(address_table, count * sizeof(*address_table),
                         PAGE_READWRITE, &old_protection)) {
-        log_line("Minecraft 1.16 FMOD delay-IAT protection change failed");
+        log_line("Minecraft FMOD delay-IAT protection change failed");
         return FALSE;
     }
 
@@ -14480,52 +14582,21 @@ static BOOL resolve_fmod_delay_imports_116(BYTE *image)
         if (!target) {
             char line[256];
             if (thunk & 0x80000000u)
-                wsprintfA(line, "Minecraft 1.16 FMOD ordinal %u is missing",
+                wsprintfA(line, "Minecraft FMOD ordinal %u is missing",
                           (unsigned)(thunk & 0xffffu));
             else
-                wsprintfA(line, "Minecraft 1.16 FMOD export is missing: %.180s",
+                wsprintfA(line, "Minecraft FMOD export is missing: %.180s",
                           name);
             log_line(line);
             VirtualProtect(address_table, count * sizeof(*address_table),
                            old_protection, &ignored);
             return FALSE;
         }
-        /* Keep uncommon 1.16 calls native, but route the common audio path
+        /* Keep uncommon calls native, but route the common audio path
          * through the diagnostic bridge.  Besides selecting a usable desktop
          * output, createSound/createStream translate ms-appx:/// paths. */
-        switch (index) {
-        case 2: target = bridge_fmod_get_version; break;
-        case 3: target = bridge_fmod_get_num_drivers; break;
-        case 4: target = bridge_fmod_get_driver_info; break;
-        case 5: target = bridge_fmod_set_driver; break;
-        case 6: target = bridge_fmod_set_output; break;
-        case 7: target = bridge_fmod_set_3d_settings; break;
-        case 8: target = bridge_fmod_create_group; break;
-        case 9: target = bridge_fmod_get_group; break;
-        case 10: target = bridge_fmod_add_group; break;
-        case 11: target = bridge_fmod_mixer_resume; break;
-        case 12: target = bridge_fmod_mixer_suspend; break;
-        case 14: target = bridge_fmod_set_mute; break;
-        case 15: target = bridge_fmod_create_stream; break;
-        case 16: target = bridge_fmod_stop; break;
-        case 17: target = bridge_fmod_create_sound; break;
-        case 18: target = bridge_fmod_set_attributes; break;
-        case 25: target = bridge_fmod_init; break;
-        case 26: target = bridge_fmod_update; break;
-        case 27: target = bridge_fmod_system_release; break;
-        case 32: target = bridge_fmod_is_playing; break;
-        case 33: target = bridge_fmod_set_listener; break;
-        case 34: target = bridge_fmod_set_paused; break;
-        case 35: target = bridge_fmod_set_pitch; break;
-        case 36: target = bridge_fmod_set_volume; break;
-        case 37: target = bridge_fmod_play_sound; break;
-        case 40: target = bridge_fmod_set_min_max; break;
-        case 41: target = bridge_fmod_get_sub_sound; break;
-        case 43: target = bridge_fmod_get_sub_count; break;
-        case 44: target = bridge_fmod_system_create; break;
-        case 46: target = bridge_fmod_sound_release; break;
-        default: break;
-        }
+        if (!(thunk & 0x80000000u))
+            target = fmod_bridge_target_116(name, target);
         address_table[index] = target;
     }
     *(HMODULE *)(image + descriptor->module_handle_rva) = module;
@@ -14533,7 +14604,12 @@ static BOOL resolve_fmod_delay_imports_116(BYTE *image)
                    old_protection, &ignored);
     FlushInstructionCache(GetCurrentProcess(), address_table,
                           count * sizeof(*address_table));
-    log_line("Minecraft 1.16 desktop FMOD: 48 delay imports resolved");
+    {
+        char line[96];
+        wsprintfA(line, "Minecraft desktop FMOD: %u delay imports resolved",
+                  count);
+        log_line(line);
+    }
     return TRUE;
 }
 
@@ -23572,7 +23648,8 @@ int WINAPI Win32Bootstrap(void)
     pe_offset = *(DWORD *)(image + 0x3c);
     image_size = *(DWORD *)(image + pe_offset + 0x50);
 #ifndef WIN32CRAFT_ARM32
-    if (image_size == 0x02db1000 || image_size == 0x02daf000)
+    if (image_size == 0x02db1000 || image_size == 0x02daf000 ||
+        image_size == 0x028b8000)
         return bootstrap_116(image, instance);
     if (image_size == IMAGE_SIZE_0132_PATCHED ||
         image_size == IMAGE_SIZE_0142_PATCHED) {

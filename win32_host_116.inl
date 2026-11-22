@@ -98,6 +98,12 @@ typedef struct GameProfile116 {
     DWORD iat_std_terminate;
     DWORD iat_report_unobserved;
     DWORD dxgi_factory4_iid;
+    DWORD client_scene_stack_slot;
+    DWORD client_scene_stack_member;
+    DWORD frame_slot;
+    DWORD frame_has_render;
+    DWORD development_label_disp;
+    DWORD fmod_import_count;
 } GameProfile116;
 
 static const GameProfile116 game_profile_116_02003 = {
@@ -138,7 +144,13 @@ static const GameProfile116 game_profile_116_02003 = {
     0x01ea68c0,                 /* terminate IAT */
     0x01ea663c,                 /* __std_terminate IAT */
     0x01ea6584,                 /* _ReportUnobservedException IAT */
-    0x0204244c                  /* IID_IDXGIFactory4 */
+    0x0204244c,                 /* IID_IDXGIFactory4 */
+    0x338,                      /* ClientInstance scene-stack vtable slot */
+    0x340,                      /* ClientInstance scene-stack member */
+    0x68,                       /* AppMain frame vtable slot */
+    1,                          /* frame slot takes render flag */
+    0xa4,                       /* $is_publish stack displacement */
+    48                          /* FMOD delay-import count */
 };
 
 static const GameProfile116 game_profile_116_04002 = {
@@ -179,7 +191,60 @@ static const GameProfile116 game_profile_116_04002 = {
     0x01ea48c0,
     0x01ea463c,
     0x01ea4584,
-    0x02040358
+    0x02040358,
+    0x338,
+    0x340,
+    0x68,
+    1,
+    0xa4,
+    48
+};
+
+static const GameProfile116 game_profile_114 = {
+    "1.14.60.5", L"1.14.60.5",
+    0x02190dac,                 /* ClientInstance vtable */
+    0x00100910,                 /* ClientInstance scalar deleting destructor */
+    0x0010b0d0,                 /* SceneStack getter (vtable +0x338) */
+    0x0010b020,                 /* getTopScene */
+    0x021cc388,                 /* top UIScene vtable */
+    0x0066ad20,                 /* is_showing_menu */
+    0x0066ad40,                 /* should_steal_mouse */
+    0x000d4820,                 /* game string assign */
+    0x000d4ad0,                 /* game string destroy */
+    0x021f6120,                 /* DirectoryPack getContents vtable cell */
+    0x00ea4300,                 /* DirectoryPack::getContents */
+    0x021f6a00,                 /* ZipPack getContents vtable cell */
+    0x00ee6390,                 /* ZipPack::getContents */
+    0x01672a4f,                 /* FrameworkView::Run frame call site */
+    0x006280a1,                 /* $is_publish initializer */
+    0x019d2b8a,                 /* executable's main */
+    0x0215c0f0,                 /* FMOD delay-import descriptor */
+    0x01c0c6a8,                 /* _CxxThrowException IAT */
+    0x01c0ccd0,                 /* GetActivationFactoryByPCWSTR IAT */
+    0x01c0cc44,                 /* Platform::Object ctor IAT */
+    0x01c0cc20,                 /* Platform::Heap::Allocate(size,align) IAT */
+    0x01c0cc2c,                 /* Platform::Heap::Allocate(size) IAT */
+    0x01c0cc54,                 /* GetIBoxArrayVtable IAT */
+    0x01c0cca8,                 /* GetIBoxVtable IAT */
+    0x01c0cc94,                 /* GetCmdArguments IAT */
+    0x01c0c0b4,                 /* D3DCompile IAT */
+    0x01c0cbc0,                 /* D3D11CreateDevice IAT */
+    0x01c0c974,                 /* fopen IAT */
+    0x01c0c9a0,                 /* _wfopen IAT */
+    0x01c0c96c,                 /* _wfopen_s IAT */
+    0x01c0c954,                 /* __stdio_common_vsscanf IAT */
+    0x01c0c904,                 /* _invalid_parameter_noinfo IAT */
+    0x01c0c938,                 /* _invalid_parameter_noinfo_noreturn IAT */
+    0x01c0c93c,                 /* terminate IAT */
+    0x01c0c670,                 /* __std_terminate IAT */
+    0x01c0c5c8,                 /* _ReportUnobservedException IAT */
+    0x01d7eca4,                 /* IID_IDXGIFactory4 */
+    0x338,                      /* ClientInstance scene-stack vtable slot */
+    0x310,                      /* ClientInstance scene-stack member */
+    0x18,                       /* AppMain frame vtable slot */
+    0,                          /* frame slot has no render flag */
+    0xe0,                       /* $is_publish stack displacement */
+    42                          /* FMOD delay-import count */
 };
 
 static const GameProfile116 *game_116 = &game_profile_116_02003;
@@ -193,7 +258,7 @@ static const GameProfile116 *game_116 = &game_profile_116_02003;
 static void *__attribute__((thiscall)) client_scene_stack_116(BYTE *client)
 {
     client_instance_116 = client;
-    return *(void **)(client + 0x340);
+    return *(void **)(client + game_116->client_scene_stack_member);
 }
 
 static void *__attribute__((thiscall)) client_destroy_116(void *client, UINT flags)
@@ -212,31 +277,62 @@ static void refresh_scene_mouse_116(void)
     typedef BYTE *(__attribute__((thiscall)) *TopSceneFn)(void *);
     typedef BYTE (__attribute__((thiscall)) *FlagFn)(void *);
     BYTE *scene;
-    BOOL gameplay = FALSE;
+    void *scene_vtable;
+    BYTE menu_flag = 0, game_flag = 0;
+    int gameplay = -1; /* -1: neutral scene, keep the game's explicit state */
     static int previous = -1;
+    static BYTE *previous_scene;
+    static void *previous_vtable;
     if (!client_instance_116 || IsBadReadPtr(client_instance_116, 0x344) ||
         *(void **)client_instance_116 !=
             scene_image_116 + game_116->client_instance_vtable) return;
     scene = ((TopSceneFn)(scene_image_116 + game_116->client_top_scene))(
         client_instance_116);
+    scene_vtable = (scene && !IsBadReadPtr(scene, 4)) ? *(void **)scene : NULL;
+    /* Only the base UIScene vtable is safe to probe: derived screens can be
+     * caught mid-construction/destruction with a stale inner object (calling
+     * is_showing_menu on a transitioning CubemapBackgroundScreen faults).
+     * A foreign vtable is neutral: keep whatever the game requested via
+     * CoreWindow.SetPointerCapture/ReleasePointerCapture. */
+    if (scene && !IsBadReadPtr(scene, 0x1c) &&
+        scene_vtable == scene_image_116 + game_116->ui_scene_vtable) {
+        menu_flag = ((FlagFn)(scene_image_116 + game_116->gameplay_flag_menu))(scene);
+        game_flag = ((FlagFn)(scene_image_116 + game_116->gameplay_flag_game))(scene);
+        if (menu_flag)
+            gameplay = FALSE;
+        else if (game_flag)
+            gameplay = TRUE;
+    }
+    if (scene != previous_scene || scene_vtable != previous_vtable ||
+        gameplay != previous) {
+        char line[192];
+        wsprintfA(line,
+                  "1.16 top scene: %p vtable=%p expected=%p menu=%d game=%d -> %s",
+                  scene, scene_vtable,
+                  scene_image_116 + game_116->ui_scene_vtable,
+                  (int)menu_flag, (int)game_flag,
+                  gameplay < 0 ? "neutral (keep state)"
+                               : (gameplay ? "gameplay capture" : "UI cursor"));
+        log_line(line);
+        previous_scene = scene;
+        previous_vtable = scene_vtable;
+        previous = gameplay;
+    }
     /* A native cursor request during a closing animation takes effect
      * immediately. Keep it until that scene leaves the stack; otherwise
-     * the menu flag would undo the game's hide request every frame. */
+     * the menu flag would undo the game's hide request every frame.  An
+     * absolute cursor request must not arm this guard: it would stop the
+     * scene refresh from re-entering capture after the transition. */
     if (cursor_request_pending_116 && scene == cursor_request_scene_116)
         return;
     cursor_request_pending_116 = FALSE;
-    if (scene && !IsBadReadPtr(scene, 0x1c) &&
-        *(void **)scene == scene_image_116 + game_116->ui_scene_vtable) {
-        gameplay = !((FlagFn)(scene_image_116 + game_116->gameplay_flag_menu))(scene) &&
-                     ((FlagFn)(scene_image_116 + game_116->gameplay_flag_game))(scene);
-    }
-    if (previous != (int)gameplay) {
-        log_line(gameplay ? "1.16 top scene: gameplay capture"
-                          : "1.16 top scene: UI cursor");
-        previous = gameplay;
-    }
-    if (mouse_relative_requested_116 != gameplay) {
-        mouse_relative_requested_116 = gameplay;
+    if (gameplay < 0) return;
+    if (mouse_relative_requested_116 != (BOOL)gameplay) {
+        char line[128];
+        wsprintfA(line, "1.16 scene refresh: requested %d -> %d",
+                  (int)mouse_relative_requested_116, gameplay);
+        log_line(line);
+        mouse_relative_requested_116 = (BOOL)gameplay;
         update_relative_mouse_116(game_window);
     }
 }
@@ -326,7 +422,7 @@ static HRESULT WINAPI core_window_pointer_cursor_put_116(
         typedef BYTE *(__attribute__((thiscall)) *TopSceneFn)(void *);
         cursor_request_scene_116 = ((TopSceneFn)(scene_image_116 + game_116->client_top_scene))(
             client_instance_116);
-        cursor_request_pending_116 = TRUE;
+        cursor_request_pending_116 = requested;
     }
     if (mouse_relative_requested_116 != requested) {
         mouse_relative_requested_116 = requested;
@@ -334,6 +430,37 @@ static HRESULT WINAPI core_window_pointer_cursor_put_116(
                            : "1.16 absolute mouse requested");
     }
     update_relative_mouse_116(game_window);
+    return S_OK;
+}
+
+/* ICoreWindow::ReleasePointerCapture (slot 22) and SetPointerCapture
+ * (slot 23).  1.14 uses these for the gameplay mouse lock; the 1.16 builds
+ * may only use put_PointerCursor.  Treat them as the same relative/absolute
+ * request so either path drives the HWND capture. */
+static HRESULT WINAPI core_window_release_pointer_capture_116(
+    FakeInspectable *object)
+{
+    (void)object;
+    log_line("1.16 CoreWindow.ReleasePointerCapture");
+    cursor_request_pending_116 = FALSE;
+    if (mouse_relative_requested_116) {
+        mouse_relative_requested_116 = FALSE;
+        log_line("1.16 absolute mouse requested");
+        update_relative_mouse_116(game_window);
+    }
+    return S_OK;
+}
+
+static HRESULT WINAPI core_window_set_pointer_capture_116(
+    FakeInspectable *object)
+{
+    (void)object;
+    log_line("1.16 CoreWindow.SetPointerCapture");
+    if (!mouse_relative_requested_116) {
+        mouse_relative_requested_116 = TRUE;
+        log_line("1.16 relative mouse requested");
+        update_relative_mouse_116(game_window);
+    }
     return S_OK;
 }
 
@@ -684,15 +811,22 @@ static HRESULT WINAPI pointer_visual_current_116(void *object, void **result)
 { (void)object; if (!result) return E_POINTER; *result = &pointer_visual_116; fake_add_ref(&pointer_visual_116); return S_OK; }
 static HRESULT WINAPI pointer_visual_put_116(void *object, BYTE value)
 { (void)object; (void)value; return S_OK; }
+static HRESULT WINAPI pointer_visual_get_116(void *object, BYTE *value)
+{ (void)object; if (value) *value = 0; return S_OK; }
 static const void *pointer_visual_factory_table_116[] = {
     fake_query_interface, fake_add_ref, fake_release,
     fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
     pointer_visual_current_116
 };
+/* IPointerVisualizationSettings: put_IsContactFeedbackEnabled,
+ * get_IsContactFeedbackEnabled, put_IsBarrelButtonFeedbackEnabled,
+ * get_IsBarrelButtonFeedbackEnabled.  1.14 calls slots 6 and 8, so the
+ * table must cover all four property methods, not just two setters. */
 static const void *pointer_visual_table_116[] = {
     fake_query_interface, fake_add_ref, fake_release,
     fake_get_iids, fake_get_runtime_class_name, fake_get_trust_level,
-    pointer_visual_put_116, pointer_visual_put_116
+    pointer_visual_put_116, pointer_visual_get_116,
+    pointer_visual_put_116, pointer_visual_get_116
 };
 static HRESULT WINAPI pnp_query_116(FakeInspectable *object, REFIID iid, void **result)
 {
@@ -1203,6 +1337,14 @@ static void invoke_pointer_handler_116(void *handler, LPARAM lparam,
     if (!table || !table[3]) return;
     result = ((InvokeFn)table[3])(handler, &win32_core_window,
                                   &pointer_event_args_116);
+    if (update_kind) {
+        char line[160];
+        wsprintfA(line,
+                  "1.16 pointer button: kind=%d left=%d right=%d middle=%d hr=%08lX",
+                  update_kind, (int)pointer_left_116, (int)pointer_right_116,
+                  (int)pointer_middle_116, (unsigned long)result);
+        log_line(line);
+    }
     if (logged++ < 16) {
         char line[128];
         wsprintfA(line, "1.16 pointer event: x=%d y=%d kind=%d wheel=%d hr=%08lX",
@@ -1784,15 +1926,17 @@ static BOOL install_present_hook_116(IDXGISwapChain *swap_chain)
     return TRUE;
 }
 
-/* FrameworkView::Run calls AppMain slot +0x68 with render=true. Preserve
- * its thiscall ABI and result, then synchronize the completed scene.  Only
- * present ourselves when the game did not already publish this frame. */
+/* FrameworkView::Run calls the AppMain frame slot.  The 1.16 builds pass a
+ * render flag; 1.14 passes only `this`.  Preserve the thiscall ABI and
+ * result, then synchronize the completed scene.  Only present ourselves
+ * when the game did not already publish this frame. */
 static BYTE __attribute__((thiscall)) frame_116(void *app, BOOL render)
 {
     typedef BYTE (__attribute__((thiscall)) *FrameFn)(void *, BOOL);
     static unsigned fallback_frames;
     LONG presents_before = game_present_success_count;
-    BYTE result = ((FrameFn)(*(void ***)app)[0x68 / 4])(app, render);
+    BYTE result = ((FrameFn)(*(void ***)app)[game_116->frame_slot / 4])(
+        app, render);
     refresh_scene_mouse_116();
     if (game_swap_chain && game_present_success_count == presents_before) {
         HRESULT hr = IDXGISwapChain_Present(
@@ -1803,9 +1947,27 @@ static BYTE __attribute__((thiscall)) frame_116(void *app, BOOL render)
     return result;
 }
 
+static BYTE __attribute__((thiscall)) frame_114(void *app)
+{
+    typedef BYTE (__attribute__((thiscall)) *FrameFn)(void *);
+    static unsigned fallback_frames;
+    LONG presents_before = game_present_success_count;
+    BYTE result = ((FrameFn)(*(void ***)app)[game_116->frame_slot / 4])(app);
+    refresh_scene_mouse_116();
+    if (game_swap_chain && game_present_success_count == presents_before) {
+        HRESULT hr = IDXGISwapChain_Present(
+            game_swap_chain, Win32CraftPresentSyncInterval(), 0);
+        if (++fallback_frames == 1 || FAILED(hr))
+            log_hresult("1.14 fallback frame Present", hr);
+    }
+    return result;
+}
+
 static BOOL install_frame_116(BYTE *image)
 {
-    static const BYTE expected[] = {0x8b,0x01,0x8b,0x40,0x68,0xff,0xd0};
+    BYTE expected[7] = {
+        0x8b, 0x01, 0x8b, 0x40, (BYTE)game_116->frame_slot, 0xff, 0xd0
+    };
     BYTE *site = image + game_116->frame_site;
     DWORD protection, ignored;
     if (memcmp(site, expected, sizeof(expected))) {
@@ -1815,7 +1977,9 @@ static BOOL install_frame_116(BYTE *image)
     if (!VirtualProtect(site, sizeof(expected), PAGE_EXECUTE_READWRITE,
                         &protection)) return FALSE;
     site[0] = 0xe8;
-    *(INT *)(site + 1) = (INT)((BYTE *)frame_116 - (site + 5));
+    *(INT *)(site + 1) = game_116->frame_has_render
+        ? (INT)((BYTE *)frame_116 - (site + 5))
+        : (INT)((BYTE *)frame_114 - (site + 5));
     site[5] = site[6] = 0x90;
     VirtualProtect(site, sizeof(expected), protection, &ignored);
     FlushInstructionCache(GetCurrentProcess(), site, sizeof(expected));
@@ -1824,7 +1988,9 @@ static BOOL install_frame_116(BYTE *image)
 
 static BOOL install_development_label_116(BYTE *image)
 {
-    static const BYTE expected[] = {0xc6,0x45,0xa4,0x01};
+    BYTE expected[4] = {
+        0xc6, 0x45, (BYTE)game_116->development_label_disp, 0x01
+    };
     BYTE *site = image + game_116->development_label_site;
     DWORD protection, ignored;
 
@@ -1838,7 +2004,12 @@ static BOOL install_development_label_116(BYTE *image)
     site[3] = 0;
     VirtualProtect(site, sizeof(expected), protection, &ignored);
     FlushInstructionCache(GetCurrentProcess(), site, sizeof(expected));
-    log_line("Minecraft 1.16 development label enabled");
+    {
+        char line[64];
+        wsprintfA(line, "Minecraft %s development label enabled",
+                  game_116->version_ascii);
+        log_line(line);
+    }
     return TRUE;
 }
 
@@ -2030,6 +2201,7 @@ static int bootstrap_116(BYTE *image, HINSTANCE instance)
     DWORD image_size = *(DWORD *)(image + pe_offset + 0x50);
     host_is_116 = TRUE;
     game_116 = image_size == 0x02daf000 ? &game_profile_116_04002
+             : image_size == 0x028b8000 ? &game_profile_114
                                         : &game_profile_116_02003;
     fmod_delay_descriptor_116 = game_116->fmod_delay_descriptor;
     {
@@ -2052,7 +2224,8 @@ static int bootstrap_116(BYTE *image, HINSTANCE instance)
     if (!install_language_override_116(image)) return 3;
     {
         void *original;
-        void **slot = (void **)(image + game_116->client_instance_vtable + 0x338);
+        void **slot = (void **)(image + game_116->client_instance_vtable +
+                                game_116->client_scene_stack_slot);
         if (*slot != image + game_116->client_scene_stack ||
             !patch_115_iat_slot(slot, client_scene_stack_116, &original,
                                 "1.16 ClientInstance scene stack")) return 3;
@@ -2061,9 +2234,12 @@ static int bootstrap_116(BYTE *image, HINSTANCE instance)
             !patch_115_iat_slot(slot, client_destroy_116, &original,
                                 "1.16 ClientInstance destruction")) return 3;
     }
-    log_line(image_size == 0x02daf000
-        ? "Win32Craft 1.16.40.02 bootstrap entered"
-        : "Win32Craft 1.16.20.03 bootstrap entered");
+    {
+        char line[64];
+        wsprintfA(line, "Win32Craft %s bootstrap entered",
+                  game_116->version_ascii);
+        log_line(line);
+    }
     install_crash_trace();
     install_exception_trace(image, game_116->iat_exception_trace);
     log_hresult("RoInitialize 1.16", RoInitialize(RO_INIT_MULTITHREADED));
@@ -2091,7 +2267,8 @@ static int bootstrap_116(BYTE *image, HINSTANCE instance)
         }
     }
     install_d3d11_device_compat(image, game_116->iat_d3d11_create_device);
-    if (!resolve_fmod_delay_imports_116(image)) {
+    if (!resolve_fmod_delay_imports_116(
+            image, game_116->fmod_import_count)) {
         log_line("Minecraft 1.16 sound disabled: incompatible or missing fmod.dll");
     }
     patch_115_iat_slot((void **)(image + game_116->iat_fopen),
