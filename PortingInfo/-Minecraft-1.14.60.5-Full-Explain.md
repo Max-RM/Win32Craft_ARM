@@ -97,6 +97,13 @@ prints the corresponding file offset (`file+0x...`) for each site.
 |---|---|---|---|
 | `0x19D1A5F` | `50 57 68 00 00 40 00 E8 2D 10 00 00` | `FF 15 <IAT> 90 90 90 90 90 90` | replace the game's `WinMain` call with an indirect call to `win32craft.dll!Win32Bootstrap` |
 | `0xEEFEF5` | `8B 4E 04 8B 01 8B 40 04 FF D0` | `B0 01 90 90 90 90 90 90 90 90` | skip the first Chakra script-interface predicate call in `sub_12EFEB0` |
+| `0x9A6E26` | `8B 02 8B CA 6A 01 FF 10` | `E8 <rel32> 90 90 90` | unlink the old packet listener from the `NetworkHandler` dispatcher vector, then delete it |
+| `0x9A6EC6` | `8B CA 8B 02 6A 01 FF 10` | `E8 <rel32> 90 90 90` | unlink the old telemetry listener from `[engine+0xB0]`, then delete it |
+| `0x9A6F50` | `8B 02 8B CA 6A 01 FF 10` | `E8 <rel32> 90 90 90` | unlink the old client-level listener from its manager vector, then delete it |
+| `0x9A6FC2` | `8B 01 6A 01 FF 10` | `E8 <rel32> 90` | unlink the old hit-detect listener from `[ClientInstance+0x62C]`, then delete it |
+
+The four listener calls target stubs appended to `.d3imp`; see the client script listener
+subsection below.
 
 The 1.14 build did **not** need the 1.16.40.02 pointer-visualization, empty-callback and
 `Enum::ToString` exe patches in the tested path. Its `PointerVisualizationSettings` access goes
@@ -133,6 +140,50 @@ function runs. The user confirmed that the world loads and survival play works. 
 workaround, not a host-side fake: the skipped predicate is not reimplemented, and any script
 feature that depends on it is bypassed. A proper fix would require a working Chakra interface
 for the 1.14 script API, which is out of scope for this port.
+
+#### The client script listener re-registration crash
+
+`MinecraftClientScriptEngine::<init>` (VA `0xDA6DB0`) runs again for every world. It allocates
+four new `Script*EventListener` objects, stores them in the engine at `+0x230` (packet),
+`+0x234` (telemetry), `+0x23C` (client level) and `+0x240` (hit detect), and deletes the
+previous instances. The stock code never unregisters the previous listener from the manager
+that received it:
+
+| Engine field | Listener | Manager |
+|---|---|---|
+| `+0x230` | `ScriptClientPacketEventListener` | `ClientInstance` vtbl `+0x3DC` -> `NetworkHandler`, then `+0x1B8` (dispatcher); listener vector at dispatcher `+0x0` |
+| `+0x234` | `ScriptTelemetryEventListener` | vector object at `[engine+0xB0]` |
+| `+0x23C` | `ScriptClientLevelEventListener` | manager object returned by vtbl `+0x70` on the `0xDA6DB0` argument |
+| `+0x240` | `ScriptHitDetectEventListener` | vector object at `[ClientInstance+0x62C]` |
+
+After the first world exit, every vector that survives contains `[stale, current]`. The packet
+dispatcher was observed walking its vector, loading the first dword of the recycled stale block
+as a vtable and calling through it. The fault was a second-chance AV/DEP with `EIP` inside heap
+string data (`layer`, `quartz_block`); the stale 0x28-byte block had been reused for resource
+names, not for code. The telemetry and hit-detect vectors also held stale pointers in the same
+dump; the level manager is recreated per world and did not.
+
+The fix replaces each deleting-destructor call with a stub in `.d3imp` that unlinks the old
+pointer first:
+
+* shared `remove_delete(esi = vector object, edx = listener)` helper: `pushad`, scan
+  `[begin, end)` for `edx`, shift later entries left by four bytes, subtract four from `end`,
+  then run the original deleting destructor (`mov eax,[edx]; mov ecx,edx; push 1; call [eax]`),
+  `popad`, `ret`. All caller registers and the stack balance are preserved.
+* packet stub (`0x9A6E26`): `push edx; mov ecx,[ebx+0x248]; mov eax,[ecx];
+  call [eax+0x3DC]; mov esi,[eax+0x1B8]; pop edx; call helper; lea esi,[ebx+0x230]; ret`.
+* telemetry stub (`0x9A6EC6`): `push edx; mov esi,[ebx+0xB0]; pop edx; call helper;
+  lea esi,[ebx+0x234]; ret`.
+* level stub (`0x9A6F50`): the manager vector is already in `esi`; `call helper; ret`.
+* hit-detect stub (`0x9A6FC2`): `mov edx,ecx; mov eax,[ebx+0x248]; mov esi,[eax+0x62C];
+  call helper; ret`.
+
+`ebx` is the engine at all four sites. The stubs restore `esi`/`edi`/`edx` because the
+registration code immediately after each site still uses them. The helper also tolerates a
+vector that no longer contains the old pointer (the level manager case): it then falls through
+to exactly the deleting destructor the stock code would have called. The server engine
+allocations remain retained by the separate server-listener workaround; the client listener
+objects themselves are still deleted, matching the stock code.
 
 ### 3.3 String and import surgery
 
@@ -171,11 +222,11 @@ The replacement names are shorter or equal in length, so no RVAs move.
 
 A new section is appended after the last section (`.reloc`):
 
-* name `.d3imp`, RVA `0x028B7000`, raw offset `0x283D200`, characteristics `0xC0000040`
-  (initialized data, read/write);
+* name `.d3imp`, RVA `0x028B7000`, raw offset `0x283D200`, characteristics `0xE0000040`
+  (initialized data, read/write/execute, because the listener helper and stubs are code);
 * it contains the relocated import descriptor array (37 descriptors, `0x2E4` bytes), the
-  `win32craft.dll` name, the `ChakraCore.dll` name, hint/name entries, ILTs and the
-  `Win32Bootstrap` IAT;
+  `win32craft.dll` name, the `ChakraCore.dll` name, hint/name entries, ILTs, the
+  `Win32Bootstrap` IAT, and the client-listener `remove_delete` helper plus its four stubs;
 * `SizeOfImage` grows from `0x028B7000` to `0x028B8000` (the host profile key);
 * the bootstrap IAT VA is absolute (`0x400000 + new_rva + offset`), because the call site is a
   normal indirect `call dword ptr [abs]` in the patched image.
@@ -676,13 +727,9 @@ Minecraft desktop FMOD: 42 delay imports resolved
 ## 12. Verification checklist
 
 1. `Get-FileHash` on the package:
-   * `Win32Craft.1.14.60.5.exe` = `31420AF302D16E4530C0D65FDFD1783C651DD702F49B80D01C193E761206A97D`
-     (42,194,432 bytes, `SizeOfImage 0x028B8000`); the stock `Minecraft.Windows.exe` is
-     absent. The temp test folder also contains a
-     `Win32Craft.1.14.60.5.exe.orig-debug` backup; it is an earlier patched exe without the
-     world-entry skip (SHA-256
-     `B161938E6A2E53F5CD6FA7800FF346838485FFCC393FDA32DDDD5226FFD92521`), not the stock game,
-     and is not needed in a redistributed package;
+   * `Win32Craft.1.14.60.5.exe` = `90E9DE4E659EDDE22273AC03DC834E16E5D1FC78D2E02649987BFD135190611E`
+     (42,194,944 bytes, `SizeOfImage 0x028B8000`); the stock `Minecraft.Windows.exe` is
+     absent and no backup exe remains;
    * `win32craft.dll` = `FEC34FBC8AAD975E6B206F7AB2A69B38E0B04851F35A17ADFC29136F75FE4267`
      (246,784 bytes);
    * `fmod.dll` = `15CF102EFEC2FAF846C13201DD707C23A05BB58869E6DA71D03D3D3B869E4174`
@@ -696,8 +743,17 @@ Minecraft desktop FMOD: 42 delay imports resolved
    line.
 5. Open the main menu, load a world, confirm the mouse is captured in gameplay, hold the
    attack button to break a survival block, then press Esc and confirm the cursor is released.
-6. Sound is expected to be absent on this machine with the current UWP FMOD build; check the
+6. Exit the world to the main menu, load a second world (or the same world again), and confirm
+   the game does not crash in the packet dispatcher. Repeat a third entry to exercise the
+   listener vectors twice.
+7. Quit the game normally: confirm a clean exit with no crash dialog and no Store rating
+   prompt.
+8. Sound is expected to be absent on this machine with the current UWP FMOD build; check the
    `init result=28` line before treating it as a new regression.
+
+Validation note (2026-11-23): the rebuilt package completed world entry, exit, re-entry (twice
+in a row), and a normal quit without a crash dialog or the Store rating prompt. The log ended
+with `1.16 original startup returned: 00000000`.
 
 ## 13. Traps that cost time
 
@@ -748,6 +804,14 @@ Minecraft desktop FMOD: 42 delay imports resolved
 14. **The 1.14 package folder may contain a stock backup exe.** Imported folders sometimes keep
     `Minecraft.Windows.exe.orig` next to the game. The packager removes it; if you assemble a
     folder by hand, do not ship two 42 MB executables.
+15. **Every world re-initializes the client script engine.** `MinecraftClientScriptEngine`
+    (`0xDA6DB0`) replaces four listeners on every world load and frees the previous instances.
+    The stock code does not unregister them from their manager vectors, so the second world
+    leaves stale pointers that the dispatcher later dereferences as vtables. Remove the old
+    pointer from its manager vector before the deleting destructor; the four call sites are
+    `0xDA6E26`, `0xDA6EC6`, `0xDA6F50` and `0xDA6FC2`, patched to stubs in `.d3imp`. A crash
+    dump of the unfixed exe shows `EIP` inside recycled heap string data, not module code; do
+    not look for a missing or corrupted function in `.text`.
 
 ## 14. Open items
 

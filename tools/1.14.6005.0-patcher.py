@@ -335,6 +335,93 @@ def patch(source: Path, output: Path,
     relocated.append(b"\0" * 20)
     section[:new_descriptor_count * 20] = b"".join(relocated)
 
+    # ``MinecraftClientScriptEngine::<init>`` (VA 0xda6db0) runs again for
+    # every world.  It creates four Script*EventListener objects, stores them
+    # in engine fields +0x230/+0x234/+0x23c/+0x240 and deletes the previous
+    # objects without unregistering them from their event-manager vectors:
+    #
+    #   +0x230 ScriptClientPacketEventListener -> [[ClientInstance]+0x1b8]
+    #   +0x234 ScriptTelemetryEventListener    -> [engine+0xb0]
+    #   +0x23c ScriptClientLevelEventListener  -> manager returned by vtbl+0x70
+    #   +0x240 ScriptHitDetectEventListener    -> [[ClientInstance]+0x62c]
+    #
+    # After a world exit and re-entry every vector holds [stale, current], and
+    # the next dispatch dereferences the recycled stale block as a vtable
+    # (observed as an AV in the packet-dispatcher thunk 0x166e420).  Replace
+    # each deleting-destructor call with a stub that unlinks the old pointer
+    # from its manager vector first.  The shared helper and the stubs live in
+    # this appended section, which is marked executable below.
+    code = bytearray()
+    code_relocations: list[tuple[int, int]] = []
+
+    def code_call(label: int) -> None:
+        code_relocations.append((len(code) + 1, label))
+        code.extend(b"\xe8\0\0\0\0")
+
+    helper_offset = len(code)
+    code.extend(bytes.fromhex(
+        # pushad; ebx=vector; ecx=begin; edi=end; empty -> delete
+        "608bde8b0b8b7b043bcf740b3911740983c1043bcf72f5eb16"
+        # found: shift every later entry left by one pointer
+        "8bc18d68043bef73098b750089308bc5ebf0"
+        # end -= 4
+        "836b0404"
+        # deleting destructor through vtable slot 0
+        "8b028bca6a01ff1061c3"
+    ))
+    stub_packet_offset = len(code)
+    code.extend(bytes.fromhex(
+        "528b8b480200008b01ff90dc0300008bb0b80100005a"
+    ))
+    code_call(helper_offset)
+    code.extend(bytes.fromhex("8db330020000c3"))
+    stub_telemetry_offset = len(code)
+    code.extend(bytes.fromhex("528bb3b00000005a"))
+    code_call(helper_offset)
+    code.extend(bytes.fromhex("8db334020000c3"))
+    stub_level_offset = len(code)
+    code_call(helper_offset)
+    code.extend(b"\xc3")
+    stub_hitdetect_offset = len(code)
+    code.extend(bytes.fromhex("8bd18b83480200008bb02c060000"))
+    code_call(helper_offset)
+    code.extend(b"\xc3")
+    cave_offset = append(bytes(code), 4)
+    cave_va = 0x400000 + new_rva + cave_offset
+    for position, label in code_relocations:
+        struct.pack_into(
+            "<i", section, cave_offset + position,
+            (cave_va + label) - (cave_va + position + 4),
+        )
+
+    def listener_site(rva: int, expected: str, stub_offset: int,
+                      label: str) -> None:
+        original = bytes.fromhex(expected)
+        site_va = 0x400000 + rva
+        replacement = b"\xe8" + struct.pack(
+            "<i", cave_va + stub_offset - (site_va + 5)
+        ) + b"\x90" * (len(original) - 5)
+        checked_write(
+            image, pe.rva_to_offset(rva), original, replacement, label
+        )
+
+    listener_site(
+        0x9A6E26, "8b028bca6a01ff10", stub_packet_offset,
+        "unregister old packet listener on script re-init"
+    )
+    listener_site(
+        0x9A6EC6, "8bcA8b026a01ff10", stub_telemetry_offset,
+        "unregister old telemetry listener on script re-init"
+    )
+    listener_site(
+        0x9A6F50, "8b028bca6a01ff10", stub_level_offset,
+        "unregister old level listener on script re-init"
+    )
+    listener_site(
+        0x9A6FC2, "8b016a01ff10", stub_hitdetect_offset,
+        "unregister old hit-detect listener on script re-init"
+    )
+
     virtual_size = len(section)
     raw_size = align(virtual_size, pe.file_alignment)
     section.extend(b"\0" * (raw_size - virtual_size))
@@ -349,7 +436,7 @@ def patch(source: Path, output: Path,
         image, new_header, b"\0" * 40,
         struct.pack(
             "<8s6I2HI", b".d3imp\0\0", virtual_size, new_rva, raw_size,
-            new_raw_offset, 0, 0, 0, 0, 0xC0000040
+            new_raw_offset, 0, 0, 0, 0, 0xE0000040
         ), "new .d3imp section header"
     )
     checked_write(
@@ -395,6 +482,52 @@ def patch(source: Path, output: Path,
         bytes.fromhex("8b4e048b018b4004ffd0"),
         bytes.fromhex("b0019090909090909090"),
         "world-entry Chakra predicate skip"
+    )
+    # The MinecraftServerScriptEngine owns a ServerInstanceEventListener
+    # subobject at engine+0x22c and registers it with the listener manager at
+    # [ServerInstance+0x4c].  Server re-initialization (0xfa0a68) creates a
+    # new engine, stores it in ServerInstance+0xfc, deletes the old engine and
+    # then registers the new listener at 0xfa0a8b.  The old engine's listener
+    # is never unregistered, so the dispatch vector keeps a pointer to a freed
+    # engine; after a world exit and re-entry the event loop dereferences the
+    # recycled block as a vtable and faults (observed eip through 0x166e432).
+    #
+    # Replace the old-engine deletion at 0xfa0a70-0xfa0a7f with a call to
+    # removeListener([ServerInstance+0x4c], old_engine+0x22c).  The removal
+    # helper is 0x9a0340, the same one the teardown path calls at 0xfa1cd3.
+    # At this point edi is the ServerInstance and edx is the old engine; the
+    # je at 0xfa0a6e still skips the sequence when no old engine exists.  The
+    # engine allocation itself is deliberately retained so a dispatch that is
+    # already in flight cannot run through freed memory.  This is a small
+    # per-world leak, matching the 1.16 listener workaround.
+    checked_write(
+        image, pe.rva_to_offset(0xfa0a70),
+        bytes.fromhex("8b028bcaeb0685c974068b016a01ff10"),
+        bytes.fromhex("8b4f4c8d822c02000050e8c1f85fff90"),
+        "unregister old script engine listener on server re-init"
+    )
+    # ServerInstance teardown (0xfa1cd8-0xfa1cf0) unregisters the current
+    # listener from [ServerInstance+0x4c], clears engine+0xfc, then deletes
+    # the engine.  Keep the allocation (0xfa1cea je -> jmp) as a second
+    # safety net for events queued before the listener was unregistered.
+    checked_write(
+        image, pe.rva_to_offset(0xfa1cea),
+        bytes.fromhex("7406"), bytes.fromhex("eb06"),
+        "retain script engine on server teardown"
+    )
+    # The "Did you like Minecraft?" rating prompt is gated by the persisted
+    # shown_ratings_prompt option (ID 0x172) and a launch counter (ID 0x174).
+    # The trigger (MinecraftGame vtable slot 0x48, 0x14e4c0) reads the option
+    # objects at [options+0x5d0]/[options+0x5d4] and builds the prompt once
+    # the counter reaches five.  When it fires it reaches the UWP Store
+    # projection, which is unavailable in the unpackaged host and crashes
+    # after the save-on-exit path.  The branch at 0x14e533 returns false when
+    # the option is already set; force that "already shown" path so the
+    # prompt is never built.
+    checked_write(
+        image, pe.rva_to_offset(0x14e533),
+        bytes.fromhex("756b"), bytes.fromhex("eb6b"),
+        "suppress rating prompt"
     )
     output.write_bytes(image)
     print(f"wrote {output} ({len(image)} bytes)")

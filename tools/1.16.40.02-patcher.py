@@ -7,6 +7,12 @@ selected by ``SizeOfImage == 0x02DAF000``); the patched exe grows to that
 size.  Two retail x86 revisions are accepted (see ``SUPPORTED_SHA256``);
 they differ by one build-variant byte and patch identically.
 
+The default build keeps the Windows inbox ``chakra.dll`` import and
+suppresses the Store rating prompt (``jne`` -> ``jmp`` at file offset
+``0x166d06``).  ``--chakra-core`` is a diagnostic mode that redirects the
+game to the package ``ChakraCore.dll``; that mode breaks experimental
+gameplay scripts.
+
 Use ``--package`` to assemble a ready-to-run folder from an extracted game
 folder or an ``.appx``: it copies/extracts the game, patches the exe to
 ``Win32Craft.1.16.40.02.exe``, copies the host DLL as ``win32craft.dll``,
@@ -157,7 +163,15 @@ class Pe32:
 
 
 def patch(source: Path, output: Path,
-          host_dll: str = "win32craft.dll") -> None:
+          host_dll: str = "win32craft.dll",
+          chakra_core: bool = False) -> None:
+    """Patch a retail 1.16.40.02 exe.
+
+    The default keeps the retail ``chakra.dll`` import, so the game uses the
+    Windows inbox Chakra engine.  ``chakra_core`` is a diagnostic mode that
+    redirects the import to the package ``ChakraCore.dll`` and stubs
+    ``JsStartDebugging``; that mode breaks experimental-gameplay scripts.
+    """
     original = source.read_bytes()
     digest = hashlib.sha256(original).hexdigest()
     if digest not in SUPPORTED_SHA256:
@@ -219,6 +233,18 @@ def patch(source: Path, output: Path,
         image, pe.rva_to_offset(0x016d25fb),
         bytes.fromhex("ff1528442a02"), bytes.fromhex("e92a00000090"),
         "skip absent loading-state callback"
+    )
+    # The "Did you like Minecraft?" rating prompt is gated by the persisted
+    # shown_ratings_prompt option (ID 0x174) and a launch counter (ID 0x175).
+    # When the prompt fires it reaches the UWP Store projection, which is
+    # unavailable in the unpackaged host and crashes after the save-on-exit
+    # path.  The trigger at VA 0x567906 returns false when the option is
+    # already set; force that "already shown" branch so the prompt is never
+    # built.  File offset 0x166d06 is the same gate as 1.16.20.03.
+    checked_write(
+        image, pe.rva_to_offset(0x0167906),
+        bytes.fromhex("7585"), bytes.fromhex("eb85"),
+        "suppress rating prompt"
     )
     # Activation and window-state diagnostics stringify boxed WinRT enums.
     # Wine has an aborting Enum::ToString export. A null HSTRING is the
@@ -294,38 +320,56 @@ def patch(source: Path, output: Path,
         )
         compatibility_iats[name] = kernel_iat_rva + entry_index * 4
 
-    chakra_ilt_rva, chakra_iat_rva = chakra_descriptor
-    chakra_ilt_offset = pe.rva_to_offset(chakra_ilt_rva)
-    chakra_names: dict[str, tuple[int, int]] = {}
-    index = 0
-    while True:
-        hint_rva = struct.unpack_from(
-            "<I", image, chakra_ilt_offset + index * 4
-        )[0]
-        if not hint_rva:
-            break
-        if hint_rva & 0x80000000:
-            raise ValueError("unexpected ordinal chakra.dll import")
-        chakra_names[pe.c_string_at_rva(hint_rva + 2).decode("ascii")] = \
-            (index, hint_rva)
-        index += 1
-    debug_index, debug_hint_rva = chakra_names["JsStartDebugging"]
-    chakra_safe_hint_rva = chakra_names["JsAddRef"][1]
-    checked_write(
-        image, chakra_ilt_offset + debug_index * 4,
-        struct.pack("<I", debug_hint_rva),
-        struct.pack("<I", chakra_safe_hint_rva),
-        "JsStartDebugging loader placeholder"
-    )
-    debug_iat_rva = chakra_iat_rva + debug_index * 4
+    # The default build keeps the retail chakra.dll import, matching the UWP
+    # package and the known-good D3DCraft conversion.  The diagnostic
+    # --chakra-core mode redirects that import to the package ChakraCore.dll
+    # and stubs one export ChakraCore does not provide; that mode breaks
+    # experimental-gameplay scripts.
+    debug_iat_rva = None
+    if chakra_core:
+        chakra_ilt_rva, chakra_iat_rva = chakra_descriptor
+        chakra_ilt_offset = pe.rva_to_offset(chakra_ilt_rva)
+        chakra_names: dict[str, tuple[int, int]] = {}
+        index = 0
+        while True:
+            hint_rva = struct.unpack_from(
+                "<I", image, chakra_ilt_offset + index * 4
+            )[0]
+            if not hint_rva:
+                break
+            if hint_rva & 0x80000000:
+                raise ValueError("unexpected ordinal chakra.dll import")
+            chakra_names[pe.c_string_at_rva(hint_rva + 2).decode("ascii")] = \
+                (index, hint_rva)
+            index += 1
+        debug_index, debug_hint_rva = chakra_names["JsStartDebugging"]
+        chakra_safe_hint_rva = chakra_names["JsAddRef"][1]
+        checked_write(
+            image, chakra_ilt_offset + debug_index * 4,
+            struct.pack("<I", debug_hint_rva),
+            struct.pack("<I", chakra_safe_hint_rva),
+            "JsStartDebugging loader placeholder"
+        )
+        debug_iat_rva = chakra_iat_rva + debug_index * 4
 
+    # Build the replacement import directory in a new read/write .d3imp
+    # section.  The original descriptors are copied, host-facing DLL names are
+    # redirected to win32craft.dll, and new descriptors are appended for
+    # Win32Bootstrap and the Windows 7 delay-load compatibility shims.  The
+    # bootstrap IAT is called from the patched WinMain below.  In the default
+    # system-chakra mode the retail chakra.dll descriptor is left untouched;
+    # only the diagnostic --chakra-core mode adds the ChakraCore rename and
+    # the JsStartDebugging placeholder descriptor.
     last = pe.sections[-1]
     new_raw_offset = align(len(image), pe.file_alignment)
     new_rva = align(
         last.virtual_address + max(last.virtual_size, last.raw_size),
         pe.section_alignment,
     )
-    new_descriptor_count = len(descriptors) + len(compatibility_names) + 3
+    extra_descriptors = 2 if not chakra_core else 3
+    new_descriptor_count = (
+        len(descriptors) + len(compatibility_names) + extra_descriptors
+    )
     section = bytearray(new_descriptor_count * 20)
 
     def append(data: bytes, alignment: int = 1) -> int:
@@ -338,9 +382,12 @@ def patch(source: Path, output: Path,
     if not host_dll_bytes or b"\0" in host_dll_bytes:
         raise ValueError("host DLL name must be a non-empty ASCII string")
     dll_name_offset = append(host_dll_bytes + b"\0")
-    chakra_name_offset = append(b"ChakraCore.dll\0")
+    chakra_name_offset = None if not chakra_core else append(b"ChakraCore.dll\0")
     hint_offsets: dict[str, int] = {}
-    host_names = ("Win32Bootstrap", "JsStartDebugging") + compatibility_names
+    host_names = ("Win32Bootstrap",) + compatibility_names
+    if chakra_core:
+        host_names = ("Win32Bootstrap", "JsStartDebugging") + \
+            compatibility_names
     for name in host_names:
         hint_offsets[name] = append(b"\0\0" + name.encode("ascii") + b"\0", 2)
     ilt_offsets: dict[str, int] = {}
@@ -358,17 +405,20 @@ def patch(source: Path, output: Path,
         if dll_name in (b"dxgi.dll", b"d3d11.dll") or \
                 dll_name in WIN32CRAFT_API_SETS:
             values[3] = new_rva + dll_name_offset
-        elif dll_name == b"chakra.dll":
+        elif dll_name == b"chakra.dll" and chakra_name_offset is not None:
             values[3] = new_rva + chakra_name_offset
         relocated.append(struct.pack("<5I", *values))
     relocated.append(struct.pack(
         "<5I", new_rva + ilt_offsets["Win32Bootstrap"], 0, 0,
         new_rva + dll_name_offset, new_rva + bootstrap_iat_offset
     ))
-    relocated.append(struct.pack(
-        "<5I", new_rva + ilt_offsets["JsStartDebugging"], 0, 0,
-        new_rva + dll_name_offset, debug_iat_rva
-    ))
+    if chakra_core:
+        if debug_iat_rva is None:
+            raise ValueError("missing JsStartDebugging IAT slot")
+        relocated.append(struct.pack(
+            "<5I", new_rva + ilt_offsets["JsStartDebugging"], 0, 0,
+            new_rva + dll_name_offset, debug_iat_rva
+        ))
     for name in compatibility_names:
         relocated.append(struct.pack(
             "<5I", new_rva + ilt_offsets[name], 0, 0,
@@ -398,6 +448,9 @@ def patch(source: Path, output: Path,
         image, pe.file_header + 2, struct.pack("<H", pe.section_count),
         struct.pack("<H", pe.section_count + 1), "section count"
     )
+    # The host identifies the game build by SizeOfImage.  The appended section
+    # must make it exactly 0x02DAF000 so bootstrap_116 selects
+    # game_profile_116_04002; keep the size fields consistent.
     old_initialized = struct.unpack_from("<I", image, pe.optional + 8)[0]
     checked_write(
         image, pe.optional + 8, struct.pack("<I", old_initialized),
@@ -670,12 +723,25 @@ def remove_analysis_files(folder: Path) -> None:
 
 
 def write_patch_notes(output: Path, exe: Path, host_dll: Path,
-                      input_digest: str) -> None:
+                      input_digest: str, chakra_core: bool = False) -> None:
     fmod = output / "fmod.dll"
     exe_digest = sha256_file(exe)
     host_digest = sha256_file(host_dll)
     fmod_digest = sha256_file(fmod)
     size_of_image = pe_size_of_image(exe)
+    if chakra_core:
+        chakra_text = """\
+This diagnostic build redirects the game's `chakra.dll` import to the package
+`ChakraCore.dll` and stubs `JsStartDebugging`.  This mode is not recommended:
+its engine differences break experimental-gameplay scripts.  `cohtml.UWP.dll`
+also imports `ChakraCore.dll`, so that file is required either way.
+"""
+    else:
+        chakra_text = """\
+The game executable keeps the Windows inbox `chakra.dll` import, matching the
+retail package and the known-good D3DCraft conversion.  The package still
+ships `ChakraCore.dll` because `cohtml.UWP.dll` imports it.
+"""
     text = f"""# Minecraft 1.16.40.02 x86 - Win32Craft
 
 Ready-to-run folder assembled by `tools\\1.16.40.02-patcher.py --package`.
@@ -687,12 +753,18 @@ Ready-to-run folder assembled by `tools\\1.16.40.02-patcher.py --package`.
   * output SHA-256: `{exe_digest}`
   * size: {exe.stat().st_size} bytes
   * `SizeOfImage`: `0x{size_of_image:08X}`
-* `win32craft.dll` - Win32Craft x86 host
+* `win32craft.dll` - Win32Craft x86 host (includes the shared 1.16
+  `GetAsyncKeyState` mouse-button polling fix for held attack/block breaking)
   * SHA-256: `{host_digest}`
   * size: {host_dll.stat().st_size} bytes
 * `fmod.dll` - desktop FMOD, copied from `fmod_X86.dll`
   * SHA-256: `{fmod_digest}`
   * size: {fmod.stat().st_size} bytes
+
+{chakra_text}
+The shared-host build also suppresses the Store rating prompt (`jne` -> `jmp`
+at file offset `0x166d06`) so a normal exit does not call the unavailable UWP
+Store API.
 
 The retail game DLLs (`ChakraCore.dll`, `cohtml.UWP.dll`,
 `HttpServer.UWP.dll`, `MediaDecoders.UWP.dll`, `RenoirCore.UWP.dll` and
@@ -714,7 +786,8 @@ the executable.  User data lives under
 
 def package(source: Path, output: Path, host_dll: Path,
             force: bool = False,
-            exe_name: str = PACKAGE_EXE_NAME) -> None:
+            exe_name: str = PACKAGE_EXE_NAME,
+            chakra_core: bool = False) -> None:
     """Copy or extract a game folder and turn it into a Win32Craft package."""
     exe_name = validate_exe_name(exe_name)
     if not source.exists():
@@ -770,7 +843,7 @@ def package(source: Path, output: Path, host_dll: Path,
         raise ValueError(f"Minecraft.Windows.exe not found in {output}")
     input_digest = sha256_file(original_exe)
     exe = output / exe_name
-    patch(original_exe, exe)
+    patch(original_exe, exe, chakra_core=chakra_core)
     if exe != original_exe:
         original_exe.unlink()
         print(f"renamed patched exe to {exe.name}")
@@ -803,7 +876,8 @@ def package(source: Path, output: Path, host_dll: Path,
     print(f"win32craft.dll <- {host_dll}")
 
     prepare_mcbe_package(output)
-    write_patch_notes(output, exe, host_dll, input_digest)
+    write_patch_notes(output, exe, host_dll, input_digest,
+                      chakra_core=chakra_core)
     print(f"package ready: {output}")
 
 
@@ -824,20 +898,29 @@ def main() -> None:
                              f"(default: {PACKAGE_EXE_NAME})")
     parser.add_argument("--force", action="store_true",
                         help="replace an existing package output folder")
+    parser.add_argument("--chakra-core", action="store_true",
+                        help="diagnostic: redirect the game's chakra.dll "
+                             "import to the package ChakraCore.dll (old "
+                             "behavior; breaks experimental gameplay)")
+    parser.add_argument("--system-chakra", action="store_true",
+                        help="deprecated; the Windows inbox chakra.dll is "
+                             "now the default")
     args = parser.parse_args()
 
+    if args.system_chakra and args.chakra_core:
+        parser.error("--system-chakra and --chakra-core are mutually exclusive")
     if args.package:
         if args.source is None or args.output is None or args.host is None:
             parser.error(
                 "--package requires SOURCE, OUTPUT and --host PATH"
             )
         package(args.source, args.output, args.host, args.force,
-                args.exe_name)
+                args.exe_name, chakra_core=args.chakra_core)
         return
 
     source = args.source or Path("Minecraft.Windows.exe")
     output = args.output or Path("Win32Craft.1.16.40.02.exe")
-    patch(source, output, args.host_dll)
+    patch(source, output, args.host_dll, chakra_core=args.chakra_core)
 
 
 if __name__ == "__main__":

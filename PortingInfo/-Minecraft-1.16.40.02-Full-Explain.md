@@ -4,7 +4,7 @@
 |---|---|
 | Game | Minecraft Bedrock Edition (Mojang / Microsoft) |
 | Version | 1.16.40.02, x86 UWP APPX, package `Microsoft.MinecraftUWP_1.16.4002.0_x86__8wekyb3d8bbwe` |
-| Engine | native C++ Bedrock engine, ChakraCore JavaScript, cohtml UI; no .NET game logic |
+| Engine | native C++ Bedrock engine, Windows inbox Chakra JavaScript (`ChakraCore.dll` remains for cohtml), cohtml UI; no .NET game logic |
 | Host | `win32craft.dll` (Win32Craft x86 host), profile `game_profile_116_04002` |
 | Patcher | `tools/1.16.40.02-patcher.py` |
 | Package | `dist-1.16.40.02\Minecraft_1.16.40.02_x86_Win32Craft` (gitignored), exe `Win32Craft.1.16.40.02.exe` |
@@ -95,6 +95,7 @@ site; in `.text` the file offset is RVA minus `0xC00` on this build.
 | `0x016D25FB` | `FF 15 28 44 2A 02` | `E9 2A 00 00 00 90` | same notification from the loading-state transition: skip the empty invoke and continue to local cleanup |
 | `0x016E3ABF` | `FF 15 E0 4B 2A 02` | `33 C0 90 90 90 90` | activation diagnostic stringifies a boxed WinRT enum; use a null HSTRING instead of the aborting `Enum::ToString` |
 | `0x016E3EAE` | `FF 15 E0 4B 2A 02` | `33 C0 90 90 90 90` | same, window-state diagnostic |
+| `0x0167906` | `75 85` | `EB 85` | force the "rating prompt already shown" branch; suppresses the "Did you like Minecraft?" Store rating prompt |
 | `0x01C44BEE` | `50 57 68 00 00 40 00 E8 3F 1B 00 00` | `FF 15 <IAT> 90 90 90 90 90 90` | replace the game's `WinMain` call with an indirect call to `win32craft.dll!Win32Bootstrap` |
 
 The three pointer-visualization patches are not cosmetic: `PointerVisualizationSettings` has no
@@ -103,6 +104,15 @@ unpackaged process does not have. The two callback patches avoid `std::_Xbad_fun
 `_invoke_watson`; the game treats the optional callback as a no-op and continues. The enum
 diagnostics are optional logging; Wine's `Enum::ToString` aborts, a null HSTRING is a valid
 empty diagnostic.
+
+The rating gate at RVA `0x0167906` (file offset `0x166D06`, VA `0x567906`) is the
+`RatingPromptController` path. The function reads the persisted option ID `0x174`
+(`shown_ratings_prompt`); when it is false it reads the launch counter ID `0x175` and shows the
+prompt after five launches. The prompt is the in-game `rating_prompt.rating_prompt_screen` flow
+that talks to `Windows.Services.Store.StoreContext`. That UWP Store projection is unavailable in
+the unpackaged host and crashed after save-on-exit. The `jne` short branch skips the entire
+prompt body when the option is already set; patching it to an unconditional `jmp` makes every
+run take that branch, so no Store object is ever created.
 
 ### 3.3 String and import surgery
 
@@ -123,13 +133,17 @@ directory size of `0x294`. Descriptor names are changed without moving the descr
   `win32craft.dll`. The host DLL exports the same functions (directly or as forwarders), so the
   host can install `D3D11CreateDevice`, `D3DCompile`, DXGI factory and WinRT compatibility
   shims before the game resolves them.
-* `chakra.dll` is renamed to `ChakraCore.dll`, which is the DLL the retail package actually
-  ships.
+* `chakra.dll` stays unchanged by default, so the game uses the Windows inbox Chakra engine,
+  matching the retail package. The diagnostic `--chakra-core` mode instead renames it to
+  `ChakraCore.dll`, the DLL the retail package ships; that mode changes engine behavior and
+  breaks experimental-gameplay scripts. `cohtml.UWP.dll` imports `ChakraCore.dll` in either
+  mode, so the package keeps that DLL.
 * A new `Win32Bootstrap` descriptor is appended. Its ILT/IAT live in the new `.d3imp` section,
   and the `WinMain` patch calls through that IAT.
-* A new `JsStartDebugging` descriptor points at the existing chakra IAT slot; its ILT entry is
-  replaced with `JsAddRef`, so the loader never fails on a debugging export the game does not
-  use.
+* In `--chakra-core` mode only, a new `JsStartDebugging` descriptor points at the existing chakra
+  IAT slot; its ILT entry is replaced with `JsAddRef`, so the loader never fails on a debugging
+  export the package ChakraCore does not provide. The default system-chakra build keeps the real
+  `JsStartDebugging` import from `chakra.dll`.
 * Three delay-load helper imports (`ResolveDelayLoadedAPI`, `ResolveDelayLoadsFromDll`,
   `DelayLoadFailureHook`) are handled the same way: their ILT entries are replaced with
   `GetLastError`, and new descriptors point at the existing IAT slots. This keeps the image
@@ -142,8 +156,11 @@ The replacement names are shorter or equal in length, so no RVAs move.
 A new section is appended after the last section:
 
 * name `.d3imp`, characteristics `0xC0000040` (initialized data, read/write);
-* it contains the relocated import descriptor array, the `win32craft.dll` name, the
-  `ChakraCore.dll` name, hint/name entries, ILTs and the `Win32Bootstrap` IAT;
+* it contains the relocated import descriptor array, the `win32craft.dll` name, hint/name
+  entries, ILTs and the `Win32Bootstrap` IAT; in `--chakra-core` mode it also holds the
+  `ChakraCore.dll` name and the `JsStartDebugging` placeholder descriptor;
+* the default (system chakra) build appends 36 descriptors plus the terminator: the 32 retail
+  descriptors, the bootstrap and the three delay-load helpers. `--chakra-core` adds one more;
 * `SizeOfImage` grows from `0x02DAE000` to `0x02DAF000` (the host profile key);
 * the bootstrap IAT VA is absolute (`0x400000 + new_rva + offset`), because the call site is a
   normal indirect `call dword ptr [abs]` in the patched image.
@@ -303,6 +320,15 @@ menus it restores the UI cursor. Relative mode uses `ClipCursor` plus `SetCaptur
 default pointer cursor starts as the arrow, not NULL: the game saves the cursor before hiding
 it and restores it when opening UI; starting with NULL made that restore request relative mode
 again.
+
+The game's HID layer also polls `ICoreWindow::GetAsyncKeyState`/`GetKeyState` every frame. The
+host originally returned 0 for every key, so a held mouse button looked like a one-frame tap:
+survival mining stopped after the first frame and the view could snap back. The shared host now
+translates VK 1–6 (`VK_LBUTTON` … `VK_XBUTTON2`) to the real `GetAsyncKeyState` state and returns
+1 while the button is physically down. Keyboard input still arrives through the `KeyDown`/`KeyUp`
+events, so only the mouse-button range is translated. This is host-side and therefore applies to
+both 1.16.20.03 and 1.16.40.02; the package must be built with the current `win32craft.dll`
+(`FEC34FBC…` for the tested build), not the older `A5449BD5…` host.
 
 The skin picker is a real `FileOpenPicker` path. The game appends to
 `FileOpenPicker.FileTypeFilter`, which is a projected `IVector<HSTRING>`. The host stores the
@@ -477,10 +503,10 @@ Minecraft 1.16 desktop FMOD: 48 delay imports resolved
 ## 12. Verification checklist
 
 1. `Get-FileHash` on the package:
-   * `Win32Craft.1.16.40.02.exe` = `6021BF5A64584935694D5D938854A515230D5A66501F95F04AF837B4D6D0417F`
+   * `Win32Craft.1.16.40.02.exe` = `5A28A168C8BDBE2766D9D0EDAE0350C0C1AEE0CCDFC48D5E33D438742B19DD41`
      (47,334,400 bytes, `SizeOfImage 0x02DAF000`); the stock `Minecraft.Windows.exe` is absent;
-   * `win32craft.dll` = `A5449BD59B09B7C56A7B155B95CB51D95768695B8CD76E3F8DEB00E75864B659`
-     (244,224 bytes);
+   * `win32craft.dll` = `FEC34FBC8AAD975E6B206F7AB2A69B38E0B04851F35A17ADFC29136F75FE4267`
+     (246,784 bytes);
    * `fmod.dll` = `15CF102EFEC2FAF846C13201DD707C23A05BB58869E6DA71D03D3D3B869E4174`
      (1,338,880 bytes);
    * `.Win32Craft` = `Minecraft Bedrock Edition` (no trailing newline);
@@ -491,7 +517,11 @@ Minecraft 1.16 desktop FMOD: 48 delay imports resolved
 4. Confirm the log has the bootstrap line and the 48-import FMOD line.
 5. Open the main menu, load a world, resize the window through the verified sequence, and
    import a PNG skin.
-6. Sound is expected to be absent on this machine with the current UWP FMOD build; check the
+6. Hold the attack button in survival and creative: block breaking must keep progressing
+   (`GetAsyncKeyState` polling supplies the held state).
+7. Exit to the main menu, load a world again, then quit normally: confirm no crash and no
+   Store rating prompt.
+8. Sound is expected to be absent on this machine with the current UWP FMOD build; check the
    `init result=28` line before treating it as a new regression.
 
 ## 13. Traps that cost time

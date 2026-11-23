@@ -3,7 +3,8 @@
 * Game: Minecraft Bedrock Edition by Mojang / Microsoft
 * Version: 1.16.40.02, x86 UWP APPX (build 2020-09-03, package
   `Microsoft.MinecraftUWP_1.16.4002.0_x86__8wekyb3d8bbwe`)
-* Engine: native C++ Bedrock engine with ChakraCore and cohtml UI; no .NET game logic
+* Engine: native C++ Bedrock engine with Windows inbox Chakra JavaScript
+  (`ChakraCore.dll` remains for cohtml), cohtml UI; no .NET game logic
 * Host: `win32craft.dll` (Win32Craft x86 host), profile `game_profile_116_04002`
 * Patcher: `tools/1.16.40.02-patcher.py`
 * Package exe: `Win32Craft.1.16.40.02.exe` (the stock `Minecraft.Windows.exe`
@@ -32,6 +33,16 @@
 * FMOD delay imports: the profile selects the 1.16.40.02 descriptor
   (`0x024b01cc`), all 48 names resolve against the shipped `fmod_X86.dll`, and
   the common calls go through the diagnostic bridge.
+* Survival input: the shared host answers the game's `GetAsyncKeyState` polling
+  with the real mouse-button state for VK 1-6, so holding the attack button
+  keeps mining/breaking blocks instead of looking like a one-frame tap.
+* Exit: the "Did you like Minecraft?" Store rating prompt is suppressed
+  (`jne` -> `jmp` at file offset `0x166d06`, option `0x174` /
+  `RatingPromptController`). A normal exit no longer calls the unavailable UWP
+  Store projection.
+* JavaScript engine: the exe keeps the Windows inbox `chakra.dll` import. The
+  diagnostic `--chakra-core` mode redirects it to `ChakraCore.dll` but breaks
+  experimental-gameplay scripts; it is not used for the normal package.
 * User data: `%APPDATA%\MinecraftPE\games\com.mojang`; `WIN32CRAFT_DEBUG=1`
   writes `win32craft.log` next to the exe.
 

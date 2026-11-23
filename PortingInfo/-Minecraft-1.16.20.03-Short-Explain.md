@@ -3,7 +3,14 @@
 * Game: Minecraft Bedrock Edition by Mojang / Microsoft
 * Version: 1.16.20.03, x86 UWP APPX (package
   `Microsoft.MinecraftUWP_1.16.2003.0_x86__8wekyb3d8bbwe`)
-* Engine: native C++ Bedrock engine with ChakraCore and cohtml UI; no .NET game logic
+* Engine: native C++ Bedrock engine with the Windows inbox Chakra JavaScript
+  engine and cohtml UI; no .NET game logic
+* Script engine: the game exe keeps its retail `chakra.dll` import, so
+  experimental-gameplay scripts use the Windows system engine
+  (`C:\Windows\SysWOW64\chakra.dll`). The package still ships
+  `ChakraCore.dll` because `cohtml.UWP.dll` imports it. `--chakra-core` is a
+  diagnostic opt-in that redirects the game import to ChakraCore; that mode
+  breaks experimental-gameplay scripts.
 * Host: `win32craft.dll` (Win32Craft x86 host), profile selected by
   `SizeOfImage == 0x02DB1000`; shares `win32_host_116.inl` with 1.16.40.02
 * Patcher: `tools/1.16.20.03-patcher.py`
@@ -12,8 +19,10 @@
 * Package marker: `.Win32Craft` containing `Minecraft Bedrock Edition`;
   `*.p7x` and `*.i64` files are removed
 * Status: runs as an unpackaged Win32 x86 process. Startup, main menu, window
-  title and the skin import path are verified. The shared host includes the
-  `FileOpenPicker.FileTypeFilter` skin-picker fix.
+  title, the skin import path and an experimental-gameplay world are verified.
+  The shared host includes the `FileOpenPicker.FileTypeFilter` skin-picker fix.
+  The "Did you like Minecraft?" / Store rating prompt is suppressed by an exe
+  patch, so a normal exit no longer reaches the unavailable UWP Store API.
 
 ## What works
 
@@ -25,6 +34,12 @@
 * Package mode: `.appx` or extracted folder input, `*_APP` CRT import
   rewriting in the six game DLLs, `fmod.dll` creation, host copy, standard exe
   rename, `.Win32Craft` marker and `PATCH_NOTES.md`.
+* Experimental gameplay: worlds with the `experimentalgameplay` toggle load
+  with the system Chakra engine. The shared host's old ChakraCore redirect
+  crashed these worlds; it is no longer the default.
+* Clean exit: the rating-prompt gate in `MinecraftGame` is patched
+  (`jne` -> `jmp`, VA `0x567906` / file offset `0x166d06`), so the normal exit
+  path never calls the UWP Store rating API.
 * `WIN32CRAFT_DEBUG=1` writes `win32craft.log` next to the exe.
 
 ## What does not work yet

@@ -6,6 +6,11 @@ host profile lives in ``win32_host_116.inl`` (``game_profile_116_02003``,
 selected by ``SizeOfImage == 0x02DB1000``).  Two retail x86 revisions are
 accepted (see ``SUPPORTED_SHA256``); they patch identically.
 
+The default build keeps the Windows inbox ``chakra.dll`` import, matching the
+retail UWP package and the known-good D3DCraft conversion.  The diagnostic
+``--chakra-core`` mode redirects that import to the package
+``ChakraCore.dll`` for comparison; it breaks experimental-gameplay scripts.
+
 Use ``--package`` to assemble a ready-to-run folder from an extracted game
 folder or an ``.appx``: it copies/extracts the game, patches the exe to
 ``Win32Craft.1.16.20.03.exe``, rewrites the package-only ``*_APP`` CRT
@@ -57,6 +62,47 @@ RENOIR_WINDOWS7_API_SETS = {
     b"api-ms-win-core-libraryloader-l1-2-0.dll",
     b"api-ms-win-core-interlocked-l1-2-0.dll",
 }
+
+# The legacy D3DCraft 1.16.20.03 build is the known-good x86 conversion.  Its
+# 60-export host and the support DLLs are runtime inputs: the patcher still
+# rebuilds the game exe from the original Minecraft.Windows.exe, but it copies
+# this exact runtime set so the result matches the tested conversion.  The
+# hashes are validated to keep a rebuilt package from silently mixing versions.
+LEGACY_HOST_NAME = "d3dcraft.dll"
+LEGACY_HOST_SHA256 = \
+    "995139d3b591206c3c48025baa422eb71659100c0627fee821a2e523e0d07bcd"
+LEGACY_RUNTIME_SHA256 = {
+    "ChakraCore.dll":
+        "3d4940c34ba6a1f584a281cac06e46c807af57837ba95d06ae36080ec536ad7d",
+    "cohtml.UWP.dll":
+        "5e970ab7ecef972be7091e1d3f49b8bedc33d88a6a7660fcea5ad255267c2fa9",
+    "RenoirCore.UWP.dll":
+        "d99581dcc7b26b47c24c85ddc404e04268c944d84579c19e7698e2d89a83e695",
+    "fmod.dll":
+        "773b9cdc62cc3f50591020ec0866e8ce8dcc6d14f0f390b964acca458503f7d1",
+    "api-ms-win-core-com-l1-1-1.dll":
+        "f8960cef6afb60aec6527e9546d8bafdf2a08a945f9465b5bd0d719e1a778336",
+    "api-ms-win-core-winrt-error-l1-1-0.dll":
+        "d2f010dd7580c31e52e2021d108774cc5f40c95ba0739cc1ea0dd4f88c58d796",
+    "api-ms-win-core-winrt-error-l1-1-1.dll":
+        "62c785fa31b273a185352e33aa0f1e86f2d3379902342f5e21c2a793c7b0fd0d",
+    "api-ms-win-core-winrt-l1-1-0.dll":
+        "87b6936a8be5fb9cd464916371c75be2f3155bef709de18f03c34afaa9ce9c83",
+    "api-ms-win-core-winrt-string-l1-1-0.dll":
+        "5cac07da8791c6246b67dee65014c6eb28d10380377c8693a3780f053bb82f7f",
+    "api-ms-win-eventing-provider-l1-1-0.dll":
+        "f44e5d10c566e35dae1e1d1e15909c1e615945297380877a6f0fce1282071c02",
+    "api-ms-win-gaming-tcui-l1-1-0.dll":
+        "d84dbab1e3fd5b673625bed0427706cc78c6c4bda95e3b2ac5841c29e78d1e50",
+    "XINPUTUAP.dll":
+        "c4b01eaeb42c68d02da24675dcdd4a37ab8cc3dbe24849be7718b8f30f69e1e9",
+}
+# Files present in the retail package that the legacy conversion does not use.
+LEGACY_REMOVED_FILES = (
+    "fmod_X86.dll",
+    "HttpServer.UWP.dll",
+    "MediaDecoders.UWP.dll",
+)
 
 
 def align(value: int, boundary: int) -> int:
@@ -155,7 +201,23 @@ class Pe32:
         return bytes(self.image[offset:end])
 
 
-def patch(source: Path, output: Path) -> None:
+def patch(source: Path, output: Path, legacy_host: bool = False,
+          chakra_core: bool = False) -> None:
+    """Patch a retail 1.16.20.03 exe.
+
+    ``legacy_host`` reproduces the original D3DCraft 1.16.20.03 conversion:
+    the game keeps the system ``chakra.dll`` and the package shims, the
+    ``dxgi``/``d3d11`` imports are redirected to ``d3dcraft.dll`` and the
+    legacy 60-export host is bootstrapped from the added ``.d3imp`` section.
+    The default builds the current shared ``win32craft.dll`` host.
+
+    The shared host keeps the retail ``chakra.dll`` import by default, so the
+    game uses the Windows inbox Chakra engine.  ``chakra_core`` is a
+    diagnostic mode that redirects the import to the package
+    ``ChakraCore.dll`` instead; ChakraCore lacks ``JsStartDebugging`` and its
+    behavioral differences break experimental-gameplay scripts.  The legacy
+    host always uses the system engine and ignores this flag.
+    """
     original = source.read_bytes()
     digest = hashlib.sha256(original).hexdigest()
     if digest not in SUPPORTED_SHA256:
@@ -169,6 +231,12 @@ def patch(source: Path, output: Path) -> None:
     image = bytearray(original)
     pe = Pe32(image)
 
+    # Desktop loader header.  The UWP image already has the 32-bit
+    # large-address-aware flag; keep it and only verify it.  Claim Windows 7
+    # compatibility for the OS/subsystem minor version.  Clear APPCONTAINER
+    # (0x1000) so a normal desktop process can start the exe, and clear
+    # DYNAMIC_BASE (0x40) because the patch writes absolute 0x400000-based
+    # addresses; NX_COMPAT and TERMINAL_SERVER_AWARE stay set.
     checked_write(
         image, pe.file_header + 18, struct.pack("<H", 0x0122),
         struct.pack("<H", 0x0122), "large-address-aware"
@@ -194,6 +262,8 @@ def patch(source: Path, output: Path) -> None:
         bytes.fromhex("8b07c74064020000009090"),
         "complete unavailable PnP task"
     )
+    # The matching PnP metadata wait would never complete once the null object
+    # is accepted; skip the wait and continue with the default metadata.
     checked_write(
         image, pe.rva_to_offset(0x016e30d7),
         bytes.fromhex("e8544fb8fe"), b"\x90" * 5,
@@ -233,6 +303,17 @@ def patch(source: Path, output: Path) -> None:
         bytes.fromhex("ff1528642a02"), bytes.fromhex("e92a00000090"),
         "skip absent loading-state callback"
     )
+    # The "Did you like Minecraft?" rating prompt is gated by the persisted
+    # shown_ratings_prompt option (ID 0x174) and a launch counter (ID 0x175).
+    # When the prompt fires it reaches the UWP Store projection, which is
+    # unavailable in the unpackaged host and crashes after the save-on-exit
+    # path.  The trigger at 0x567830 returns false when the option is already
+    # set; force that "already shown" branch so the prompt is never built.
+    checked_write(
+        image, pe.rva_to_offset(0x0167906),
+        bytes.fromhex("7585"), bytes.fromhex("eb85"),
+        "suppress rating prompt"
+    )
     # Activation and window-state diagnostics stringify boxed WinRT enums.
     # Wine has an aborting Enum::ToString export. A null HSTRING is the
     # supported empty diagnostic value; retain the surrounding COM releases.
@@ -241,6 +322,28 @@ def patch(source: Path, output: Path) -> None:
                       bytes.fromhex("ff15e06b2a02"),
                       bytes.fromhex("33c090909090"),
                       "omit optional WinRT enum diagnostic")
+    # The legacy D3DCraft conversion was validated without this workaround and
+    # keeps the original destroy path.  The shared host keeps the listener
+    # patch: server re-initialization frees the previous engine while its
+    # ServerInstanceEventListener may still be in the dispatcher vector, so a
+    # later dispatch crashes on the stale listener.
+    if not legacy_host:
+        # Server re-initialization replaces the MinecraftServerScriptEngine
+        # stored at ServerInstance+0x144 and deletes the previous engine, but
+        # the engine's ServerInstanceEventListener stays in the dispatcher
+        # vector.  A later event dispatch calls the freed listener and crashes
+        # on world entry (deterministic 0xc0000005 at the stale listener's
+        # vtable slot).  Keep the previous engine alive: it is only 0x250
+        # bytes per server re-initialization, and its listener remains valid
+        # for dispatch.
+        checked_write(
+            image, pe.rva_to_offset(0x01023a0d),
+            bytes.fromhex("7410"), bytes.fromhex("eb10"),
+            "retain previous script engine listener"
+        )
+    # The unpackaged process cannot load the package-only app-local CRT DLLs
+    # (vccorlib140_app, MSVCP140_APP, ...).  Rename those imports to the
+    # desktop VC++ runtime names; the host supplies the few vccorlib helpers.
     replace_all(image, b"vccorlib140_app.DLL", b"vccorlib140.DLL", 1,
                 "desktop vccorlib")
     replace_all(image, b"MSVCP140_APP.dll", b"MSVCP140.dll", 1,
@@ -249,6 +352,9 @@ def patch(source: Path, output: Path) -> None:
                 "desktop CONCRT")
     replace_all(image, b"VCRUNTIME140_APP.dll", b"VCRUNTIME140.dll", 1,
                 "desktop VCRUNTIME")
+    # The retail package calls the 32-bit UWP FMOD DLL fmod_X86.dll; the
+    # ready-to-run folder copies it to fmod.dll, which is the name both the
+    # game exe and the host's delay-import descriptor expect.
     replace_all(image, b"fmod_X86.dll", b"fmod.dll", 2, "desktop FMOD name")
 
     import_rva, import_size = struct.unpack_from("<2I", image, pe.optional + 0x68)
@@ -292,6 +398,10 @@ def patch(source: Path, output: Path) -> None:
             (index, hint_rva)
         index += 1
 
+    # Windows 7 does not export the three delay-load helper functions.  Point
+    # their ILT entries at GetLastError (a harmless existing export) and add
+    # host descriptors later that reuse the original IAT cells, so the image
+    # resolves and never calls the missing helpers.
     safe_hint_rva = kernel_names["GetLastError"][1]
     compatibility_names = (
         "ResolveDelayLoadedAPI", "ResolveDelayLoadsFromDll",
@@ -307,85 +417,158 @@ def patch(source: Path, output: Path) -> None:
         )
         compatibility_iats[name] = kernel_iat_rva + entry_index * 4
 
-    chakra_ilt_rva, chakra_iat_rva = chakra_descriptor
-    chakra_ilt_offset = pe.rva_to_offset(chakra_ilt_rva)
-    chakra_names: dict[str, tuple[int, int]] = {}
-    index = 0
-    while True:
-        hint_rva = struct.unpack_from(
-            "<I", image, chakra_ilt_offset + index * 4
-        )[0]
-        if not hint_rva:
-            break
-        if hint_rva & 0x80000000:
-            raise ValueError("unexpected ordinal chakra.dll import")
-        chakra_names[pe.c_string_at_rva(hint_rva + 2).decode("ascii")] = \
-            (index, hint_rva)
-        index += 1
-    debug_index, debug_hint_rva = chakra_names["JsStartDebugging"]
-    chakra_safe_hint_rva = chakra_names["JsAddRef"][1]
-    checked_write(
-        image, chakra_ilt_offset + debug_index * 4,
-        struct.pack("<I", debug_hint_rva),
-        struct.pack("<I", chakra_safe_hint_rva),
-        "JsStartDebugging loader placeholder"
-    )
-    debug_iat_rva = chakra_iat_rva + debug_index * 4
+    # The legacy host and the default shared host keep the retail chakra.dll
+    # import intact.  The diagnostic ChakraCore mode redirects it to the
+    # package ChakraCore.dll and stubs the one export ChakraCore does not
+    # provide.
+    debug_iat_rva = None
+    if not legacy_host and chakra_core:
+        chakra_ilt_rva, chakra_iat_rva = chakra_descriptor
+        chakra_ilt_offset = pe.rva_to_offset(chakra_ilt_rva)
+        chakra_names: dict[str, tuple[int, int]] = {}
+        index = 0
+        while True:
+            hint_rva = struct.unpack_from(
+                "<I", image, chakra_ilt_offset + index * 4
+            )[0]
+            if not hint_rva:
+                break
+            if hint_rva & 0x80000000:
+                raise ValueError("unexpected ordinal chakra.dll import")
+            chakra_names[pe.c_string_at_rva(hint_rva + 2).decode("ascii")] = \
+                (index, hint_rva)
+            index += 1
+        debug_index, debug_hint_rva = chakra_names["JsStartDebugging"]
+        chakra_safe_hint_rva = chakra_names["JsAddRef"][1]
+        checked_write(
+            image, chakra_ilt_offset + debug_index * 4,
+            struct.pack("<I", debug_hint_rva),
+            struct.pack("<I", chakra_safe_hint_rva),
+            "JsStartDebugging loader placeholder"
+        )
+        debug_iat_rva = chakra_iat_rva + debug_index * 4
 
+    # Build the replacement import directory in a new read/write .d3imp
+    # section.  The original descriptors are copied, host-facing DLL names are
+    # redirected to win32craft.dll, and new descriptors are appended for
+    # Win32Bootstrap and the Windows 7 delay-load compatibility shims.  The
+    # bootstrap IAT is called from the patched WinMain below.
     last = pe.sections[-1]
     new_raw_offset = align(len(image), pe.file_alignment)
     new_rva = align(
         last.virtual_address + max(last.virtual_size, last.raw_size),
         pe.section_alignment,
     )
-    new_descriptor_count = len(descriptors) + len(compatibility_names) + 3
-    section = bytearray(new_descriptor_count * 20)
+    if legacy_host:
+        # Original D3DCraft layout: 32 retail descriptors with dxgi/d3d11
+        # renamed to d3dcraft.dll, then four d3dcraft.dll descriptors for the
+        # bootstrap and the KERNEL32 delay-load helpers.  The section is
+        # deliberately kept at VirtualSize 0x378 / RawSize 0x400.
+        legacy_names = ("Win32Bootstrap",) + compatibility_names
+        new_descriptor_count = len(descriptors) + len(legacy_names) + 1
+        section = bytearray(new_descriptor_count * 20)
 
-    def append(data: bytes, alignment: int = 1) -> int:
-        section.extend(b"\0" * ((-len(section)) % alignment))
-        offset = len(section)
-        section.extend(data)
-        return offset
+        def append_legacy(data: bytes, alignment: int = 1) -> int:
+            section.extend(b"\0" * ((-len(section)) % alignment))
+            offset = len(section)
+            section.extend(data)
+            return offset
 
-    dll_name_offset = append(b"win32craft.dll\0")
-    chakra_name_offset = append(b"ChakraCore.dll\0")
-    hint_offsets: dict[str, int] = {}
-    host_names = ("Win32Bootstrap", "JsStartDebugging") + compatibility_names
-    for name in host_names:
-        hint_offsets[name] = append(b"\0\0" + name.encode("ascii") + b"\0", 2)
-    ilt_offsets: dict[str, int] = {}
-    for name in host_names:
-        ilt_offsets[name] = append(
-            struct.pack("<2I", new_rva + hint_offsets[name], 0), 4
+        dll_name_offset = append_legacy(b"d3dcraft.dll\0")
+        hint_offsets: dict[str, int] = {}
+        for name in legacy_names:
+            hint_offsets[name] = append_legacy(
+                b"\0\0" + name.encode("ascii") + b"\0", 2
+            )
+        ilt_offsets: dict[str, int] = {}
+        for name in legacy_names:
+            ilt_offsets[name] = append_legacy(
+                struct.pack("<2I", new_rva + hint_offsets[name], 0), 4
+            )
+        bootstrap_iat_offset = append_legacy(
+            struct.pack("<2I", new_rva + hint_offsets["Win32Bootstrap"], 0), 4
         )
-    bootstrap_iat_offset = append(
-        struct.pack("<2I", new_rva + hint_offsets["Win32Bootstrap"], 0), 4
-    )
 
-    relocated: list[bytes] = []
-    for dll_name, descriptor in descriptors:
-        values = list(struct.unpack("<5I", descriptor))
-        if dll_name in (b"dxgi.dll", b"d3d11.dll") or \
-                dll_name in WIN32CRAFT_API_SETS:
-            values[3] = new_rva + dll_name_offset
-        elif dll_name == b"chakra.dll":
-            values[3] = new_rva + chakra_name_offset
-        relocated.append(struct.pack("<5I", *values))
-    relocated.append(struct.pack(
-        "<5I", new_rva + ilt_offsets["Win32Bootstrap"], 0, 0,
-        new_rva + dll_name_offset, new_rva + bootstrap_iat_offset
-    ))
-    relocated.append(struct.pack(
-        "<5I", new_rva + ilt_offsets["JsStartDebugging"], 0, 0,
-        new_rva + dll_name_offset, debug_iat_rva
-    ))
-    for name in compatibility_names:
+        relocated: list[bytes] = []
+        for dll_name, descriptor in descriptors:
+            values = list(struct.unpack("<5I", descriptor))
+            if dll_name in (b"dxgi.dll", b"d3d11.dll"):
+                values[3] = new_rva + dll_name_offset
+            relocated.append(struct.pack("<5I", *values))
         relocated.append(struct.pack(
-            "<5I", new_rva + ilt_offsets[name], 0, 0,
-            new_rva + dll_name_offset, compatibility_iats[name]
+            "<5I", new_rva + ilt_offsets["Win32Bootstrap"], 0, 0,
+            new_rva + dll_name_offset, new_rva + bootstrap_iat_offset
         ))
-    relocated.append(b"\0" * 20)
-    section[:new_descriptor_count * 20] = b"".join(relocated)
+        for name in compatibility_names:
+            relocated.append(struct.pack(
+                "<5I", new_rva + ilt_offsets[name], 0, 0,
+                new_rva + dll_name_offset, compatibility_iats[name]
+            ))
+        relocated.append(b"\0" * 20)
+        if len(relocated) != new_descriptor_count:
+            raise ValueError(
+                f"legacy import table has {len(relocated)} descriptors, "
+                f"expected {new_descriptor_count}"
+            )
+        section[:new_descriptor_count * 20] = b"".join(relocated)
+    else:
+        extra_descriptors = 2 if not chakra_core else 3
+        new_descriptor_count = (
+            len(descriptors) + len(compatibility_names) + extra_descriptors
+        )
+        section = bytearray(new_descriptor_count * 20)
+
+        def append(data: bytes, alignment: int = 1) -> int:
+            section.extend(b"\0" * ((-len(section)) % alignment))
+            offset = len(section)
+            section.extend(data)
+            return offset
+
+        dll_name_offset = append(b"win32craft.dll\0")
+        chakra_name_offset = None if not chakra_core else append(b"ChakraCore.dll\0")
+        hint_offsets: dict[str, int] = {}
+        host_names = ("Win32Bootstrap",) + compatibility_names
+        if chakra_core:
+            host_names = ("Win32Bootstrap", "JsStartDebugging") + \
+                compatibility_names
+        for name in host_names:
+            hint_offsets[name] = append(b"\0\0" + name.encode("ascii") + b"\0", 2)
+        ilt_offsets: dict[str, int] = {}
+        for name in host_names:
+            ilt_offsets[name] = append(
+                struct.pack("<2I", new_rva + hint_offsets[name], 0), 4
+            )
+        bootstrap_iat_offset = append(
+            struct.pack("<2I", new_rva + hint_offsets["Win32Bootstrap"], 0), 4
+        )
+
+        relocated: list[bytes] = []
+        for dll_name, descriptor in descriptors:
+            values = list(struct.unpack("<5I", descriptor))
+            if dll_name in (b"dxgi.dll", b"d3d11.dll") or \
+                    dll_name in WIN32CRAFT_API_SETS:
+                values[3] = new_rva + dll_name_offset
+            elif dll_name == b"chakra.dll" and chakra_name_offset is not None:
+                values[3] = new_rva + chakra_name_offset
+            relocated.append(struct.pack("<5I", *values))
+        relocated.append(struct.pack(
+            "<5I", new_rva + ilt_offsets["Win32Bootstrap"], 0, 0,
+            new_rva + dll_name_offset, new_rva + bootstrap_iat_offset
+        ))
+        if chakra_core:
+            if debug_iat_rva is None:
+                raise ValueError("missing JsStartDebugging IAT slot")
+            relocated.append(struct.pack(
+                "<5I", new_rva + ilt_offsets["JsStartDebugging"], 0, 0,
+                new_rva + dll_name_offset, debug_iat_rva
+            ))
+        for name in compatibility_names:
+            relocated.append(struct.pack(
+                "<5I", new_rva + ilt_offsets[name], 0, 0,
+                new_rva + dll_name_offset, compatibility_iats[name]
+            ))
+        relocated.append(b"\0" * 20)
+        section[:new_descriptor_count * 20] = b"".join(relocated)
 
     virtual_size = len(section)
     raw_size = align(virtual_size, pe.file_alignment)
@@ -408,6 +591,9 @@ def patch(source: Path, output: Path) -> None:
         image, pe.file_header + 2, struct.pack("<H", pe.section_count),
         struct.pack("<H", pe.section_count + 1), "section count"
     )
+    # The host identifies the game build by SizeOfImage.  The appended section
+    # must make it exactly 0x02DB1000 so bootstrap_116 selects
+    # game_profile_116_02003; keep the size fields consistent.
     old_initialized = struct.unpack_from("<I", image, pe.optional + 8)[0]
     checked_write(
         image, pe.optional + 8, struct.pack("<I", old_initialized),
@@ -430,6 +616,8 @@ def patch(source: Path, output: Path) -> None:
         "relocated import directory"
     )
 
+    # Redirect the CRT's WinMain call through the Win32Bootstrap IAT.  The
+    # absolute VA is safe because DYNAMIC_BASE was cleared in the header.
     bootstrap_iat_va = 0x400000 + new_rva + bootstrap_iat_offset
     checked_write(
         image, pe.rva_to_offset(0x1c471af), bytes.fromhex("50576800004000e83e1b0000"),
@@ -598,7 +786,10 @@ def patch_crt_imports(source: Path, output: Path) -> None:
     pe = Pe32(image)
     import_rva, import_size = struct.unpack_from("<2I", image, pe.optional + 0x68)
     if not import_rva or import_size < 20:
-        raise ValueError(f"{source}: no import directory")
+        # The WinRT API-set shims are forwarding stubs without imports; there
+        # is nothing to redirect in them.
+        print(f"{source.name}: no import directory; skipped")
+        return
     cursor = pe.rva_to_offset(import_rva)
     patched = 0
     while True:
@@ -681,13 +872,65 @@ def remove_analysis_files(folder: Path) -> None:
 
 
 def write_patch_notes(output: Path, exe: Path, host_dll: Path,
-                      input_digest: str) -> None:
-    fmod = output / "fmod.dll"
+                      input_digest: str, legacy: bool = False) -> None:
     exe_digest = sha256_file(exe)
     host_digest = sha256_file(host_dll)
-    fmod_digest = sha256_file(fmod)
     size_of_image = pe_size_of_image(exe)
-    text = f"""# Minecraft 1.16.20.03 x86 - Win32Craft
+    if legacy:
+        runtime_lines = []
+        for name in LEGACY_RUNTIME_SHA256:
+            path = output / name
+            runtime_lines.append(
+                f"* `{name}`\n"
+                f"  * SHA-256: `{sha256_file(path)}`\n"
+                f"  * size: {path.stat().st_size} bytes"
+            )
+        runtime_list = "\n".join(runtime_lines)
+        text = f"""# Minecraft 1.16.20.03 x86 - Win32Craft (legacy D3DCraft host)
+
+Ready-to-run folder assembled by `tools\\1.16.20.03-patcher.py --package
+--legacy-runtime ...`.
+
+## Files
+
+* `{exe.name}` - patched game executable
+  * input SHA-256: `{input_digest}`
+  * output SHA-256: `{exe_digest}`
+  * size: {exe.stat().st_size} bytes
+  * `SizeOfImage`: `0x{size_of_image:08X}`
+* `d3dcraft.dll` - legacy 60-export D3DCraft x86 host
+  * SHA-256: `{host_digest}`
+  * size: {host_dll.stat().st_size} bytes
+
+## Legacy runtime
+
+The game keeps the retail `chakra.dll` import.  These support DLLs are copied
+from the validated D3DCraft runtime folder:
+
+{runtime_list}
+
+`fmod_X86.dll`, `HttpServer.UWP.dll` and `MediaDecoders.UWP.dll` are not part
+of the legacy conversion and are removed.
+
+The exe keeps the original engine destroy path (no new-host listener leak
+patch) and does not redirect `chakra.dll` to ChakraCore.  The Store rating
+prompt is still suppressed by the `0x166d06` patch.  The `dxgi.dll` and
+`d3d11.dll` imports are redirected to `d3dcraft.dll`, which supplies
+`CreateDXGIFactory2`, `D3D11CreateDevice` and
+`CreateDirect3D11DeviceFromDXGIDevice` at the original IAT slots.
+
+Every `*.p7x` file and `AppxMetadata\\` were removed: the game runs as an
+unpackaged Win32 process.  The `.Win32Craft` file contains the game type
+(`Minecraft Bedrock Edition`) so repack tools can identify the folder.
+
+Run `{exe.name}` with `WIN32CRAFT_DEBUG=1` to write `win32craft.log` next to
+the executable.  User data lives under
+`%APPDATA%\\MinecraftPE\\games\\com.mojang`.
+"""
+    else:
+        fmod = output / "fmod.dll"
+        fmod_digest = sha256_file(fmod)
+        text = f"""# Minecraft 1.16.20.03 x86 - Win32Craft
 
 Ready-to-run folder assembled by `tools\\1.16.20.03-patcher.py --package`.
 
@@ -705,6 +948,15 @@ Ready-to-run folder assembled by `tools\\1.16.20.03-patcher.py --package`.
 * `fmod.dll` - desktop FMOD, copied from `fmod_X86.dll`
   * SHA-256: `{fmod_digest}`
   * size: {fmod.stat().st_size} bytes
+
+The game executable keeps the Windows inbox `chakra.dll` import, matching the
+retail package and the known-good D3DCraft conversion.  The package still
+ships `ChakraCore.dll` because `cohtml.UWP.dll` imports it.
+
+The shared-host build also suppresses the Store rating prompt (`jne` -> `jmp`
+at file offset `0x166d06`) so a normal exit does not call the unavailable UWP
+Store API, and keeps the previous script engine alive across server
+re-initialization (file offset `0x1022e0d`).
 
 The retail game DLLs (`ChakraCore.dll`, `cohtml.UWP.dll`,
 `HttpServer.UWP.dll`, `MediaDecoders.UWP.dll`, `RenoirCore.UWP.dll` and
@@ -726,14 +978,28 @@ the executable.  User data lives under
 
 def package(source: Path, output: Path, host_dll: Path,
             force: bool = False,
-            exe_name: str = PACKAGE_EXE_NAME) -> None:
+            exe_name: str = PACKAGE_EXE_NAME,
+            legacy_runtime: Path | None = None,
+            chakra_core: bool = False) -> None:
     """Copy or extract a game folder and turn it into a Win32Craft package."""
+    legacy = legacy_runtime is not None
     exe_name = validate_exe_name(exe_name)
     if not source.exists():
         raise ValueError(f"package source does not exist: {source}")
     if not host_dll.is_file():
         raise ValueError(f"host DLL does not exist: {host_dll}")
     validate_host_dll(host_dll)
+    if legacy:
+        if not legacy_runtime.is_dir():
+            raise ValueError(
+                f"legacy runtime folder does not exist: {legacy_runtime}"
+            )
+        host_digest = sha256_file(host_dll)
+        if host_digest != LEGACY_HOST_SHA256:
+            raise ValueError(
+                f"{host_dll}: SHA-256 {host_digest} does not match the tested "
+                f"legacy host ({LEGACY_HOST_SHA256})"
+            )
 
     source_resolved = source.resolve()
     output_resolved = output.resolve()
@@ -782,39 +1048,71 @@ def package(source: Path, output: Path, host_dll: Path,
         raise ValueError(f"Minecraft.Windows.exe not found in {output}")
     input_digest = sha256_file(original_exe)
     exe = output / exe_name
-    patch(original_exe, exe)
+    patch(original_exe, exe, legacy_host=legacy, chakra_core=chakra_core)
     if exe != original_exe:
         original_exe.unlink()
         print(f"renamed patched exe to {exe.name}")
 
-    # The retail game DLLs import the package-only *_APP CRT names.  The
-    # loader fails with STATUS_DLL_NOT_FOUND before the host can log anything
-    # unless these are redirected to the desktop runtime names.
-    for name in (
-        "ChakraCore.dll",
-        "cohtml.UWP.dll",
-        "HttpServer.UWP.dll",
-        "MediaDecoders.UWP.dll",
-        "RenoirCore.UWP.dll",
-        "fmod_X86.dll",
-    ):
-        path = output / name
-        if path.is_file():
-            patch_crt_imports(path, path)
-        else:
-            print(f"warning: {name} not found; skipped")
+    if legacy:
+        # The legacy conversion uses an older, validated runtime set.  Copy it
+        # after extraction so a retail package cannot mix ChakraCore versions
+        # with the legacy d3dcraft.dll host.
+        for name, expected in LEGACY_RUNTIME_SHA256.items():
+            source_path = legacy_runtime / name
+            if not source_path.is_file():
+                raise ValueError(f"legacy runtime file is missing: {source_path}")
+            digest = sha256_file(source_path)
+            if digest != expected:
+                raise ValueError(
+                    f"{source_path}: SHA-256 {digest} does not match the "
+                    f"tested legacy runtime ({expected})"
+                )
+            shutil.copyfile(source_path, output / name)
+            print(f"{name} <- {source_path}")
+        for name in LEGACY_REMOVED_FILES:
+            path = output / name
+            if path.exists():
+                path.unlink()
+                print(f"removed {name}")
+        stale_host = output / "win32craft.dll"
+        if stale_host.exists():
+            stale_host.unlink()
+            print("removed win32craft.dll")
+        shutil.copyfile(host_dll, output / LEGACY_HOST_NAME)
+        print(f"{LEGACY_HOST_NAME} <- {host_dll}")
+        # The legacy DLLs already use desktop CRT names, but keep the check so
+        # a different runtime folder cannot leave package-only imports behind.
+        for name in LEGACY_RUNTIME_SHA256:
+            patch_crt_imports(output / name, output / name)
+    else:
+        # The retail game DLLs import the package-only *_APP CRT names.  The
+        # loader fails with STATUS_DLL_NOT_FOUND before the host can log
+        # anything unless these are redirected to the desktop runtime names.
+        for name in (
+            "ChakraCore.dll",
+            "cohtml.UWP.dll",
+            "HttpServer.UWP.dll",
+            "MediaDecoders.UWP.dll",
+            "RenoirCore.UWP.dll",
+            "fmod_X86.dll",
+        ):
+            path = output / name
+            if path.is_file():
+                patch_crt_imports(path, path)
+            else:
+                print(f"warning: {name} not found; skipped")
 
-    fmod_source = output / "fmod_X86.dll"
-    if not fmod_source.is_file():
-        raise ValueError(f"fmod_X86.dll not found in {output}")
-    shutil.copyfile(fmod_source, output / "fmod.dll")
-    print("fmod.dll <- fmod_X86.dll")
+        fmod_source = output / "fmod_X86.dll"
+        if not fmod_source.is_file():
+            raise ValueError(f"fmod_X86.dll not found in {output}")
+        shutil.copyfile(fmod_source, output / "fmod.dll")
+        print("fmod.dll <- fmod_X86.dll")
 
-    shutil.copyfile(host_dll, output / "win32craft.dll")
-    print(f"win32craft.dll <- {host_dll}")
+        shutil.copyfile(host_dll, output / "win32craft.dll")
+        print(f"win32craft.dll <- {host_dll}")
 
     prepare_mcbe_package(output)
-    write_patch_notes(output, exe, host_dll, input_digest)
+    write_patch_notes(output, exe, host_dll, input_digest, legacy=legacy)
     print(f"package ready: {output}")
 
 
@@ -826,26 +1124,53 @@ def main() -> None:
                         help="assemble a ready-to-run folder from a game "
                              "folder or .appx")
     parser.add_argument("--host", type=Path,
-                        help="path to the Win32Craft x86 host DLL "
-                             "(required with --package)")
+                        help="path to the host DLL (win32craft.dll, or "
+                             "d3dcraft.dll with --legacy-runtime)")
+    parser.add_argument("--legacy-runtime", type=Path,
+                        help="folder with the tested d3dcraft.dll host "
+                             "runtime DLLs; enables the legacy D3DCraft host")
     parser.add_argument("--exe-name", default=PACKAGE_EXE_NAME,
                         help="patched exe name inside the package "
                              f"(default: {PACKAGE_EXE_NAME})")
     parser.add_argument("--force", action="store_true",
                         help="replace an existing package output folder")
+    parser.add_argument("--legacy-host", action="store_true",
+                        help="reproduce the original D3DCraft host layout "
+                             "(d3dcraft.dll, system chakra.dll, no leak patch)")
+    parser.add_argument("--chakra-core", action="store_true",
+                        help="diagnostic: redirect the game's chakra.dll "
+                             "import to the package ChakraCore.dll (old "
+                             "behavior; breaks experimental gameplay)")
+    parser.add_argument("--system-chakra", action="store_true",
+                        help="deprecated; the Windows inbox chakra.dll is "
+                             "now the default")
     args = parser.parse_args()
 
+    legacy_host = args.legacy_host or args.legacy_runtime is not None
+    if args.chakra_core and legacy_host:
+        parser.error("--chakra-core cannot be combined with the legacy host")
+    if args.system_chakra and args.chakra_core:
+        parser.error("--system-chakra and --chakra-core are mutually exclusive")
     if args.package:
-        if args.source is None or args.output is None or args.host is None:
+        if args.source is None or args.output is None:
+            parser.error("--package requires SOURCE and OUTPUT")
+        if args.legacy_host and args.legacy_runtime is None:
             parser.error(
-                "--package requires SOURCE, OUTPUT and --host PATH"
+                "--package --legacy-host requires --legacy-runtime DIR"
             )
-        package(args.source, args.output, args.host, args.force,
-                args.exe_name)
+        host = args.host
+        if host is None and args.legacy_runtime is not None:
+            host = args.legacy_runtime / LEGACY_HOST_NAME
+        if host is None:
+            parser.error("--package requires --host PATH")
+        package(args.source, args.output, host, args.force,
+                args.exe_name, legacy_runtime=args.legacy_runtime,
+                chakra_core=args.chakra_core)
         return
 
     patch(args.source or Path("Minecraft.Windows.exe"),
-          args.output or Path(PACKAGE_EXE_NAME))
+          args.output or Path(PACKAGE_EXE_NAME),
+          legacy_host=legacy_host, chakra_core=args.chakra_core)
 
 
 if __name__ == "__main__":
