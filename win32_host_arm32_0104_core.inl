@@ -1794,6 +1794,7 @@ static BOOL x104_input_install(BYTE *image);
 static BOOL x104_input_init(HWND window);
 static void x104_input_shutdown(void);
 static void x104_input_ui_tick(void);                        /* UI: every loop pass; x104_osk_poll() etc. */
+static void x104_touch_hold_flush_due(void);                 /* UI: deliver one deferred touch BEFORE x104_ui_pass takes its lock */
 static BOOL x104_input_window_message(HWND window, UINT message, WPARAM wparam, LPARAM lparam, LRESULT *result);
 static X104Object *x104_input_core_window(void);             /* the CoreWindow (not AddRef'd) */
 static X104Object *x104_input_element_logo(void);            /* FindName("Logo") */

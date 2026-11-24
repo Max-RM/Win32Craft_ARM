@@ -3,16 +3,15 @@
 
 The store check in the coin-pack click handler is skipped and the handler is
 sent into a cave. The cave parses the digits after the first '_' of the
-product id (com.fingersoft.hillclimb.adfree_<amount>coins). It then calls the
-game's own coin pickup (sub_41E240) on the live coin widget, which adds the
-amount and refreshes the number on screen. If that widget is not up, the cave
-adds the amount straight to the coins global at VA 0x5A6630, saturating at
-0x7FFFFFFF. Any purchase the shop poller has not consumed yet is cleared, so
-the same pack is not granted a second time.
+product id (com.fingersoft.hillclimb.adfree_<amount>coins) and adds that
+amount, with ldrex/strex, to a dword at preferred VA 0x51AFFC (RVA 0x11AFFC,
+the last dword of the same .text page). It returns without calling the game.
 
-The click must not call the save (sub_4A2634) or the purchase-complete UI
-(sub_40BC30). Both crash when they run inside the button handler. The shop's
-own update saves the new total afterwards.
+The host spends that dword on the next UI pass, after the button handler has
+returned: sub_41E240 on the live coin widget, or a saturating add to the coins
+global at RVA 0x1A6630 when the widget is not up. Calling either from inside
+the button crashes. The host also makes this page writable; the dword is
+PC-relative, so the queue does not need a relocation.
 
 File offsets are VA - 0x400C00. The cave sits in .text padding at file
 0x11A360, past the host trampoline at file 0x11A350.
@@ -34,9 +33,14 @@ ENTRY_OLD = bytes.fromhex("2DE99048")  # push.w {r4, r7, fp, lr}
 ENTRY_NEW = bytes.fromhex("11F112BA")  # b.w cave
 
 CAVE_OFF = 0x11A360
-# Add the pack immediately through the game's own coin widget (sub_41E240).
-# Queuing it for the shop poller never reached that poller from the coin page.
+# Queue the pack for the host. No game call: the button handler only returns.
 CAVE_NEW = bytes.fromhex(
+    "70b50446002614f8013b5f2bfbd1002514f8013b303b092b04d8"
+    "0a2006fb00360135f5e765b11da050e8003f9b1903d74ff6ff73"
+    "c7f6ff7340e800310029f3d170bd"
+)
+# Previous cave: call sub_41E240 from the click. The game closes.
+CAVE_WIDGET = bytes.fromhex(
     "70b50446002614f8013b5f2bfbd1002514f8013b303b092b04d8"
     "0a2006fb00360135f5e705b3eef609fe46f20060c0f25a000068"
     "60b1d0f8540148b1d0f8603133b1d3f864311bb1314603f749f9"
@@ -61,7 +65,7 @@ CAVE_DIRECT = bytes.fromhex(
 )
 
 SWITCH_TITLE = "GET COINS: free coin packs (no Store)"
-EXE_NAME = "Win32Craft.HCR-arm32.exe"
+EXE_NAME = "Win32Craft.HillClimbRacing.exe"
 
 
 def config_dict() -> dict:
@@ -90,7 +94,7 @@ def config_text() -> str:
 
 
 def _cave_span() -> int:
-    return max(len(CAVE_NEW), len(CAVE_POLL), len(CAVE_CRASH), len(CAVE_DIRECT))
+    return max(len(CAVE_NEW), len(CAVE_WIDGET), len(CAVE_POLL), len(CAVE_CRASH), len(CAVE_DIRECT))
 
 
 def _cave_known(have: bytes) -> bool:
@@ -98,7 +102,7 @@ def _cave_known(have: bytes) -> bool:
         return True
     if have == bytes(len(have)):
         return True
-    for previous in (CAVE_POLL, CAVE_CRASH, CAVE_DIRECT):
+    for previous in (CAVE_WIDGET, CAVE_POLL, CAVE_CRASH, CAVE_DIRECT):
         if have[:len(previous)] == previous and have[len(previous):] == bytes(len(have) - len(previous)):
             return True
     return False

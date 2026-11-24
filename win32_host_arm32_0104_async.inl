@@ -1249,6 +1249,10 @@ static int x104_ui_run_loop(void)
             if (x104.f_loop_exit) goto leave;                                     /* the window proc consumed an X104_WM_QUIT dispatched by a nested modal loop */
         }
         if (x104.f_loop_exit) goto leave;
+        /* Held touches are delivered here, before the pass takes its lock. Level exit, a car
+         * purchase and a part upgrade run from that Released and wait on this thread; doing it
+         * from inside the pass makes the nested pass return at once and the window freezes. */
+        if (!x104_in_pass) x104_touch_hold_flush_due();
         x104_ui_pass();                                                           /* core: x104_ui_pump_once() + the panel/input/app ticks + progress bump */
         if (x104.f_loop_exit) goto leave;                                         /* after EVERY pass: x104_ui_quit sets it from any thread */
         MsgWaitForMultipleObjectsEx(x104_async_st.wake_event ? 1u : 0u, x104_async_st.wake_event ? &x104_async_st.wake_event : NULL, x104_async_wait_ms(), X104_QS_ALLINPUT, X104_ASYNC_MWMO_INPUTAVAILABLE);

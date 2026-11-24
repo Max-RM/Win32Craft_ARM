@@ -659,6 +659,7 @@ static LRESULT CALLBACK x104_window_proc(HWND window, UINT message, WPARAM wpara
         return 0;
     case WM_TIMER:
         if (wparam == X104_TIMER_PUMP) {
+            if (!x104_in_pass) x104_touch_hold_flush_due();
             x104_ui_pass();                      /* queue + timers + unit ticks, also inside the modal loops of window move/size and menus */
             return 0;
         }

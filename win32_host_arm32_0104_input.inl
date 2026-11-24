@@ -1417,8 +1417,57 @@ static unsigned x104_input_dispatch_pointer(int kind)
     return total;
 }
 
+/* HCR handles one touch out of a began/ended set. Two fingers in the same UI pass (both pedals, or both
+ * lifts) therefore move only one pedal. The first edge of a pass is delivered immediately. Each later
+ * touch press or release waits until the pass after next, so the game has consumed the previous one. Asking Windows
+ * from the tick and releasing there deadlocks pause / restart: the music thread keeps running and the
+ * UI thread never returns to the menu. */
+#define X104_TOUCH_HOLD_MAX 8
+
+typedef struct x104_touch_hold_t {
+    int kind;
+    int wait;
+    BOOL left, contact, canceled;
+    UINT32 id;
+    int device, x, y;
+} x104_touch_hold_t;
+
+static x104_touch_hold_t x104_touch_hold[X104_TOUCH_HOLD_MAX];
+static int x104_touch_hold_count;
+static int x104_touch_edge_sent;
+static int x104_touch_hold_direct;
+
+static int x104_input_ptr_find(UINT32 id);
+
+static int x104_touch_press_waiting(UINT32 id)
+{
+    int index;
+    for (index = 0; index < x104_touch_hold_count; ++index) {
+        if (x104_touch_hold[index].kind == X104_INPUT_EV_PRESSED && x104_touch_hold[index].id == id) return 1;
+    }
+    return 0;
+}
+
 static unsigned x104_input_raise_pointer(int kind, const x104_input_pointer_t *pointer, BOOL left, BOOL contact, BOOL canceled)
 {
+    if (!x104_touch_hold_direct && pointer->device == X104_INPUT_DEV_TOUCH &&
+        (kind == X104_INPUT_EV_PRESSED || kind == X104_INPUT_EV_RELEASED)) {
+        if (x104_touch_edge_sent && x104_touch_hold_count < X104_TOUCH_HOLD_MAX) {
+            x104_touch_hold_t *item = &x104_touch_hold[x104_touch_hold_count++];
+            memset(item, 0, sizeof(*item));
+            item->kind = kind;
+            item->wait = 3;
+            item->left = left;
+            item->contact = contact;
+            item->canceled = canceled;
+            item->id = pointer->id;
+            item->device = pointer->device;
+            item->x = pointer->x;
+            item->y = pointer->y;
+            return 0;
+        }
+        x104_touch_edge_sent = 1;
+    }
     x104_input_st.cur_id = pointer->id;
     x104_input_st.cur_device = pointer->device;
     x104_input_st.cur_x = (float)pointer->x;
@@ -1430,6 +1479,63 @@ static unsigned x104_input_raise_pointer(int kind, const x104_input_pointer_t *p
     x104_input_st.cur_timestamp = x104_input_timestamp_us();
     X104_OBJ(&x104_input_get_pointer_args()->views[0])->user[1] = NULL;           /* Handled = false */
     return x104_input_dispatch_pointer(kind);
+}
+
+/* Deliver the touches that have waited out their passes. A queued press uses the finger's current
+ * position: it may have moved while it waited, and that move must not reach the game before Pressed. */
+static void x104_touch_hold_deliver(const x104_touch_hold_t *item)
+{
+    x104_input_pointer_t pointer;
+    int slot;
+    memset(&pointer, 0, sizeof(pointer));
+    pointer.id = item->id;
+    pointer.device = item->device;
+    pointer.x = item->x;
+    pointer.y = item->y;
+    if (item->kind == X104_INPUT_EV_PRESSED) {
+        slot = x104_input_ptr_find(item->id);
+        if (slot >= 0) {
+            pointer.x = x104_input_st.pointers[slot].x;
+            pointer.y = x104_input_st.pointers[slot].y;
+            x104_input_st.pointers[slot].sent_x = pointer.x;
+            x104_input_st.pointers[slot].sent_y = pointer.y;
+            x104_input_st.pointers[slot].dirty = FALSE;
+        }
+    }
+    x104_touch_hold_direct = 1;
+    x104_input_raise_pointer(item->kind, &pointer, item->left, item->contact, item->canceled);
+    x104_touch_hold_direct = 0;
+}
+
+static void x104_touch_hold_flush_due(void)
+{
+    x104_touch_hold_t kept[X104_TOUCH_HOLD_MAX];
+    int index, kept_count = 0, delivered = 0;
+    x104_touch_edge_sent = 0;
+    for (index = 0; index < x104_touch_hold_count; ++index) {
+        x104_touch_hold_t *item = &x104_touch_hold[index];
+        if (item->wait > 1) {
+            item->wait--;
+            kept[kept_count++] = *item;
+            continue;
+        }
+        if (delivered) {
+            kept[kept_count++] = *item;
+            continue;
+        }
+        x104_touch_hold_deliver(item);
+        delivered = 1;
+    }
+    if (kept_count) memcpy(x104_touch_hold, kept, sizeof(kept[0]) * (size_t)kept_count);
+    x104_touch_hold_count = kept_count;
+}
+
+static void x104_touch_hold_flush_all(void)
+{
+    int index;
+    x104_touch_edge_sent = 0;
+    for (index = 0; index < x104_touch_hold_count; ++index) x104_touch_hold_deliver(&x104_touch_hold[index]);
+    x104_touch_hold_count = 0;
 }
 
 /* the pointer handlers exist only after HID::Initialize ran (first ready Tick): KeyDown is registered by Initialize itself, the CoreWindow pointer lists
@@ -1547,7 +1653,7 @@ static void x104_input_flush_moves(void)
     int index;
     for (index = 0; index < X104_INPUT_MAX_POINTERS; ++index) {
         x104_input_pointer_t *pointer = &x104_input_st.pointers[index];
-        if (!pointer->used || !pointer->dirty) continue;
+        if (!pointer->used || !pointer->dirty || x104_touch_press_waiting(pointer->id)) continue;
         pointer->dirty = FALSE;
         pointer->sent_x = pointer->x;
         pointer->sent_y = pointer->y;
@@ -1564,15 +1670,18 @@ static void x104_input_release_all_pointers(const char *why)
     int index;
     int released = 0;
     BOOL had_mouse = x104_input_st.mouse_down;
+    x104_touch_hold_flush_all();
     memcpy(copy, x104_input_st.pointers, sizeof(copy));
     memset(x104_input_st.pointers, 0, sizeof(x104_input_st.pointers));
     x104_input_st.mouse_down = FALSE;
     x104_input_pad_reset();
+    x104_touch_hold_direct = 1;
     for (index = 0; index < X104_INPUT_MAX_POINTERS; ++index) {
         if (!copy[index].used) continue;
         x104_input_raise_pointer(X104_INPUT_EV_RELEASED, &copy[index], FALSE, FALSE, TRUE);
         ++released;
     }
+    x104_touch_hold_direct = 0;
     if (had_mouse && x104_input_st.window && GetCapture() == x104_input_st.window) ReleaseCapture();
     if (released) x104_logf("X104 input: released all pointers (%d): %s", released, why ? why : "?");
 }

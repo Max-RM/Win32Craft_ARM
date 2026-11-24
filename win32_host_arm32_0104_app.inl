@@ -2137,12 +2137,83 @@ static HRESULT x104_app_activate(const wchar_t *class_name, const GUID *iid, voi
     return x104_activate_from_table(x104_app_factories, (unsigned)ARRAYSIZE(x104_app_factories), class_name, iid, out);
 }
 
+/* Hill Climb Racing coin packs. The click cave only adds the pack size into the
+   last dword of its .text page (RVA 0x11AFFC) and returns. Spending it here, on
+   the UI thread after that handler has returned, is what keeps the game up:
+   sub_41E240 and the purchase UI both close the process when they run inside
+   the button. The page is made writable once; the cave addresses the dword
+   relative to its own PC. */
+#define X104_HCR_COIN_PENDING_RVA 0x0011AFFCu
+#define X104_HCR_COIN_PAGE_RVA    0x0011A000u
+#define X104_HCR_SCENE_RVA        0x001A6600u
+#define X104_HCR_COINS_RVA        0x001A6630u
+#define X104_HCR_ADD_RVA          0x0001E240u
+
+static void x104_hcr_grant_queued_coins(void)
+{
+    static volatile LONG page_ready;
+    static volatile LONG protect_logs;
+    BYTE *image = x104.image;
+    volatile LONG *pending;
+    LONG amount;
+    DWORD previous = 0;
+    BYTE *scene = NULL;
+    BYTE *controller = NULL;
+    BYTE *display = NULL;
+    BYTE *label = NULL;
+    LONG *coins;
+    LONG current;
+    LONG sum;
+    typedef void (*X104HcrAddFn)(void *controller, int amount);
+
+    if (x104_profile != &x104_profile_hcr || !image) return;
+    pending = (volatile LONG *)(image + X104_HCR_COIN_PENDING_RVA);
+    if (!page_ready) {
+        if (!VirtualProtect(image + X104_HCR_COIN_PAGE_RVA, 0x1000u, PAGE_EXECUTE_READWRITE, &previous)) {
+            X104_LOG_LIMITED(&protect_logs, 4, "X104 hcr coins: VirtualProtect of the queue page failed, error=%lu", (unsigned long)GetLastError());
+            return;
+        }
+        *pending = 0;
+        page_ready = 1;
+        x104_logf("X104 hcr coins: queue page is writable (pending at %p)", (void *)pending);
+    }
+    amount = InterlockedExchange(pending, 0);
+    if (amount <= 0) return;
+
+    if (!IsBadReadPtr(image + X104_HCR_SCENE_RVA, sizeof(void *)))
+        scene = *(BYTE **)(image + X104_HCR_SCENE_RVA);
+    if (scene && !IsBadReadPtr(scene + 0x154, sizeof(void *)))
+        controller = *(BYTE **)(scene + 0x154);
+    if (controller && !IsBadReadPtr(controller + 0x160, sizeof(void *)))
+        display = *(BYTE **)(controller + 0x160);
+    if (display && !IsBadReadPtr(display + 0x164, sizeof(void *)))
+        label = *(BYTE **)(display + 0x164);
+    if (controller && display && label) {
+        x104_logf("X104 hcr coins: +%ld through the coin widget", (long)amount);
+        ((X104HcrAddFn)X104_CODE(X104_HCR_ADD_RVA))(controller, (int)amount);
+        return;
+    }
+
+    coins = (LONG *)(image + X104_HCR_COINS_RVA);
+    if (IsBadReadPtr(coins, sizeof(LONG))) {
+        x104_logf("X104 hcr coins: +%ld dropped, coin total unreadable and no widget", (long)amount);
+        return;
+    }
+    current = *coins;
+    if (current < 0) current = 0;
+    if ((ULONG)amount > 0x7FFFFFFFu - (ULONG)current) sum = 0x7FFFFFFF;
+    else sum = current + amount;
+    *coins = sum;
+    x104_logf("X104 hcr coins: +%ld into the total (%ld -> %ld), widget not up", (long)amount, (long)current, (long)sum);
+}
+
 /* UI thread, every loop pass (<= 10 ms; also from the WM_TIMER pump inside modal loops): the delivery point of everything the window messages only recorded (R1) */
 static void x104_app_ui_tick(void)
 {
     X104Element *page;
     float w = 0.0f;
     float h = 0.0f;
+    x104_hcr_grant_queued_coins();
     if (!x104_app_g.initialized || x104_app_g.shut_down) return;
 
     /* safety net: the window is created hidden and shown by Window.Activate */

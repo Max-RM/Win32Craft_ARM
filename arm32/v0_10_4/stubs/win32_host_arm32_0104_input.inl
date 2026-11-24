@@ -44,6 +44,10 @@ static void x104_input_ui_tick(void)
 {
 }
 
+static void x104_touch_hold_flush_due(void)
+{
+}
+
 /* TODO(input): WM_POINTERxxx, WM_TOUCH, WM_xBUTTONxx, WM_MOUSEMOVE, WM_KEYxx, WM_SYSKEYxx (deliver, then return TRUE/0 - except Alt+F4, which must reach DefWindowProc), WM_CHAR,
  * WM_SETFOCUS, WM_KILLFOCUS, WM_CAPTURECHANGED, ESC; return TRUE + *result when consumed.  MUST be safe before x104_input_init ran (the boot gates it with f_units_ready). */
 static BOOL x104_input_window_message(HWND window, UINT message, WPARAM wparam, LPARAM lparam, LRESULT *result)
