@@ -247,6 +247,53 @@ static const GameProfile116 game_profile_114 = {
     42                          /* FMOD delay-import count */
 };
 
+static const GameProfile116 game_profile_114_3002 = {
+    "1.14.30.2", L"1.14.30.2",
+    0x02131a30,                 /* ClientInstance vtable */
+    0x000a9d50,                 /* ClientInstance scalar deleting destructor */
+    0x000b4540,                 /* SceneStack getter (vtable +0x338) */
+    0x000b4490,                 /* getTopScene */
+    0x0216cf48,                 /* top UIScene vtable */
+    0x00612410,                 /* is_showing_menu */
+    0x00612430,                 /* should_steal_mouse */
+    0x0007dec0,                 /* game string assign */
+    0x0007e170,                 /* game string destroy */
+    0x02196c78,                 /* DirectoryPack getContents vtable cell */
+    0x000e49ab0,                /* DirectoryPack::getContents */
+    0x02197568,                 /* ZipPack getContents vtable cell */
+    0x000e8bb30,                /* ZipPack::getContents */
+    0x016145bf,                 /* FrameworkView::Run frame call site */
+    0x005cf8f1,                 /* $is_publish initializer */
+    0x0197466a,                 /* executable's main */
+    0x020fb140,                 /* FMOD delay-import descriptor */
+    0x01bac6a8,                 /* _CxxThrowException IAT */
+    0x01bacccc,                 /* GetActivationFactoryByPCWSTR IAT */
+    0x01bacc40,                 /* Platform::Object ctor IAT */
+    0x01bacc1c,                 /* Platform::Heap::Allocate(size,align) IAT */
+    0x01bacc28,                 /* Platform::Heap::Allocate(size) IAT */
+    0x01bacc50,                 /* GetIBoxArrayVtable IAT */
+    0x01bacca4,                 /* GetIBoxVtable IAT */
+    0x01bacc90,                 /* GetCmdArguments IAT */
+    0x01bac0b4,                 /* D3DCompile IAT */
+    0x01bacbbc,                 /* D3D11CreateDevice IAT */
+    0x01bac974,                 /* fopen IAT */
+    0x01bac9a0,                 /* _wfopen IAT */
+    0x01bac96c,                 /* _wfopen_s IAT */
+    0x01bac954,                 /* __stdio_common_vsscanf IAT */
+    0x01bac904,                 /* _invalid_parameter_noinfo IAT */
+    0x01bac938,                 /* _invalid_parameter_noinfo_noreturn IAT */
+    0x01bac93c,                 /* terminate IAT */
+    0x01bac670,                 /* __std_terminate IAT */
+    0x01bac5c8,                 /* _ReportUnobservedException IAT */
+    0x01d1ea28,                 /* IID_IDXGIFactory4 */
+    0x338,                      /* ClientInstance scene-stack vtable slot */
+    0x310,                      /* ClientInstance scene-stack member */
+    0x18,                       /* AppMain frame vtable slot */
+    0,                          /* frame slot has no render flag */
+    0xe0,                       /* $is_publish stack displacement */
+    42                          /* FMOD delay-import count */
+};
+
 static const GameProfile116 *game_116 = &game_profile_116_02003;
 
 
@@ -2202,6 +2249,7 @@ static int bootstrap_116(BYTE *image, HINSTANCE instance)
     host_is_116 = TRUE;
     game_116 = image_size == 0x02daf000 ? &game_profile_116_04002
              : image_size == 0x028b8000 ? &game_profile_114
+             : image_size == 0x02857000 ? &game_profile_114_3002
                                         : &game_profile_116_02003;
     fmod_delay_descriptor_116 = game_116->fmod_delay_descriptor;
     {

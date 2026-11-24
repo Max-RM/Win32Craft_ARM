@@ -23649,7 +23649,7 @@ int WINAPI Win32Bootstrap(void)
     image_size = *(DWORD *)(image + pe_offset + 0x50);
 #ifndef WIN32CRAFT_ARM32
     if (image_size == 0x02db1000 || image_size == 0x02daf000 ||
-        image_size == 0x028b8000)
+        image_size == 0x028b8000 || image_size == 0x02857000)
         return bootstrap_116(image, instance);
     if (image_size == IMAGE_SIZE_0132_PATCHED ||
         image_size == IMAGE_SIZE_0142_PATCHED) {
